@@ -22,7 +22,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---------- Stage 2 : nginx ----------
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY docker/nginx.conf /etc/nginx/conf.d/amm.conf
