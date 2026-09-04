@@ -1,0 +1,27 @@
+# Reverse proxy TLS de production (Let's Encrypt automatique).
+# DOMAIN et ACME_EMAIL viennent du fichier .env (docker-compose.prod.yml).
+# En l'absence de domaine public (tests), mettre DOMAIN=":80" pour du HTTP simple.
+{
+    email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+    encode zstd gzip
+
+    # Uploads de scans PDF
+    request_body {
+        max_size 30MB
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        -Server
+    }
+
+    # Tout passe par nginx (image frontend) qui route /api, /ws, /grafana, SPA.
+    reverse_proxy frontend:80 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Real-IP {remote_host}
+    }
+}

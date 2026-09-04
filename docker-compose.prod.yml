@@ -1,0 +1,287 @@
+# ---------------------------------------------------------------------------
+# AMM INNOV — production (serveur unique)
+#
+#   Prérequis sur le serveur : Docker Engine + Compose v2, un fichier .env
+#   complété (voir .env.example) et ce fichier dans /opt/amm-innov.
+#
+#   TAG=<sha|latest> docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Flux : Internet → caddy (80/443, TLS Let's Encrypt) → frontend (nginx)
+#        → backend (Daphne) / grafana. Les seuls ports publiés sont ceux de Caddy.
+# Profil optionnel `s3` : MinIO pour le stockage objet des scans PDF.
+# ---------------------------------------------------------------------------
+name: amm-innov
+
+x-backend-common: &backend-common
+  image: ghcr.io/alamine2003/amm-innov-backend:${TAG:-latest}
+  env_file: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.prod}
+    DJANGO_DEBUG: "0"
+    MEDIA_ROOT: /app/media
+  volumes:
+    - media:/app/media
+  restart: unless-stopped
+  logging: &json-logging
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - amm
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-amm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:-amm}
+      TZ: Africa/Dakar
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amm} -d ${POSTGRES_DB:-amm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  backend:
+    <<: *backend-common
+    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    expose:
+      - "8000"
+
+  worker:
+    <<: *backend-common
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "${CELERY_CONCURRENCY:-2}"]
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.prod}
+      DJANGO_DEBUG: "0"
+      MEDIA_ROOT: /app/media
+      RUN_MIGRATIONS: "0"
+      COLLECT_STATIC: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  beat:
+    <<: *backend-common
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys; sys.exit(0 if any(b'beat' in open(f'/proc/{p}/cmdline','rb').read() for p in os.listdir('/proc') if p.isdigit()) else 1)"]
+      interval: 60s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - -l
+      - info
+      - --scheduler
+      - django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.prod}
+      DJANGO_DEBUG: "0"
+      MEDIA_ROOT: /app/media
+      RUN_MIGRATIONS: "0"
+      COLLECT_STATIC: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  frontend:
+    image: ghcr.io/alamine2003/amm-innov-frontend:${TAG:-latest}
+    expose:
+      - "80"
+    depends_on:
+      - backend
+      - grafana
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN manquant dans .env (ex. amm.example.com)}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-11.6.0}
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD manquant dans .env}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
+      GF_SERVER_DOMAIN: ${DOMAIN}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_DEFAULT_TIMEZONE: Africa/Dakar
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/direction/amm-afrique-vue-direction.json
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_ro}
+    expose:
+      - "3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  # ---- Sauvegarde quotidienne (pg_dump gzip + tar des médias, rétention 30 j) ----
+  backup:
+    image: postgres:16
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-amm}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-amm}
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_HOUR: ${BACKUP_HOUR:-02}
+      TZ: Africa/Dakar
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+      - media:/media:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/bash"]
+    # Cron minimaliste : dort jusqu'à BACKUP_HOUR:00 puis lance backup.sh, chaque jour.
+    command:
+      - -c
+      - |
+        set -u
+        while true; do
+          now=$$(date +%s)
+          next=$$(date -d "today $${BACKUP_HOUR}:00" +%s)
+          if [ "$$next" -le "$$now" ]; then next=$$(date -d "tomorrow $${BACKUP_HOUR}:00" +%s); fi
+          echo "[backup] prochaine sauvegarde à $$(date -d @$$next '+%F %T')"
+          sleep $$((next - now))
+          /scripts/backup.sh || echo "[backup] ECHEC de la sauvegarde"
+        done
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  # ---- Stockage objet S3 (profil s3) ----
+  minio:
+    image: minio/minio:latest
+    profiles: ["s3"]
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *json-logging
+    networks:
+      - amm
+
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["s3"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+      S3_BUCKET: ${S3_BUCKET:-amm-documents}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$S3_BUCKET"
+        mc anonymous set none "local/$$S3_BUCKET"
+    networks:
+      - amm
+
+volumes:
+  pgdata:
+  redis_data:
+  media:
+  grafana_data:
+  caddy_data:
+  caddy_config:
+  minio_data:
+
+networks:
+  amm:
+    driver: bridge

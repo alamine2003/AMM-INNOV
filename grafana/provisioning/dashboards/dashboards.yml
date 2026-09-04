@@ -1,0 +1,15 @@
+# Dashboards provisionnés depuis le dépôt (grafana/dashboards/**.json).
+# Les sous-dossiers deviennent des dossiers Grafana : Direction, Réglementaire,
+# Admin, Exploitation.
+apiVersion: 1
+
+providers:
+  - name: amm-dashboards
+    orgId: 1
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

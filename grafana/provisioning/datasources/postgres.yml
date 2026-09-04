@@ -1,0 +1,26 @@
+# Datasource PostgreSQL en lecture seule (rôle grafana_ro, schéma analytics).
+# Le mot de passe est lu dans la variable d'environnement GRAFANA_DB_PASSWORD
+# du conteneur Grafana (docker-compose).
+apiVersion: 1
+
+datasources:
+  - name: AMM PostgreSQL
+    uid: amm-postgres
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: grafana_ro
+    database: amm
+    isDefault: true
+    editable: false
+    jsonData:
+      database: amm
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+      maxOpenConns: 10
+      maxIdleConns: 5
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD

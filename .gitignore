@@ -1,0 +1,54 @@
+# ---- macOS / IDE ----
+.DS_Store
+.AppleDouble
+.idea/
+.vscode/
+*.swp
+
+# ---- Python / Django ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+backend/media/
+backend/staticfiles/
+celerybeat-schedule*
+
+# ---- Node / React ----
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# ---- Secrets & environnement ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Docker / données locales ----
+docker/volumes/
+pgdata/
+grafana-data/
+*.log
+
+# ---- Données métier (fichiers Excel sources, exports) ----
+# Le classeur source contient des numéros d'AMM et des dates réglementaires.
+# Il reste hors du dépôt par défaut ; le déposer dans data/raw/ en local.
+*.xlsx
+*.xls
+data/raw/
+data/exports/
+
+# ---- Sauvegardes locales (make backup) ----
+backups/*
+!backups/.gitkeep

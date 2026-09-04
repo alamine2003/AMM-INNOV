@@ -1,0 +1,20 @@
+Bonjour {{ user.full_name }},
+
+Voici votre digest hebdomadaire au {{ today|date:"d/m/Y" }}.
+
+ALERTES OUVERTES ({{ alerts|length }})
+{% for alert in alerts %}- [{{ alert.rule.severity }}] {{ alert.rule.code }} — {{ alert.amm.product.name }} ({{ alert.amm.country.iso2 }}), échéance {{ alert.due_date|date:"d/m/Y" }}
+{% empty %}- aucune
+{% endfor %}
+AMM À DÉPOSER SOUS 6 MOIS ({{ to_file|length }})
+{% for amm in to_file %}- {{ amm.product.name }} ({{ amm.country.iso2 }}) expire le {{ amm.effective_end_date|date:"d/m/Y" }}, deadline {{ amm.filing_deadline|date:"d/m/Y" }}
+{% empty %}- aucune
+{% endfor %}
+DOSSIERS INCOMPLETS ({{ incomplete|length }})
+{% for amm in incomplete %}- {{ amm.product.name }} ({{ amm.country.iso2 }}){% if amm.effective_end_date %}, fin le {{ amm.effective_end_date|date:"d/m/Y" }}{% endif %}
+{% empty %}- aucun
+{% endfor %}
+Centre d'alertes : {{ frontend_url }}/alerts
+
+--
+AMM INNOV

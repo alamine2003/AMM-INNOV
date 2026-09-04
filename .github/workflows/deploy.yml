@@ -1,0 +1,62 @@
+name: Deploy
+
+# Déploiement manuel sur le serveur de production via SSH.
+# Secrets requis : DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (clé privée),
+# optionnel DEPLOY_PORT (22 par défaut). Le serveur doit contenir
+# /opt/amm-innov avec docker-compose.prod.yml, docker/Caddyfile, grafana/,
+# scripts/ et un fichier .env complété.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag des images à déployer (sha court ou latest)"
+        required: true
+        default: latest
+      migrate_only:
+        description: "Ne relancer que backend/worker/beat (pas de pull des autres images)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.tag }} to production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          envs: TAG,MIGRATE_ONLY
+          script: |
+            set -euo pipefail
+            cd /opt/amm-innov
+            echo "GHCR login (images publiques : ignoré si échec)"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin || true
+            export TAG="${TAG}"
+            sed -i "s/^TAG=.*/TAG=${TAG}/" .env || echo "TAG=${TAG}" >> .env
+            if [ "${MIGRATE_ONLY}" = "true" ]; then
+              docker compose -f docker-compose.prod.yml pull backend
+              docker compose -f docker-compose.prod.yml up -d backend worker beat
+            else
+              docker compose -f docker-compose.prod.yml pull
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            fi
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps
+        env:
+          TAG: ${{ inputs.tag }}
+          MIGRATE_ONLY: ${{ inputs.migrate_only }}

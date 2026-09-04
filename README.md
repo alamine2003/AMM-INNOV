@@ -1,1 +1,187 @@
-# AMM-INNOV
+# AMM INNOV
+
+Plateforme de suivi des **Autorisations de Mise sur le Marché (AMM)** en Afrique.
+Elle remplace le classeur Excel `Dashboard AMM Afrique` (15 pays, ~1 550 AMM) par une
+application web multi-utilisateurs qui calcule les statuts, alerte **6 mois avant
+expiration** (deadline de dépôt), suit le cycle de renouvellement, archive les scans PDF
+des autorisations et expose des tableaux de bord temps réel et Grafana.
+
+| Couche | Technologies |
+|---|---|
+| Frontend | React 19 + TypeScript, Vite, MUI + Data Grid, TanStack Query |
+| Backend | Django 5 + DRF, Django Channels (WebSocket), Celery + beat, Daphne |
+| Données | PostgreSQL 16, Redis 7, MinIO/S3 (scans PDF) |
+| Pilotage | Grafana 11 (vues SQL du schéma `analytics`, rôle lecture seule) |
+| Infra | Docker Compose, nginx, Caddy (TLS), GitHub Actions, GHCR |
+
+Documents de référence : [prd.md](prd.md) · [architecture.md](architecture.md) ·
+[architecture-essentiels.md](architecture-essentiels.md) · [docs/](docs/)
+
+---
+
+## Prérequis
+
+- Docker Engine ≥ 24 et Docker Compose v2 (`docker compose version`)
+- `make` (GNU make)
+- 4 Go de RAM libres pour la stack complète
+- Optionnel, pour travailler hors Docker : Python 3.12, Node 24
+
+## Démarrage rapide
+
+```bash
+git clone <url-du-depot> amm-innov && cd amm-innov
+cp .env.example .env
+make up            # construit et démarre postgres, redis, backend, worker, beat, frontend, grafana, mailpit
+make seed          # comptes et données de démonstration
+```
+
+Ou en une commande (crée `.env`, démarre, migre, seed, importe le classeur s'il est dans `data/raw/`) :
+
+```bash
+make bootstrap
+```
+
+### URLs
+
+| Service | URL | Identifiants |
+|---|---|---|
+| Application | http://localhost:5173 | comptes de démo ci-dessous |
+| API (OpenAPI / Swagger) | http://localhost:8000/api/docs | — |
+| Grafana | http://localhost:3000 | `admin` / `admin` |
+| Mailpit (emails capturés) | http://localhost:8025 | — |
+| MinIO console (profil `s3`) | http://localhost:9001 | `minio` / `minio12345` |
+| Prometheus (profil `monitoring`) | http://localhost:9090 | — |
+
+### Comptes de démonstration (`make seed`)
+
+| Email | Rôle | Périmètre |
+|---|---|---|
+| `ceo@amm.local` | `VIEWER` (direction) | tous pays, lecture |
+| `siege@amm.local` | `REGULATORY_MANAGER` | tous pays |
+| `senegal@amm.local` | `COUNTRY_OFFICER` | Sénégal |
+
+Mot de passe commun : `Passw0rd!`
+
+## Import du classeur Excel
+
+Le classeur source (`*.xlsx`) n'est pas versionné (`.gitignore`). Le déposer dans `data/raw/` puis :
+
+```bash
+make import FILE="data/raw/Dashboard AMM Afrique 18_08_2026 version 2.1.xlsx"
+# Recalculer les statuts à une date de référence (reproduire les totaux du DASHBOARD Excel) :
+make import FILE=data/raw/classeur.xlsx TODAY=2026-08-18
+```
+
+L'import est idempotent (réimport = mise à jour) et produit un rapport d'anomalies
+(dates illisibles, doublons, numéros manquants). Contrôle attendu au 18/08/2026 :
+1 548 AMM, 963 valides, 501 expirées, 71 en cours, 13 indéterminées.
+
+## Commandes utiles (`make help`)
+
+| Commande | Effet |
+|---|---|
+| `make up` / `make down` / `make logs [SERVICE=backend]` | cycle de vie de la stack |
+| `make build` | reconstruit les images de dev |
+| `make migrate` / `make makemigrations [APP=amm]` | migrations Django |
+| `make seed` | données de démonstration |
+| `make import FILE=… [TODAY=AAAA-MM-JJ]` | import du classeur |
+| `make test-backend [ARGS="-k statut"]` / `make test-frontend` / `make test` | tests |
+| `make lint` | ruff, eslint, prettier, tsc |
+| `make shell` / `make bash` / `make psql` / `make redis-cli` | consoles |
+| `make backup` | `pg_dump` gzip + tar des médias dans `backups/` |
+| `make restore FILE=backups/amm-db-….sql.gz [MEDIA=backups/amm-media-….tar.gz] YES=1` | restauration |
+| `make grafana-open` | ouvre Grafana |
+
+Profils Compose optionnels :
+
+```bash
+docker compose --profile s3 up -d           # MinIO + bucket amm-documents (DOCUMENT_STORAGE=s3 dans .env)
+docker compose --profile monitoring up -d   # Prometheus (scrape de backend:8000/metrics)
+```
+
+## Tests et qualité
+
+```bash
+make test-backend        # pytest (SQLite par défaut ; DATABASE_URL=postgres://… pour Postgres)
+make test-frontend       # vitest
+make lint                # ruff + eslint + prettier + tsc
+```
+
+La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque push/PR vers `main` :
+
+1. **backend** : ruff, pytest avec PostgreSQL 16 et Redis 7 en services, rapport de couverture ;
+2. **frontend** : eslint/prettier, `tsc`, vitest, build Vite ;
+3. **docker** (push sur `main` uniquement) : build et push des images
+   `ghcr.io/alamine2003/amm-innov-backend` et `…-frontend` taguées `<sha>` et `latest`.
+
+Dependabot (`.github/dependabot.yml`) surveille pip, npm, Docker et GitHub Actions chaque semaine.
+
+## Grafana
+
+Cinq dashboards sont provisionnés depuis `grafana/dashboards/` (dossiers Direction, Réglementaire,
+Admin, Exploitation), tous filtrables par pays :
+
+| Dashboard | Public | Contenu |
+|---|---|---|
+| AMM Afrique — Vue direction | Direction | tableau pays (reprise Excel), compteurs, % valides, répartition statuts/urgences/gammes |
+| Pipeline d'expiration | Réglementaire | histogramme mensuel par pays, 50 prochaines échéances, dossiers urgents sans scan |
+| Suivi des renouvellements | Réglementaire | entonnoir de workflow, délai moyen de décision, taux de rejet, alertes ouvertes |
+| Qualité des données | Admin | indéterminées, dossiers incomplets, scans manquants, lignes à corriger |
+| Technique | Exploitation | API, Celery, WebSocket, emails (Prometheus) et PostgreSQL |
+
+Grafana lit la base avec le rôle `grafana_ro` (créé par une migration du backend, mot de passe
+`GRAFANA_DB_PASSWORD`) et n'accède qu'au schéma `analytics`. Les alertes métier restent dans
+l'application ; l'alerting Grafana est réservé au dashboard technique.
+
+## Déploiement en production
+
+Un serveur unique (4 vCPU / 8 Go) avec Docker suffit. `docker-compose.prod.yml` utilise les images
+GHCR et ajoute **Caddy** (TLS Let's Encrypt automatique, ports 80/443) devant l'image frontend
+(nginx : SPA, `/api`, `/ws`, `/grafana/`), ainsi qu'un service `backup` quotidien.
+
+```bash
+# Sur le serveur
+sudo mkdir -p /opt/amm-innov && cd /opt/amm-innov
+# Copier docker-compose.prod.yml, docker/Caddyfile, grafana/, scripts/, .env.example
+cp .env.example .env && nano .env      # DOMAIN, ACME_EMAIL, secrets, DJANGO_SETTINGS_MODULE=config.settings.prod
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+```
+
+Déploiement depuis GitHub : workflow **Deploy** (`.github/workflows/deploy.yml`, déclenchement
+manuel, tag d'image en paramètre). Secrets requis : `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`
+(et `DEPLOY_PORT` si différent de 22). Il exécute `docker compose pull && up -d` dans `/opt/amm-innov`.
+
+Sauvegardes : le service `backup` lance chaque nuit à `BACKUP_HOUR` (02:00 Dakar) un `pg_dump`
+compressé et une archive des médias dans `./backups`, rétention `BACKUP_RETENTION_DAYS` (30 jours).
+Restauration : `docker compose -f docker-compose.prod.yml run --rm backup /scripts/restore.sh /backups/<fichier>.sql.gz`.
+Copier `backups/` hors du serveur (rsync, restic, `mc mirror`) pour une sauvegarde externalisée.
+
+## Structure du dépôt
+
+```
+.
+├── backend/                 # Django (config/, apps/, tests/, manage.py)
+├── frontend/                # React + Vite (src/, vite.config.ts)
+├── docker/                  # Dockerfiles, entrypoint, nginx.conf, Caddyfile, prometheus.yml
+├── grafana/
+│   ├── provisioning/        # datasources (postgres, prometheus) et provider de dashboards
+│   └── dashboards/          # direction/, reglementaire/, admin/, exploitation/ (JSON)
+├── scripts/                 # backup.sh, restore.sh, dev-bootstrap.sh, wait-for.py
+├── data/raw/                # classeur Excel source (hors git)
+├── backups/                 # sauvegardes locales (hors git)
+├── docs/                    # documentation complémentaire
+├── docker-compose.yml       # développement
+├── docker-compose.prod.yml  # production
+├── Makefile
+├── .env.example
+├── .github/workflows/       # ci.yml, deploy.yml
+├── prd.md                   # cahier des charges
+├── architecture.md          # architecture détaillée
+└── architecture-essentiels.md
+```
+
+## Licence
+
+Projet privé — tous droits réservés.

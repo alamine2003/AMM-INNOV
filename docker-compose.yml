@@ -1,0 +1,284 @@
+# ---------------------------------------------------------------------------
+# AMM INNOV — environnement de développement
+#
+#   cp .env.example .env && make up && make seed
+#
+# Profils optionnels :
+#   --profile s3          MinIO (stockage objet des scans PDF) + création du bucket
+#   --profile monitoring  Prometheus (scrape de backend:8000/metrics)
+#   --profile backup      service one-shot de sauvegarde (make backup / make restore)
+# ---------------------------------------------------------------------------
+name: amm-innov
+
+x-backend-common: &backend-common
+  build:
+    context: .
+    dockerfile: docker/backend.Dockerfile
+  image: amm-innov-backend:dev
+  env_file: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+    DATABASE_URL: ${DATABASE_URL:-postgres://amm:amm@postgres:5432/amm}
+    REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    EMAIL_URL: ${EMAIL_URL:-smtp://mailpit:1025}
+    MEDIA_ROOT: /app/media
+  volumes:
+    - ./backend:/app
+    - media:/app/media
+    - ./data:/data:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - amm
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-amm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-amm}
+      POSTGRES_DB: ${POSTGRES_DB:-amm}
+      TZ: Africa/Dakar
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amm} -d ${POSTGRES_DB:-amm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - amm
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - amm
+
+  backend:
+    <<: *backend-common
+    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  worker:
+    <<: *backend-common
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      DATABASE_URL: ${DATABASE_URL:-postgres://amm:amm@postgres:5432/amm}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMAIL_URL: ${EMAIL_URL:-smtp://mailpit:1025}
+      MEDIA_ROOT: /app/media
+      RUN_MIGRATIONS: "0"
+      COLLECT_STATIC: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  beat:
+    <<: *backend-common
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys; sys.exit(0 if any(b'beat' in open(f'/proc/{p}/cmdline','rb').read() for p in os.listdir('/proc') if p.isdigit()) else 1)"]
+      interval: 60s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - -l
+      - info
+      - --scheduler
+      - django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      DATABASE_URL: ${DATABASE_URL:-postgres://amm:amm@postgres:5432/amm}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMAIL_URL: ${EMAIL_URL:-smtp://mailpit:1025}
+      MEDIA_ROOT: /app/media
+      RUN_MIGRATIONS: "0"
+      COLLECT_STATIC: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.dev.Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-24}
+    image: amm-innov-frontend:dev
+    environment:
+      VITE_API_BASE: ${VITE_API_BASE:-/api}
+      VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-http://backend:8000}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - amm
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-11.6.0}
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: ${GRAFANA_SERVE_FROM_SUB_PATH:-false}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_DEFAULT_TIMEZONE: Africa/Dakar
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/direction/amm-afrique-vue-direction.json
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_ro}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - amm
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "${MAILPIT_HTTP_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+    networks:
+      - amm
+
+  # ---- Stockage objet S3 (profil s3) ----
+  minio:
+    image: minio/minio:latest
+    profiles: ["s3"]
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - amm
+
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["s3"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+      S3_BUCKET: ${S3_BUCKET:-amm-documents}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$S3_BUCKET"
+        mc anonymous set none "local/$$S3_BUCKET"
+        echo "bucket $$S3_BUCKET prêt"
+    networks:
+      - amm
+
+  # ---- Prometheus (profil monitoring) ----
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    profiles: ["monitoring"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - amm
+
+  # ---- Sauvegarde / restauration à la demande (profil backup) ----
+  backup:
+    image: postgres:16
+    profiles: ["backup"]
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-amm}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-amm}
+      PGDATABASE: ${POSTGRES_DB:-amm}
+      BACKUP_DIR: /backups
+      MEDIA_DIR: /media
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+      - media:/media:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/bash"]
+    command: ["/scripts/backup.sh"]
+    networks:
+      - amm
+
+volumes:
+  pgdata:
+  media:
+  frontend_node_modules:
+  grafana_data:
+  minio_data:
+  prometheus_data:
+
+networks:
+  amm:
+    driver: bridge

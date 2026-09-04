@@ -1,0 +1,16 @@
+# Datasource Prometheus optionnelle (profil compose `monitoring`).
+# Sans le service prometheus, seuls les panneaux du dashboard Technique qui
+# l'utilisent affichent une erreur ; les autres dashboards ne sont pas affectés.
+apiVersion: 1
+
+datasources:
+  - name: AMM Prometheus
+    uid: amm-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 30s

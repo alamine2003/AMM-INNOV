@@ -1,0 +1,30 @@
+# Fichiers que Claude Code n'a pas besoin de lire ni d'indexer.
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+frontend/dist/
+frontend/build/
+backend/staticfiles/
+backend/media/
+pgdata/
+grafana-data/
+docker/volumes/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+*.lock
+package-lock.json
+yarn.lock
+poetry.lock
+.env
+.env.*
+*.pem
+*.key
+.git/
+.DS_Store
+# Exports volumineux ; le classeur source (*.xlsx) reste lisible pour l'import.
+data/exports/
