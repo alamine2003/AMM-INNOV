@@ -4,7 +4,7 @@
 # ---------------------------------------------------------------------------
 
 # ---------- Stage 1 : construction du virtualenv ----------
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -21,7 +21,7 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip wheel && pip install -r /tmp/requirements.txt
 
 # ---------- Stage 2 : image d'exécution ----------
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 ARG APP_UID=1000
 ARG APP_GID=1000
