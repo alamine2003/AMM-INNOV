@@ -113,6 +113,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
 
+# Cache partagé entre les processus web : throttles de connexion et futurs caches applicatifs.
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
+}
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -208,6 +213,12 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Suivi des Autorisations de Mise sur le Marché en Afrique.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Documentation réservée aux utilisateurs connectés : session (/admin) ou JWT.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
+    "SERVE_AUTHENTICATION": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "COMPONENT_SPLIT_REQUEST": True,
     # Noms stables pour les enums partagés (sinon « Status1d1Enum », qui change à chaque ajout).
     "ENUM_NAME_OVERRIDES": {

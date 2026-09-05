@@ -1,7 +1,8 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Prefetch
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -74,7 +75,13 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         ensure_country_in_scope(self.request.user, serializer.validated_data.get("country"))
-        serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError:  # deux créations simultanées du même produit × pays
+            raise serializers.ValidationError(
+                {"detail": "Une AMM existe déjà pour ce produit dans ce pays."}
+            )
 
     @extend_schema(responses=HistoryEntrySerializer(many=True))
     @action(detail=True, methods=["get"])

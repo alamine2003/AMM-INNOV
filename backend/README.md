@@ -41,6 +41,6 @@ Ou via Docker : `docker run --rm -v "$PWD:/app" -w /app python:3.12-slim bash -c
 ## Notes d'implémentation
 
 - Statut/urgence/dates calculés par `apps/amm/services/status.py` à chaque sauvegarde et chaque nuit (00:05 Dakar).
-- Les images JPEG/PNG téléversées sont converties en PDF si le paquet optionnel `img2pdf` est installé ; sinon elles sont stockées telles quelles avec leur type MIME réel.
+- Les images JPEG/PNG téléversées (photos de smartphone) sont converties sans perte en PDF par `img2pdf` ; une image illisible est refusée (400).
 - Le nombre de pages des PDF est calculé par la tâche `generate_document_preview` (pypdf) ; pas de miniature au MVP.
 - Schéma OpenAPI : `/api/schema/`, documentation : `/api/docs/`, métriques Prometheus : `/metrics`.

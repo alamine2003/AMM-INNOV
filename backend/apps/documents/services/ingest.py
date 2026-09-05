@@ -1,7 +1,8 @@
-"""Upload pipeline: real MIME check (magic bytes), size limit, SHA-256, optional image -> PDF.
+"""Upload pipeline: real MIME check (magic bytes), size limit, SHA-256, image -> PDF.
 
-Images are converted with `img2pdf` when the package is installed; otherwise the JPEG/PNG
-is stored as-is with its real content type (documented in the README).
+JPEG/PNG scans (phone photos) are converted losslessly to PDF with `img2pdf`, so that every
+document is a PDF for the viewer, the ZIP archive and the page counter. A corrupted image is
+refused (400) rather than stored as-is.
 """
 
 import hashlib
@@ -32,10 +33,9 @@ def detect_content_type(head: bytes) -> str | None:
 
 
 def convert_image_to_pdf(content: bytes) -> bytes | None:
-    try:
-        import img2pdf  # type: ignore
-    except ImportError:
-        return None
+    """Lossless image -> PDF (img2pdf embeds the original bytes). None when the image is invalid."""
+    import img2pdf  # type: ignore
+
     try:
         return img2pdf.convert(content)
     except Exception:
@@ -93,8 +93,9 @@ def ingest_document(
         )
     if content_type != "application/pdf":
         converted = convert_image_to_pdf(content)
-        if converted:
-            content, content_type = converted, "application/pdf"
+        if converted is None:
+            raise ValidationError({"file": "Image illisible : impossible de la convertir en PDF."})
+        content, content_type = converted, "application/pdf"
     sha256 = hashlib.sha256(content).hexdigest()
     duplicate_error = ValidationError(
         {"file": "Ce fichier existe déjà pour cette AMM (empreinte SHA-256 identique)."}

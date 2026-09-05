@@ -70,7 +70,7 @@ services:
 
   backend:
     <<: *backend-common
-    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    command: ["serve"]
     ports:
       - "${BACKEND_PORT:-8000}:8000"
 

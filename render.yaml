@@ -63,13 +63,15 @@ services:
     plan: starter
     dockerfilePath: ./docker/backend.Dockerfile
     dockerContext: .
-    dockerCommand: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    dockerCommand: serve
     healthCheckPath: /api/v1/health
     autoDeployTrigger: checksPass     # déploie seulement quand la CI GitHub est verte
     envVars:
       - fromGroup: amm-innov-shared
       - key: PORT
         value: "8000"
+      - key: WEB_CONCURRENCY
+        value: "2"             # workers uvicorn ; 1 = Daphne mono-processus
       - key: RUN_MIGRATIONS
         value: "1"
       - key: COLLECT_STATIC

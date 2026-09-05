@@ -242,5 +242,13 @@ et corrigé quatre dérives supplémentaires (`last_renewal`, `amm_id` des renou
 `sent_at`, `range`) ; recherche serveur des produits dans le dialogue de création d'AMM ; jeton
 WebSocket transmis par sous-protocole ; session de 12 heures glissantes conforme au PRD.
 
+Puis, dans l'ordre du reste de ce rapport : conversion sans perte des photos JPEG/PNG en PDF
+(auparavant stockées telles quelles, donc invisibles dans la visionneuse) ; plusieurs processus
+web (`WEB_CONCURRENCY`, uvicorn) avec cache Redis pour des throttles cohérents, mesuré à 3
+workers : 142 req/s à 30 utilisateurs, 167 req/s à 60 et 100, 0 erreur, fiche AMM à 59 ms de
+médiane à 30 utilisateurs (157 ms avec un seul processus), PostgreSQL devenant le prochain
+goulot à 100 % CPU vers 100 utilisateurs ; documentation OpenAPI réservée aux connectés ;
+double création d'AMM simultanée en 400.
+
 Vérification finale : ruff, 130 tests backend (SQLite et PostgreSQL), eslint, prettier, tsc,
 31 tests frontend, migrations cohérentes, script de concurrence rejoué au vert.

@@ -83,6 +83,9 @@ pays puis diffuse le PDF, le bucket peut donc rester entièrement privé.
 
 Remarques :
 
+- `WEB_CONCURRENCY=2` : deux workers uvicorn sur le service web ; sur un plan plus large, 1 worker
+  par 0,5 CPU environ, en gardant `WEB_CONCURRENCY × DB_POOL_MAX_SIZE` sous la limite de
+  connexions du plan Postgres (97 sur basic-256mb).
 - Le worker tourne avec beat intégré (`celery worker -B`) : **ne jamais passer `numInstances`
   au-dessus de 1**, sinon les jobs nocturnes s'exécutent en double.
 - `autoDeployTrigger: checksPass` : Render redéploie à chaque push sur `main` **après** la CI verte.

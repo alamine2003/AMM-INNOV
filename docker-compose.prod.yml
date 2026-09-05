@@ -73,7 +73,9 @@ services:
 
   backend:
     <<: *backend-common
-    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    command: ["serve"]
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
     expose:
       - "8000"
 

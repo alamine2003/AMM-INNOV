@@ -22,6 +22,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   chargement des 856 produits.
 - Jeton WebSocket transmis dans le sous-protocole `amm.jwt` au lieu de l'URL.
 - Session de 12 heures glissantes (PRD US1.1) : `REFRESH_TOKEN_LIFETIME` passe de 7 jours à 12 h.
+- Plusieurs processus web : `WEB_CONCURRENCY` (1 = Daphne, N = uvicorn avec N workers). Mesuré :
+  3 workers font passer le débit de 80 à 167 req/s, 0 erreur à 100 utilisateurs, latence divisée par 2 à 3.
+- Cache Django sur Redis : throttles de connexion partagés entre les processus web.
+- Photos JPEG/PNG converties sans perte en PDF à l'envoi (`img2pdf`) ; image illisible refusée.
+- `/api/docs` et `/api/schema` réservés aux utilisateurs connectés (session admin ou JWT).
+- Double création simultanée d'une AMM (même produit × pays) : 400 explicite au lieu de 500.
 
 ### Sécurité
 - Couverture pays d'un produit : un réglementaire pays ne voit plus le statut des autres pays.

@@ -46,7 +46,7 @@ make bootstrap
 | Service | URL | Identifiants |
 |---|---|---|
 | Application | http://localhost:5173 | comptes de démo ci-dessous |
-| API (OpenAPI / Swagger) | http://localhost:8000/api/docs | — |
+| API (OpenAPI / Swagger) | http://localhost:8000/api/docs | connecté à http://localhost:8000/admin |
 | Grafana | http://localhost:3000 | `admin` / `admin` |
 | Mailpit (emails capturés) | http://localhost:8025 | — |
 | MinIO console (profil `s3`) | http://localhost:9001 | `minio` / `minio12345` |
@@ -89,6 +89,7 @@ L'import est idempotent (réimport = mise à jour) et produit un rapport d'anoma
 | `make lint` | ruff, eslint, prettier, tsc |
 | `make shell` / `make bash` / `make psql` / `make redis-cli` | consoles |
 | `make backup` | `pg_dump` gzip + tar des médias dans `backups/` |
+| `make api-schema` / `make api-types` / `make api-check` | schéma OpenAPI, types TypeScript, vérification du contrat |
 | `make restore FILE=backups/amm-db-….sql.gz [MEDIA=backups/amm-media-….tar.gz] YES=1` | restauration |
 | `make grafana-open` | ouvre Grafana |
 
@@ -146,6 +147,10 @@ Grafana lit la base avec le rôle `grafana_ro` (créé par une migration du back
 l'application ; l'alerting Grafana est réservé au dashboard technique.
 
 ## Déploiement en production
+
+Processus web : `WEB_CONCURRENCY=1` lance Daphne (dev) ; `WEB_CONCURRENCY=N` lance uvicorn avec N workers
+(prod, ~80 req/s par worker mesurés, 167 req/s avec 3). Chaque worker a son pool PostgreSQL
+(`DB_POOL_MAX_SIZE`) : garder N × pool sous `max_connections`.
 
 ### Option retenue : Netlify + Render
 

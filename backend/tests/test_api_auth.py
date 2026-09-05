@@ -46,6 +46,8 @@ def test_health_is_public(anon_client, db):
     assert body["status"] == "ok" and body["database"] is True and isinstance(body["redis"], bool)
 
 
-def test_openapi_schema_and_docs(anon_client, db):
-    assert anon_client.get("/api/schema/").status_code == 200
-    assert anon_client.get("/api/docs/").status_code == 200
+def test_openapi_schema_and_docs(anon_client, hq_client):
+    # Documentation réservée aux utilisateurs connectés (session admin ou JWT).
+    assert anon_client.get("/api/schema/").status_code == 403
+    assert hq_client.get("/api/schema/").status_code == 200
+    assert hq_client.get("/api/docs/").status_code == 200

@@ -23,6 +23,7 @@ if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3" and not os.env
     # Allow running the suite against Postgres only when explicitly requested.
     DATABASES["default"] = dj_database_url.parse(f"sqlite:///{BASE_DIR / '.test-db.sqlite3'}")
 
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

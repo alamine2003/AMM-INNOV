@@ -131,3 +131,50 @@ def test_export_matches_filtered_list(hq_client, make_amm):
     listed = hq_client.get("/api/v1/amms?country=CI").json()["count"]
     csv = hq_client.get("/api/v1/analytics/export?format=csv&country=CI").content.decode()
     assert listed == 1 and csv.count("\n") == 2  # en-tête + 1 ligne
+
+
+# --- images converties en PDF, documentation réservée aux connectés
+
+
+def test_jpeg_upload_is_converted_to_pdf(country_client, make_amm):
+    import io
+
+    from PIL import Image
+
+    amm = make_amm(start=date(2020, 1, 1))
+    buffer = io.BytesIO()
+    Image.new("RGB", (40, 30), (200, 30, 30)).save(buffer, format="JPEG")
+    upload = SimpleUploadedFile("photo.jpg", buffer.getvalue(), "image/jpeg")
+    response = country_client.post(
+        f"/api/v1/amms/{amm.pk}/documents", {"file": upload, "kind": "AMM"}, format="multipart"
+    )
+    assert response.status_code == 201, response.json()
+    assert response.json()["content_type"] == "application/pdf"
+    assert response.json()["filename"].endswith(".pdf")
+    document = Document.objects.get(pk=response.json()["id"])
+    document.file.open("rb")
+    assert document.file.read(4) == b"%PDF"
+    document.file.close()
+
+
+def test_corrupted_image_is_refused(country_client, make_amm):
+    amm = make_amm(start=date(2020, 1, 1))
+    upload = SimpleUploadedFile("broken.jpg", b"\xff\xd8\xff\xe0 not really a jpeg", "image/jpeg")
+    response = country_client.post(
+        f"/api/v1/amms/{amm.pk}/documents", {"file": upload}, format="multipart"
+    )
+    assert response.status_code == 400 and "illisible" in response.json()["file"][0]
+
+
+def test_api_docs_require_authentication(anon_client, hq_client):
+    assert anon_client.get("/api/schema/").status_code in (401, 403)
+    assert anon_client.get("/api/docs/").status_code in (401, 403)
+    assert hq_client.get("/api/schema/").status_code == 200
+
+
+def test_duplicate_amm_creation_is_a_400(hq_client, make_amm, product, countries):
+    make_amm(country="SN", product_obj=product)
+    response = hq_client.post(
+        "/api/v1/amms", {"product": str(product.pk), "country": str(countries["SN"].pk)}
+    )
+    assert response.status_code == 400
