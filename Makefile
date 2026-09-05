@@ -84,7 +84,7 @@ lint-frontend: ## eslint + prettier + tsc
 
 lint: lint-backend lint-frontend ## Tous les linters
 
-api-schema: ## Régénère backend/schema.yaml (OpenAPI) depuis le code Django
+api-schema: ## Régénère backend/schema.yaml (OpenAPI) depuis le code Django (sur PostgreSQL : les bornes d'entiers diffèrent sous SQLite)
 	$(BACKEND_EXEC) python manage.py spectacular --file /tmp/schema.yaml --validate
 	$(COMPOSE) cp backend:/tmp/schema.yaml backend/schema.yaml
 
