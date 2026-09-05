@@ -3,7 +3,7 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.amm.models import Renewal
+from apps.amm.models import MarketingAuthorization, Renewal
 
 S = Renewal.WorkflowStatus
 
@@ -51,10 +51,29 @@ def missing_fields(renewal: Renewal, to: str, fields: dict) -> list[str]:
 
 
 @transaction.atomic
+def create_renewal(amm: MarketingAuthorization, **fields) -> Renewal:
+    """Creates a renewal for `amm`; refuses when one is still open.
+
+    The AMM row is locked for the duration of the transaction so that two simultaneous
+    requests cannot both pass the "no open renewal" check (and `sequence` stays unique).
+    """
+    MarketingAuthorization.objects.select_for_update().get(pk=amm.pk)
+    if Renewal.objects.filter(amm=amm, workflow_status__in=Renewal.OPEN_STATUSES).exists():
+        raise ValidationError({"detail": "Un renouvellement est déjà en cours pour cette AMM."})
+    return Renewal.objects.create(amm=amm, **fields)
+
+
+@transaction.atomic
 def transition(renewal: Renewal, to: str, actor=None, **fields) -> Renewal:
-    """Moves a renewal to `to`, applying `fields`. Raises ValidationError when refused."""
+    """Moves a renewal to `to`, applying `fields`. Raises ValidationError when refused.
+
+    The renewal row is locked and re-read first: two users acting at the same time on the
+    same renewal (one files it, the other abandons it) cannot both succeed.
+    """
     if to not in S.values:
         raise ValidationError({"to": f"Statut inconnu : {to}."})
+    list(Renewal.objects.select_for_update().filter(pk=renewal.pk).values("pk"))  # verrou ligne
+    renewal.refresh_from_db(fields=["workflow_status"])
     if not can_transition(renewal, to):
         possible = ", ".join(sorted(allowed_transitions(renewal))) or "aucune"
         raise ValidationError(

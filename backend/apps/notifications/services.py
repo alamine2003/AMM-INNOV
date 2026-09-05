@@ -1,6 +1,7 @@
 """Fan-out of an alert to its recipients on each channel of the rule."""
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -14,14 +15,13 @@ SEVERITY_LABEL = {"INFO": "Info", "WARNING": "Attention", "CRITICAL": "Critique"
 
 
 def recipients_for(alert: Alert):
+    """Active users with one of the rule roles: global roles, or scoped on the AMM country."""
     roles = alert.rule.roles or []
-    users = User.objects.filter(is_active=True, role__in=roles)
-    country_id = alert.amm.country_id
-    return [
-        u
-        for u in users.prefetch_related("countries")
-        if u.is_global or u.countries.filter(pk=country_id).exists()
-    ]
+    return list(
+        User.objects.filter(is_active=True, role__in=roles)
+        .filter(Q(role__in=User.GLOBAL_ROLES) | Q(countries=alert.amm.country_id))
+        .distinct()
+    )
 
 
 def alert_title(alert: Alert) -> str:

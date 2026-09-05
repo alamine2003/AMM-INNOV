@@ -115,7 +115,14 @@ export default function ProductDetailPage() {
                 data-testid="coverage-grid"
               >
                 {(coverage.data ?? []).map((c) => {
-                  const color = c.status ? STATUS_COLORS[c.status] : '#bdbdbd';
+                  const color = c.status
+                    ? STATUS_COLORS[c.status]
+                    : c.in_scope === false
+                      ? '#e0e0e0'
+                      : '#bdbdbd';
+                  const emptyLabel = t(
+                    c.in_scope === false ? 'products.coverageOutOfScope' : 'products.coverageAbsent',
+                  );
                   const amm = productAmms.find((a) => a.country_iso2 === c.country_iso2);
                   const cell = (
                     <Box
@@ -134,7 +141,7 @@ export default function ProductDetailPage() {
                         {c.country_name}
                       </Typography>
                       <Typography variant="caption" display="block">
-                        {c.status ? t(`status.${c.status}`) : t('products.coverageAbsent')}
+                        {c.status ? t(`status.${c.status}`) : emptyLabel}
                       </Typography>
                       {c.effective_end_date && (
                         <Typography variant="caption" display="block">
@@ -149,7 +156,7 @@ export default function ProductDetailPage() {
                       title={
                         c.status
                           ? `${t(`status.${c.status}`)} — ${formatDate(c.effective_end_date)}`
-                          : t('products.coverageAbsent')
+                          : emptyLabel
                       }
                     >
                       {cell}

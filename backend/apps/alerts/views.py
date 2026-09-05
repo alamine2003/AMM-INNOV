@@ -3,6 +3,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -64,6 +65,8 @@ class AlertViewSet(
         serializer = AlertAssignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = get_object_or_404(User, pk=serializer.validated_data["user_id"], is_active=True)
+        if not user.can_access_country(alert.amm.country_id):
+            raise ValidationError({"user_id": "Cet utilisateur n'a pas accès au pays de l'alerte."})
         alert.assigned_to = user
         return self._save(alert, ["assigned_to"])
 

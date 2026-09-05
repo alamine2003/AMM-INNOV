@@ -95,9 +95,3 @@ export async function fetchBlob(url: string, params?: Record<string, unknown>): 
   const res = await api.get<Blob>(url, { responseType: 'blob', params });
   return res.data;
 }
-
-export function fileUrlFromApi(path: string): string {
-  if (path.startsWith('http')) return path;
-  if (path.startsWith('/api/')) return `${import.meta.env.VITE_API_BASE ?? ''}${path}`;
-  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
-}

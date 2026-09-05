@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import SimpleRouter
@@ -51,12 +52,24 @@ api_v1 = [
     *router.urls,
 ]
 
+
+
+def metrics(request):
+    """Prometheus scrape endpoint; requires `Authorization: Bearer METRICS_TOKEN` when set."""
+    from django_prometheus.exports import ExportToDjangoView
+
+    token = settings.METRICS_TOKEN
+    if token and request.headers.get("Authorization") != f"Bearer {token}":
+        return HttpResponse(status=401)
+    return ExportToDjangoView(request)
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/", include((api_v1, "api"), namespace="v1")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
-    path("", include("django_prometheus.urls")),
+    path("metrics", metrics, name="prometheus-django-metrics"),
 ]
 
 if settings.DEBUG:

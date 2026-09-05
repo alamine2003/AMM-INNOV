@@ -24,9 +24,6 @@ class DocumentQuerySet(models.QuerySet):
     def current(self):
         return self.filter(is_current=True, archived_at__isnull=True)
 
-    def not_archived(self):
-        return self.filter(archived_at__isnull=True)
-
 
 class DocumentManager(models.Manager.from_queryset(DocumentQuerySet)):
     """Canonical order everywhere: most recent first (`-document_date, -uploaded_at`)."""
@@ -99,6 +96,15 @@ class Document(models.Model):
         indexes = [
             models.Index(
                 fields=["amm", "-document_date", "-uploaded_at"], name="doc_amm_chrono_idx"
+            ),
+        ]
+        constraints = [
+            # Le même fichier ne peut exister qu'une fois par AMM tant qu'il n'est pas archivé :
+            # garantit l'anti-doublon même sous envois simultanés.
+            models.UniqueConstraint(
+                fields=["amm", "sha256"],
+                condition=models.Q(archived_at__isnull=True),
+                name="doc_amm_sha256_active_uniq",
             ),
         ]
 

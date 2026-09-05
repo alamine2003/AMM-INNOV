@@ -1,5 +1,3 @@
-import { fetchBlob } from '@/api/client';
-
 export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -9,11 +7,6 @@ export function saveBlob(blob: Blob, filename: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-export async function downloadFromApi(url: string, filename: string, params?: Record<string, unknown>) {
-  const blob = await fetchBlob(url, params);
-  saveBlob(blob, filename);
 }
 
 export function formatBytes(bytes: number | null | undefined): string {

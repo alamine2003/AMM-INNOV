@@ -101,14 +101,6 @@ class MarketingAuthorization(models.Model):
             )
         super().save(*args, **kwargs)
 
-    @property
-    def pending_renewal(self):
-        return (
-            self.renewals.filter(workflow_status__in=Renewal.PENDING_STATUSES)
-            .order_by("-sequence")
-            .first()
-        )
-
 
 class Renewal(models.Model):
     class WorkflowStatus(models.TextChoices):

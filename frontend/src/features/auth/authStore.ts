@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Role, User } from '@/api/types';
+import type { User } from '@/api/types';
 
 const REFRESH_KEY = 'amm.refresh';
 
@@ -54,12 +54,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ access: null, refresh: null, user: null, hydrated: true });
   },
 }));
-
-export const ROLE_ORDER: Role[] = ['COUNTRY_REGULATORY', 'HQ_REGULATORY', 'CEO_ADMIN'];
-
-export function hasRole(user: User | null, roles: Role[]): boolean {
-  return !!user && roles.includes(user.role);
-}
 
 export function canEditCountry(user: User | null, iso2: string | undefined): boolean {
   if (!user) return false;

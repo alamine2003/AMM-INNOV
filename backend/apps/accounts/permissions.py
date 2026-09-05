@@ -46,15 +46,6 @@ class IsGlobalRole(BasePermission):
         return bool(request.user and request.user.is_authenticated and request.user.is_global)
 
 
-class IsCeoAdmin(BasePermission):
-    def has_permission(self, request, view) -> bool:
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role == User.Role.CEO_ADMIN
-        )
-
-
 class CountryScopedQuerysetMixin:
     """Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
 

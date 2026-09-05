@@ -1,7 +1,6 @@
 """Applies a parsed workbook to the database, sheet by sheet (one transaction per sheet)."""
 
 import logging
-from dataclasses import asdict
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
@@ -18,9 +17,6 @@ from .excel_parser import ParsedRow, ParsedSheet, parse_workbook
 from .models import ImportBatch, ImportRow
 
 logger = logging.getLogger(__name__)
-
-OUTCOME_ORDER = ("ERROR", "WARNING", "CREATED", "UPDATED", "SKIPPED")
-
 
 def _range_for(code: str | None, cache: dict) -> ProductRange | None:
     if code is None:
@@ -286,7 +282,3 @@ def import_workbook(source, batch: ImportBatch | None = None, today: date | None
     publish_dashboard_refresh()
     enqueue(refresh_analytics_views)
     return summary
-
-
-def parsed_row_dict(row: ParsedRow) -> dict:
-    return asdict(row)

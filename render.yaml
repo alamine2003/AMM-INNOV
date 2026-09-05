@@ -48,6 +48,10 @@ envVarGroups:
         value: "30"
       - key: GRAFANA_DB_PASSWORD
         sync: false            # mot de passe du rôle lecture seule grafana_ro (Grafana Cloud)
+      - key: METRICS_TOKEN
+        sync: false            # jeton du scrape Prometheus (Grafana Cloud) sur /metrics
+      - key: NUM_PROXIES
+        value: "1"             # Render est le seul proxy : throttle de connexion par vraie IP
       - key: WAIT_TIMEOUT
         value: "60"
 
@@ -88,7 +92,7 @@ services:
     numInstances: 1
     dockerfilePath: ./docker/backend.Dockerfile
     dockerContext: .
-    dockerCommand: celery -A config worker -l info -B --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    dockerCommand: celery -A config worker -l info --concurrency 2 -B --scheduler django_celery_beat.schedulers:DatabaseScheduler
     autoDeployTrigger: checksPass
     envVars:
       - fromGroup: amm-innov-shared
@@ -98,6 +102,8 @@ services:
         value: "0"
       - key: CELERY_CONCURRENCY
         value: "2"
+      - key: DB_POOL_MAX_SIZE
+        value: "4"             # 2 processus Celery × 4 connexions max
       - key: DATABASE_URL
         fromDatabase:
           name: amm-innov-db

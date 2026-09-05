@@ -13,7 +13,9 @@ def _label(value: Any) -> str | None:
 
 def entries_for_model(instances_history, model_label: str) -> list[dict]:
     """Builds history entries from a queryset of historical records ordered by history_date."""
-    records = list(instances_history.order_by("history_date", "history_id"))
+    records = list(
+        instances_history.select_related("history_user").order_by("history_date", "history_id")
+    )
     entries: list[dict] = []
     previous_by_object: dict = {}
     for record in records:

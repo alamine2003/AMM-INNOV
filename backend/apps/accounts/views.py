@@ -4,7 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -16,12 +16,24 @@ from .serializers import LoginSerializer, LogoutSerializer, UserSerializer
 
 
 class LoginThrottle(AnonRateThrottle):
+    """Par adresse IP cliente (X-Forwarded-For quand NUM_PROXIES est défini)."""
+
     scope = "login"
+
+
+class LoginEmailThrottle(SimpleRateThrottle):
+    """Par compte visé, quelle que soit l'IP : freine une attaque distribuée sur un email."""
+
+    scope = "login_email"
+
+    def get_cache_key(self, request, view):
+        email = str(request.data.get("email", "")).strip().lower() if request.data else ""
+        return self.cache_format % {"scope": self.scope, "ident": email} if email else None
 
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
-    throttle_classes = [LoginThrottle]
+    throttle_classes = [LoginThrottle, LoginEmailThrottle]
 
 
 class RefreshView(TokenRefreshView):

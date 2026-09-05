@@ -98,7 +98,17 @@ TEMPLATES = [
 # Database, cache, channel layer, Celery
 # ---------------------------------------------------------------------------
 DATABASE_URL = env("DATABASE_URL", "postgres://amm:amm@localhost:5432/amm")
-DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=60)}
+# Pool de connexions psycopg (Django 5.1) sur PostgreSQL. Sous ASGI, chaque requête tourne dans
+# un nouveau thread : sans pool, chaque thread ouvrait sa propre connexion et PostgreSQL
+# saturait (« too many clients ») dès 30 utilisateurs simultanés. Avec le pool, les requêtes
+# en excès attendent une connexion libre (DB_POOL_TIMEOUT) au lieu d'échouer.
+DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=0)}
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql" and env_bool("DB_POOL", True):
+    DATABASES["default"].setdefault("OPTIONS", {})["pool"] = {
+        "min_size": int(env("DB_POOL_MIN_SIZE", "1")),
+        "max_size": int(env("DB_POOL_MAX_SIZE", "20")),
+        "timeout": float(env("DB_POOL_TIMEOUT", "10")),
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
@@ -152,8 +162,10 @@ CELERY_BEAT_SCHEDULE = {
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 REST_FRAMEWORK = {
@@ -169,7 +181,11 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_THROTTLE_RATES": {"login": "10/min"},
+    # Anti force brute : par adresse IP (un bureau derrière un NAT compte pour une IP) et par
+    # compte visé (plusieurs IP sur un même email). Derrière un proxy, NUM_PROXIES (prod) permet
+    # de lire la vraie IP cliente dans X-Forwarded-For.
+    "DEFAULT_THROTTLE_RATES": {"login": "30/min", "login_email": "10/min"},
+    "NUM_PROXIES": int(env("NUM_PROXIES", "0")) or None,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "URL_FORMAT_OVERRIDE": None,  # `?format=xlsx` belongs to the export endpoint
 }
@@ -256,6 +272,8 @@ if DOCUMENT_STORAGE == "s3":
     }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
 DOCUMENT_RETENTION_YEARS = 5
+# /metrics (Prometheus) : public si vide, sinon exige `Authorization: Bearer <METRICS_TOKEN>`.
+METRICS_TOKEN = env("METRICS_TOKEN", "")
 # Déluge d'alertes au premier lancement : une alerte dont l'échéance est plus ancienne que ce
 # délai est créée (tableaux de bord, liste des alertes) mais ne déclenche pas de notification,
 # sauf s'il s'agit de la plus récente d'une AMM encore actionnable (non expirée).

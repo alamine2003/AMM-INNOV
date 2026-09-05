@@ -301,6 +301,8 @@ export interface CoverageCell {
   country_name: string;
   status: AmmStatus | null;
   effective_end_date: string | null;
+  /** false pour un réglementaire pays hors de son périmètre : l'API ne renvoie alors aucune donnée. */
+  in_scope?: boolean;
 }
 
 export interface ImportBatch {

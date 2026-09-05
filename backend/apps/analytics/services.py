@@ -147,8 +147,7 @@ def country_dashboard(country: Country, today: date | None = None) -> dict:
         .annotate(priority=URGENCY_PRIORITY)
         .order_by("priority", "effective_end_date", "product__name")[:20]
     ]
-    kpi = africa_table(None, today)
-    country_row = next((r for r in kpi["rows"] if r["country_iso2"] == country.iso2), None)
+    country_row = _row(country.iso2, country.name, amms.aggregate(**_kpi_annotations(today)))
     return {
         "country": {"iso2": country.iso2, "name": country.name},
         "kpi": country_row,
@@ -160,14 +159,17 @@ def country_dashboard(country: Country, today: date | None = None) -> dict:
 
 
 def product_coverage(product, user=None) -> list[dict]:
-    """One entry per country: the AMM status there, or null when the product is absent."""
-    amms = {
-        amm.country_id: amm
-        for amm in MarketingAuthorization.objects.filter(product=product).select_related("country")
-    }
+    """One entry per country: the AMM status there, or null when the product is absent.
+
+    Countries outside the user's scope are listed (the map keeps its shape) but carry no
+    data: a country officer must not read the regulatory situation of other countries.
+    """
+    amms = {amm.country_id: amm for amm in MarketingAuthorization.objects.filter(product=product)}
+    scoped_ids = None if user is None or user.is_global else set(user.scoped_country_ids())
     rows = []
     for country in Country.objects.order_by("name"):
-        amm = amms.get(country.pk)
+        in_scope = scoped_ids is None or country.pk in scoped_ids
+        amm = amms.get(country.pk) if in_scope else None
         rows.append(
             {
                 "country_iso2": country.iso2,
@@ -176,7 +178,7 @@ def product_coverage(product, user=None) -> list[dict]:
                 "status": amm.status if amm else None,
                 "urgency": amm.urgency if amm else None,
                 "effective_end_date": amm.effective_end_date if amm else None,
-                "in_scope": user is None or user.is_global or user.can_access_country(country),
+                "in_scope": in_scope,
             }
         )
     return rows

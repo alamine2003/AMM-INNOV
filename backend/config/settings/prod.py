@@ -10,4 +10,6 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 3600
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# Render, Caddy et nginx terminent TLS et transmettent X-Forwarded-For : un proxy devant Django.
+REST_FRAMEWORK["NUM_PROXIES"] = int(env("NUM_PROXIES", "1"))  # noqa: F405
 CSRF_TRUSTED_ORIGINS = [o for o in (env("CSRF_TRUSTED_ORIGINS") or "").split(",") if o]

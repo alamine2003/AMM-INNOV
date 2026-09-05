@@ -36,6 +36,14 @@ class RenewalSerializer(serializers.ModelSerializer):
         return sorted(workflow.allowed_transitions(obj))
 
     def validate(self, attrs):
+        if (
+            self.instance is not None
+            and "workflow_status" in attrs
+            and attrs["workflow_status"] != self.instance.workflow_status
+        ):
+            raise serializers.ValidationError(
+                {"workflow_status": "Le statut change uniquement via /renewals/{id}/transition."}
+            )
         status = attrs.get("workflow_status", getattr(self.instance, "workflow_status", None))
         if status:
             merged = {**(self.instance.__dict__ if self.instance else {}), **attrs}
@@ -53,12 +61,11 @@ class RenewalSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        amm = validated_data["amm"]
-        if amm.renewals.filter(workflow_status__in=Renewal.OPEN_STATUSES).exists():
-            raise serializers.ValidationError(
-                {"detail": "Un renouvellement est déjà en cours pour cette AMM."}
-            )
-        return super().create(validated_data)
+        amm = validated_data.pop("amm")
+        try:
+            return workflow.create_renewal(amm, **validated_data)
+        except DjangoValidationError as exc:
+            raise django_to_drf_validation_error(exc)
 
 
 class RenewalTransitionSerializer(serializers.Serializer):

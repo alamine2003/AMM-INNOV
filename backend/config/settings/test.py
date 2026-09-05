@@ -35,4 +35,7 @@ STATIC_ROOT = tempfile.mkdtemp(prefix="amm-test-static-")
 STORAGES["staticfiles"] = {  # noqa: F405
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
 }
-REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"login": "1000/min"}  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {  # noqa: F405
+    "login": "1000/min",
+    "login_email": "1000/min",
+}

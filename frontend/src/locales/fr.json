@@ -359,6 +359,7 @@
     "aliases": "Alias (libellés Excel)",
     "coverage": "Couverture pays",
     "coverageAbsent": "Absent",
+    "coverageOutOfScope": "Hors périmètre",
     "merge": "Fusionner dans…",
     "mergeTitle": "Fusionner ce produit",
     "mergeHelp": "Les AMM et alias de ce produit seront rattachés au produit cible.",

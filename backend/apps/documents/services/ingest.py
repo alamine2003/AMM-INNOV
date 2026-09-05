@@ -10,7 +10,7 @@ from datetime import date
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.core.dates import today as reference_today
@@ -96,13 +96,11 @@ def ingest_document(
         if converted:
             content, content_type = converted, "application/pdf"
     sha256 = hashlib.sha256(content).hexdigest()
-    duplicate = Document.objects.filter(amm=amm, sha256=sha256, archived_at__isnull=True)
-    if replaces is not None:
-        duplicate = duplicate.exclude(pk=replaces.pk)
-    if duplicate.exists():
-        raise ValidationError(
-            {"file": "Ce fichier existe déjà pour cette AMM (empreinte SHA-256 identique)."}
-        )
+    duplicate_error = ValidationError(
+        {"file": "Ce fichier existe déjà pour cette AMM (empreinte SHA-256 identique)."}
+    )
+    if Document.objects.filter(amm=amm, sha256=sha256, archived_at__isnull=True).exists():
+        raise duplicate_error
     if renewal is None and replaces is not None:
         renewal = replaces.renewal
     document = Document(
@@ -125,7 +123,12 @@ def ingest_document(
     document.file.save(
         f"{original_name.rsplit('.', 1)[0]}.{extension}", ContentFile(content), save=False
     )
-    document.save()
+    try:
+        with transaction.atomic():
+            document.save()
+    except IntegrityError:  # envoi simultané du même fichier : la contrainte tranche
+        document.file.delete(save=False)
+        raise duplicate_error
     if replaces is not None:
         replaces.is_current = False
         if user is not None:

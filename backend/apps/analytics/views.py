@@ -8,8 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import ensure_country_in_scope
-from apps.amm.filters import AmmFilter
-from apps.amm.views import amm_base_queryset
+from apps.amm.views import AmmViewSet
 from apps.catalog.models import Country, Product
 
 from .exports import build_csv, build_xlsx
@@ -62,18 +61,12 @@ class ExportView(APIView):
         responses={(200, "application/octet-stream"): bytes},
     )
     def get(self, request):
-        queryset = amm_base_queryset()
-        if not request.user.is_global:
-            queryset = queryset.filter(country__in=request.user.countries.all())
-        queryset = AmmFilter(request.query_params, queryset=queryset, request=request).qs
-        search = request.query_params.get("search")
-        if search:
-            from django.db.models import Q
-
-            queryset = queryset.filter(
-                Q(product__name__icontains=search) | Q(original_number__icontains=search)
-            ).distinct()
-        queryset = queryset.order_by("country__name", "product__name")
+        # Réutilise le viewset des AMM : périmètre pays, filtres, recherche et tri identiques
+        # à la grille, pour que l'export corresponde exactement à la vue filtrée.
+        view = AmmViewSet(request=request, action="list", kwargs={}, format_kwarg=None)
+        queryset = view.filter_queryset(view.get_queryset())
+        if not request.query_params.get("ordering"):
+            queryset = queryset.order_by("country__name", "product__name")
         export_format = request.query_params.get("format", "xlsx").lower()
         stamp = date.today().strftime("%Y%m%d")
         if export_format == "csv":

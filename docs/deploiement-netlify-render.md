@@ -139,7 +139,8 @@ Ne pas lancer `seed_demo` en production : il crée des comptes avec un mot de pa
    ```
 4. Importer les cinq dashboards JSON de `grafana/dashboards/` (Dashboards, New, Import) en
    sélectionnant cette source de données. Le dashboard « Technique » a besoin de Prometheus ;
-   Grafana Cloud fournit un Prometheus hébergé qui peut scraper `/metrics` du backend.
+   Grafana Cloud fournit un Prometheus hébergé qui peut scraper `/metrics` du backend
+   (renseigner `METRICS_TOKEN` côté Render et le même jeton en « Bearer » dans la configuration du scrape).
 
 ## 7. Sauvegardes
 

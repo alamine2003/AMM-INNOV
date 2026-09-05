@@ -82,7 +82,7 @@ services:
       timeout: 15s
       start_period: 60s
       retries: 3
-    command: ["celery", "-A", "config", "worker", "-l", "info"]
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "${CELERY_CONCURRENCY:-2}"]
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
       DATABASE_URL: ${DATABASE_URL:-postgres://amm:amm@postgres:5432/amm}

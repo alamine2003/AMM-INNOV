@@ -7,6 +7,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ### Ajouté
 - Déploiement Netlify + Render : `netlify.toml`, `render.yaml`, guide `docs/deploiement-netlify-render.md`.
+- Revue complète du 5 septembre 2026 (`docs/rapport-revue-2026-09-05.md`) : tests de charge à 30, 60 et
+  100 utilisateurs, tests de concurrence, durcissement (voir « Corrigé » et « Sécurité »).
+- Pool de connexions PostgreSQL (psycopg, `DB_POOL_MAX_SIZE`) : sans lui, l'API saturait PostgreSQL
+  (« too many clients ») dès 30 utilisateurs simultanés sous ASGI.
+- `/metrics` protégé par `METRICS_TOKEN` (optionnel) ; `NUM_PROXIES` pour lire la vraie IP cliente.
+
+### Sécurité
+- Couverture pays d'un produit : un réglementaire pays ne voit plus le statut des autres pays.
+- Assignation d'une alerte limitée aux utilisateurs ayant accès au pays de l'alerte.
+- Statut d'un renouvellement modifiable uniquement via `/renewals/{id}/transition` (plus de PATCH direct).
+- Throttle de connexion par IP (30/min) **et** par compte visé (10/min) ; validateurs de mot de passe
+  complétés (similarité avec l'email, mots de passe numériques) ; `defusedxml` pour les classeurs importés.
+
+### Corrigé
+- Courses de concurrence : création de deux renouvellements ouverts, transitions simultanées sur un même
+  renouvellement, doublons de scan sous envois simultanés (verrous de ligne + contrainte d'unicité
+  `(amm, sha256)` tant que le document n'est pas archivé).
+- Export Excel/CSV : mêmes périmètre, filtres, recherche et tri que la grille des AMM.
+- Concurrence Celery de dev limitée à 2 processus (18 connexions PostgreSQL inutiles auparavant).
 
 ### Corrigé
 - Stockage S3 des scans : `django-storages[s3]` (boto3) installé, un seul jeu de variables
