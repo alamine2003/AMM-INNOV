@@ -81,10 +81,7 @@ export default function DocumentsLibraryPage() {
 
   const download = async (d: AmmDocument) => {
     try {
-      saveBlob(
-        await fetchDocumentBlob(d.id, true),
-        documentFileName(d, d.amm_summary?.country_iso2, d.amm_summary?.product_name),
-      );
+      saveBlob(await fetchDocumentBlob(d.id, true), documentFileName(d, d.country_iso2, d.product_name));
     } catch (e) {
       enqueueSnackbar(extractErrorMessage(e), { variant: 'error' });
     }
@@ -170,8 +167,8 @@ export default function DocumentsLibraryPage() {
                       <TableCell>{t(`documentKind.${d.kind}`)}</TableCell>
                       <TableCell>{d.title}</TableCell>
                       <TableCell>
-                        <MuiLink component={Link} to={`/amms/${d.amm}?tab=documents`} underline="hover">
-                          {d.amm_summary?.product_name ?? d.amm}
+                        <MuiLink component={Link} to={`/amms/${d.amm_id}?tab=documents`} underline="hover">
+                          {d.product_name}
                         </MuiLink>
                       </TableCell>
                       <TableCell>{formatBytes(d.size_bytes)}</TableCell>

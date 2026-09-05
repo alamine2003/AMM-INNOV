@@ -59,7 +59,7 @@ export function AlertsTable({ alerts, hideAmm = false }: { alerts: Alert[]; hide
           </TableHead>
           <TableBody>
             {alerts.map((a) => {
-              const editable = canEditCountry(user, a.amm_summary.country_iso2);
+              const editable = canEditCountry(user, a.country_iso2);
               return (
                 <TableRow key={a.id} hover data-testid={`alert-${a.id}`}>
                   <TableCell>{a.rule_code}</TableCell>
@@ -68,10 +68,10 @@ export function AlertsTable({ alerts, hideAmm = false }: { alerts: Alert[]; hide
                   </TableCell>
                   {!hideAmm && (
                     <TableCell>
-                      <MuiLink component={Link} to={`/amms/${a.amm}`} underline="hover">
-                        {a.amm_summary.product_name}
+                      <MuiLink component={Link} to={`/amms/${a.amm_id}`} underline="hover">
+                        {a.product_name}
                       </MuiLink>{' '}
-                      ({a.amm_summary.country_iso2}) — {formatDate(a.amm_summary.effective_end_date)}
+                      ({a.country_iso2}) — {formatDate(a.effective_end_date)}
                     </TableCell>
                   )}
                   <TableCell>{formatDate(a.due_date)}</TableCell>

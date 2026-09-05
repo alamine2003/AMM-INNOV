@@ -3,13 +3,25 @@
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.catalog.models import Country
 from apps.core.dates import today as reference_today
 
 S = MarketingAuthorization.Status
+U = MarketingAuthorization.Urgency
+# Ordre de traitement d'une liste de priorités : d'abord ce qui est encore actionnable
+# (dépôt critique ou urgent, à planifier), puis les dossiers en instruction, puis les expirées.
+URGENCY_PRIORITY = Case(
+    When(urgency=U.CRITIQUE, then=Value(0)),
+    When(urgency=U.DEPOT_URGENT, then=Value(1)),
+    When(urgency=U.A_PLANIFIER, then=Value(2)),
+    When(urgency=U.EN_INSTRUCTION, then=Value(3)),
+    When(urgency=U.EXPIRE, then=Value(4)),
+    default=Value(5),
+    output_field=IntegerField(),
+)
 KPI_KEYS = (
     "total",
     "valid",
@@ -132,7 +144,8 @@ def country_dashboard(country: Country, today: date | None = None) -> dict:
         for amm in amms.exclude(status=S.INDETERMINE)
         .exclude(effective_end_date__isnull=True)
         .select_related("product", "product__range")
-        .order_by("effective_end_date", "product__name")[:20]
+        .annotate(priority=URGENCY_PRIORITY)
+        .order_by("priority", "effective_end_date", "product__name")[:20]
     ]
     kpi = africa_table(None, today)
     country_row = next((r for r in kpi["rows"] if r["country_iso2"] == country.iso2), None)

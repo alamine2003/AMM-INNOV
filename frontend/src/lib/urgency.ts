@@ -52,6 +52,8 @@ export const URGENCY_ORDER: Urgency[] = [
   'A_PLANIFIER',
   'OK',
 ];
+/** Urgences encore actionnables, dans l'ordre de traitement (listes de priorités). */
+export const PRIORITY_URGENCIES: Urgency[] = ['CRITIQUE', 'DEPOT_URGENT', 'A_PLANIFIER'];
 export const AMM_STATUSES: AmmStatus[] = ['VALIDE', 'EXPIRE', 'IN_PROCESS', 'INDETERMINE'];
 export const URGENCIES: Urgency[] = [
   'OK',

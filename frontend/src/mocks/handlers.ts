@@ -234,12 +234,9 @@ export const handlers = [
         const amm = db.amms.find((a) => a.id === d.amm)!;
         return {
           ...d,
-          amm_summary: {
-            id: amm.id,
-            product_name: amm.product_name,
-            country_iso2: amm.country_iso2,
-            country_name: amm.country_name,
-          },
+          amm_id: amm.id,
+          product_name: amm.product_name,
+          country_iso2: amm.country_iso2,
         };
       });
       return HttpResponse.json(paginate(enriched, request));
@@ -365,12 +362,9 @@ export const handlers = [
         const amm = db.amms.find((a) => a.id === d.amm)!;
         return {
           ...d,
-          amm_summary: {
-            id: amm.id,
-            product_name: amm.product_name,
-            country_iso2: amm.country_iso2,
-            country_name: amm.country_name,
-          },
+          amm_id: amm.id,
+          product_name: amm.product_name,
+          country_iso2: amm.country_iso2,
         };
       });
       return HttpResponse.json(paginate(enriched, request));
@@ -383,9 +377,13 @@ export const handlers = [
     withAuth((user, { request }) => {
       const sp = new URL(request.url).searchParams;
       let list = scopedAmms(user);
+      // Comme l'API (`BaseInFilter`) : une ou plusieurs valeurs séparées par des virgules.
       const eq = (key: string, field: keyof Amm) => {
         const v = sp.get(key);
-        if (v) list = list.filter((a) => String(a[field]) === v);
+        if (v) {
+          const values = v.split(',');
+          list = list.filter((a) => values.includes(String(a[field])));
+        }
       };
       const country = sp.get('country');
       if (country) list = list.filter((a) => a.country_iso2 === country || a.country === country);
@@ -688,8 +686,8 @@ export const handlers = [
       if (!doc) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
       doc.archived_at = new Date().toISOString();
       doc.is_current = false;
-      recomputeAmm(db, doc.amm);
-      addHistory(doc.amm, user, 'DOCUMENT_ARCHIVED', [{ field: 'document', old: doc.title, new: null }]);
+      recomputeAmm(db, doc.amm_id);
+      addHistory(doc.amm_id, user, 'DOCUMENT_ARCHIVED', [{ field: 'document', old: doc.title, new: null }]);
       return new HttpResponse(null, { status: 204 });
     }),
   ),
@@ -717,11 +715,11 @@ export const handlers = [
     url('/alerts'),
     withAuth((user, { request }) => {
       const sp = new URL(request.url).searchParams;
-      let list = db.alerts.filter((a) => inScope(user, a.amm_summary.country_iso2));
+      let list = db.alerts.filter((a) => inScope(user, a.country_iso2));
       const status = sp.get('status');
       if (status) list = list.filter((a) => a.status === status);
       const country = sp.get('country');
-      if (country) list = list.filter((a) => a.amm_summary.country_iso2 === country);
+      if (country) list = list.filter((a) => a.country_iso2 === country);
       const severity = sp.get('severity');
       if (severity) list = list.filter((a) => a.severity === severity);
       if (sp.get('assigned_to') === 'me') list = list.filter((a) => a.assigned_to === user.id);
@@ -810,7 +808,7 @@ export const handlers = [
   // ---- Notifications ----
   http.get(
     url('/notifications/unread-count'),
-    withAuth(() => HttpResponse.json({ count: db.notifications.filter((n) => !n.read_at).length })),
+    withAuth(() => HttpResponse.json({ unread: db.notifications.filter((n) => !n.read_at).length })),
   ),
   http.get(
     url('/notifications'),
@@ -967,13 +965,13 @@ export const handlers = [
         status: 'RUNNING',
         summary: null,
         created_at: new Date().toISOString(),
-        file_name: file?.name ?? 'classeur.xlsx',
+        filename: file?.name ?? 'classeur.xlsx',
       };
       db.imports.push(batch);
       db.importRows[batch.id] = [];
       setTimeout(() => {
         batch.status = 'DONE';
-        batch.summary = { created: 0, updated: 10, skipped: 2, errors: 1, warnings: 0 } as never;
+        batch.summary = { totals: { created: 0, updated: 10, skipped: 2, errors: 1, warnings: 0 } } as never;
         db.importRows[batch.id] = [
           {
             sheet: 'CAMEROUN',
@@ -1016,7 +1014,12 @@ function createDoc(
   const doc: AmmDocument = {
     id,
     amm: amm.id,
+    amm_id: amm.id,
     renewal: renewal?.id ?? null,
+    renewal_id: renewal?.id ?? null,
+    renewal_sequence: renewal?.sequence ?? null,
+    country_iso2: amm.country_iso2,
+    product_name: amm.product_name,
     kind: (form.get('kind') as AmmDocument['kind']) || 'AMM',
     title: String(form.get('title') || file.name.replace(/\.[^.]+$/, '')),
     document_date: String(

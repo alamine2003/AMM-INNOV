@@ -140,7 +140,7 @@ services:
         NODE_VERSION: ${NODE_VERSION:-24}
     image: amm-innov-frontend:dev
     environment:
-      VITE_API_BASE: ${VITE_API_BASE:-/api}
+      VITE_API_BASE: ${VITE_API_BASE:-}
       VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-http://backend:8000}
       CHOKIDAR_USEPOLLING: "true"
     ports:

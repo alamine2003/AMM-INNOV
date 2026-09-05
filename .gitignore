@@ -52,3 +52,6 @@ data/exports/
 # ---- Sauvegardes locales (make backup) ----
 backups/*
 !backups/.gitkeep
+
+# Dossier de sortie de l'application Claude (bureau)
+Claude outputs/

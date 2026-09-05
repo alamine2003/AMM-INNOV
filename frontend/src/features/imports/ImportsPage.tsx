@@ -107,13 +107,16 @@ export default function ImportsPage() {
               </TableHead>
               <TableBody>
                 {(imports.data ?? []).map((b) => {
-                  const s = (b.summary ?? {}) as Record<string, number>;
+                  const s = ((b.summary as Record<string, unknown> | null)?.totals ?? {}) as Record<
+                    string,
+                    number
+                  >;
                   return (
                     <TableRow key={b.id} hover>
                       <TableCell>{formatDateTime(b.created_at)}</TableCell>
                       <TableCell>
                         <MuiLink component={Link} to={`/admin/imports/${b.id}`} underline="hover">
-                          {b.file_name ?? b.id}
+                          {b.filename || b.id}
                         </MuiLink>
                       </TableCell>
                       <TableCell>

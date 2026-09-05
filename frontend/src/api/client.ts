@@ -12,12 +12,14 @@ let refreshing: Promise<string | null> | null = null;
 
 export async function refreshAccessToken(): Promise<string | null> {
   if (refreshing) return refreshing;
-  const { refresh, setAccess, logout } = useAuthStore.getState();
+  const { refresh, setSession, logout } = useAuthStore.getState();
   if (!refresh) return null;
   refreshing = bare
-    .post<{ access: string }>('/auth/refresh', { refresh })
+    .post<{ access: string; refresh?: string }>('/auth/refresh', { refresh })
     .then((res) => {
-      setAccess(res.data.access);
+      // ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION côté serveur : l'ancien refresh est
+      // invalidé, il faut conserver le nouveau sinon la prochaine restauration de session échoue.
+      setSession({ access: res.data.access, refresh: res.data.refresh ?? undefined });
       return res.data.access;
     })
     .catch(() => {
@@ -61,7 +63,19 @@ api.interceptors.response.use(
 
 export function extractErrorMessage(error: unknown, fallback = 'Une erreur est survenue'): string {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as Record<string, unknown> | undefined;
+    const status = error.response?.status;
+    // Messages DRF par défaut en anglais (« No X matches the given query. », « Not found. ») :
+    // on parle français à l'utilisateur, et un 404 sur un objet hors périmètre reste un 404.
+    if (status === 404) return 'Élément introuvable ou hors de votre périmètre.';
+    if (status !== undefined && status >= 500) return `Erreur serveur (${status}) — réessayez plus tard.`;
+    if (!error.response && error.request) return 'Serveur injoignable — vérifiez votre connexion.';
+    const data = error.response?.data as Record<string, unknown> | string | undefined;
+    // Réponse non JSON (page HTML 404/502 du proxy) : ne pas afficher « 0 : < ».
+    if (typeof data === 'string') {
+      return error.response?.status
+        ? `Erreur ${error.response.status} — ${error.response.statusText || fallback}`
+        : fallback;
+    }
     if (data) {
       if (typeof data.detail === 'string') return data.detail;
       if (typeof data.title === 'string') return data.title;

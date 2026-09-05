@@ -455,7 +455,12 @@ export function buildDb(): MockDb {
   ): AmmDocument => ({
     id,
     amm,
+    amm_id: amm,
     renewal,
+    renewal_id: renewal,
+    renewal_sequence: renewal ? (db.renewals.find((r) => r.id === renewal)?.sequence ?? null) : null,
+    country_iso2: db.amms.find((a) => a.id === amm)?.country_iso2 ?? '',
+    product_name: db.amms.find((a) => a.id === amm)?.product_name ?? '',
     kind,
     title,
     document_date: date,
@@ -599,12 +604,13 @@ export function buildDb(): MockDb {
     return {
       id,
       amm: ammId,
-      amm_summary: {
-        id: amm.id,
-        product_name: amm.product_name,
-        country_iso2: amm.country_iso2,
-        effective_end_date: amm.effective_end_date,
-      },
+      amm_id: ammId,
+      product_name: amm.product_name,
+      country_iso2: amm.country_iso2,
+      country_name: amm.country_name,
+      amm_status: amm.status,
+      amm_urgency: amm.urgency,
+      effective_end_date: amm.effective_end_date,
       rule_code: rule,
       severity,
       due_date: amm.filing_deadline ?? MOCK_TODAY,
@@ -680,11 +686,7 @@ export function buildDb(): MockDb {
       id: 'imp-1',
       status: 'DONE',
       summary: {
-        created: 10,
-        updated: 0,
-        skipped: 2,
-        errors: 2,
-        warnings: 1,
+        totals: { created: 10, updated: 0, skipped: 2, errors: 2, warnings: 1 },
         sheets: {
           SENEGAL: { created: 4, errors: 0 },
           CDI: { created: 3, errors: 1 },
@@ -692,7 +694,7 @@ export function buildDb(): MockDb {
         },
       },
       created_at: '2026-08-18T10:00:00Z',
-      file_name: 'Dashboard AMM Afrique 18_08_2026 version 2.1.xlsx',
+      filename: 'Dashboard AMM Afrique 18_08_2026 version 2.1.xlsx',
     },
   ];
   db.importRows['imp-1'] = [

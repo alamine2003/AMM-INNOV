@@ -32,7 +32,10 @@ class AlertViewSet(
     serializer_class = AlertSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     filterset_class = AlertFilter
-    ordering_fields = ["due_date", "triggered_at", "status", "rule__severity"]
+    ordering_fields = ["due_date", "triggered_at", "status", "rule__severity", "amm__urgency"]
+    # Les échéances les plus récentes d'abord : une AMM expirée il y a dix ans ne doit pas
+    # précéder un J-180 tombé la semaine dernière.
+    ordering = ["-due_date", "-triggered_at"]
     search_fields = ["amm__product__name", "amm__original_number"]
     country_lookup = "amm__country"
 

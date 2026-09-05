@@ -5,24 +5,21 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useMe } from '@/api/hooks/useAuth';
 import { refreshAccessToken } from '@/api/client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { Role } from '@/api/types';
 
 /** Restaure la session à partir du refresh token, puis charge /me. */
 export function RequireAuth({ children }: { children?: ReactNode }) {
   const location = useLocation();
   const { access, refresh, user, hydrated } = useAuthStore();
-  const [restoring, setRestoring] = useState(!access && !!refresh);
+  // Dérivé du store plutôt que d'un état local : un refresh réussi pose `access`, un refresh
+  // en échec efface `refresh` (logout). Un état local + drapeau `cancelled` restait bloqué à
+  // `true` car la mise à jour d'`access` démontait l'effet avant son `finally`.
+  const restoring = !access && !!refresh;
 
   useEffect(() => {
     if (access || !refresh) return;
-    let cancelled = false;
-    void refreshAccessToken().finally(() => {
-      if (!cancelled) setRestoring(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    void refreshAccessToken();
   }, [access, refresh]);
 
   const meQuery = useMe(!!access && !user);

@@ -117,7 +117,8 @@ export interface AmmFilters {
   country?: string;
   range?: string;
   status?: AmmStatus | '';
-  urgency?: Urgency | '';
+  /** Une urgence, ou plusieurs séparées par des virgules (`urgency__in` côté API). */
+  urgency?: Urgency | string;
   dossier_state?: DossierState | '';
   expires_before?: string;
   has_current_scan?: 'true' | 'false' | '';
@@ -177,8 +178,16 @@ export type DocumentKind = 'AMM' | 'RECEPISSE' | 'COURRIER' | 'AUTRE';
 
 export interface AmmDocument {
   id: string;
-  amm: string;
-  renewal: string | null;
+  /** Identifiant de l'AMM (champ `amm_id` de l'API). */
+  amm_id: string;
+  renewal_id: string | null;
+  renewal_sequence: number | null;
+  country_iso2: string;
+  product_name: string;
+  /** @deprecated forme interne des mocks ; l'API expose `amm_id`. */
+  amm?: string;
+  /** @deprecated forme interne des mocks ; l'API expose `renewal_id`. */
+  renewal?: string | null;
   kind: DocumentKind;
   title: string;
   document_date: string;
@@ -192,8 +201,8 @@ export interface AmmDocument {
   uploaded_at: string;
   archived_at: string | null;
   file_url: string;
-  /** Champs d'enrichissement présents dans les bibliothèques pays/produit. */
-  amm_summary?: { id: string; product_name: string; country_iso2: string; country_name?: string };
+  download_url?: string;
+  filename?: string;
 }
 
 export interface DocumentPeriod {
@@ -208,8 +217,16 @@ export type Severity = 'INFO' | 'WARNING' | 'CRITICAL';
 
 export interface Alert {
   id: string;
-  amm: string;
-  amm_summary: { id: string; product_name: string; country_iso2: string; effective_end_date: string | null };
+  amm_id: string;
+  country_iso2: string;
+  country_name?: string;
+  product_name: string;
+  amm_status?: AmmStatus;
+  amm_urgency?: Urgency;
+  effective_end_date: string | null;
+  /** @deprecated forme interne des mocks ; l'API expose `amm_id`. */
+  amm?: string;
+  rule?: string;
   rule_code: string;
   severity: Severity;
   due_date: string;
@@ -289,9 +306,13 @@ export interface CoverageCell {
 export interface ImportBatch {
   id: string;
   status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | string;
+  /** `totals` agrège les compteurs par onglet (`sheets`) : created, updated, skipped, errors. */
   summary: Record<string, unknown> | null;
   created_at?: string;
-  file_name?: string;
+  finished_at?: string | null;
+  reference_date?: string | null;
+  created_by_email?: string | null;
+  filename?: string;
 }
 
 export interface ImportRow {

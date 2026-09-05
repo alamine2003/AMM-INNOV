@@ -21,7 +21,7 @@ import { useAmms } from '@/api/hooks/useAmms';
 import { PageHeader } from '@/components/PageHeader';
 import { KpiCard } from '@/components/KpiCard';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
-import { STATUS_COLORS, URGENCY_ORDER } from '@/lib/urgency';
+import { PRIORITY_URGENCIES, STATUS_COLORS } from '@/lib/urgency';
 import type { AfricaRow } from '@/api/types';
 import { PrioritiesTable } from './PrioritiesTable';
 
@@ -87,7 +87,13 @@ function AfricaTable({ rows, total }: { rows: AfricaRow[]; total: AfricaRow }) {
 export default function AfricaDashboardPage() {
   const { t } = useTranslation();
   const analytics = useAfricaAnalytics();
-  const priorities = useAmms({ ordering: 'effective_end_date', page_size: 100 });
+  // Priorités = ce qui est encore actionnable (dépôt critique/urgent, à planifier), par échéance ;
+  // les AMM expirées depuis des années ont leur place dans la grille et les alertes, pas ici.
+  const priorities = useAmms({
+    urgency: PRIORITY_URGENCIES.join(','),
+    ordering: 'effective_end_date',
+    page_size: 100,
+  });
 
   if (analytics.isPending) return <LoadingBlock />;
   if (analytics.isError) return <ErrorBlock error={analytics.error} onRetry={() => analytics.refetch()} />;
@@ -102,10 +108,9 @@ export default function AfricaDashboardPage() {
   }));
 
   const topPriorities = [...(priorities.data?.results ?? [])]
-    .filter((a) => a.urgency !== 'OK')
     .sort(
       (a, b) =>
-        URGENCY_ORDER.indexOf(a.urgency) - URGENCY_ORDER.indexOf(b.urgency) ||
+        PRIORITY_URGENCIES.indexOf(a.urgency) - PRIORITY_URGENCIES.indexOf(b.urgency) ||
         (a.effective_end_date ?? '').localeCompare(b.effective_end_date ?? ''),
     )
     .slice(0, 10);

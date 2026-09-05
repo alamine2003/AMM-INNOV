@@ -207,8 +207,8 @@ export default function ProductDetailPage() {
               <Stack spacing={1}>
                 {(documents.data ?? []).map((d) => (
                   <Box key={d.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                    <MuiLink component={Link} to={`/amms/${d.amm}?tab=documents`} underline="hover" noWrap>
-                      {d.amm_summary?.country_iso2} — {d.title}
+                    <MuiLink component={Link} to={`/amms/${d.amm_id}?tab=documents`} underline="hover" noWrap>
+                      {d.country_iso2} — {d.title}
                     </MuiLink>
                     <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
                       {t(`documentKind.${d.kind}`)} · {formatDate(d.document_date)}

@@ -39,11 +39,14 @@ export default function ImportDetailPage() {
   const s = (b.summary ?? {}) as Record<string, unknown>;
   const running = b.status === 'RUNNING' || b.status === 'PENDING';
   const sheets = (s.sheets ?? {}) as Record<string, Record<string, number>>;
+  // L'API agrège les compteurs des onglets dans `totals` (créées, mises à jour, ignorées, erreurs,
+  // divergences de statut avec l'Excel).
+  const totals = (s.totals ?? {}) as Record<string, number>;
 
   return (
     <Box>
       <PageHeader
-        title={b.file_name ?? b.id}
+        title={b.filename || b.id}
         subtitle={
           <>
             <Chip size="small" label={b.status} color={statusColor(b.status)} sx={{ mr: 1 }} />
@@ -58,12 +61,12 @@ export default function ImportDetailPage() {
           ['updated', t('admin.imports.updated'), '#1565c0'],
           ['skipped', t('admin.imports.skipped'), '#757575'],
           ['errors', t('admin.imports.errorCount'), '#c62828'],
-          ['warnings', t('admin.imports.warnings'), '#ef6c00'],
+          ['status_mismatch', t('admin.imports.warnings'), '#ef6c00'],
         ].map(([key, label, color]) => (
           <Grid key={key} size={{ xs: 6, sm: 4, md: 2.4 }}>
             <KpiCard
               label={label}
-              value={typeof s[key] === 'number' ? (s[key] as number) : '—'}
+              value={typeof totals[key] === 'number' ? totals[key] : '—'}
               color={color}
             />
           </Grid>

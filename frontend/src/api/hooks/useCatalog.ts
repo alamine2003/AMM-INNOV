@@ -3,9 +3,19 @@ import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
 import type { AmmDocument, CoverageCell, Country, Paginated, Product, ProductRange } from '@/api/types';
 
+/**
+ * Charge toutes les pages d'un référentiel (l'API plafonne `page_size` à 500 : au-delà, les
+ * produits de la fin de l'alphabet disparaissaient du sélecteur de la fiche AMM).
+ */
 async function fetchAll<T>(url: string, params: Record<string, unknown> = {}): Promise<T[]> {
-  const res = await api.get<Paginated<T> | T[]>(url, { params: { page_size: 500, ...params } });
-  return Array.isArray(res.data) ? res.data : res.data.results;
+  const items: T[] = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const res = await api.get<Paginated<T> | T[]>(url, { params: { page_size: 500, ...params, page } });
+    if (Array.isArray(res.data)) return res.data;
+    items.push(...res.data.results);
+    if (!res.data.next) break;
+  }
+  return items;
 }
 
 export function useCountries() {

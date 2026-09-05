@@ -70,7 +70,7 @@ function UploadDocumentDialogInner({
         replaceTarget?.document_date ?? latestRenewal?.start_date ?? amm.original_start_date ?? null,
       title: replaceTarget?.title ?? '',
       renewalId: replaceTarget
-        ? (replaceTarget.renewal ?? '')
+        ? (replaceTarget.renewal_id ?? '')
         : (defaultRenewalId ?? latestRenewal?.id ?? ''),
     },
   });
@@ -80,6 +80,9 @@ function UploadDocumentDialogInner({
     if (replaceTarget) return;
     const r = renewals.find((x) => x.id === renewalId);
     setValue('document_date', r?.start_date ?? r?.filing_date ?? amm.original_start_date ?? null);
+    // Type suggéré selon la période : un renouvellement pas encore obtenu reçoit un récépissé de
+    // dépôt, une AMM d'origine ou un renouvellement obtenu reçoit le scan de l'AMM.
+    setValue('kind', r && r.workflow_status !== 'OBTENU' ? 'RECEPISSE' : 'AMM');
   }, [renewalId, renewals, amm.original_start_date, setValue, replaceTarget]);
 
   const handleFile = async (f: File) => {
@@ -175,7 +178,11 @@ function UploadDocumentDialogInner({
               )}
             />
             <DateField control={control} name="document_date" label={t('documents.date')} />
-            <TextField label={t('documents.titleField')} {...register('title')} />
+            <TextField
+              label={t('documents.titleField')}
+              slotProps={{ inputLabel: { shrink: true } }}
+              {...register('title')}
+            />
             {progress !== null && pending && (
               <>
                 <LinearProgress variant="determinate" value={progress} />

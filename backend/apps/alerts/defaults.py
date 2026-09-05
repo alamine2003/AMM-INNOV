@@ -53,6 +53,15 @@ DEFAULT_RULES: list[dict] = [
         "channels": ["IN_APP"],
         "only_if_not_filed": False,
     },
+    {
+        # PRD 6.4 : renouvellement déposé depuis plus de N jours sans décision (N = 120).
+        "code": "DECISION",
+        "offset_days": 120,
+        "severity": "WARNING",
+        "roles": [COUNTRY],
+        "channels": ["IN_APP"],
+        "only_if_not_filed": False,
+    },
 ]
 
 

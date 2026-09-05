@@ -152,6 +152,12 @@ class AmmListSerializer(serializers.ModelSerializer):
             "original_end_date" in attrs
             and attrs["original_end_date"] is not None
             and "original_end_date_manual" not in attrs
+            # Le formulaire renvoie toujours la date de fin : ne la considérer comme saisie
+            # manuellement que si elle change réellement (sinon une simple note posait le drapeau).
+            and (
+                self.instance is None
+                or attrs["original_end_date"] != self.instance.original_end_date
+            )
         ):
             attrs["original_end_date_manual"] = True
         return attrs
