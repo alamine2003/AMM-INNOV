@@ -37,6 +37,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Fusion de produits depuis la fiche produit : le frontend envoyait `target_id` là où l'API attend
   `duplicate_id` (bouton inopérant) ; contrat étendu aux corps de requête.
 
+- Répétition du premier déploiement (settings de production, base vide, S3 MinIO, 2 workers
+  uvicorn, worker Celery) : quatre blocages corrigés. Le WebSocket refusait l'origine du frontend
+  quand il n'est pas servi par l'API (Netlify face à Render) : les origines CORS sont désormais
+  acceptées ; le worker Celery pouvait démarrer avant les migrations du service web (il les
+  attend) ; `.dockerignore` (le contexte de build envoyait 550 Mo de `node_modules`) ; sommes de
+  contrôle boto3 désactivées sauf exigence (compatibilité Cloudflare R2) et adressage `path`.
+  Blueprint Render : un seul processus web sur le plan starter (512 Mo), cookie de session
+  `SameSite=None` tant que Netlify et Render restent sur deux domaines.
+
 ### Sécurité
 - Dépendances : Django 5.1 (fin de support sécurité) remplacé par Django 5.2 LTS (5.2.17, corrige
   7 CVE 2026), Django REST framework 3.17.2 (2 CVE), pip de l'image mis à jour ; `pip-audit` et

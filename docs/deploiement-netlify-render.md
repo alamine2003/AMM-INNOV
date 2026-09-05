@@ -95,9 +95,14 @@ pays puis diffuse le PDF, le bucket peut donc rester entièrement privé.
 
 Remarques :
 
-- `WEB_CONCURRENCY=2` : deux workers uvicorn sur le service web ; sur un plan plus large, 1 worker
+- `WEB_CONCURRENCY=1` sur le plan starter (512 Mo de RAM : un second worker uvicorn risquerait
+  l'arrêt pour mémoire insuffisante). Dès le plan standard (2 Go), `WEB_CONCURRENCY=2` puis 1 worker
   par 0,5 CPU environ, en gardant `WEB_CONCURRENCY × DB_POOL_MAX_SIZE` sous la limite de
   connexions du plan Postgres (97 sur basic-256mb).
+- Si le nom `amm-innov-backend` est déjà pris, Render en attribue un autre : reporter le nouvel
+  hôte dans `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` (sinon 400 sur la sonde de santé et
+  déploiement refusé) et dans `netlify.toml`.
+- Le WebSocket accepte les origines de `CORS_ALLOWED_ORIGINS` : le site Netlify doit y figurer.
 - Le worker tourne avec beat intégré (`celery worker -B`) : **ne jamais passer `numInstances`
   au-dessus de 1**, sinon les jobs nocturnes s'exécutent en double.
 - `autoDeployTrigger: checksPass` : Render redéploie à chaque push sur `main` **après** la CI verte.

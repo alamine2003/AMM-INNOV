@@ -29,7 +29,8 @@ envVarGroups:
       - key: AUTH_REFRESH_COOKIE_DOMAIN
         sync: false            # .amm-innov.com quand app. et api. partagent le domaine ; vide sinon
       - key: AUTH_REFRESH_COOKIE_SAMESITE
-        value: Lax             # None (avec domaine vide) tant que Netlify et Render restent sur leurs domaines
+        value: "None"          # frontend Netlify et API Render sur deux domaines : cookie tiers (bloqué par Safari).
+                               # Passer à Lax avec AUTH_REFRESH_COOKIE_DOMAIN dès que app./api. partagent un domaine.
       - key: TIME_ZONE
         value: Africa/Dakar
       - key: EMAIL_URL
@@ -75,7 +76,7 @@ services:
       - key: PORT
         value: "8000"
       - key: WEB_CONCURRENCY
-        value: "2"             # workers uvicorn ; 1 = Daphne mono-processus
+        value: "1"             # starter = 512 Mo de RAM : un processus. Passer à 2 dès le plan standard (2 Go).
       - key: RUN_MIGRATIONS
         value: "1"
       - key: COLLECT_STATIC

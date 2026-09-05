@@ -18,6 +18,18 @@ python /usr/local/bin/wait-for.py --timeout "${WAIT_TIMEOUT}" "${DATABASE_URL}" 
 if [ "${RUN_MIGRATIONS}" = "1" ]; then
   echo "[entrypoint] python manage.py migrate --noinput"
   python manage.py migrate --noinput
+elif [ "${WAIT_FOR_MIGRATIONS:-1}" = "1" ]; then
+  # worker et beat démarrent en même temps que le web : attendre ses migrations (1er déploiement)
+  echo "[entrypoint] attente des migrations (timeout ${WAIT_TIMEOUT}s)…"
+  waited=0
+  until python manage.py migrate --check >/dev/null 2>&1; do
+    waited=$((waited + 5))
+    if [ "${waited}" -ge "${WAIT_TIMEOUT}" ]; then
+      echo "[entrypoint] migrations toujours absentes après ${WAIT_TIMEOUT}s, démarrage quand même"
+      break
+    fi
+    sleep 5
+  done
 fi
 
 if [ "${COLLECT_STATIC}" = "1" ]; then

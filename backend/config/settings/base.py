@@ -298,9 +298,18 @@ STORAGES = {
 # Sur Render, "s3" est obligatoire : le service web et le worker n'ont pas de disque commun.
 DOCUMENT_STORAGE = env("DOCUMENT_STORAGE") or env("STORAGE_BACKEND") or "local"
 if DOCUMENT_STORAGE == "s3":
+    from botocore.config import Config as _BotoConfig
+
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
+            # boto3 >= 1.36 ajoute des sommes de contrôle CRC en flux que Cloudflare R2 et
+            # MinIO ne gèrent pas toutes : on ne les calcule que lorsque l'API l'exige.
+            "client_config": _BotoConfig(
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+                s3={"addressing_style": env("S3_ADDRESSING_STYLE", "path")},
+            ),
             "endpoint_url": env("S3_ENDPOINT_URL") or env("AWS_S3_ENDPOINT_URL"),
             "bucket_name": env("S3_BUCKET") or env("AWS_STORAGE_BUCKET_NAME") or "amm-documents",
             "access_key": env("S3_ACCESS_KEY") or env("AWS_ACCESS_KEY_ID"),

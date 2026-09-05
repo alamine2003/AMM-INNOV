@@ -1,0 +1,22 @@
+# Contexte de build Docker (racine du monorepo) : exclut ce qui n'entre pas dans les images.
+.git
+.github
+**/node_modules
+frontend/dist
+frontend/.vite
+backend/staticfiles
+backend/media
+backend/.ruff_cache
+backend/.pytest_cache
+backend/.test-db.sqlite3
+**/__pycache__
+**/*.pyc
+backups
+data
+docs
+grafana
+*.xlsx
+.env
+.env.*
+!.env.example
+Claude outputs
