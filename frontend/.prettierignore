@@ -1,3 +1,6 @@
 dist
 node_modules
 public/mockServiceWorker.js
+
+# généré par openapi-typescript : ne pas reformater (la CI compare la sortie brute)
+src/api/schema.d.ts

@@ -250,5 +250,14 @@ médiane à 30 utilisateurs (157 ms avec un seul processus), PostgreSQL devenant
 goulot à 100 % CPU vers 100 utilisateurs ; documentation OpenAPI réservée aux connectés ;
 double création d'AMM simultanée en 400.
 
+Dernier lot, sur les points restants : refresh token retiré du navigateur (cookie `httpOnly`
+limité à `/api/v1/auth`, rotation, contrôle de l'origine ; un domaine commun frontend/API est
+requis en production) ; import à blanc (case « Simulation », `import_excel --dry-run`) ; doublons
+de produits : clé de rapprochement, détection par groupe, fusion automatique des groupes sans
+conflit et écran de décision pour les autres. Sur la base de dev : 185 groupes détectés, 179
+fusionnés (248 produits absorbés), 6 conflits laissés à la décision du réglementaire siège.
+Au passage, le bouton « Fusionner dans… » de la fiche produit envoyait un corps que l'API
+refusait ; le contrat couvre désormais aussi les corps de requête.
+
 Vérification finale : ruff, 130 tests backend (SQLite et PostgreSQL), eslint, prettier, tsc,
 31 tests frontend, migrations cohérentes, script de concurrence rejoué au vert.

@@ -4,4404 +4,4400 @@
  */
 
 export interface paths {
-  '/api/v1/alert-rules/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alert-rules/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_alert_rules_list"];
+        put?: never;
+        post: operations["v1_alert_rules_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_alert_rules_list'];
-    put?: never;
-    post: operations['v1_alert_rules_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/alert-rules/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alert-rules/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_alert_rules_retrieve"];
+        put: operations["v1_alert_rules_update"];
+        post?: never;
+        delete: operations["v1_alert_rules_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["v1_alert_rules_partial_update"];
+        trace?: never;
     };
-    get: operations['v1_alert_rules_retrieve'];
-    put: operations['v1_alert_rules_update'];
-    post?: never;
-    delete: operations['v1_alert_rules_destroy'];
-    options?: never;
-    head?: never;
-    patch: operations['v1_alert_rules_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/alerts/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alerts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_alerts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_alerts_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/alerts/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alerts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_alerts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_alerts_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/alerts/{id}/acknowledge/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alerts/{id}/acknowledge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_alerts_acknowledge_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_alerts_acknowledge_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/alerts/{id}/assign/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alerts/{id}/assign/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_alerts_assign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_alerts_assign_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/alerts/{id}/resolve/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/alerts/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_alerts_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_alerts_resolve_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/amms/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_list"];
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_amms_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_list'];
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_amms_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/amms/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_retrieve"];
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        put: operations["v1_amms_update"];
+        post?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        delete: operations["v1_amms_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        patch: operations["v1_amms_partial_update"];
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_retrieve'];
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    put: operations['v1_amms_update'];
-    post?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    delete: operations['v1_amms_destroy'];
-    options?: never;
-    head?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    patch: operations['v1_amms_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/amms/{id}/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/{id}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_documents_retrieve"];
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_amms_documents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_documents_retrieve'];
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_amms_documents_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/amms/{id}/documents/archive.zip/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/{id}/documents/archive.zip/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_documents_archive.zip_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_documents_archive.zip_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/amms/{id}/history/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/{id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_history_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/amms/{id}/renewals/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/amms/{id}/renewals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_amms_renewals_list"];
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_amms_renewals_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_amms_renewals_list'];
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_amms_renewals_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analytics/africa/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analytics/africa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_analytics_africa_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_analytics_africa_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analytics/country/{iso2}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analytics/country/{iso2}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_analytics_country_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_analytics_country_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analytics/export/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analytics/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `?format=xlsx|csv` with the same filters as `/amms` (`country`, `status`, `search`…). */
+        get: operations["v1_analytics_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description `?format=xlsx|csv` with the same filters as `/amms` (`country`, `status`, `search`…). */
-    get: operations['v1_analytics_export_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analytics/product/{id}/coverage/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analytics/product/{id}/coverage/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_analytics_product_coverage_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_analytics_product_coverage_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/login/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Returns `access` and `user`; the refresh token travels only in an httpOnly cookie. */
+        post: operations["v1_auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description Returns `access` and `user`; the refresh token travels only in an httpOnly cookie. */
-    post: operations['v1_auth_login_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/logout/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations['v1_auth_logout_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/refresh/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Rotates the refresh token: reads it from the cookie (or body), writes the new one back. */
+        post: operations["v1_auth_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description Rotates the refresh token: reads it from the cookie (or body), writes the new one back. */
-    post: operations['v1_auth_refresh_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/countries/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/countries/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        get: operations["v1_countries_list"];
+        put?: never;
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        post: operations["v1_countries_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    get: operations['v1_countries_list'];
-    put?: never;
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    post: operations['v1_countries_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/countries/{iso2}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/countries/{iso2}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        get: operations["v1_countries_retrieve"];
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        put: operations["v1_countries_update"];
+        post?: never;
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        delete: operations["v1_countries_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        patch: operations["v1_countries_partial_update"];
+        trace?: never;
     };
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    get: operations['v1_countries_retrieve'];
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    put: operations['v1_countries_update'];
-    post?: never;
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    delete: operations['v1_countries_destroy'];
-    options?: never;
-    head?: never;
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    patch: operations['v1_countries_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/countries/{iso2}/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/countries/{iso2}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
+        get: operations["v1_countries_documents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Countries are addressed by ISO2 code (`/countries/SN`) or by UUID. */
-    get: operations['v1_countries_documents_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_documents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_documents_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/documents/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/documents/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_documents_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        delete: operations["v1_documents_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_documents_retrieve'];
-    put?: never;
-    post?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    delete: operations['v1_documents_destroy'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/documents/{id}/file/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/documents/{id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_documents_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_documents_file_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/documents/{id}/replace/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/documents/{id}/replace/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_documents_replace_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_documents_replace_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/health/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/health/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_health_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/imports/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/imports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
+        get: operations["v1_imports_list"];
+        put?: never;
+        /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
+        post: operations["v1_imports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
-    get: operations['v1_imports_list'];
-    put?: never;
-    /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
-    post: operations['v1_imports_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/imports/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/imports/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
+        get: operations["v1_imports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
-    get: operations['v1_imports_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/imports/{id}/rows/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/imports/{id}/rows/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
+        get: operations["v1_imports_rows_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Upload of the workbook (`file` multipart); the import runs in Celery (`run_import`). */
-    get: operations['v1_imports_rows_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/me/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_me_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/notifications/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
+        get: operations["v1_notifications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
-    get: operations['v1_notifications_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/notifications/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
+        get: operations["v1_notifications_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
-    get: operations['v1_notifications_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/notifications/{id}/read/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/{id}/read/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
+        post: operations["v1_notifications_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
-    post: operations['v1_notifications_read_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/notifications/read-all/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/read-all/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
+        post: operations["v1_notifications_read_all_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
-    post: operations['v1_notifications_read_all_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/notifications/unread-count/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/unread-count/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
+        get: operations["v1_notifications_unread_count_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description The current user's notifications (`?unread=1` keeps only unread ones). */
-    get: operations['v1_notifications_unread_count_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/products/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_products_list"];
+        put?: never;
+        post: operations["v1_products_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_products_list'];
-    put?: never;
-    post: operations['v1_products_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/products/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_products_retrieve"];
+        put: operations["v1_products_update"];
+        post?: never;
+        delete: operations["v1_products_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["v1_products_partial_update"];
+        trace?: never;
     };
-    get: operations['v1_products_retrieve'];
-    put: operations['v1_products_update'];
-    post?: never;
-    delete: operations['v1_products_destroy'];
-    options?: never;
-    head?: never;
-    patch: operations['v1_products_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/products/{id}/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/{id}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_products_documents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_products_documents_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/products/{id}/merge/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/{id}/merge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_products_merge_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations['v1_products_merge_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/products/duplicates/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/duplicates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Groupes de produits en doublon probable (même clé de rapprochement). */
+        get: operations["v1_products_duplicates_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Groupes de produits en doublon probable (même clé de rapprochement). */
-    get: operations['v1_products_duplicates_retrieve'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/products/merge-duplicates/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/products/merge-duplicates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Fusionne tous les groupes sans conflit ; les groupes en conflit sont renvoyés. */
+        post: operations["v1_products_merge_duplicates_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description Fusionne tous les groupes sans conflit ; les groupes en conflit sont renvoyés. */
-    post: operations['v1_products_merge_duplicates_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/ranges/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/ranges/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_ranges_list"];
+        put?: never;
+        post: operations["v1_ranges_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['v1_ranges_list'];
-    put?: never;
-    post: operations['v1_ranges_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/ranges/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/ranges/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_ranges_retrieve"];
+        put: operations["v1_ranges_update"];
+        post?: never;
+        delete: operations["v1_ranges_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["v1_ranges_partial_update"];
+        trace?: never;
     };
-    get: operations['v1_ranges_retrieve'];
-    put: operations['v1_ranges_update'];
-    post?: never;
-    delete: operations['v1_ranges_destroy'];
-    options?: never;
-    head?: never;
-    patch: operations['v1_ranges_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/renewals/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/renewals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_renewals_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_renewals_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/renewals/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/renewals/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        get: operations["v1_renewals_retrieve"];
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        put: operations["v1_renewals_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        patch: operations["v1_renewals_partial_update"];
+        trace?: never;
     };
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    get: operations['v1_renewals_retrieve'];
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    put: operations['v1_renewals_update'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    patch: operations['v1_renewals_partial_update'];
-    trace?: never;
-  };
-  '/api/v1/renewals/{id}/documents/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/renewals/{id}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_renewals_documents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_renewals_documents_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/renewals/{id}/transition/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/renewals/{id}/transition/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        post: operations["v1_renewals_transition_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-     *
-     *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
-     */
-    post: operations['v1_renewals_transition_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/users/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        get: operations["v1_users_list"];
+        put?: never;
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        post: operations["v1_users_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    get: operations['v1_users_list'];
-    put?: never;
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    post: operations['v1_users_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/users/{id}/': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/users/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        get: operations["v1_users_retrieve"];
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        put: operations["v1_users_update"];
+        post?: never;
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        delete: operations["v1_users_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description User management, CEO_ADMIN and HQ_REGULATORY only.
+         *
+         *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+         */
+        patch: operations["v1_users_partial_update"];
+        trace?: never;
     };
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    get: operations['v1_users_retrieve'];
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    put: operations['v1_users_update'];
-    post?: never;
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    delete: operations['v1_users_destroy'];
-    options?: never;
-    head?: never;
-    /**
-     * @description User management, CEO_ADMIN and HQ_REGULATORY only.
-     *
-     *     HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
-     */
-    patch: operations['v1_users_partial_update'];
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    Alert: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      readonly amm_id: string;
-      readonly country_iso2: string;
-      readonly country_name: string;
-      readonly product_name: string;
-      readonly amm_status: components['schemas']['AmmStatusEnum'];
-      readonly amm_urgency: components['schemas']['UrgencyEnum'];
-      /** Format: date */
-      readonly effective_end_date: string;
-      /** Format: uuid */
-      readonly rule: string;
-      readonly rule_code: string;
-      readonly severity: components['schemas']['SeverityEnum'];
-      /**
-       * Échéance
-       * Format: date
-       */
-      readonly due_date: string;
-      /** Statut */
-      readonly status: components['schemas']['AlertStatusEnum'];
-      /**
-       * Assignée à
-       * Format: uuid
-       */
-      readonly assigned_to: string | null;
-      /** Format: email */
-      readonly assigned_to_email: string;
-      /**
-       * Déclenchée le
-       * Format: date-time
-       */
-      readonly triggered_at: string;
-      /**
-       * Acquittée le
-       * Format: date-time
-       */
-      readonly acknowledged_at: string | null;
-      /**
-       * Résolue le
-       * Format: date-time
-       */
-      readonly resolved_at: string | null;
-      /** Résolution */
-      readonly resolution:
-        (components['schemas']['AlertResolutionEnum'] | components['schemas']['NullEnum']) | null;
-      /** Commentaire */
-      readonly comment: string;
-    };
-    AlertAcknowledgeRequest: {
-      comment?: string;
-    };
-    AlertAssignRequest: {
-      /** Format: uuid */
-      user_id: string;
-    };
-    /**
-     * @description * `AUTO_FILED` - Dépôt enregistré
-     *     * `AUTO_RENEWED` - Renouvellement obtenu
-     *     * `MANUAL` - Résolution manuelle
-     * @enum {string}
-     */
-    AlertResolutionEnum: 'AUTO_FILED' | 'AUTO_RENEWED' | 'MANUAL';
-    AlertResolveRequest: {
-      comment?: string;
-    };
-    AlertRule: {
-      /** Format: uuid */
-      readonly id: string;
-      code: string;
-      /**
-       * Pays (vide = globale)
-       * Format: uuid
-       */
-      country?: string | null;
-      readonly country_iso2: string;
-      /** Délai avant échéance (jours) */
-      offset_days?: number;
-      /** Sévérité */
-      severity?: components['schemas']['SeverityEnum'];
-      roles: components['schemas']['RoleEnum'][];
-      channels: components['schemas']['ChannelEnum'][];
-      /** Seulement si aucun dépôt */
-      only_if_not_filed?: boolean;
-      /** Active */
-      is_active?: boolean;
-    };
-    AlertRuleRequest: {
-      code: string;
-      /**
-       * Pays (vide = globale)
-       * Format: uuid
-       */
-      country?: string | null;
-      /** Délai avant échéance (jours) */
-      offset_days?: number;
-      /** Sévérité */
-      severity?: components['schemas']['SeverityEnum'];
-      roles: components['schemas']['RoleEnum'][];
-      channels: components['schemas']['ChannelEnum'][];
-      /** Seulement si aucun dépôt */
-      only_if_not_filed?: boolean;
-      /** Active */
-      is_active?: boolean;
-    };
-    /**
-     * @description * `OPEN` - Ouverte
-     *     * `ACKNOWLEDGED` - Acquittée
-     *     * `RESOLVED` - Résolue
-     * @enum {string}
-     */
-    AlertStatusEnum: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
-    AmmDetail: {
-      /** Format: uuid */
-      readonly id: string;
-      /**
-       * Produit
-       * Format: uuid
-       */
-      product: string;
-      readonly product_name: string;
-      readonly range_code: string;
-      readonly range_label: string;
-      /**
-       * Pays
-       * Format: uuid
-       */
-      country: string;
-      readonly country_iso2: string;
-      readonly country_name: string;
-      /** N° AMM d'origine */
-      original_number?: string;
-      /**
-       * Date de début d'origine
-       * Format: date
-       */
-      original_start_date?: string | null;
-      /**
-       * Date de fin d'origine
-       * Format: date
-       */
-      original_end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      original_end_date_manual?: boolean;
-      /** Statut */
-      readonly status: components['schemas']['AmmStatusEnum'];
-      /** Urgence */
-      readonly urgency: components['schemas']['UrgencyEnum'];
-      /**
-       * Date de fin effective
-       * Format: date
-       */
-      readonly effective_end_date: string | null;
-      /**
-       * Deadline de dépôt
-       * Format: date
-       */
-      readonly filing_deadline: string | null;
-      readonly days_remaining: number | null;
-      /** État du dossier */
-      dossier_state?: components['schemas']['DossierStateEnum'];
-      notes?: string;
-      /**
-       * Responsable
-       * Format: uuid
-       */
-      owner?: string | null;
-      /** Format: email */
-      readonly owner_email: string;
-      /** @default false */
-      readonly has_current_scan: boolean;
-      readonly last_renewal: components['schemas']['LastRenewal'] | null;
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly updated_at: string;
-      readonly renewals: components['schemas']['Renewal'][];
-      readonly pending_renewal_id: string | null;
-    };
-    AmmDetailRequest: {
-      /**
-       * Produit
-       * Format: uuid
-       */
-      product: string;
-      /**
-       * Pays
-       * Format: uuid
-       */
-      country: string;
-      /** N° AMM d'origine */
-      original_number?: string;
-      /**
-       * Date de début d'origine
-       * Format: date
-       */
-      original_start_date?: string | null;
-      /**
-       * Date de fin d'origine
-       * Format: date
-       */
-      original_end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      original_end_date_manual?: boolean;
-      /** État du dossier */
-      dossier_state?: components['schemas']['DossierStateEnum'];
-      notes?: string;
-      /**
-       * Responsable
-       * Format: uuid
-       */
-      owner?: string | null;
-    };
-    AmmList: {
-      /** Format: uuid */
-      readonly id: string;
-      /**
-       * Produit
-       * Format: uuid
-       */
-      product: string;
-      readonly product_name: string;
-      readonly range_code: string;
-      readonly range_label: string;
-      /**
-       * Pays
-       * Format: uuid
-       */
-      country: string;
-      readonly country_iso2: string;
-      readonly country_name: string;
-      /** N° AMM d'origine */
-      original_number?: string;
-      /**
-       * Date de début d'origine
-       * Format: date
-       */
-      original_start_date?: string | null;
-      /**
-       * Date de fin d'origine
-       * Format: date
-       */
-      original_end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      original_end_date_manual?: boolean;
-      /** Statut */
-      readonly status: components['schemas']['AmmStatusEnum'];
-      /** Urgence */
-      readonly urgency: components['schemas']['UrgencyEnum'];
-      /**
-       * Date de fin effective
-       * Format: date
-       */
-      readonly effective_end_date: string | null;
-      /**
-       * Deadline de dépôt
-       * Format: date
-       */
-      readonly filing_deadline: string | null;
-      readonly days_remaining: number | null;
-      /** État du dossier */
-      dossier_state?: components['schemas']['DossierStateEnum'];
-      notes?: string;
-      /**
-       * Responsable
-       * Format: uuid
-       */
-      owner?: string | null;
-      /** Format: email */
-      readonly owner_email: string;
-      /** @default false */
-      readonly has_current_scan: boolean;
-      readonly last_renewal: components['schemas']['LastRenewal'] | null;
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly updated_at: string;
-    };
-    AmmListRequest: {
-      /**
-       * Produit
-       * Format: uuid
-       */
-      product: string;
-      /**
-       * Pays
-       * Format: uuid
-       */
-      country: string;
-      /** N° AMM d'origine */
-      original_number?: string;
-      /**
-       * Date de début d'origine
-       * Format: date
-       */
-      original_start_date?: string | null;
-      /**
-       * Date de fin d'origine
-       * Format: date
-       */
-      original_end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      original_end_date_manual?: boolean;
-      /** État du dossier */
-      dossier_state?: components['schemas']['DossierStateEnum'];
-      notes?: string;
-      /**
-       * Responsable
-       * Format: uuid
-       */
-      owner?: string | null;
-    };
-    /**
-     * @description * `VALIDE` - Valide
-     *     * `EXPIRE` - Expirée
-     *     * `IN_PROCESS` - En cours d'instruction
-     *     * `INDETERMINE` - Indéterminé
-     * @enum {string}
-     */
-    AmmStatusEnum: 'VALIDE' | 'EXPIRE' | 'IN_PROCESS' | 'INDETERMINE';
-    /**
-     * @description * `IN_APP` - In-app
-     *     * `EMAIL` - Email
-     * @enum {string}
-     */
-    ChannelEnum: 'IN_APP' | 'EMAIL';
-    Country: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Code ISO */
-      iso2: string;
-      /** Nom */
-      name: string;
-      /** Autorité réglementaire */
-      authority?: string;
-      /** Durée de validité (années) */
-      validity_years?: number;
-      /** Délai de dépôt (mois) */
-      filing_lead_months?: number;
-      /** Fuseau horaire */
-      timezone?: string;
-    };
-    CountryRequest: {
-      /** Code ISO */
-      iso2: string;
-      /** Nom */
-      name: string;
-      /** Autorité réglementaire */
-      authority?: string;
-      /** Durée de validité (années) */
-      validity_years?: number;
-      /** Délai de dépôt (mois) */
-      filing_lead_months?: number;
-      /** Fuseau horaire */
-      timezone?: string;
-    };
-    Document: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      readonly amm_id: string;
-      /** Format: uuid */
-      readonly renewal_id: string;
-      readonly renewal_sequence: number;
-      readonly country_iso2: string;
-      readonly product_name: string;
-      /** Type */
-      readonly kind: components['schemas']['DocumentKindEnum'];
-      /** Titre */
-      readonly title: string;
-      /**
-       * Date du document
-       * Format: date
-       */
-      readonly document_date: string;
-      /** Type MIME */
-      readonly content_type: string;
-      /** Empreinte SHA-256 */
-      readonly sha256: string;
-      /** Taille (octets) */
-      readonly size_bytes: number;
-      /** Nombre de pages */
-      readonly page_count: number | null;
-      readonly version: number;
-      /**
-       * Remplace
-       * Format: uuid
-       */
-      readonly replaces: string | null;
-      /** Version courante */
-      readonly is_current: boolean;
-      /**
-       * Téléversé par
-       * Format: uuid
-       */
-      readonly uploaded_by: string | null;
-      /** Format: email */
-      readonly uploaded_by_email: string;
-      /**
-       * Téléversé le
-       * Format: date-time
-       */
-      readonly uploaded_at: string;
-      /**
-       * Archivé le
-       * Format: date-time
-       */
-      readonly archived_at: string | null;
-      readonly file_url: string;
-      readonly download_url: string;
-      readonly filename: string;
-      readonly period: string;
-    };
-    DocumentDetail: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      readonly amm_id: string;
-      /** Format: uuid */
-      readonly renewal_id: string;
-      readonly renewal_sequence: number;
-      readonly country_iso2: string;
-      readonly product_name: string;
-      /** Type */
-      readonly kind: components['schemas']['DocumentKindEnum'];
-      /** Titre */
-      readonly title: string;
-      /**
-       * Date du document
-       * Format: date
-       */
-      readonly document_date: string;
-      /** Type MIME */
-      readonly content_type: string;
-      /** Empreinte SHA-256 */
-      readonly sha256: string;
-      /** Taille (octets) */
-      readonly size_bytes: number;
-      /** Nombre de pages */
-      readonly page_count: number | null;
-      readonly version: number;
-      /**
-       * Remplace
-       * Format: uuid
-       */
-      readonly replaces: string | null;
-      /** Version courante */
-      readonly is_current: boolean;
-      /**
-       * Téléversé par
-       * Format: uuid
-       */
-      readonly uploaded_by: string | null;
-      /** Format: email */
-      readonly uploaded_by_email: string;
-      /**
-       * Téléversé le
-       * Format: date-time
-       */
-      readonly uploaded_at: string;
-      /**
-       * Archivé le
-       * Format: date-time
-       */
-      readonly archived_at: string | null;
-      readonly file_url: string;
-      readonly download_url: string;
-      readonly filename: string;
-      readonly period: string;
-      readonly versions: {
-        [key: string]: unknown;
-      }[];
-    };
-    /**
-     * @description * `AMM` - AMM
-     *     * `RECEPISSE` - Récépissé de dépôt
-     *     * `COURRIER` - Courrier de l'autorité
-     *     * `AUTRE` - Autre
-     * @enum {string}
-     */
-    DocumentKindEnum: 'AMM' | 'RECEPISSE' | 'COURRIER' | 'AUTRE';
-    DocumentReplaceRequest: {
-      /** Format: binary */
-      file: string;
-      /** Format: date */
-      document_date?: string | null;
-      title?: string;
-    };
-    /**
-     * @description * `COMPLET` - Dossier complet
-     *     * `INCOMPLET` - Dossier incomplet
-     *     * `INCONNU` - Inconnu
-     * @enum {string}
-     */
-    DossierStateEnum: 'COMPLET' | 'INCOMPLET' | 'INCONNU';
-    HistoryChange: {
-      field: string;
-      old: string | null;
-      new: string | null;
-    };
-    HistoryEntry: {
-      /** Format: date-time */
-      date: string;
-      /** Format: email */
-      user_email: string | null;
-      type: string;
-      model: string;
-      object_id: string;
-      changes: components['schemas']['HistoryChange'][];
-    };
-    ImportBatch: {
-      /** Format: uuid */
-      readonly id: string;
-      readonly filename: string;
-      /** Statut */
-      readonly status: components['schemas']['ImportStatusEnum'];
-      /** Simulation */
-      readonly dry_run: boolean;
-      readonly summary: {
-        [key: string]: unknown;
-      };
-      /**
-       * Date de référence
-       * Format: date
-       */
-      readonly reference_date: string | null;
-      /** Format: uuid */
-      readonly created_by: string | null;
-      /** Format: email */
-      readonly created_by_email: string;
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly finished_at: string | null;
-    };
-    /**
-     * @description * `CREATED` - Créée
-     *     * `UPDATED` - Mise à jour
-     *     * `SKIPPED` - Inchangée
-     *     * `ERROR` - Erreur
-     *     * `WARNING` - Avertissement
-     * @enum {string}
-     */
-    ImportOutcomeEnum: 'CREATED' | 'UPDATED' | 'SKIPPED' | 'ERROR' | 'WARNING';
-    ImportRow: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Onglet */
-      readonly sheet: string;
-      /** Ligne */
-      readonly row_number: number;
-      readonly raw: {
-        [key: string]: unknown;
-      };
-      /** Résultat */
-      readonly outcome: components['schemas']['ImportOutcomeEnum'];
-      readonly message: string;
-      /** Format: uuid */
-      readonly amm: string | null;
-    };
-    /**
-     * @description * `PENDING` - En attente
-     *     * `RUNNING` - En cours
-     *     * `DONE` - Terminé
-     *     * `FAILED` - Échoué
-     * @enum {string}
-     */
-    ImportStatusEnum: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
-    ImportUploadRequest: {
-      /** Format: binary */
-      file: string;
-      /** Format: date */
-      today?: string | null;
-      /** @default false */
-      dry_run: boolean;
-    };
-    /** @description Shape of `last_renewal` in the AMM list (documentation of the OpenAPI schema). */
-    LastRenewal: {
-      /** Format: uuid */
-      id: string;
-      sequence: number;
-      workflow_status: components['schemas']['WorkflowStatusEnum'];
-      number: string;
-      /** Format: date */
-      start_date: string | null;
-      /** Format: date */
-      end_date: string | null;
-      /** Format: date */
-      filing_date: string | null;
-    };
-    /** @description Returns access, refresh and the serialized user in the JSON body. */
-    LoginRequest: {
-      email: string;
-      password: string;
-    };
-    LogoutRequest: {
-      refresh?: string;
-    };
-    MergeDuplicatesRequest: {
-      /** @default false */
-      dry_run: boolean;
-    };
-    Notification: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      readonly alert_id: string;
-      /** Format: uuid */
-      readonly amm_id: string;
-      readonly severity: string;
-      /** Canal */
-      readonly channel: components['schemas']['ChannelEnum'];
-      /** Titre */
-      readonly title: string;
-      /** Contenu */
-      readonly body: string;
-      /** Lien */
-      readonly link: string;
-      /** Format: date-time */
-      readonly created_at: string;
-      /**
-       * Envoyée le
-       * Format: date-time
-       */
-      readonly sent_at: string | null;
-      /**
-       * Lue le
-       * Format: date-time
-       */
-      readonly read_at: string | null;
-      readonly is_read: boolean;
-    };
-    /** @enum {unknown} */
-    NullEnum: null;
-    PaginatedAlertList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Alert'][];
-    };
-    PaginatedAlertRuleList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['AlertRule'][];
-    };
-    PaginatedAmmListList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['AmmList'][];
-    };
-    PaginatedCountryList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Country'][];
-    };
-    PaginatedDocumentList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Document'][];
-    };
-    PaginatedHistoryEntryList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['HistoryEntry'][];
-    };
-    PaginatedImportBatchList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['ImportBatch'][];
-    };
-    PaginatedImportRowList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['ImportRow'][];
-    };
-    PaginatedNotificationList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Notification'][];
-    };
-    PaginatedProductList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Product'][];
-    };
-    PaginatedProductRangeList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['ProductRange'][];
-    };
-    PaginatedRenewalList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['Renewal'][];
-    };
-    PaginatedUserList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components['schemas']['User'][];
-    };
-    PatchedAlertRuleRequest: {
-      code?: string;
-      /**
-       * Pays (vide = globale)
-       * Format: uuid
-       */
-      country?: string | null;
-      /** Délai avant échéance (jours) */
-      offset_days?: number;
-      /** Sévérité */
-      severity?: components['schemas']['SeverityEnum'];
-      roles?: components['schemas']['RoleEnum'][];
-      channels?: components['schemas']['ChannelEnum'][];
-      /** Seulement si aucun dépôt */
-      only_if_not_filed?: boolean;
-      /** Active */
-      is_active?: boolean;
-    };
-    PatchedAmmDetailRequest: {
-      /**
-       * Produit
-       * Format: uuid
-       */
-      product?: string;
-      /**
-       * Pays
-       * Format: uuid
-       */
-      country?: string;
-      /** N° AMM d'origine */
-      original_number?: string;
-      /**
-       * Date de début d'origine
-       * Format: date
-       */
-      original_start_date?: string | null;
-      /**
-       * Date de fin d'origine
-       * Format: date
-       */
-      original_end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      original_end_date_manual?: boolean;
-      /** État du dossier */
-      dossier_state?: components['schemas']['DossierStateEnum'];
-      notes?: string;
-      /**
-       * Responsable
-       * Format: uuid
-       */
-      owner?: string | null;
-    };
-    PatchedCountryRequest: {
-      /** Code ISO */
-      iso2?: string;
-      /** Nom */
-      name?: string;
-      /** Autorité réglementaire */
-      authority?: string;
-      /** Durée de validité (années) */
-      validity_years?: number;
-      /** Délai de dépôt (mois) */
-      filing_lead_months?: number;
-      /** Fuseau horaire */
-      timezone?: string;
-    };
-    PatchedProductRangeRequest: {
-      code?: components['schemas']['RangeCodeEnum'];
-      /** Libellé */
-      label?: string;
-    };
-    PatchedProductRequest: {
-      /** Libellé normalisé */
-      name?: string;
-      /**
-       * Gamme
-       * Format: uuid
-       */
-      range?: string | null;
-      dci?: string;
-      dosage?: string;
-      /** Forme */
-      form?: string;
-      /** Présentation */
-      presentation?: string;
-      /** Actif */
-      is_active?: boolean;
-      aliases?: string[];
-    };
-    PatchedRenewalRequest: {
-      /** Statut du workflow */
-      workflow_status?: components['schemas']['WorkflowStatusEnum'];
-      /**
-       * Date de dépôt
-       * Format: date
-       */
-      filing_date?: string | null;
-      /**
-       * Date de décision
-       * Format: date
-       */
-      decision_date?: string | null;
-      /** N° AMM */
-      number?: string;
-      /**
-       * Date de début
-       * Format: date
-       */
-      start_date?: string | null;
-      /**
-       * Date de fin
-       * Format: date
-       */
-      end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      end_date_manual?: boolean;
-      notes?: string;
-    };
-    PatchedUserRequest: {
-      /** Format: email */
-      email?: string;
-      /** Prénom */
-      first_name?: string;
-      /** Nom */
-      last_name?: string;
-      /** Rôle */
-      role?: components['schemas']['RoleEnum'];
-      countries?: string[];
-      /** Actif */
-      is_active?: boolean;
-      password?: string;
-    };
-    Product: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Libellé normalisé */
-      name: string;
-      /**
-       * Gamme
-       * Format: uuid
-       */
-      range?: string | null;
-      readonly range_code: string;
-      readonly range_label: string;
-      dci?: string;
-      dosage?: string;
-      /** Forme */
-      form?: string;
-      /** Présentation */
-      presentation?: string;
-      /** Actif */
-      is_active?: boolean;
-      aliases?: string[];
-    };
-    ProductMergeRequest: {
-      /** Format: uuid */
-      duplicate_id: string;
-    };
-    ProductRange: {
-      /** Format: uuid */
-      readonly id: string;
-      code: components['schemas']['RangeCodeEnum'];
-      /** Libellé */
-      label: string;
-    };
-    ProductRangeRequest: {
-      code: components['schemas']['RangeCodeEnum'];
-      /** Libellé */
-      label: string;
-    };
-    ProductRequest: {
-      /** Libellé normalisé */
-      name: string;
-      /**
-       * Gamme
-       * Format: uuid
-       */
-      range?: string | null;
-      dci?: string;
-      dosage?: string;
-      /** Forme */
-      form?: string;
-      /** Présentation */
-      presentation?: string;
-      /** Actif */
-      is_active?: boolean;
-      aliases?: string[];
-    };
-    /**
-     * @description * `GENERALE` - Générale
-     *     * `CARDIO` - Cardio
-     *     * `BIEN_ETRE` - Bien-être
-     * @enum {string}
-     */
-    RangeCodeEnum: 'GENERALE' | 'CARDIO' | 'BIEN_ETRE';
-    Renewal: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: uuid */
-      readonly amm_id: string;
-      /** N° d'ordre */
-      readonly sequence: number;
-      /** Statut du workflow */
-      workflow_status?: components['schemas']['WorkflowStatusEnum'];
-      /**
-       * Date de dépôt
-       * Format: date
-       */
-      filing_date?: string | null;
-      /**
-       * Date de décision
-       * Format: date
-       */
-      decision_date?: string | null;
-      /** N° AMM */
-      number?: string;
-      /**
-       * Date de début
-       * Format: date
-       */
-      start_date?: string | null;
-      /**
-       * Date de fin
-       * Format: date
-       */
-      end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      end_date_manual?: boolean;
-      notes?: string;
-      readonly allowed_transitions: string[];
-      /** Format: date-time */
-      readonly created_at: string;
-      /** Format: date-time */
-      readonly updated_at: string;
-    };
-    RenewalRequest: {
-      /** Statut du workflow */
-      workflow_status?: components['schemas']['WorkflowStatusEnum'];
-      /**
-       * Date de dépôt
-       * Format: date
-       */
-      filing_date?: string | null;
-      /**
-       * Date de décision
-       * Format: date
-       */
-      decision_date?: string | null;
-      /** N° AMM */
-      number?: string;
-      /**
-       * Date de début
-       * Format: date
-       */
-      start_date?: string | null;
-      /**
-       * Date de fin
-       * Format: date
-       */
-      end_date?: string | null;
-      /** Date de fin saisie manuellement */
-      end_date_manual?: boolean;
-      notes?: string;
-    };
-    RenewalTransitionRequest: {
-      to: components['schemas']['WorkflowStatusEnum'];
-      /** Format: date */
-      filing_date?: string | null;
-      /** Format: date */
-      decision_date?: string | null;
-      number?: string;
-      /** Format: date */
-      start_date?: string | null;
-      /** Format: date */
-      end_date?: string | null;
-      notes?: string;
-    };
-    /**
-     * @description * `CEO_ADMIN` - CEO / administrateur
-     *     * `HQ_REGULATORY` - Réglementaire siège
-     *     * `COUNTRY_REGULATORY` - Réglementaire pays
-     * @enum {string}
-     */
-    RoleEnum: 'CEO_ADMIN' | 'HQ_REGULATORY' | 'COUNTRY_REGULATORY';
-    /**
-     * @description * `INFO` - Information
-     *     * `WARNING` - Avertissement
-     *     * `CRITICAL` - Critique
-     * @enum {string}
-     */
-    SeverityEnum: 'INFO' | 'WARNING' | 'CRITICAL';
-    TokenRefresh: {
-      readonly access: string;
-      refresh: string;
-    };
-    TokenRefreshRequest: {
-      refresh: string;
-    };
-    /**
-     * @description * `OK` - OK
-     *     * `A_PLANIFIER` - À planifier
-     *     * `DEPOT_URGENT` - Dépôt urgent
-     *     * `CRITIQUE` - Critique
-     *     * `EXPIRE` - Expirée
-     *     * `EN_INSTRUCTION` - En instruction
-     * @enum {string}
-     */
-    UrgencyEnum: 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE' | 'EN_INSTRUCTION';
-    User: {
-      /** Format: uuid */
-      readonly id: string;
-      /** Format: email */
-      email: string;
-      /** Prénom */
-      first_name?: string;
-      /** Nom */
-      last_name?: string;
-      readonly full_name: string;
-      /** Rôle */
-      role?: components['schemas']['RoleEnum'];
-      countries?: string[];
-      /** Actif */
-      is_active?: boolean;
-      /**
-       * Créé le
-       * Format: date-time
-       */
-      readonly date_joined: string;
-      /**
-       * Dernière connexion
-       * Format: date-time
-       */
-      readonly last_login: string | null;
-    };
-    UserRequest: {
-      /** Format: email */
-      email: string;
-      /** Prénom */
-      first_name?: string;
-      /** Nom */
-      last_name?: string;
-      /** Rôle */
-      role?: components['schemas']['RoleEnum'];
-      countries?: string[];
-      /** Actif */
-      is_active?: boolean;
-      password?: string;
-    };
-    /**
-     * @description * `PLANIFIE` - Planifié
-     *     * `EN_PREPARATION` - En préparation
-     *     * `DEPOSE` - Déposé
-     *     * `EN_INSTRUCTION` - En instruction
-     *     * `OBTENU` - Obtenu
-     *     * `REJETE` - Rejeté
-     *     * `ABANDONNE` - Abandonné
-     * @enum {string}
-     */
-    WorkflowStatusEnum:
-      'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
-}
-export type $defs = Record<string, never>;
-export interface operations {
-  v1_alert_rules_list: {
-    parameters: {
-      query?: {
-        code?: string;
-        country?: string;
-        is_active?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
+    schemas: {
+        Alert: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            readonly country_iso2: string;
+            readonly country_name: string;
+            readonly product_name: string;
+            readonly amm_status: components["schemas"]["AmmStatusEnum"];
+            readonly amm_urgency: components["schemas"]["UrgencyEnum"];
+            /** Format: date */
+            readonly effective_end_date: string;
+            /** Format: uuid */
+            readonly rule: string;
+            readonly rule_code: string;
+            readonly severity: components["schemas"]["SeverityEnum"];
+            /**
+             * Échéance
+             * Format: date
+             */
+            readonly due_date: string;
+            /** Statut */
+            readonly status: components["schemas"]["AlertStatusEnum"];
+            /**
+             * Assignée à
+             * Format: uuid
+             */
+            readonly assigned_to: string | null;
+            /** Format: email */
+            readonly assigned_to_email: string;
+            /**
+             * Déclenchée le
+             * Format: date-time
+             */
+            readonly triggered_at: string;
+            /**
+             * Acquittée le
+             * Format: date-time
+             */
+            readonly acknowledged_at: string | null;
+            /**
+             * Résolue le
+             * Format: date-time
+             */
+            readonly resolved_at: string | null;
+            /** Résolution */
+            readonly resolution: (components["schemas"]["AlertResolutionEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Commentaire */
+            readonly comment: string;
+        };
+        AlertAcknowledgeRequest: {
+            comment?: string;
+        };
+        AlertAssignRequest: {
+            /** Format: uuid */
+            user_id: string;
+        };
         /**
-         * @description * `INFO` - Information
-         *     * `WARNING` - Avertissement
-         *     * `CRITICAL` - Critique
+         * @description * `AUTO_FILED` - Dépôt enregistré
+         *     * `AUTO_RENEWED` - Renouvellement obtenu
+         *     * `MANUAL` - Résolution manuelle
+         * @enum {string}
          */
-        severity?: 'CRITICAL' | 'INFO' | 'WARNING';
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        AlertResolutionEnum: "AUTO_FILED" | "AUTO_RENEWED" | "MANUAL";
+        AlertResolveRequest: {
+            comment?: string;
+        };
+        AlertRule: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            /**
+             * Pays (vide = globale)
+             * Format: uuid
+             */
+            country?: string | null;
+            readonly country_iso2: string;
+            /** Délai avant échéance (jours) */
+            offset_days?: number;
+            /** Sévérité */
+            severity?: components["schemas"]["SeverityEnum"];
+            roles: components["schemas"]["RoleEnum"][];
+            channels: components["schemas"]["ChannelEnum"][];
+            /** Seulement si aucun dépôt */
+            only_if_not_filed?: boolean;
+            /** Active */
+            is_active?: boolean;
+        };
+        AlertRuleRequest: {
+            code: string;
+            /**
+             * Pays (vide = globale)
+             * Format: uuid
+             */
+            country?: string | null;
+            /** Délai avant échéance (jours) */
+            offset_days?: number;
+            /** Sévérité */
+            severity?: components["schemas"]["SeverityEnum"];
+            roles: components["schemas"]["RoleEnum"][];
+            channels: components["schemas"]["ChannelEnum"][];
+            /** Seulement si aucun dépôt */
+            only_if_not_filed?: boolean;
+            /** Active */
+            is_active?: boolean;
+        };
+        /**
+         * @description * `OPEN` - Ouverte
+         *     * `ACKNOWLEDGED` - Acquittée
+         *     * `RESOLVED` - Résolue
+         * @enum {string}
+         */
+        AlertStatusEnum: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+        AmmDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Produit
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly range_code: string;
+            readonly range_label: string;
+            /**
+             * Pays
+             * Format: uuid
+             */
+            country: string;
+            readonly country_iso2: string;
+            readonly country_name: string;
+            /** N° AMM d'origine */
+            original_number?: string;
+            /**
+             * Date de début d'origine
+             * Format: date
+             */
+            original_start_date?: string | null;
+            /**
+             * Date de fin d'origine
+             * Format: date
+             */
+            original_end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            original_end_date_manual?: boolean;
+            /** Statut */
+            readonly status: components["schemas"]["AmmStatusEnum"];
+            /** Urgence */
+            readonly urgency: components["schemas"]["UrgencyEnum"];
+            /**
+             * Date de fin effective
+             * Format: date
+             */
+            readonly effective_end_date: string | null;
+            /**
+             * Deadline de dépôt
+             * Format: date
+             */
+            readonly filing_deadline: string | null;
+            readonly days_remaining: number | null;
+            /** État du dossier */
+            dossier_state?: components["schemas"]["DossierStateEnum"];
+            notes?: string;
+            /**
+             * Responsable
+             * Format: uuid
+             */
+            owner?: string | null;
+            /** Format: email */
+            readonly owner_email: string;
+            /** @default false */
+            readonly has_current_scan: boolean;
+            readonly last_renewal: components["schemas"]["LastRenewal"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly renewals: components["schemas"]["Renewal"][];
+            readonly pending_renewal_id: string | null;
+        };
+        AmmDetailRequest: {
+            /**
+             * Produit
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Pays
+             * Format: uuid
+             */
+            country: string;
+            /** N° AMM d'origine */
+            original_number?: string;
+            /**
+             * Date de début d'origine
+             * Format: date
+             */
+            original_start_date?: string | null;
+            /**
+             * Date de fin d'origine
+             * Format: date
+             */
+            original_end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            original_end_date_manual?: boolean;
+            /** État du dossier */
+            dossier_state?: components["schemas"]["DossierStateEnum"];
+            notes?: string;
+            /**
+             * Responsable
+             * Format: uuid
+             */
+            owner?: string | null;
+        };
+        AmmList: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Produit
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly range_code: string;
+            readonly range_label: string;
+            /**
+             * Pays
+             * Format: uuid
+             */
+            country: string;
+            readonly country_iso2: string;
+            readonly country_name: string;
+            /** N° AMM d'origine */
+            original_number?: string;
+            /**
+             * Date de début d'origine
+             * Format: date
+             */
+            original_start_date?: string | null;
+            /**
+             * Date de fin d'origine
+             * Format: date
+             */
+            original_end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            original_end_date_manual?: boolean;
+            /** Statut */
+            readonly status: components["schemas"]["AmmStatusEnum"];
+            /** Urgence */
+            readonly urgency: components["schemas"]["UrgencyEnum"];
+            /**
+             * Date de fin effective
+             * Format: date
+             */
+            readonly effective_end_date: string | null;
+            /**
+             * Deadline de dépôt
+             * Format: date
+             */
+            readonly filing_deadline: string | null;
+            readonly days_remaining: number | null;
+            /** État du dossier */
+            dossier_state?: components["schemas"]["DossierStateEnum"];
+            notes?: string;
+            /**
+             * Responsable
+             * Format: uuid
+             */
+            owner?: string | null;
+            /** Format: email */
+            readonly owner_email: string;
+            /** @default false */
+            readonly has_current_scan: boolean;
+            readonly last_renewal: components["schemas"]["LastRenewal"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        AmmListRequest: {
+            /**
+             * Produit
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Pays
+             * Format: uuid
+             */
+            country: string;
+            /** N° AMM d'origine */
+            original_number?: string;
+            /**
+             * Date de début d'origine
+             * Format: date
+             */
+            original_start_date?: string | null;
+            /**
+             * Date de fin d'origine
+             * Format: date
+             */
+            original_end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            original_end_date_manual?: boolean;
+            /** État du dossier */
+            dossier_state?: components["schemas"]["DossierStateEnum"];
+            notes?: string;
+            /**
+             * Responsable
+             * Format: uuid
+             */
+            owner?: string | null;
+        };
+        /**
+         * @description * `VALIDE` - Valide
+         *     * `EXPIRE` - Expirée
+         *     * `IN_PROCESS` - En cours d'instruction
+         *     * `INDETERMINE` - Indéterminé
+         * @enum {string}
+         */
+        AmmStatusEnum: "VALIDE" | "EXPIRE" | "IN_PROCESS" | "INDETERMINE";
+        /**
+         * @description * `IN_APP` - In-app
+         *     * `EMAIL` - Email
+         * @enum {string}
+         */
+        ChannelEnum: "IN_APP" | "EMAIL";
+        Country: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Code ISO */
+            iso2: string;
+            /** Nom */
+            name: string;
+            /** Autorité réglementaire */
+            authority?: string;
+            /** Durée de validité (années) */
+            validity_years?: number;
+            /** Délai de dépôt (mois) */
+            filing_lead_months?: number;
+            /** Fuseau horaire */
+            timezone?: string;
+        };
+        CountryRequest: {
+            /** Code ISO */
+            iso2: string;
+            /** Nom */
+            name: string;
+            /** Autorité réglementaire */
+            authority?: string;
+            /** Durée de validité (années) */
+            validity_years?: number;
+            /** Délai de dépôt (mois) */
+            filing_lead_months?: number;
+            /** Fuseau horaire */
+            timezone?: string;
+        };
+        Document: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            /** Format: uuid */
+            readonly renewal_id: string;
+            readonly renewal_sequence: number;
+            readonly country_iso2: string;
+            readonly product_name: string;
+            /** Type */
+            readonly kind: components["schemas"]["DocumentKindEnum"];
+            /** Titre */
+            readonly title: string;
+            /**
+             * Date du document
+             * Format: date
+             */
+            readonly document_date: string;
+            /** Type MIME */
+            readonly content_type: string;
+            /** Empreinte SHA-256 */
+            readonly sha256: string;
+            /** Taille (octets) */
+            readonly size_bytes: number;
+            /** Nombre de pages */
+            readonly page_count: number | null;
+            readonly version: number;
+            /**
+             * Remplace
+             * Format: uuid
+             */
+            readonly replaces: string | null;
+            /** Version courante */
+            readonly is_current: boolean;
+            /**
+             * Téléversé par
+             * Format: uuid
+             */
+            readonly uploaded_by: string | null;
+            /** Format: email */
+            readonly uploaded_by_email: string;
+            /**
+             * Téléversé le
+             * Format: date-time
+             */
+            readonly uploaded_at: string;
+            /**
+             * Archivé le
+             * Format: date-time
+             */
+            readonly archived_at: string | null;
+            readonly file_url: string;
+            readonly download_url: string;
+            readonly filename: string;
+            readonly period: string;
+        };
+        DocumentDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            /** Format: uuid */
+            readonly renewal_id: string;
+            readonly renewal_sequence: number;
+            readonly country_iso2: string;
+            readonly product_name: string;
+            /** Type */
+            readonly kind: components["schemas"]["DocumentKindEnum"];
+            /** Titre */
+            readonly title: string;
+            /**
+             * Date du document
+             * Format: date
+             */
+            readonly document_date: string;
+            /** Type MIME */
+            readonly content_type: string;
+            /** Empreinte SHA-256 */
+            readonly sha256: string;
+            /** Taille (octets) */
+            readonly size_bytes: number;
+            /** Nombre de pages */
+            readonly page_count: number | null;
+            readonly version: number;
+            /**
+             * Remplace
+             * Format: uuid
+             */
+            readonly replaces: string | null;
+            /** Version courante */
+            readonly is_current: boolean;
+            /**
+             * Téléversé par
+             * Format: uuid
+             */
+            readonly uploaded_by: string | null;
+            /** Format: email */
+            readonly uploaded_by_email: string;
+            /**
+             * Téléversé le
+             * Format: date-time
+             */
+            readonly uploaded_at: string;
+            /**
+             * Archivé le
+             * Format: date-time
+             */
+            readonly archived_at: string | null;
+            readonly file_url: string;
+            readonly download_url: string;
+            readonly filename: string;
+            readonly period: string;
+            readonly versions: {
+                [key: string]: unknown;
+            }[];
         };
-        content: {
-          'application/json': components['schemas']['PaginatedAlertRuleList'];
-        };
-      };
-    };
-  };
-  v1_alert_rules_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlertRuleRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AlertRuleRequest'];
-        'multipart/form-data': components['schemas']['AlertRuleRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlertRule'];
-        };
-      };
-    };
-  };
-  v1_alert_rules_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this règle d'alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlertRule'];
-        };
-      };
-    };
-  };
-  v1_alert_rules_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this règle d'alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlertRuleRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AlertRuleRequest'];
-        'multipart/form-data': components['schemas']['AlertRuleRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlertRule'];
-        };
-      };
-    };
-  };
-  v1_alert_rules_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this règle d'alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_alert_rules_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this règle d'alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedAlertRuleRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedAlertRuleRequest'];
-        'multipart/form-data': components['schemas']['PatchedAlertRuleRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AlertRule'];
-        };
-      };
-    };
-  };
-  v1_alerts_list: {
-    parameters: {
-      query?: {
-        amm?: string;
-        assigned_to?: string;
-        code?: string;
-        country?: string;
-        due_before?: string;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        severity?: ('CRITICAL' | 'INFO' | 'WARNING')[];
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        status?: ('ACKNOWLEDGED' | 'OPEN' | 'RESOLVED')[];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedAlertList'];
-        };
-      };
-    };
-  };
-  v1_alerts_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Alert'];
-        };
-      };
-    };
-  };
-  v1_alerts_acknowledge_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['AlertAcknowledgeRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AlertAcknowledgeRequest'];
-        'multipart/form-data': components['schemas']['AlertAcknowledgeRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Alert'];
-        };
-      };
-    };
-  };
-  v1_alerts_assign_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AlertAssignRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AlertAssignRequest'];
-        'multipart/form-data': components['schemas']['AlertAssignRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Alert'];
-        };
-      };
-    };
-  };
-  v1_alerts_resolve_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this alerte. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['AlertResolveRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AlertResolveRequest'];
-        'multipart/form-data': components['schemas']['AlertResolveRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Alert'];
-        };
-      };
-    };
-  };
-  v1_amms_list: {
-    parameters: {
-      query?: {
-        country?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        dossier_state?: ('COMPLET' | 'INCOMPLET' | 'INCONNU')[];
-        expires_after?: string;
-        expires_before?: string;
-        has_current_scan?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        owner?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        product?: string;
-        range?: string;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        status?: ('EXPIRE' | 'INDETERMINE' | 'IN_PROCESS' | 'VALIDE')[];
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        urgency?: ('A_PLANIFIER' | 'CRITIQUE' | 'DEPOT_URGENT' | 'EN_INSTRUCTION' | 'EXPIRE' | 'OK')[];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedAmmListList'];
-        };
-      };
-    };
-  };
-  v1_amms_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AmmDetailRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AmmDetailRequest'];
-        'multipart/form-data': components['schemas']['AmmDetailRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AmmDetail'];
-        };
-      };
-    };
-  };
-  v1_amms_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AmmDetail'];
-        };
-      };
-    };
-  };
-  v1_amms_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AmmDetailRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AmmDetailRequest'];
-        'multipart/form-data': components['schemas']['AmmDetailRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AmmDetail'];
-        };
-      };
-    };
-  };
-  v1_amms_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_amms_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedAmmDetailRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedAmmDetailRequest'];
-        'multipart/form-data': components['schemas']['PatchedAmmDetailRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AmmDetail'];
-        };
-      };
-    };
-  };
-  v1_amms_documents_retrieve: {
-    parameters: {
-      query?: {
-        /** @description `period` pour grouper par période */
-        group?: string;
-        include_archived?: boolean;
-        kind?: string;
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_amms_documents_create: {
-    parameters: {
-      query?: {
-        /** @description `period` pour grouper par période */
-        group?: string;
-        include_archived?: boolean;
-        kind?: string;
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AmmListRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['AmmListRequest'];
-        'multipart/form-data': components['schemas']['AmmListRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  'v1_amms_documents_archive.zip_retrieve': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/zip': string;
-        };
-      };
-    };
-  };
-  v1_amms_history_list: {
-    parameters: {
-      query?: {
-        country?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        dossier_state?: ('COMPLET' | 'INCOMPLET' | 'INCONNU')[];
-        expires_after?: string;
-        expires_before?: string;
-        has_current_scan?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        owner?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        product?: string;
-        range?: string;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        status?: ('EXPIRE' | 'INDETERMINE' | 'IN_PROCESS' | 'VALIDE')[];
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        urgency?: ('A_PLANIFIER' | 'CRITIQUE' | 'DEPOT_URGENT' | 'EN_INSTRUCTION' | 'EXPIRE' | 'OK')[];
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedHistoryEntryList'];
-        };
-      };
-    };
-  };
-  v1_amms_renewals_list: {
-    parameters: {
-      query?: {
-        country?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        dossier_state?: ('COMPLET' | 'INCOMPLET' | 'INCONNU')[];
-        expires_after?: string;
-        expires_before?: string;
-        has_current_scan?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        owner?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        product?: string;
-        range?: string;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        status?: ('EXPIRE' | 'INDETERMINE' | 'IN_PROCESS' | 'VALIDE')[];
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        urgency?: ('A_PLANIFIER' | 'CRITIQUE' | 'DEPOT_URGENT' | 'EN_INSTRUCTION' | 'EXPIRE' | 'OK')[];
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedRenewalList'];
-        };
-      };
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_amms_renewals_create: {
-    parameters: {
-      query?: {
-        country?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        dossier_state?: ('COMPLET' | 'INCOMPLET' | 'INCONNU')[];
-        expires_after?: string;
-        expires_before?: string;
-        has_current_scan?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        owner?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        product?: string;
-        range?: string;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        status?: ('EXPIRE' | 'INDETERMINE' | 'IN_PROCESS' | 'VALIDE')[];
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        urgency?: ('A_PLANIFIER' | 'CRITIQUE' | 'DEPOT_URGENT' | 'EN_INSTRUCTION' | 'EXPIRE' | 'OK')[];
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this AMM. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['RenewalRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['RenewalRequest'];
-        'multipart/form-data': components['schemas']['RenewalRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedRenewalList'];
-        };
-      };
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_analytics_africa_retrieve: {
-    parameters: {
-      query?: {
-        /** @description Date de référence AAAA-MM-JJ (par défaut : aujourd'hui). */
-        today?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_analytics_country_retrieve: {
-    parameters: {
-      query?: {
-        /** @description Date de référence AAAA-MM-JJ (par défaut : aujourd'hui). */
-        today?: string;
-      };
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_analytics_export_retrieve: {
-    parameters: {
-      query?: {
-        /** @description xlsx (défaut) ou csv */
-        format?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/octet-stream': string;
-        };
-      };
-    };
-  };
-  v1_analytics_product_coverage_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_auth_login_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LoginRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['LoginRequest'];
-        'multipart/form-data': components['schemas']['LoginRequest'];
-      };
-    };
-    responses: {
-      /** @description No response body */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_auth_logout_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['LogoutRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['LogoutRequest'];
-        'multipart/form-data': components['schemas']['LogoutRequest'];
-      };
-    };
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_auth_refresh_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TokenRefreshRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['TokenRefreshRequest'];
-        'multipart/form-data': components['schemas']['TokenRefreshRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TokenRefresh'];
-        };
-      };
-    };
-  };
-  v1_countries_list: {
-    parameters: {
-      query?: {
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedCountryList'];
-        };
-      };
-    };
-  };
-  v1_countries_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CountryRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['CountryRequest'];
-        'multipart/form-data': components['schemas']['CountryRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Country'];
-        };
-      };
-    };
-  };
-  v1_countries_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Country'];
-        };
-      };
-    };
-  };
-  v1_countries_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CountryRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['CountryRequest'];
-        'multipart/form-data': components['schemas']['CountryRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Country'];
-        };
-      };
-    };
-  };
-  v1_countries_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_countries_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedCountryRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedCountryRequest'];
-        'multipart/form-data': components['schemas']['PatchedCountryRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Country'];
-        };
-      };
-    };
-  };
-  v1_countries_documents_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        iso2: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_documents_list: {
-    parameters: {
-      query?: {
-        amm?: string;
-        amm__country__iso2?: string;
-        amm__product?: string;
-        document_date__gte?: string;
-        document_date__lte?: string;
-        document_date__year?: number;
-        is_current?: boolean;
         /**
          * @description * `AMM` - AMM
          *     * `RECEPISSE` - Récépissé de dépôt
          *     * `COURRIER` - Courrier de l'autorité
          *     * `AUTRE` - Autre
+         * @enum {string}
          */
-        kind?: 'AMM' | 'AUTRE' | 'COURRIER' | 'RECEPISSE';
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        kind__in?: string[];
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        DocumentKindEnum: "AMM" | "RECEPISSE" | "COURRIER" | "AUTRE";
+        DocumentReplaceRequest: {
+            /** Format: binary */
+            file: string;
+            /** Format: date */
+            document_date?: string | null;
+            title?: string;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedDocumentList'];
-        };
-      };
-    };
-  };
-  v1_documents_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this document. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DocumentDetail'];
-        };
-      };
-    };
-  };
-  v1_documents_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this document. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_documents_file_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this document. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/pdf': string;
-        };
-      };
-    };
-  };
-  v1_documents_replace_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this document. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['DocumentReplaceRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['DocumentReplaceRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DocumentDetail'];
-        };
-      };
-    };
-  };
-  v1_health_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_imports_list: {
-    parameters: {
-      query?: {
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedImportBatchList'];
-        };
-      };
-    };
-  };
-  v1_imports_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['ImportUploadRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ImportUploadRequest'];
-      };
-    };
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ImportBatch'];
-        };
-      };
-    };
-  };
-  v1_imports_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this import. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ImportBatch'];
-        };
-      };
-    };
-  };
-  v1_imports_rows_list: {
-    parameters: {
-      query?: {
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this import. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedImportRowList'];
-        };
-      };
-    };
-  };
-  v1_me_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['User'];
-        };
-      };
-    };
-  };
-  v1_notifications_list: {
-    parameters: {
-      query?: {
         /**
-         * @description * `IN_APP` - In-app
-         *     * `EMAIL` - Email
+         * @description * `COMPLET` - Dossier complet
+         *     * `INCOMPLET` - Dossier incomplet
+         *     * `INCONNU` - Inconnu
+         * @enum {string}
          */
-        channel?: 'EMAIL' | 'IN_APP';
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        DossierStateEnum: "COMPLET" | "INCOMPLET" | "INCONNU";
+        HistoryChange: {
+            field: string;
+            old: string | null;
+            new: string | null;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedNotificationList'];
+        HistoryEntry: {
+            /** Format: date-time */
+            date: string;
+            /** Format: email */
+            user_email: string | null;
+            type: string;
+            model: string;
+            object_id: string;
+            changes: components["schemas"]["HistoryChange"][];
         };
-      };
-    };
-  };
-  v1_notifications_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this notification. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        ImportBatch: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly filename: string;
+            /** Statut */
+            readonly status: components["schemas"]["ImportStatusEnum"];
+            /** Simulation */
+            readonly dry_run: boolean;
+            readonly summary: {
+                [key: string]: unknown;
+            };
+            /**
+             * Date de référence
+             * Format: date
+             */
+            readonly reference_date: string | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: email */
+            readonly created_by_email: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly finished_at: string | null;
         };
-        content: {
-          'application/json': components['schemas']['Notification'];
+        /**
+         * @description * `CREATED` - Créée
+         *     * `UPDATED` - Mise à jour
+         *     * `SKIPPED` - Inchangée
+         *     * `ERROR` - Erreur
+         *     * `WARNING` - Avertissement
+         * @enum {string}
+         */
+        ImportOutcomeEnum: "CREATED" | "UPDATED" | "SKIPPED" | "ERROR" | "WARNING";
+        ImportRow: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Onglet */
+            readonly sheet: string;
+            /** Ligne */
+            readonly row_number: number;
+            readonly raw: {
+                [key: string]: unknown;
+            };
+            /** Résultat */
+            readonly outcome: components["schemas"]["ImportOutcomeEnum"];
+            readonly message: string;
+            /** Format: uuid */
+            readonly amm: string | null;
         };
-      };
-    };
-  };
-  v1_notifications_read_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this notification. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        /**
+         * @description * `PENDING` - En attente
+         *     * `RUNNING` - En cours
+         *     * `DONE` - Terminé
+         *     * `FAILED` - Échoué
+         * @enum {string}
+         */
+        ImportStatusEnum: "PENDING" | "RUNNING" | "DONE" | "FAILED";
+        ImportUploadRequest: {
+            /** Format: binary */
+            file: string;
+            /** Format: date */
+            today?: string | null;
+            /** @default false */
+            dry_run: boolean;
         };
-        content: {
-          'application/json': components['schemas']['Notification'];
+        /** @description Shape of `last_renewal` in the AMM list (documentation of the OpenAPI schema). */
+        LastRenewal: {
+            /** Format: uuid */
+            id: string;
+            sequence: number;
+            workflow_status: components["schemas"]["WorkflowStatusEnum"];
+            number: string;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            /** Format: date */
+            filing_date: string | null;
         };
-      };
-    };
-  };
-  v1_notifications_read_all_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        /** @description Returns access, refresh and the serialized user in the JSON body. */
+        LoginRequest: {
+            email: string;
+            password: string;
         };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
+        LogoutRequest: {
+            refresh?: string;
         };
-      };
-    };
-  };
-  v1_notifications_unread_count_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        MergeDuplicatesRequest: {
+            /** @default false */
+            dry_run: boolean;
         };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
+        Notification: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly alert_id: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            readonly severity: string;
+            /** Canal */
+            readonly channel: components["schemas"]["ChannelEnum"];
+            /** Titre */
+            readonly title: string;
+            /** Contenu */
+            readonly body: string;
+            /** Lien */
+            readonly link: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /**
+             * Envoyée le
+             * Format: date-time
+             */
+            readonly sent_at: string | null;
+            /**
+             * Lue le
+             * Format: date-time
+             */
+            readonly read_at: string | null;
+            readonly is_read: boolean;
         };
-      };
-    };
-  };
-  v1_products_list: {
-    parameters: {
-      query?: {
-        is_active?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        range?: string;
+        /** @enum {unknown} */
+        NullEnum: null;
+        PaginatedAlertList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Alert"][];
+        };
+        PaginatedAlertRuleList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AlertRule"][];
+        };
+        PaginatedAmmListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AmmList"][];
+        };
+        PaginatedCountryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Country"][];
+        };
+        PaginatedDocumentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Document"][];
+        };
+        PaginatedHistoryEntryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["HistoryEntry"][];
+        };
+        PaginatedImportBatchList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ImportBatch"][];
+        };
+        PaginatedImportRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ImportRow"][];
+        };
+        PaginatedNotificationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Notification"][];
+        };
+        PaginatedProductList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Product"][];
+        };
+        PaginatedProductRangeList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ProductRange"][];
+        };
+        PaginatedRenewalList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Renewal"][];
+        };
+        PaginatedUserList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["User"][];
+        };
+        PatchedAlertRuleRequest: {
+            code?: string;
+            /**
+             * Pays (vide = globale)
+             * Format: uuid
+             */
+            country?: string | null;
+            /** Délai avant échéance (jours) */
+            offset_days?: number;
+            /** Sévérité */
+            severity?: components["schemas"]["SeverityEnum"];
+            roles?: components["schemas"]["RoleEnum"][];
+            channels?: components["schemas"]["ChannelEnum"][];
+            /** Seulement si aucun dépôt */
+            only_if_not_filed?: boolean;
+            /** Active */
+            is_active?: boolean;
+        };
+        PatchedAmmDetailRequest: {
+            /**
+             * Produit
+             * Format: uuid
+             */
+            product?: string;
+            /**
+             * Pays
+             * Format: uuid
+             */
+            country?: string;
+            /** N° AMM d'origine */
+            original_number?: string;
+            /**
+             * Date de début d'origine
+             * Format: date
+             */
+            original_start_date?: string | null;
+            /**
+             * Date de fin d'origine
+             * Format: date
+             */
+            original_end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            original_end_date_manual?: boolean;
+            /** État du dossier */
+            dossier_state?: components["schemas"]["DossierStateEnum"];
+            notes?: string;
+            /**
+             * Responsable
+             * Format: uuid
+             */
+            owner?: string | null;
+        };
+        PatchedCountryRequest: {
+            /** Code ISO */
+            iso2?: string;
+            /** Nom */
+            name?: string;
+            /** Autorité réglementaire */
+            authority?: string;
+            /** Durée de validité (années) */
+            validity_years?: number;
+            /** Délai de dépôt (mois) */
+            filing_lead_months?: number;
+            /** Fuseau horaire */
+            timezone?: string;
+        };
+        PatchedProductRangeRequest: {
+            code?: components["schemas"]["RangeCodeEnum"];
+            /** Libellé */
+            label?: string;
+        };
+        PatchedProductRequest: {
+            /** Libellé normalisé */
+            name?: string;
+            /**
+             * Gamme
+             * Format: uuid
+             */
+            range?: string | null;
+            dci?: string;
+            dosage?: string;
+            /** Forme */
+            form?: string;
+            /** Présentation */
+            presentation?: string;
+            /** Actif */
+            is_active?: boolean;
+            aliases?: string[];
+        };
+        PatchedRenewalRequest: {
+            /** Statut du workflow */
+            workflow_status?: components["schemas"]["WorkflowStatusEnum"];
+            /**
+             * Date de dépôt
+             * Format: date
+             */
+            filing_date?: string | null;
+            /**
+             * Date de décision
+             * Format: date
+             */
+            decision_date?: string | null;
+            /** N° AMM */
+            number?: string;
+            /**
+             * Date de début
+             * Format: date
+             */
+            start_date?: string | null;
+            /**
+             * Date de fin
+             * Format: date
+             */
+            end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            end_date_manual?: boolean;
+            notes?: string;
+        };
+        PatchedUserRequest: {
+            /** Format: email */
+            email?: string;
+            /** Prénom */
+            first_name?: string;
+            /** Nom */
+            last_name?: string;
+            /** Rôle */
+            role?: components["schemas"]["RoleEnum"];
+            countries?: string[];
+            /** Actif */
+            is_active?: boolean;
+            password?: string;
+        };
+        Product: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Libellé normalisé */
+            name: string;
+            /**
+             * Gamme
+             * Format: uuid
+             */
+            range?: string | null;
+            readonly range_code: string;
+            readonly range_label: string;
+            dci?: string;
+            dosage?: string;
+            /** Forme */
+            form?: string;
+            /** Présentation */
+            presentation?: string;
+            /** Actif */
+            is_active?: boolean;
+            aliases?: string[];
+        };
+        ProductMergeRequest: {
+            /** Format: uuid */
+            duplicate_id: string;
+        };
+        ProductRange: {
+            /** Format: uuid */
+            readonly id: string;
+            code: components["schemas"]["RangeCodeEnum"];
+            /** Libellé */
+            label: string;
+        };
+        ProductRangeRequest: {
+            code: components["schemas"]["RangeCodeEnum"];
+            /** Libellé */
+            label: string;
+        };
+        ProductRequest: {
+            /** Libellé normalisé */
+            name: string;
+            /**
+             * Gamme
+             * Format: uuid
+             */
+            range?: string | null;
+            dci?: string;
+            dosage?: string;
+            /** Forme */
+            form?: string;
+            /** Présentation */
+            presentation?: string;
+            /** Actif */
+            is_active?: boolean;
+            aliases?: string[];
+        };
         /**
          * @description * `GENERALE` - Générale
          *     * `CARDIO` - Cardio
          *     * `BIEN_ETRE` - Bien-être
+         * @enum {string}
          */
-        range__code?: 'BIEN_ETRE' | 'CARDIO' | 'GENERALE';
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        RangeCodeEnum: "GENERALE" | "CARDIO" | "BIEN_ETRE";
+        Renewal: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            /** N° d'ordre */
+            readonly sequence: number;
+            /** Statut du workflow */
+            workflow_status?: components["schemas"]["WorkflowStatusEnum"];
+            /**
+             * Date de dépôt
+             * Format: date
+             */
+            filing_date?: string | null;
+            /**
+             * Date de décision
+             * Format: date
+             */
+            decision_date?: string | null;
+            /** N° AMM */
+            number?: string;
+            /**
+             * Date de début
+             * Format: date
+             */
+            start_date?: string | null;
+            /**
+             * Date de fin
+             * Format: date
+             */
+            end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            end_date_manual?: boolean;
+            notes?: string;
+            readonly allowed_transitions: string[];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedProductList'];
+        RenewalRequest: {
+            /** Statut du workflow */
+            workflow_status?: components["schemas"]["WorkflowStatusEnum"];
+            /**
+             * Date de dépôt
+             * Format: date
+             */
+            filing_date?: string | null;
+            /**
+             * Date de décision
+             * Format: date
+             */
+            decision_date?: string | null;
+            /** N° AMM */
+            number?: string;
+            /**
+             * Date de début
+             * Format: date
+             */
+            start_date?: string | null;
+            /**
+             * Date de fin
+             * Format: date
+             */
+            end_date?: string | null;
+            /** Date de fin saisie manuellement */
+            end_date_manual?: boolean;
+            notes?: string;
         };
-      };
-    };
-  };
-  v1_products_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProductRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ProductRequest'];
-        'multipart/form-data': components['schemas']['ProductRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
+        RenewalTransitionRequest: {
+            to: components["schemas"]["WorkflowStatusEnum"];
+            /** Format: date */
+            filing_date?: string | null;
+            /** Format: date */
+            decision_date?: string | null;
+            number?: string;
+            /** Format: date */
+            start_date?: string | null;
+            /** Format: date */
+            end_date?: string | null;
+            notes?: string;
         };
-        content: {
-          'application/json': components['schemas']['Product'];
-        };
-      };
-    };
-  };
-  v1_products_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Product'];
-        };
-      };
-    };
-  };
-  v1_products_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProductRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ProductRequest'];
-        'multipart/form-data': components['schemas']['ProductRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Product'];
-        };
-      };
-    };
-  };
-  v1_products_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_products_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedProductRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedProductRequest'];
-        'multipart/form-data': components['schemas']['PatchedProductRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Product'];
-        };
-      };
-    };
-  };
-  v1_products_documents_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_products_merge_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this produit. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProductMergeRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ProductMergeRequest'];
-        'multipart/form-data': components['schemas']['ProductMergeRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Product'];
-        };
-      };
-    };
-  };
-  v1_products_duplicates_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_products_merge_duplicates_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['MergeDuplicatesRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['MergeDuplicatesRequest'];
-        'multipart/form-data': components['schemas']['MergeDuplicatesRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_ranges_list: {
-    parameters: {
-      query?: {
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedProductRangeList'];
-        };
-      };
-    };
-  };
-  v1_ranges_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProductRangeRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ProductRangeRequest'];
-        'multipart/form-data': components['schemas']['ProductRangeRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProductRange'];
-        };
-      };
-    };
-  };
-  v1_ranges_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this gamme. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProductRange'];
-        };
-      };
-    };
-  };
-  v1_ranges_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this gamme. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProductRangeRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['ProductRangeRequest'];
-        'multipart/form-data': components['schemas']['ProductRangeRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProductRange'];
-        };
-      };
-    };
-  };
-  v1_ranges_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this gamme. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  v1_ranges_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this gamme. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedProductRangeRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedProductRangeRequest'];
-        'multipart/form-data': components['schemas']['PatchedProductRangeRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProductRange'];
-        };
-      };
-    };
-  };
-  v1_renewals_list: {
-    parameters: {
-      query?: {
-        amm?: string;
-        country?: string;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-        /** @description A search term. */
-        search?: string;
-        /** @description Les valeurs multiples doivent être séparées par des virgules. */
-        workflow_status?: (
-          'ABANDONNE' | 'DEPOSE' | 'EN_INSTRUCTION' | 'EN_PREPARATION' | 'OBTENU' | 'PLANIFIE' | 'REJETE'
-        )[];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedRenewalList'];
-        };
-      };
-    };
-  };
-  v1_renewals_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this renouvellement. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_renewals_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this renouvellement. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['RenewalRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['RenewalRequest'];
-        'multipart/form-data': components['schemas']['RenewalRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_renewals_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this renouvellement. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedRenewalRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedRenewalRequest'];
-        'multipart/form-data': components['schemas']['PatchedRenewalRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_renewals_documents_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this renouvellement. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['RenewalRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['RenewalRequest'];
-        'multipart/form-data': components['schemas']['RenewalRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-  };
-  v1_renewals_transition_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this renouvellement. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RenewalTransitionRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['RenewalTransitionRequest'];
-        'multipart/form-data': components['schemas']['RenewalTransitionRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Renewal'];
-        };
-      };
-    };
-  };
-  v1_users_list: {
-    parameters: {
-      query?: {
-        is_active?: boolean;
-        /** @description Which field to use when ordering the results. */
-        ordering?: string;
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
         /**
          * @description * `CEO_ADMIN` - CEO / administrateur
          *     * `HQ_REGULATORY` - Réglementaire siège
          *     * `COUNTRY_REGULATORY` - Réglementaire pays
+         * @enum {string}
          */
-        role?: 'CEO_ADMIN' | 'COUNTRY_REGULATORY' | 'HQ_REGULATORY';
-        /** @description A search term. */
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+        RoleEnum: "CEO_ADMIN" | "HQ_REGULATORY" | "COUNTRY_REGULATORY";
+        /**
+         * @description * `INFO` - Information
+         *     * `WARNING` - Avertissement
+         *     * `CRITICAL` - Critique
+         * @enum {string}
+         */
+        SeverityEnum: "INFO" | "WARNING" | "CRITICAL";
+        TokenRefresh: {
+            readonly access: string;
+            refresh: string;
         };
-        content: {
-          'application/json': components['schemas']['PaginatedUserList'];
+        TokenRefreshRequest: {
+            refresh: string;
         };
-      };
-    };
-  };
-  v1_users_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['UserRequest'];
-        'multipart/form-data': components['schemas']['UserRequest'];
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
+        /**
+         * @description * `OK` - OK
+         *     * `A_PLANIFIER` - À planifier
+         *     * `DEPOT_URGENT` - Dépôt urgent
+         *     * `CRITIQUE` - Critique
+         *     * `EXPIRE` - Expirée
+         *     * `EN_INSTRUCTION` - En instruction
+         * @enum {string}
+         */
+        UrgencyEnum: "OK" | "A_PLANIFIER" | "DEPOT_URGENT" | "CRITIQUE" | "EXPIRE" | "EN_INSTRUCTION";
+        User: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            /** Prénom */
+            first_name?: string;
+            /** Nom */
+            last_name?: string;
+            readonly full_name: string;
+            /** Rôle */
+            role?: components["schemas"]["RoleEnum"];
+            countries?: string[];
+            /** Actif */
+            is_active?: boolean;
+            /**
+             * Créé le
+             * Format: date-time
+             */
+            readonly date_joined: string;
+            /**
+             * Dernière connexion
+             * Format: date-time
+             */
+            readonly last_login: string | null;
         };
-        content: {
-          'application/json': components['schemas']['User'];
+        UserRequest: {
+            /** Format: email */
+            email: string;
+            /** Prénom */
+            first_name?: string;
+            /** Nom */
+            last_name?: string;
+            /** Rôle */
+            role?: components["schemas"]["RoleEnum"];
+            countries?: string[];
+            /** Actif */
+            is_active?: boolean;
+            password?: string;
         };
-      };
+        /**
+         * @description * `PLANIFIE` - Planifié
+         *     * `EN_PREPARATION` - En préparation
+         *     * `DEPOSE` - Déposé
+         *     * `EN_INSTRUCTION` - En instruction
+         *     * `OBTENU` - Obtenu
+         *     * `REJETE` - Rejeté
+         *     * `ABANDONNE` - Abandonné
+         * @enum {string}
+         */
+        WorkflowStatusEnum: "PLANIFIE" | "EN_PREPARATION" | "DEPOSE" | "EN_INSTRUCTION" | "OBTENU" | "REJETE" | "ABANDONNE";
     };
-  };
-  v1_users_retrieve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this utilisateur. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
+}
+export type $defs = Record<string, never>;
+export interface operations {
+    v1_alert_rules_list: {
+        parameters: {
+            query?: {
+                code?: string;
+                country?: string;
+                is_active?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `INFO` - Information
+                 *     * `WARNING` - Avertissement
+                 *     * `CRITICAL` - Critique
+                 */
+                severity?: "CRITICAL" | "INFO" | "WARNING";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['User'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAlertRuleList"];
+                };
+            };
         };
-      };
     };
-  };
-  v1_users_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this utilisateur. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['UserRequest'];
-        'multipart/form-data': components['schemas']['UserRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    v1_alert_rules_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['User'];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AlertRuleRequest"];
+                "multipart/form-data": components["schemas"]["AlertRuleRequest"];
+            };
         };
-      };
-    };
-  };
-  v1_users_destroy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this utilisateur. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No response body */
-      204: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRule"];
+                };
+            };
         };
-        content?: never;
-      };
     };
-  };
-  v1_users_partial_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description A UUID string identifying this utilisateur. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': components['schemas']['PatchedUserRequest'];
-        'application/x-www-form-urlencoded': components['schemas']['PatchedUserRequest'];
-        'multipart/form-data': components['schemas']['PatchedUserRequest'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    v1_alert_rules_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this règle d'alerte. */
+                id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['User'];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRule"];
+                };
+            };
         };
-      };
     };
-  };
+    v1_alert_rules_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this règle d'alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AlertRuleRequest"];
+                "multipart/form-data": components["schemas"]["AlertRuleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRule"];
+                };
+            };
+        };
+    };
+    v1_alert_rules_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this règle d'alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_alert_rules_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this règle d'alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAlertRuleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAlertRuleRequest"];
+                "multipart/form-data": components["schemas"]["PatchedAlertRuleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRule"];
+                };
+            };
+        };
+    };
+    v1_alerts_list: {
+        parameters: {
+            query?: {
+                amm?: string;
+                assigned_to?: string;
+                code?: string;
+                country?: string;
+                due_before?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                severity?: ("CRITICAL" | "INFO" | "WARNING")[];
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                status?: ("ACKNOWLEDGED" | "OPEN" | "RESOLVED")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAlertList"];
+                };
+            };
+        };
+    };
+    v1_alerts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"];
+                };
+            };
+        };
+    };
+    v1_alerts_acknowledge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AlertAcknowledgeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AlertAcknowledgeRequest"];
+                "multipart/form-data": components["schemas"]["AlertAcknowledgeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"];
+                };
+            };
+        };
+    };
+    v1_alerts_assign_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertAssignRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AlertAssignRequest"];
+                "multipart/form-data": components["schemas"]["AlertAssignRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"];
+                };
+            };
+        };
+    };
+    v1_alerts_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this alerte. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AlertResolveRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AlertResolveRequest"];
+                "multipart/form-data": components["schemas"]["AlertResolveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"];
+                };
+            };
+        };
+    };
+    v1_amms_list: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                expires_after?: string;
+                expires_before?: string;
+                has_current_scan?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                owner?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                range?: string;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAmmListList"];
+                };
+            };
+        };
+    };
+    v1_amms_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmmDetailRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AmmDetailRequest"];
+                "multipart/form-data": components["schemas"]["AmmDetailRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmmDetail"];
+                };
+            };
+        };
+    };
+    v1_amms_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmmDetail"];
+                };
+            };
+        };
+    };
+    v1_amms_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmmDetailRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AmmDetailRequest"];
+                "multipart/form-data": components["schemas"]["AmmDetailRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmmDetail"];
+                };
+            };
+        };
+    };
+    v1_amms_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_amms_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAmmDetailRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAmmDetailRequest"];
+                "multipart/form-data": components["schemas"]["PatchedAmmDetailRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmmDetail"];
+                };
+            };
+        };
+    };
+    v1_amms_documents_retrieve: {
+        parameters: {
+            query?: {
+                /** @description `period` pour grouper par période */
+                group?: string;
+                include_archived?: boolean;
+                kind?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_amms_documents_create: {
+        parameters: {
+            query?: {
+                /** @description `period` pour grouper par période */
+                group?: string;
+                include_archived?: boolean;
+                kind?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmmListRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AmmListRequest"];
+                "multipart/form-data": components["schemas"]["AmmListRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    "v1_amms_documents_archive.zip_retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+        };
+    };
+    v1_amms_history_list: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                expires_after?: string;
+                expires_before?: string;
+                has_current_scan?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                owner?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                range?: string;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedHistoryEntryList"];
+                };
+            };
+        };
+    };
+    v1_amms_renewals_list: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                expires_after?: string;
+                expires_before?: string;
+                has_current_scan?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                owner?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                range?: string;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRenewalList"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_amms_renewals_create: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                expires_after?: string;
+                expires_before?: string;
+                has_current_scan?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                owner?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                range?: string;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this AMM. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RenewalRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RenewalRequest"];
+                "multipart/form-data": components["schemas"]["RenewalRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRenewalList"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_analytics_africa_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Date de référence AAAA-MM-JJ (par défaut : aujourd'hui). */
+                today?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_analytics_country_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Date de référence AAAA-MM-JJ (par défaut : aujourd'hui). */
+                today?: string;
+            };
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_analytics_export_retrieve: {
+        parameters: {
+            query?: {
+                /** @description xlsx (défaut) ou csv */
+                format?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    v1_analytics_product_coverage_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_auth_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LoginRequest"];
+                "multipart/form-data": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_auth_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoutRequest"];
+                "multipart/form-data": components["schemas"]["LogoutRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_auth_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRefreshRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TokenRefreshRequest"];
+                "multipart/form-data": components["schemas"]["TokenRefreshRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenRefresh"];
+                };
+            };
+        };
+    };
+    v1_countries_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCountryList"];
+                };
+            };
+        };
+    };
+    v1_countries_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CountryRequest"];
+                "multipart/form-data": components["schemas"]["CountryRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Country"];
+                };
+            };
+        };
+    };
+    v1_countries_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Country"];
+                };
+            };
+        };
+    };
+    v1_countries_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CountryRequest"];
+                "multipart/form-data": components["schemas"]["CountryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Country"];
+                };
+            };
+        };
+    };
+    v1_countries_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_countries_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCountryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCountryRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCountryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Country"];
+                };
+            };
+        };
+    };
+    v1_countries_documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso2: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_documents_list: {
+        parameters: {
+            query?: {
+                amm?: string;
+                amm__country__iso2?: string;
+                amm__product?: string;
+                document_date__gte?: string;
+                document_date__lte?: string;
+                document_date__year?: number;
+                is_current?: boolean;
+                /**
+                 * @description * `AMM` - AMM
+                 *     * `RECEPISSE` - Récépissé de dépôt
+                 *     * `COURRIER` - Courrier de l'autorité
+                 *     * `AUTRE` - Autre
+                 */
+                kind?: "AMM" | "AUTRE" | "COURRIER" | "RECEPISSE";
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                kind__in?: string[];
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDocumentList"];
+                };
+            };
+        };
+    };
+    v1_documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDetail"];
+                };
+            };
+        };
+    };
+    v1_documents_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_documents_file_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    v1_documents_replace_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DocumentReplaceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DocumentReplaceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDetail"];
+                };
+            };
+        };
+    };
+    v1_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_imports_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedImportBatchList"];
+                };
+            };
+        };
+    };
+    v1_imports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportUploadRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ImportUploadRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatch"];
+                };
+            };
+        };
+    };
+    v1_imports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatch"];
+                };
+            };
+        };
+    };
+    v1_imports_rows_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedImportRowList"];
+                };
+            };
+        };
+    };
+    v1_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    v1_notifications_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `IN_APP` - In-app
+                 *     * `EMAIL` - Email
+                 */
+                channel?: "EMAIL" | "IN_APP";
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedNotificationList"];
+                };
+            };
+        };
+    };
+    v1_notifications_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
+    v1_notifications_read_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
+    v1_notifications_read_all_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_notifications_unread_count_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_products_list: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                range?: string;
+                /**
+                 * @description * `GENERALE` - Générale
+                 *     * `CARDIO` - Cardio
+                 *     * `BIEN_ETRE` - Bien-être
+                 */
+                range__code?: "BIEN_ETRE" | "CARDIO" | "GENERALE";
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedProductList"];
+                };
+            };
+        };
+    };
+    v1_products_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRequest"];
+                "multipart/form-data": components["schemas"]["ProductRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    v1_products_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    v1_products_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRequest"];
+                "multipart/form-data": components["schemas"]["ProductRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    v1_products_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_products_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProductRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProductRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    v1_products_documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_products_merge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this produit. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductMergeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductMergeRequest"];
+                "multipart/form-data": components["schemas"]["ProductMergeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    v1_products_duplicates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_products_merge_duplicates_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MergeDuplicatesRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MergeDuplicatesRequest"];
+                "multipart/form-data": components["schemas"]["MergeDuplicatesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_ranges_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedProductRangeList"];
+                };
+            };
+        };
+    };
+    v1_ranges_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRangeRequest"];
+                "multipart/form-data": components["schemas"]["ProductRangeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRange"];
+                };
+            };
+        };
+    };
+    v1_ranges_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this gamme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRange"];
+                };
+            };
+        };
+    };
+    v1_ranges_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this gamme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRangeRequest"];
+                "multipart/form-data": components["schemas"]["ProductRangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRange"];
+                };
+            };
+        };
+    };
+    v1_ranges_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this gamme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_ranges_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this gamme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProductRangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProductRangeRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProductRangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductRange"];
+                };
+            };
+        };
+    };
+    v1_renewals_list: {
+        parameters: {
+            query?: {
+                amm?: string;
+                country?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /** @description Les valeurs multiples doivent être séparées par des virgules. */
+                workflow_status?: ("ABANDONNE" | "DEPOSE" | "EN_INSTRUCTION" | "EN_PREPARATION" | "OBTENU" | "PLANIFIE" | "REJETE")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRenewalList"];
+                };
+            };
+        };
+    };
+    v1_renewals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_renewals_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RenewalRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RenewalRequest"];
+                "multipart/form-data": components["schemas"]["RenewalRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_renewals_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRenewalRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedRenewalRequest"];
+                "multipart/form-data": components["schemas"]["PatchedRenewalRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_renewals_documents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RenewalRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RenewalRequest"];
+                "multipart/form-data": components["schemas"]["RenewalRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_renewals_transition_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenewalTransitionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RenewalTransitionRequest"];
+                "multipart/form-data": components["schemas"]["RenewalTransitionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_users_list: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /**
+                 * @description * `CEO_ADMIN` - CEO / administrateur
+                 *     * `HQ_REGULATORY` - Réglementaire siège
+                 *     * `COUNTRY_REGULATORY` - Réglementaire pays
+                 */
+                role?: "CEO_ADMIN" | "COUNTRY_REGULATORY" | "HQ_REGULATORY";
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedUserList"];
+                };
+            };
+        };
+    };
+    v1_users_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserRequest"];
+                "multipart/form-data": components["schemas"]["UserRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    v1_users_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this utilisateur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    v1_users_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this utilisateur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserRequest"];
+                "multipart/form-data": components["schemas"]["UserRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    v1_users_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this utilisateur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_users_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this utilisateur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedUserRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedUserRequest"];
+                "multipart/form-data": components["schemas"]["PatchedUserRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
 }
