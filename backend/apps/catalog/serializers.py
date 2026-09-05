@@ -95,3 +95,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class ProductMergeSerializer(serializers.Serializer):
     duplicate_id = serializers.UUIDField()
+
+
+class MergeDuplicatesSerializer(serializers.Serializer):
+    dry_run = serializers.BooleanField(required=False, default=False)

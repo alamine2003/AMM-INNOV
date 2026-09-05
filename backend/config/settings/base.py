@@ -197,6 +197,18 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta  # noqa: E402
 
+# Refresh token JWT en cookie httpOnly (jamais lisible par du JavaScript) sur le seul chemin
+# /api/v1/auth. SameSite=Lax suffit quand frontend et API partagent le même site (app.X / api.X) ;
+# entre deux domaines sans lien (*.netlify.app / *.onrender.com) il faut SameSite=None + Secure,
+# que Safari bloque : prévoir un domaine commun (docs/deploiement-netlify-render.md).
+AUTH_REFRESH_COOKIE = {
+    "name": env("AUTH_REFRESH_COOKIE_NAME", "amm_refresh"),
+    "secure": env_bool("AUTH_REFRESH_COOKIE_SECURE", not DEBUG),
+    "samesite": env("AUTH_REFRESH_COOKIE_SAMESITE", "Lax"),
+    "domain": env("AUTH_REFRESH_COOKIE_DOMAIN") or None,
+    "path": "/api/v1/auth",
+}
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     # PRD US1.1 : la session expire après 12 h d'inactivité. Le refresh est renouvelé à chaque

@@ -11,7 +11,7 @@ export function useLogin() {
       const res = await api.post<LoginResponse>('/auth/login', payload);
       return res.data;
     },
-    onSuccess: (data) => setSession({ access: data.access, refresh: data.refresh, user: data.user }),
+    onSuccess: (data) => setSession({ access: data.access, user: data.user }),
   });
 }
 
@@ -21,7 +21,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: async () => {
       try {
-        await api.post('/auth/logout', { refresh: useAuthStore.getState().refresh });
+        await api.post('/auth/logout', {}); // le cookie httpOnly est révoqué et effacé par l'API
       } catch {
         /* la déconnexion locale suffit */
       }

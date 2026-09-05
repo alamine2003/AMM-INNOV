@@ -1,58 +1,41 @@
 import { create } from 'zustand';
 import type { User } from '@/api/types';
 
-const REFRESH_KEY = 'amm.refresh';
-
+/**
+ * Session côté client : le jeton d'accès (15 min) vit en mémoire seulement ; le refresh token est
+ * un cookie httpOnly posé par l'API, invisible au JavaScript. Au chargement, `RequireAuth` tente
+ * un rafraîchissement silencieux avec ce cookie (`sessionChecked` évite de le retenter en boucle).
+ */
 interface AuthState {
   access: string | null;
-  refresh: string | null;
   user: User | null;
   hydrated: boolean;
-  setSession: (payload: { access: string; refresh?: string | null; user?: User | null }) => void;
+  sessionChecked: boolean;
+  setSession: (payload: { access: string; user?: User | null }) => void;
   setAccess: (access: string) => void;
   setUser: (user: User | null) => void;
   setHydrated: (hydrated: boolean) => void;
+  markSessionChecked: () => void;
   logout: () => void;
-}
-
-function readRefresh(): string | null {
-  try {
-    return localStorage.getItem(REFRESH_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeRefresh(value: string | null) {
-  try {
-    if (value) localStorage.setItem(REFRESH_KEY, value);
-    else localStorage.removeItem(REFRESH_KEY);
-  } catch {
-    /* stockage indisponible */
-  }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   access: null,
-  refresh: readRefresh(),
   user: null,
   hydrated: false,
-  setSession: ({ access, refresh, user }) => {
-    if (refresh !== undefined) writeRefresh(refresh);
+  sessionChecked: false,
+  setSession: ({ access, user }) =>
     set((state) => ({
       access,
-      refresh: refresh === undefined ? state.refresh : refresh,
       user: user === undefined ? state.user : user,
       hydrated: true,
-    }));
-  },
-  setAccess: (access) => set({ access }),
+      sessionChecked: true,
+    })),
+  setAccess: (access) => set({ access, sessionChecked: true }),
   setUser: (user) => set({ user, hydrated: true }),
   setHydrated: (hydrated) => set({ hydrated }),
-  logout: () => {
-    writeRefresh(null);
-    set({ access: null, refresh: null, user: null, hydrated: true });
-  },
+  markSessionChecked: () => set({ sessionChecked: true }),
+  logout: () => set({ access: null, user: null, hydrated: true, sessionChecked: true }),
 }));
 
 export function canEditCountry(user: User | null, iso2: string | undefined): boolean {

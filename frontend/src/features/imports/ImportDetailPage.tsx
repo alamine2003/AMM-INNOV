@@ -50,6 +50,7 @@ export default function ImportDetailPage() {
         subtitle={
           <>
             <Chip size="small" label={b.status} color={statusColor(b.status)} sx={{ mr: 1 }} />
+            {b.dry_run && <Chip size="small" label={t('admin.imports.dryRunChip')} sx={{ mr: 1 }} />}
             {formatDateTime(b.created_at)}
           </>
         }

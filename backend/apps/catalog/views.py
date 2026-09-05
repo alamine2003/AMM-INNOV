@@ -10,11 +10,12 @@ from apps.accounts.permissions import CEO_ONLY, GLOBAL_ROLES, RolePermission
 from .models import Country, Product, ProductRange
 from .serializers import (
     CountrySerializer,
+    MergeDuplicatesSerializer,
     ProductMergeSerializer,
     ProductRangeSerializer,
     ProductSerializer,
 )
-from .services import merge_products
+from .services import duplicate_groups, merge_duplicates, merge_products
 
 
 class CountryViewSet(viewsets.ModelViewSet):
@@ -59,7 +60,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     write_roles = GLOBAL_ROLES
-    action_roles = {"merge": CEO_ONLY}
+    action_roles = {"merge": CEO_ONLY, "duplicates": GLOBAL_ROLES, "merge_duplicates": CEO_ONLY}
     filterset_fields = {"range": ["exact"], "range__code": ["exact"], "is_active": ["exact"]}
     search_fields = ["name", "dci", "aliases__raw_name"]
     ordering_fields = ["name"]
@@ -86,3 +87,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         from apps.documents.views import product_documents
 
         return product_documents(request, self.get_object())
+
+    @extend_schema(responses={200: dict})
+    @action(detail=False, methods=["get"])
+    def duplicates(self, request):
+        """Groupes de produits en doublon probable (même clé de rapprochement)."""
+        return Response(duplicate_groups())
+
+    @extend_schema(request=MergeDuplicatesSerializer, responses={200: dict})
+    @action(detail=False, methods=["post"], url_path="merge-duplicates")
+    def merge_duplicates(self, request):
+        """Fusionne tous les groupes sans conflit ; les groupes en conflit sont renvoyés."""
+        serializer = MergeDuplicatesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(merge_duplicates(dry_run=serializer.validated_data["dry_run"]))

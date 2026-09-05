@@ -12,7 +12,7 @@ def run_import(batch_id: str, today: str | None = None) -> dict:
     reference = date.fromisoformat(today) if today else batch.reference_date
     batch.file.open("rb")
     try:
-        summary = import_workbook(batch.file, batch=batch, today=reference)
+        summary = import_workbook(batch.file, batch=batch, today=reference, dry_run=batch.dry_run)
     finally:
         batch.file.close()
     return summary.get("totals", {})

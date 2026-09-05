@@ -17,6 +17,16 @@ def normalize_product_name(raw: str | None) -> str:
     return _SPACES.sub(" ", str(raw)).strip().upper()
 
 
+def product_key(raw: str | None) -> str:
+    """Rapprochement de deux libellés du même produit : lettres et chiffres seulement.
+
+    `ACARBOSE GH 100 MG CPR B100` et `ACARBOSE GH 100MG CPR B/100` ont la même clé.
+    """
+    if raw is None:
+        return ""
+    return re.sub(r"[^A-Z0-9]", "", _ascii_upper(raw))
+
+
 def _ascii_upper(raw: str) -> str:
     text = unicodedata.normalize("NFKD", str(raw)).encode("ascii", "ignore").decode()
     return _SPACES.sub(" ", text).strip().upper()

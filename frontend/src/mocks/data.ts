@@ -304,6 +304,8 @@ export interface MockDb {
   history: Record<string, HistoryEntry[]>;
   imports: ImportBatch[];
   importRows: Record<string, ImportRow[]>;
+  /** Utilisateur dont le cookie de session (refresh httpOnly) est valide. */
+  session: string | null;
 }
 
 function computeState(amm: Amm, renewals: Renewal[], country: Country) {
@@ -374,6 +376,7 @@ export function recomputeAmm(db: MockDb, ammId: string) {
 
 export function buildDb(): MockDb {
   const db: MockDb = {
+    session: null,
     countries: structuredClone(countries),
     ranges: structuredClone(ranges),
     products: structuredClone(products),

@@ -55,3 +55,15 @@ export type _User = Assert<Assignable<Schemas['User'], User>>;
 export type _ImportBatch = Assert<Assignable<Schemas['ImportBatch'], ImportBatch>>;
 export type _ImportRow = Assert<Assignable<Schemas['ImportRow'], ImportRow>>;
 export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEntry>>;
+
+// --- Corps envoyés par le frontend → schémas de requête de l'API
+type Sends<Payload, Request> = Payload extends Request ? true : false;
+export type _MergeRequest = Assert<Sends<{ duplicate_id: string }, Schemas['ProductMergeRequest']>>;
+export type _LoginRequest = Assert<Sends<{ email: string; password: string }, Schemas['LoginRequest']>>;
+export type _TransitionRequest = Assert<
+  Sends<
+    { to: Schemas['WorkflowStatusEnum']; filing_date?: string | null },
+    Schemas['RenewalTransitionRequest']
+  >
+>;
+export type _RefreshResponse = Assert<Assignable<Schemas['TokenRefresh'], { access: string }>>;

@@ -3,23 +3,23 @@ import { useAuthStore } from '@/features/auth/authStore';
 
 export const API_BASE = `${import.meta.env.VITE_API_BASE ?? ''}/api/v1`;
 
-export const api = axios.create({ baseURL: API_BASE, timeout: 30000 });
+// withCredentials : le refresh token est un cookie httpOnly limité à /api/v1/auth ; il n'est
+// envoyé que sur les routes d'authentification (login, refresh, logout).
+export const api = axios.create({ baseURL: API_BASE, timeout: 30000, withCredentials: true });
 
 /** Client sans intercepteur, utilisé pour le refresh afin d'éviter les boucles. */
-const bare = axios.create({ baseURL: API_BASE, timeout: 15000 });
+const bare = axios.create({ baseURL: API_BASE, timeout: 15000, withCredentials: true });
 
 let refreshing: Promise<string | null> | null = null;
 
+/** Obtient un nouveau jeton d'accès à partir du cookie de session ; null (et déconnexion) sinon. */
 export async function refreshAccessToken(): Promise<string | null> {
   if (refreshing) return refreshing;
-  const { refresh, setSession, logout } = useAuthStore.getState();
-  if (!refresh) return null;
+  const { setSession, logout } = useAuthStore.getState();
   refreshing = bare
-    .post<{ access: string; refresh?: string }>('/auth/refresh', { refresh })
+    .post<{ access: string }>('/auth/refresh', {})
     .then((res) => {
-      // ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION côté serveur : l'ancien refresh est
-      // invalidé, il faut conserver le nouveau sinon la prochaine restauration de session échoue.
-      setSession({ access: res.data.access, refresh: res.data.refresh ?? undefined });
+      setSession({ access: res.data.access });
       return res.data.access;
     })
     .catch(() => {

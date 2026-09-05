@@ -1319,9 +1319,8 @@ paths:
   /api/v1/auth/login/:
     post:
       operationId: v1_auth_login_create
-      description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
+      description: Returns `access` and `user`; the refresh token travels only in
+        an httpOnly cookie.
       tags:
       - v1
       requestBody:
@@ -1355,7 +1354,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/LogoutRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -1364,9 +1362,8 @@ paths:
   /api/v1/auth/refresh/:
     post:
       operationId: v1_auth_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
+      description: 'Rotates the refresh token: reads it from the cookie (or body),
+        writes the new one back.'
       tags:
       - v1
       requestBody:
@@ -2334,6 +2331,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/duplicates/:
+    get:
+      operationId: v1_products_duplicates_retrieve
+      description: Groupes de produits en doublon probable (même clé de rapprochement).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/products/merge-duplicates/:
+    post:
+      operationId: v1_products_merge_duplicates_create
+      description: Fusionne tous les groupes sans conflit ; les groupes en conflit
+        sont renvoyés.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeDuplicatesRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MergeDuplicatesRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MergeDuplicatesRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/ranges/:
     get:
@@ -3982,6 +4023,10 @@ components:
           - $ref: '#/components/schemas/ImportStatusEnum'
           readOnly: true
           title: Statut
+        dry_run:
+          type: boolean
+          readOnly: true
+          title: Simulation
         summary:
           type: object
           additionalProperties: {}
@@ -4014,6 +4059,7 @@ components:
       - created_at
       - created_by
       - created_by_email
+      - dry_run
       - filename
       - finished_at
       - id
@@ -4096,6 +4142,9 @@ components:
           type: string
           format: date
           nullable: true
+        dry_run:
+          type: boolean
+          default: false
       required:
       - file
     LastRenewal:
@@ -4152,9 +4201,12 @@ components:
       properties:
         refresh:
           type: string
-          minLength: 1
-      required:
-      - refresh
+    MergeDuplicatesRequest:
+      type: object
+      properties:
+        dry_run:
+          type: boolean
+          default: false
     Notification:
       type: object
       properties:

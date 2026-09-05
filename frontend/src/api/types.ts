@@ -22,7 +22,6 @@ export interface UserWrite {
 
 export interface LoginResponse {
   access: string;
-  refresh: string;
   user: User;
 }
 
@@ -299,6 +298,30 @@ export interface CountryAnalytics {
   priorities: Amm[];
 }
 
+export interface DuplicateProduct {
+  id: string;
+  name: string;
+  range_code: string | null;
+  amm_count: number;
+  alias_count: number;
+  countries: string[];
+}
+
+export interface DuplicateGroup {
+  key: string;
+  products: DuplicateProduct[];
+  suggested_keep_id: string;
+  conflict_countries: string[];
+  conflict: boolean;
+}
+
+export interface MergeDuplicatesResult {
+  dry_run: boolean;
+  merged_groups: number;
+  merged_products: number;
+  conflicts: DuplicateGroup[];
+}
+
 export interface CoverageCell {
   country_iso2: string;
   country_name: string;
@@ -311,6 +334,8 @@ export interface CoverageCell {
 export interface ImportBatch {
   id: string;
   status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | string;
+  /** Simulation : rapport produit, aucune donnée écrite. */
+  dry_run?: boolean;
   /** `totals` agrège les compteurs par onglet (`sheets`) : created, updated, skipped, errors. */
   summary: Record<string, unknown> | null;
   created_at?: string;

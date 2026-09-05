@@ -16,9 +16,8 @@ export function makeQueryClient() {
 
 export function loginAs(userId: 'u-ceo' | 'u-hq' | 'u-sn' | 'u-ci'): User {
   const user = db.users.find((u) => u.id === userId)!;
-  useAuthStore
-    .getState()
-    .setSession({ access: `mock-access-${userId}`, refresh: `mock-refresh-${userId}`, user });
+  db.session = userId;
+  useAuthStore.getState().setSession({ access: `mock-access-${userId}`, user });
   return user;
 }
 

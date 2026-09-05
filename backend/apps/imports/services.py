@@ -10,6 +10,7 @@ from django.utils import timezone
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.services.status import compute_amm_state
 from apps.catalog.models import Country, Product, ProductAlias, ProductRange
+from apps.catalog.normalize import product_key
 from apps.core.dates import override_today
 from apps.core.dates import today as reference_today
 
@@ -33,6 +34,9 @@ def _product_for(row: ParsedRow, range_obj: ProductRange | None) -> Product:
         product = alias.product
     else:
         product = Product.objects.filter(name=row.product_name).first()
+        if product is None:
+            # même produit à la ponctuation près (`B/100` vs `B100`) : pas de doublon
+            product = Product.objects.filter(key=product_key(row.product_name)).first()
         if product is None:
             product = Product.objects.create(name=row.product_name, range=range_obj)
         ProductAlias.objects.get_or_create(product=product, raw_name=row.raw_name)
@@ -186,7 +190,13 @@ def _apply_row(
     return outcome, " ; ".join(parts), amm
 
 
-def _import_sheet(sheet: ParsedSheet, batch: ImportBatch | None, today: date) -> dict:
+class _DryRunRollback(Exception):
+    """Raised at the end of a simulated sheet to roll back its transaction."""
+
+
+def _import_sheet(
+    sheet: ParsedSheet, batch: ImportBatch | None, today: date, dry_run: bool = False
+) -> dict:
     counters = {
         key: 0
         for key in (
@@ -199,62 +209,82 @@ def _import_sheet(sheet: ParsedSheet, batch: ImportBatch | None, today: date) ->
             "status_mismatch",
         )
     }
-    with transaction.atomic():
-        country, _ = Country.objects.get_or_create(
-            iso2=sheet.country_iso2, defaults={"name": sheet.country_name}
-        )
-        range_cache: dict = {}
-        import_rows: list[ImportRow] = []
-        for row in sheet.rows:
-            counters["rows"] += 1
-            try:
-                outcome, message, amm = _apply_row(row, country, range_cache, today)
-            except Exception as exc:  # unexpected data problem: keep going, report the row
-                logger.exception("Erreur d'import %s!%s", sheet.name, row.row_number)
-                outcome, message, amm = "ERROR", f"erreur inattendue : {exc}", None
-            if outcome == "ERROR":
-                counters["errors"] += 1
-            elif outcome == "WARNING":
-                counters["warnings"] += 1
-            if "AMM créée" in message:
-                counters["created"] += 1
-            elif "AMM mise à jour" in message:
-                counters["updated"] += 1
-            elif "AMM inchangée" in message:
-                counters["skipped"] += 1
-            if "statut Excel" in message:
-                counters["status_mismatch"] += 1
-            if batch is not None:
-                import_rows.append(
-                    ImportRow(
-                        batch=batch,
-                        sheet=sheet.name,
-                        row_number=row.row_number,
-                        raw=row.raw,
-                        outcome=outcome,
-                        message=message,
-                        amm=amm,
+    import_rows: list[ImportRow] = []
+    try:
+        with transaction.atomic():
+            country, _ = Country.objects.get_or_create(
+                iso2=sheet.country_iso2, defaults={"name": sheet.country_name}
+            )
+            range_cache: dict = {}
+            for row in sheet.rows:
+                counters["rows"] += 1
+                try:
+                    outcome, message, amm = _apply_row(row, country, range_cache, today)
+                except Exception as exc:  # unexpected data problem: keep going, report the row
+                    logger.exception("Erreur d'import %s!%s", sheet.name, row.row_number)
+                    outcome, message, amm = "ERROR", f"erreur inattendue : {exc}", None
+                if outcome == "ERROR":
+                    counters["errors"] += 1
+                elif outcome == "WARNING":
+                    counters["warnings"] += 1
+                if "AMM créée" in message:
+                    counters["created"] += 1
+                elif "AMM mise à jour" in message:
+                    counters["updated"] += 1
+                elif "AMM inchangée" in message:
+                    counters["skipped"] += 1
+                if "statut Excel" in message:
+                    counters["status_mismatch"] += 1
+                if batch is not None:
+                    import_rows.append(
+                        ImportRow(
+                            batch=batch,
+                            sheet=sheet.name,
+                            row_number=row.row_number,
+                            raw=row.raw,
+                            outcome=outcome,
+                            message=message,
+                            # en simulation l'AMM n'existera plus après le rollback
+                            amm=None if dry_run else amm,
+                        )
                     )
-                )
-        if import_rows:
-            ImportRow.objects.bulk_create(import_rows, batch_size=500)
+            if dry_run:
+                raise _DryRunRollback
+    except _DryRunRollback:
+        pass
+    if import_rows:
+        ImportRow.objects.bulk_create(import_rows, batch_size=500)
     return {"country": sheet.country_iso2, **counters}
 
 
-def import_workbook(source, batch: ImportBatch | None = None, today: date | None = None) -> dict:
-    """Parses and imports `source` (path or file). Returns the summary (also stored on `batch`)."""
+def import_workbook(
+    source, batch: ImportBatch | None = None, today: date | None = None, dry_run: bool = False
+) -> dict:
+    """Parses and imports `source` (path or file). Returns the summary (also stored on `batch`).
+
+    `dry_run`: every sheet is applied then rolled back; the report (rows, counters, warnings)
+    is kept so that the workbook can be checked before a real import.
+    """
     today = today or reference_today()
     if batch is not None:
         batch.status = ImportBatch.Status.RUNNING
         batch.reference_date = today
         batch.save(update_fields=["status", "reference_date"])
-    summary: dict = {"today": today.isoformat(), "sheets": {}, "ignored_sheets": [], "totals": {}}
+    summary: dict = {
+        "today": today.isoformat(),
+        "dry_run": dry_run,
+        "sheets": {},
+        "ignored_sheets": [],
+        "totals": {},
+    }
     try:
         with override_today(today):
             parsed = parse_workbook(source)
             summary["ignored_sheets"] = parsed.ignored
             for sheet in parsed.sheets:
-                summary["sheets"][sheet.name.strip()] = _import_sheet(sheet, batch, today)
+                summary["sheets"][sheet.name.strip()] = _import_sheet(
+                    sheet, batch, today, dry_run
+                )
         totals: dict[str, int] = {}
         for stats in summary["sheets"].values():
             for key, value in stats.items():
@@ -275,6 +305,8 @@ def import_workbook(source, batch: ImportBatch | None = None, today: date | None
             batch.summary = summary
             batch.finished_at = timezone.now()
             batch.save(update_fields=["status", "summary", "finished_at"])
+    if dry_run:
+        return summary
     from apps.analytics.tasks import refresh_analytics_views
     from apps.core.tasks import enqueue
     from apps.realtime.publisher import publish_dashboard_refresh

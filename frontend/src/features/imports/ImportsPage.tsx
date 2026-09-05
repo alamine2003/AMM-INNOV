@@ -5,7 +5,9 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Chip,
+  FormControlLabel,
   LinearProgress,
   Link as MuiLink,
   Paper,
@@ -45,11 +47,12 @@ export default function ImportsPage() {
   const start = useStartImport();
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [dryRun, setDryRun] = useState(false);
 
   const launch = () => {
     if (!file) return;
     start.mutate(
-      { file, onProgress: setProgress },
+      { file, dryRun, onProgress: setProgress },
       {
         onSuccess: (batch) => {
           enqueueSnackbar(t('admin.imports.started'), { variant: 'success' });
@@ -73,6 +76,10 @@ export default function ImportsPage() {
               label={t('admin.imports.dropzone')}
               file={file}
               disabled={start.isPending}
+            />
+            <FormControlLabel
+              control={<Checkbox checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />}
+              label={t('admin.imports.dryRun')}
             />
             {start.isPending && progress !== null && (
               <LinearProgress variant="determinate" value={progress} />
@@ -121,6 +128,9 @@ export default function ImportsPage() {
                       </TableCell>
                       <TableCell>
                         <Chip size="small" label={b.status} color={statusColor(b.status)} />
+                        {b.dry_run && (
+                          <Chip size="small" label={t('admin.imports.dryRunChip')} sx={{ ml: 0.5 }} />
+                        )}
                       </TableCell>
                       <TableCell>{s.created ?? '—'}</TableCell>
                       <TableCell>{s.updated ?? '—'}</TableCell>

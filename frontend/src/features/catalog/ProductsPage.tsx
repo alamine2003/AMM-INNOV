@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Box, Button, Chip, Link as MuiLink, Paper, TextField } from '@mui/material';
+import { Alert, Box, Button, Chip, Link as MuiLink, Paper, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useProducts } from '@/api/hooks/useCatalog';
+import { useProductDuplicates, useProducts } from '@/api/hooks/useCatalog';
+import { DuplicatesDialog } from './DuplicatesDialog';
 import type { Product } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
-import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
+import { isAdmin, isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { ProductFormDialog } from './ProductFormDialog';
 
 export default function ProductsPage() {
@@ -17,6 +18,8 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const products = useProducts(search ? { search } : {});
+  const duplicates = useProductDuplicates(isHqOrAdmin(user));
+  const [duplicatesOpen, setDuplicatesOpen] = useState(false);
 
   const columns: GridColDef<Product>[] = [
     {
@@ -67,6 +70,19 @@ export default function ProductsPage() {
           )
         }
       />
+      {(duplicates.data?.length ?? 0) > 0 && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => setDuplicatesOpen(true)}>
+              {t('products.duplicates.review')}
+            </Button>
+          }
+        >
+          {t('products.duplicates.banner', { count: duplicates.data?.length ?? 0 })}
+        </Alert>
+      )}
       <TextField
         size="small"
         label={t('app.search')}
@@ -86,6 +102,12 @@ export default function ProductsPage() {
         />
       </Paper>
       <ProductFormDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <DuplicatesDialog
+        open={duplicatesOpen}
+        onClose={() => setDuplicatesOpen(false)}
+        groups={duplicates.data ?? []}
+        canMerge={isAdmin(user)}
+      />
     </Box>
   );
 }

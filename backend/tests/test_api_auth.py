@@ -9,22 +9,44 @@ def test_login_refresh_me_logout(anon_client, users):
     )
     assert response.status_code == 200
     body = response.json()
-    assert set(body) >= {"access", "refresh", "user"}
+    assert set(body) == {"access", "user"}  # le refresh ne transite que par le cookie httpOnly
     assert body["user"]["email"] == "sn@test.local"
     assert body["user"]["role"] == "COUNTRY_REGULATORY"
     assert sorted(body["user"]["countries"]) == ["ML", "SN"]
+    cookie = response.cookies["amm_refresh"]
+    assert cookie["httponly"] and cookie["path"] == "/api/v1/auth" and cookie["samesite"] == "Lax"
+    first_refresh = cookie.value
 
-    refreshed = anon_client.post("/api/v1/auth/refresh", {"refresh": body["refresh"]})
+    # le client garde le cookie : le rafraîchissement ne demande aucun corps
+    refreshed = anon_client.post("/api/v1/auth/refresh", {})
     assert refreshed.status_code == 200 and "access" in refreshed.json()
+    assert "refresh" not in refreshed.json()
+    rotated = refreshed.cookies["amm_refresh"].value
+    assert rotated and rotated != first_refresh
+    # l'ancien refresh est révoqué (rotation + liste noire)
+    assert anon_client.post("/api/v1/auth/refresh", {"refresh": first_refresh}).status_code == 401
 
     anon_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refreshed.json()['access']}")
     me = anon_client.get("/api/v1/me")
     assert me.status_code == 200 and me.json()["first_name"] == "Fatou"
 
-    new_refresh = refreshed.json().get("refresh", body["refresh"])
-    logout = anon_client.post("/api/v1/auth/logout", {"refresh": new_refresh})
+    logout = anon_client.post("/api/v1/auth/logout", {})
     assert logout.status_code == 204
-    assert anon_client.post("/api/v1/auth/refresh", {"refresh": new_refresh}).status_code == 401
+    assert logout.cookies["amm_refresh"].value == ""  # cookie effacé
+    anon_client.credentials()
+    assert anon_client.post("/api/v1/auth/refresh", {"refresh": rotated}).status_code == 401
+
+
+def test_refresh_rejects_foreign_origin(anon_client, users):
+    anon_client.post("/api/v1/auth/login", {"email": "sn@test.local", "password": "Passw0rd!"})
+    forbidden = anon_client.post("/api/v1/auth/refresh", {}, HTTP_ORIGIN="https://evil.example")
+    assert forbidden.status_code == 403
+    allowed = anon_client.post("/api/v1/auth/refresh", {}, HTTP_ORIGIN="http://localhost:5173")
+    assert allowed.status_code == 200
+
+
+def test_refresh_without_cookie_is_401(anon_client, db):
+    assert anon_client.post("/api/v1/auth/refresh", {}).status_code == 401
 
 
 def test_login_wrong_password(anon_client, users):

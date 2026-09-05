@@ -1,26 +1,26 @@
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { Alert, Box, Button, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useMe } from '@/api/hooks/useAuth';
 import { refreshAccessToken } from '@/api/client';
-import { useEffect } from 'react';
 import type { Role } from '@/api/types';
 
-/** Restaure la session à partir du refresh token, puis charge /me. */
+/**
+ * Restaure la session au chargement : un rafraîchissement silencieux avec le cookie httpOnly,
+ * puis /me. Sans cookie valide, l'API répond 401 et l'utilisateur est renvoyé à la connexion.
+ */
 export function RequireAuth({ children }: { children?: ReactNode }) {
   const location = useLocation();
-  const { access, refresh, user, hydrated } = useAuthStore();
-  // Dérivé du store plutôt que d'un état local : un refresh réussi pose `access`, un refresh
-  // en échec efface `refresh` (logout). Un état local + drapeau `cancelled` restait bloqué à
-  // `true` car la mise à jour d'`access` démontait l'effet avant son `finally`.
-  const restoring = !access && !!refresh;
+  const { access, user, sessionChecked } = useAuthStore();
+  const restoring = !access && !sessionChecked;
 
   useEffect(() => {
-    if (access || !refresh) return;
-    void refreshAccessToken();
-  }, [access, refresh]);
+    if (!restoring) return;
+    void refreshAccessToken().finally(() => useAuthStore.getState().markSessionChecked());
+  }, [restoring]);
 
   const meQuery = useMe(!!access && !user);
 
@@ -35,10 +35,7 @@ export function RequireAuth({ children }: { children?: ReactNode }) {
     );
   }
 
-  if (!access || (!user && !hydrated && meQuery.isError)) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-  if (!user) {
+  if (!access || !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
   return children ? <>{children}</> : <Outlet />;

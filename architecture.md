@@ -638,7 +638,7 @@ Les vues matérialisées sont rafraîchies par `refresh_analytics_views`.
 
 ## 10. Sécurité
 
-- JWT access 15 minutes en mémoire côté client ; refresh 7 jours conservé dans le stockage local du navigateur et envoyé dans le corps de `POST /auth/refresh` ; rotation des refresh tokens et liste de révocation à la déconnexion. Le passage du refresh en cookie `httpOnly` est une évolution prévue (voir ADR 14).
+- JWT access 15 minutes en mémoire côté client ; refresh 12 heures glissantes dans un cookie `httpOnly` limité au chemin `/api/v1/auth` (SameSite=Lax), rotation à chaque rafraîchissement et liste de révocation à la déconnexion ; contrôle de l'en-tête `Origin` sur les routes d'authentification. Frontend et API doivent partager le même site (`app.<domaine>` / `api.<domaine>`).
 - Mots de passe hachés avec l'algorithme par défaut de Django (PBKDF2-SHA256) ; Argon2 et le verrouillage de compte (django-axes) sont des options de durcissement à activer avant la mise en production.
 - Limitation de débit DRF sur `/auth/login`.
 - CORS restreint à `FRONTEND_URL` ; CSP stricte ; en-têtes de sécurité (django-csp, `SECURE_*`).

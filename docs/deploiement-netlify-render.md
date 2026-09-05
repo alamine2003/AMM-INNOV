@@ -44,6 +44,18 @@ expire après 30 jours) conviennent à une démonstration, pas à la production.
 - Un fournisseur SMTP et l'URL au format `smtp+tls://utilisateur:motdepasse@hote:587`.
 - Le classeur Excel de référence pour l'import initial.
 
+## 1 bis. Un domaine commun pour la session
+
+Le refresh token est un cookie `httpOnly` posé par l'API. Un cookie n'est envoyé au
+rafraîchissement que si le frontend et l'API sont sur le **même site** : prévoir un domaine et
+deux sous-domaines, par exemple `app.amm-innov.com` (Netlify) et `api.amm-innov.com` (Render), avec
+`AUTH_REFRESH_COOKIE_DOMAIN=.amm-innov.com`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`,
+`CSRF_TRUSTED_ORIGINS`, `FRONTEND_URL` et `netlify.toml` ajustés en conséquence.
+
+Pour un essai sur `*.netlify.app` et `*.onrender.com` (deux sites différents), mettre
+`AUTH_REFRESH_COOKIE_SAMESITE=None` et laisser le domaine vide : Chrome et Firefox acceptent ce
+cookie tiers, Safari le bloque (l'utilisateur est déconnecté au bout de 15 minutes).
+
 ## 2. Stockage S3 des scans PDF
 
 Sur Render, le service web (qui reçoit les uploads) et le worker (qui lit les PDF) n'ont

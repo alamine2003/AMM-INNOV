@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.text import slugify
 from simple_history.models import HistoricalRecords
 
-from .normalize import normalize_product_name
+from .normalize import normalize_product_name, product_key
 
 
 class Country(models.Model):
@@ -54,6 +54,9 @@ class ProductRange(models.Model):
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("libellé normalisé", max_length=255, unique=True)
+    # Clé de rapprochement (lettres et chiffres) : l'import y retrouve un produit déjà connu
+    # malgré une ponctuation différente, et les doublons existants se détectent par groupe.
+    key = models.CharField("clé de rapprochement", max_length=255, db_index=True, editable=False)
     range = models.ForeignKey(
         ProductRange,
         on_delete=models.PROTECT,
@@ -79,6 +82,7 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         self.name = normalize_product_name(self.name)
+        self.key = product_key(self.name)
         super().save(*args, **kwargs)
 
     @property

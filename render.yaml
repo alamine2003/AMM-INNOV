@@ -26,6 +26,10 @@ envVarGroups:
         value: https://amm-innov-backend.onrender.com
       - key: FRONTEND_URL
         value: https://amm-innov.netlify.app
+      - key: AUTH_REFRESH_COOKIE_DOMAIN
+        sync: false            # .amm-innov.com quand app. et api. partagent le domaine ; vide sinon
+      - key: AUTH_REFRESH_COOKIE_SAMESITE
+        value: Lax             # None (avec domaine vide) tant que Netlify et Render restent sur leurs domaines
       - key: TIME_ZONE
         value: Africa/Dakar
       - key: EMAIL_URL

@@ -27,7 +27,6 @@ const nextId = (prefix: string) => `${prefix}-${++idCounter}`;
 
 /** Jeton mock : `mock-access-<userId>` / `mock-refresh-<userId>`. */
 const ACCESS_PREFIX = 'mock-access-';
-const REFRESH_PREFIX = 'mock-refresh-';
 export const EXPIRED_ACCESS = 'mock-access-expired';
 
 function currentUser(request: Request): User | null {
@@ -157,20 +156,17 @@ export const handlers = [
     if (!user || body.password !== MOCK_PASSWORD) {
       return HttpResponse.json({ detail: 'Identifiants incorrects' }, { status: 401 });
     }
-    return HttpResponse.json({
-      access: `${ACCESS_PREFIX}${user.id}`,
-      refresh: `${REFRESH_PREFIX}${user.id}`,
-      user,
-    });
+    db.session = user.id; // équivalent du cookie httpOnly posé par l'API
+    return HttpResponse.json({ access: `${ACCESS_PREFIX}${user.id}`, user });
   }),
-  http.post(url('/auth/refresh'), async ({ request }) => {
-    const body = (await request.json()) as { refresh: string };
-    if (!body.refresh?.startsWith(REFRESH_PREFIX)) return unauthorized();
-    const id = body.refresh.slice(REFRESH_PREFIX.length);
-    if (!db.users.some((u) => u.id === id)) return unauthorized();
-    return HttpResponse.json({ access: `${ACCESS_PREFIX}${id}` });
+  http.post(url('/auth/refresh'), () => {
+    if (!db.session || !db.users.some((u) => u.id === db.session)) return unauthorized();
+    return HttpResponse.json({ access: `${ACCESS_PREFIX}${db.session}` });
   }),
-  http.post(url('/auth/logout'), () => new HttpResponse(null, { status: 204 })),
+  http.post(url('/auth/logout'), () => {
+    db.session = null;
+    return new HttpResponse(null, { status: 204 });
+  }),
   http.get(
     url('/me'),
     withAuth((user) => HttpResponse.json(user)),
@@ -805,6 +801,18 @@ export const handlers = [
     }),
   ),
 
+  // ---- Doublons de produits ----
+  http.get(
+    url('/products/duplicates'),
+    withAuth(() => HttpResponse.json([])),
+  ),
+  http.post(
+    url('/products/merge-duplicates'),
+    withAuth(() =>
+      HttpResponse.json({ dry_run: false, merged_groups: 0, merged_products: 0, conflicts: [] }),
+    ),
+  ),
+
   // ---- Notifications ----
   http.get(
     url('/notifications/unread-count'),
@@ -959,10 +967,11 @@ export const handlers = [
     url('/imports'),
     withAuth(async (user, { request }) => {
       if (user.role === 'COUNTRY_REGULATORY') return forbidden();
-      const { file } = await readForm(request);
+      const { form, file } = await readForm(request);
       const batch = {
         id: nextId('imp'),
         status: 'RUNNING',
+        dry_run: form.get('dry_run') === 'true',
         summary: null,
         created_at: new Date().toISOString(),
         filename: file?.name ?? 'classeur.xlsx',

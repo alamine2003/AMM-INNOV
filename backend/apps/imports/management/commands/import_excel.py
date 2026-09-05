@@ -24,6 +24,9 @@ class Command(BaseCommand):
         parser.add_argument(
             "--no-batch", action="store_true", help="Ne pas enregistrer d'ImportBatch"
         )
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Simulation : rapport complet, aucune écriture"
+        )
 
     def handle(self, *args, **options):
         path = Path(options["path"])
@@ -37,10 +40,10 @@ class Command(BaseCommand):
                 raise CommandError(f"Utilisateur inconnu : {options['user']}")
         batch = None
         if not options["no_batch"]:
-            batch = ImportBatch(created_by=user, reference_date=today)
+            batch = ImportBatch(created_by=user, reference_date=today, dry_run=options["dry_run"])
             with path.open("rb") as handle:
                 batch.file.save(path.name, File(handle), save=True)
-        summary = import_workbook(str(path), batch=batch, today=today)
+        summary = import_workbook(str(path), batch=batch, today=today, dry_run=options["dry_run"])
         self.stdout.write(json.dumps(summary, indent=2, ensure_ascii=False, default=str))
         totals = summary.get("totals", {})
         self.stdout.write(

@@ -1,7 +1,16 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
-import type { AmmDocument, CoverageCell, Country, Paginated, Product, ProductRange } from '@/api/types';
+import type {
+  AmmDocument,
+  CoverageCell,
+  Country,
+  DuplicateGroup,
+  MergeDuplicatesResult,
+  Paginated,
+  Product,
+  ProductRange,
+} from '@/api/types';
 
 /**
  * Charge toutes les pages d'un référentiel (l'API plafonne `page_size` à 500 : au-delà, les
@@ -106,11 +115,35 @@ export const useCountryMutations = () => useCrud<Country>('countries', queryKeys
 export const useRangeMutations = () => useCrud<ProductRange>('ranges', queryKeys.ranges.all);
 export const useProductMutations = () => useCrud<Product>('products', queryKeys.products.all);
 
+/** Fusionne le produit `id` (doublon, supprimé) dans `target_id` (conservé). */
 export function useMergeProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, target_id }: { id: string; target_id: string }) =>
-      (await api.post(`/products/${id}/merge`, { target_id })).data,
+      (await api.post<Product>(`/products/${target_id}/merge`, { duplicate_id: id })).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.products.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.amms.all });
+    },
+  });
+}
+
+/** Groupes de produits en doublon probable (même libellé à la ponctuation près). */
+export function useProductDuplicates(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.products.duplicates(),
+    queryFn: async () => (await api.get<DuplicateGroup[]>('/products/duplicates')).data,
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/** Fusionne tous les groupes sans conflit (CEO). */
+export function useMergeDuplicates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dryRun: boolean) =>
+      (await api.post<MergeDuplicatesResult>('/products/merge-duplicates', { dry_run: dryRun })).data,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.products.all });
       void qc.invalidateQueries({ queryKey: queryKeys.amms.all });

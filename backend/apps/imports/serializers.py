@@ -16,6 +16,7 @@ class ImportBatchSerializer(serializers.ModelSerializer):
             "id",
             "filename",
             "status",
+            "dry_run",
             "summary",
             "reference_date",
             "created_by",
@@ -32,6 +33,7 @@ class ImportBatchSerializer(serializers.ModelSerializer):
 class ImportUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
     today = serializers.DateField(required=False, allow_null=True)
+    dry_run = serializers.BooleanField(required=False, default=False)
 
 
 class ImportRowSerializer(serializers.ModelSerializer):

@@ -36,7 +36,8 @@ Ou via Docker : `docker run --rm -v "$PWD:/app" -w /app python:3.12-slim bash -c
 - `seed_demo` : utilisateurs, gammes, 15 pays, règles d'alerte, ~20 AMM de démonstration.
 - `seed_alert_rules` : règles globales J-365, J-180, J-90, J-30, J0, DOSSIER.
 - `evaluate_alerts [--today AAAA-MM-JJ] [--quiet]` : évaluation des règles (comme le beat nocturne) ; `--quiet` crée les alertes sans notification, pour la première mise en service.
-- `import_excel <fichier> [--user email] [--today AAAA-MM-JJ]` : import idempotent du classeur.
+- `import_excel <fichier> [--user email] [--today AAAA-MM-JJ] [--dry-run]` : import idempotent du classeur ; `--dry-run` produit le rapport sans rien écrire.
+- `product_duplicates [--merge]` : produits en doublon probable (même libellé à la ponctuation près) ; `--merge` fusionne les groupes sans AMM dans un même pays.
 
 ## Notes d'implémentation
 

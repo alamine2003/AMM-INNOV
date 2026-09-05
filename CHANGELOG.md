@@ -28,8 +28,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Photos JPEG/PNG converties sans perte en PDF à l'envoi (`img2pdf`) ; image illisible refusée.
 - `/api/docs` et `/api/schema` réservés aux utilisateurs connectés (session admin ou JWT).
 - Double création simultanée d'une AMM (même produit × pays) : 400 explicite au lieu de 500.
+- Import à blanc (PRD US7.1) : case « Simulation » à l'envoi du classeur, `import_excel --dry-run` ;
+  rapport complet (lignes, compteurs, anomalies) sans aucune écriture.
+- Doublons de produits : clé de rapprochement `Product.key` (lettres et chiffres), l'import
+  retrouve un produit connu malgré une ponctuation différente ; `GET /products/duplicates`,
+  `POST /products/merge-duplicates` (CEO, fusionne les groupes sans AMM dans un même pays),
+  commande `product_duplicates [--merge]`, écran « Doublons probables » dans la liste des produits.
+- Fusion de produits depuis la fiche produit : le frontend envoyait `target_id` là où l'API attend
+  `duplicate_id` (bouton inopérant) ; contrat étendu aux corps de requête.
 
 ### Sécurité
+- Refresh token retiré du `localStorage` : cookie `httpOnly` limité à `/api/v1/auth`, SameSite=Lax,
+  rotation à chaque rafraîchissement, contrôle de l'en-tête `Origin` sur refresh et logout.
+  Un domaine commun frontend/API est requis en production (guide de déploiement, § 1 bis).
 - Couverture pays d'un produit : un réglementaire pays ne voit plus le statut des autres pays.
 - Assignation d'une alerte limitée aux utilisateurs ayant accès au pays de l'alerte.
 - Statut d'un renouvellement modifiable uniquement via `/renewals/{id}/transition` (plus de PATCH direct).

@@ -178,3 +178,84 @@ def test_duplicate_amm_creation_is_a_400(hq_client, make_amm, product, countries
         "/api/v1/amms", {"product": str(product.pk), "country": str(countries["SN"].pk)}
     )
     assert response.status_code == 400
+
+
+# --- import à blanc, doublons de produits
+
+
+def test_dry_run_import_writes_nothing_but_reports(hq_client, workbook_bytes, ranges):
+    from apps.amm.models import MarketingAuthorization
+    from apps.imports.models import ImportBatch
+    from tests.conftest import TODAY
+
+    upload = SimpleUploadedFile("classeur.xlsx", workbook_bytes)
+    response = hq_client.post(
+        "/api/v1/imports",
+        {"file": upload, "today": TODAY.isoformat(), "dry_run": "true"},
+        format="multipart",
+    )
+    assert response.status_code == 202, response.json()
+    batch = response.json()
+    assert batch["dry_run"] is True and batch["status"] == "DONE"
+    assert batch["summary"]["dry_run"] is True
+    assert batch["summary"]["totals"]["created"] == 7
+    assert MarketingAuthorization.objects.count() == 0  # rien n'est écrit
+    rows = hq_client.get(f"/api/v1/imports/{batch['id']}/rows").json()
+    assert rows["count"] == 7 and all(r["amm"] is None for r in rows["results"])
+    assert ImportBatch.objects.get(pk=batch["id"]).dry_run is True
+
+
+def test_product_key_matches_punctuation_variants(ranges):
+    from apps.catalog.models import Product
+    from apps.catalog.normalize import product_key
+
+    assert product_key("ACARBOSE GH 100 MG CPR B100") == product_key("ACARBOSE GH 100MG CPR B/100")
+    product = Product.objects.create(name="ALFA GH SR 10MG CPR B/30")
+    assert product.key == "ALFAGHSR10MGCPRB30"
+
+
+def test_duplicate_groups_and_auto_merge(hq_client, ceo_client, make_amm, countries):
+    from apps.catalog.models import Product, ProductAlias
+
+    a = Product.objects.create(name="ALLOPURINOL GH 100MG CPR B/30")
+    b = Product.objects.create(name="ALLOPURINOL GH 100MG CPR B30")
+    make_amm(country="SN", product_obj=a)
+    make_amm(country="CI", product_obj=a)
+    make_amm(country="ML", product_obj=b)
+    # groupe en conflit : deux produits avec une AMM au même pays
+    c = Product.objects.create(name="ALFA GH SR 10MG CPR B/30")
+    d = Product.objects.create(name="ALFA GH SR 10MG CPR B30")
+    make_amm(country="SN", product_obj=c)
+    make_amm(country="SN", product_obj=d)
+
+    groups = hq_client.get("/api/v1/products/duplicates").json()
+    assert len(groups) == 2
+    clean = next(g for g in groups if not g["conflict"])
+    assert clean["suggested_keep_id"] == str(a.pk)  # le plus d'AMM
+    conflict = next(g for g in groups if g["conflict"])
+    assert conflict["conflict_countries"] == ["SN"]
+
+    assert hq_client.post("/api/v1/products/merge-duplicates", {}).status_code == 403
+    result = ceo_client.post("/api/v1/products/merge-duplicates", {"dry_run": True}).json()
+    assert result["merged_groups"] == 1 and Product.objects.filter(pk=b.pk).exists()
+    result = ceo_client.post("/api/v1/products/merge-duplicates", {}).json()
+    assert result["merged_groups"] == 1 and result["merged_products"] == 1
+    assert len(result["conflicts"]) == 1
+    assert not Product.objects.filter(pk=b.pk).exists()
+    assert a.amms.count() == 3
+    assert ProductAlias.objects.filter(product=a, raw_name=b.name).exists()
+    # le conflit reste : seul le CEO peut trancher, via /products/{keep}/merge
+    assert Product.objects.filter(pk__in=[c.pk, d.pk]).count() == 2
+
+
+def test_import_reuses_product_with_different_punctuation(ranges, countries):
+    from apps.catalog.models import Product
+    from apps.imports.excel_parser import ParsedRow
+    from apps.imports.services import _product_for
+
+    existing = Product.objects.create(name="ADNA FENUGREC CPR EFFV B/10")
+    row = ParsedRow.__new__(ParsedRow)
+    row.raw_name = "ADNA FENUGREC CPR EFFV B10"
+    row.product_name = "ADNA FENUGREC CPR EFFV B10"
+    assert _product_for(row, None).pk == existing.pk
+    assert Product.objects.count() == 1

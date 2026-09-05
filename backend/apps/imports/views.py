@@ -38,6 +38,7 @@ class ImportViewSet(
             file=upload,
             created_by=request.user,
             reference_date=serializer.validated_data.get("today"),
+            dry_run=serializer.validated_data["dry_run"],
         )
         enqueue(run_import, str(batch.pk))
         batch.refresh_from_db()

@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '@/test/utils';
 import { useAuthStore } from '@/features/auth/authStore';
+import { db } from '@/mocks/handlers';
 
 describe('LoginPage', () => {
   it('connecte l’utilisateur et redirige vers le dashboard', async () => {
@@ -12,7 +13,8 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText(/mot de passe/i), 'Passw0rd!');
     await user.click(screen.getByRole('button', { name: /se connecter/i }));
     await waitFor(() => expect(useAuthStore.getState().user?.role).toBe('HQ_REGULATORY'));
-    expect(localStorage.getItem('amm.refresh')).toBe('mock-refresh-u-hq');
+    expect(db.session).toBe('u-hq'); // cookie de session posé par l'API, jamais dans localStorage
+    expect(localStorage.getItem('amm.refresh')).toBeNull();
     expect(
       await screen.findByRole('heading', { name: 'Dashboard Afrique' }, { timeout: 5000 }),
     ).toBeInTheDocument();

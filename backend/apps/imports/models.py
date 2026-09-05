@@ -18,6 +18,8 @@ class ImportBatch(models.Model):
     )
     summary = models.JSONField("résumé", default=dict, blank=True)
     reference_date = models.DateField("date de référence", null=True, blank=True)
+    # Simulation : le rapport (lignes, compteurs, anomalies) est produit, rien n'est écrit.
+    dry_run = models.BooleanField("simulation", default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

@@ -44,9 +44,18 @@ export function useImportRows(id: string | undefined, outcome = 'ERROR', page = 
 export function useStartImport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+    mutationFn: async ({
+      file,
+      dryRun = false,
+      onProgress,
+    }: {
+      file: File;
+      dryRun?: boolean;
+      onProgress?: (pct: number) => void;
+    }) => {
       const form = new FormData();
       form.append('file', file);
+      if (dryRun) form.append('dry_run', 'true');
       const res = await api.post<ImportBatch>('/imports', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {

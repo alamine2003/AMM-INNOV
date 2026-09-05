@@ -369,7 +369,21 @@
     "merged": "Produits fusionnés",
     "saved": "Produit enregistré",
     "documents": "Documents du produit",
-    "notFound": "Produit introuvable"
+    "notFound": "Produit introuvable",
+    "duplicates": {
+      "banner": "{{count}} groupe(s) de produits en doublon probable (même libellé à la ponctuation près).",
+      "review": "Examiner",
+      "title": "Doublons probables ({{count}})",
+      "help": "Conserver un produit fusionne les autres dans celui-ci : leurs AMM, renouvellements, documents et alias sont rattachés, les anciens libellés deviennent des alias. Un groupe en conflit a deux produits avec une AMM dans le même pays : la fusion ne garde qu’une des deux AMM, vérifiez avant.",
+      "mergeAll": "Fusionner les {{count}} groupes sans conflit",
+      "mergeAllHelp": "Le produit conservé est celui qui porte le plus d’AMM ; les groupes en conflit restent à trancher ligne par ligne.",
+      "mergedAll": "{{groups}} groupe(s) fusionné(s), {{products}} produit(s) absorbé(s).",
+      "merged": "Produits fusionnés.",
+      "conflict": "Conflit : AMM dans un même pays ({{countries}})",
+      "noConflict": "Sans conflit",
+      "suggested": "suggéré",
+      "keep": "Conserver celui-ci"
+    }
   },
   "admin": {
     "users": {
@@ -438,7 +452,9 @@
       "updated": "Mises à jour",
       "skipped": "Ignorées",
       "errorCount": "Erreurs",
-      "warnings": "Divergences"
+      "warnings": "Divergences",
+      "dryRun": "Simulation : produire le rapport sans rien modifier",
+      "dryRunChip": "Simulation"
     }
   }
 }
