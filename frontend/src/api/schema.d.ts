@@ -2219,13 +2219,13 @@ export interface operations {
                 code?: string;
                 country?: string;
                 is_active?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /**
                  * @description * `INFO` - Information
@@ -2280,7 +2280,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this règle d'alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2302,7 +2302,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this règle d'alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2330,7 +2330,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this règle d'alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2351,7 +2351,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this règle d'alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2382,13 +2382,13 @@ export interface operations {
                 code?: string;
                 country?: string;
                 due_before?: string;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 severity?: ("CRITICAL" | "INFO" | "WARNING")[];
@@ -2416,7 +2416,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2438,7 +2438,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2466,7 +2466,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2494,7 +2494,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this alerte. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) alerte. */
                 id: string;
             };
             cookie?: never;
@@ -2526,16 +2526,16 @@ export interface operations {
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
                 owner?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 product?: string;
                 range?: string;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
@@ -2588,7 +2588,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2610,7 +2610,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2638,7 +2638,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2659,7 +2659,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2692,7 +2692,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2721,7 +2721,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2751,7 +2751,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2777,16 +2777,16 @@ export interface operations {
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
                 owner?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 product?: string;
                 range?: string;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
@@ -2795,7 +2795,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2821,16 +2821,16 @@ export interface operations {
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
                 owner?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 product?: string;
                 range?: string;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
@@ -2839,7 +2839,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -2873,16 +2873,16 @@ export interface operations {
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
                 owner?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 product?: string;
                 range?: string;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
@@ -2891,7 +2891,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this AMM. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
                 id: string;
             };
             cookie?: never;
@@ -3093,13 +3093,13 @@ export interface operations {
     v1_countries_list: {
         parameters: {
             query?: {
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3280,13 +3280,13 @@ export interface operations {
                 kind?: "AMM" | "AUTRE" | "COURRIER" | "RECEPISSE";
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 kind__in?: string[];
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3310,7 +3310,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this document. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) document. */
                 id: string;
             };
             cookie?: never;
@@ -3332,7 +3332,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this document. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) document. */
                 id: string;
             };
             cookie?: never;
@@ -3353,7 +3353,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this document. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) document. */
                 id: string;
             };
             cookie?: never;
@@ -3375,7 +3375,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this document. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) document. */
                 id: string;
             };
             cookie?: never;
@@ -3421,13 +3421,13 @@ export interface operations {
     v1_imports_list: {
         parameters: {
             query?: {
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3475,7 +3475,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this import. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) import. */
                 id: string;
             };
             cookie?: never;
@@ -3495,18 +3495,18 @@ export interface operations {
     v1_imports_rows_list: {
         parameters: {
             query?: {
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
             path: {
-                /** @description A UUID string identifying this import. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) import. */
                 id: string;
             };
             cookie?: never;
@@ -3550,13 +3550,13 @@ export interface operations {
                  *     * `EMAIL` - Email
                  */
                 channel?: "EMAIL" | "IN_APP";
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3580,7 +3580,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this notification. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) notification. */
                 id: string;
             };
             cookie?: never;
@@ -3602,7 +3602,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this notification. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) notification. */
                 id: string;
             };
             cookie?: never;
@@ -3665,11 +3665,11 @@ export interface operations {
         parameters: {
             query?: {
                 is_active?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 range?: string;
                 /**
@@ -3678,7 +3678,7 @@ export interface operations {
                  *     * `BIEN_ETRE` - Bien-être
                  */
                 range__code?: "BIEN_ETRE" | "CARDIO" | "GENERALE";
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3727,7 +3727,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3749,7 +3749,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3777,7 +3777,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3798,7 +3798,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3826,7 +3826,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3850,7 +3850,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this produit. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) produit. */
                 id: string;
             };
             cookie?: never;
@@ -3924,13 +3924,13 @@ export interface operations {
     v1_ranges_list: {
         parameters: {
             query?: {
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -3979,7 +3979,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this gamme. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) gamme. */
                 id: string;
             };
             cookie?: never;
@@ -4001,7 +4001,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this gamme. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) gamme. */
                 id: string;
             };
             cookie?: never;
@@ -4029,7 +4029,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this gamme. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) gamme. */
                 id: string;
             };
             cookie?: never;
@@ -4050,7 +4050,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this gamme. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) gamme. */
                 id: string;
             };
             cookie?: never;
@@ -4078,13 +4078,13 @@ export interface operations {
             query?: {
                 amm?: string;
                 country?: string;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
                 workflow_status?: ("ABANDONNE" | "DEPOSE" | "EN_INSTRUCTION" | "EN_PREPARATION" | "OBTENU" | "PLANIFIE" | "REJETE")[];
@@ -4110,7 +4110,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this renouvellement. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
                 id: string;
             };
             cookie?: never;
@@ -4132,7 +4132,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this renouvellement. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
                 id: string;
             };
             cookie?: never;
@@ -4160,7 +4160,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this renouvellement. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
                 id: string;
             };
             cookie?: never;
@@ -4188,7 +4188,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this renouvellement. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
                 id: string;
             };
             cookie?: never;
@@ -4218,7 +4218,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this renouvellement. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
                 id: string;
             };
             cookie?: never;
@@ -4245,11 +4245,11 @@ export interface operations {
         parameters: {
             query?: {
                 is_active?: boolean;
-                /** @description Which field to use when ordering the results. */
+                /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
-                /** @description A page number within the paginated result set. */
+                /** @description Un numéro de page de l'ensemble des résultats. */
                 page?: number;
-                /** @description Number of results to return per page. */
+                /** @description Nombre de résultats à retourner par page. */
                 page_size?: number;
                 /**
                  * @description * `CEO_ADMIN` - CEO / administrateur
@@ -4257,7 +4257,7 @@ export interface operations {
                  *     * `COUNTRY_REGULATORY` - Réglementaire pays
                  */
                 role?: "CEO_ADMIN" | "COUNTRY_REGULATORY" | "HQ_REGULATORY";
-                /** @description A search term. */
+                /** @description Un terme de recherche. */
                 search?: string;
             };
             header?: never;
@@ -4306,7 +4306,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this utilisateur. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) utilisateur. */
                 id: string;
             };
             cookie?: never;
@@ -4328,7 +4328,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this utilisateur. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) utilisateur. */
                 id: string;
             };
             cookie?: never;
@@ -4356,7 +4356,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this utilisateur. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) utilisateur. */
                 id: string;
             };
             cookie?: never;
@@ -4377,7 +4377,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this utilisateur. */
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) utilisateur. */
                 id: string;
             };
             cookie?: never;

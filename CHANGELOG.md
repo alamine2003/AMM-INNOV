@@ -38,6 +38,9 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   `duplicate_id` (bouton inopérant) ; contrat étendu aux corps de requête.
 
 ### Sécurité
+- Dépendances : Django 5.1 (fin de support sécurité) remplacé par Django 5.2 LTS (5.2.17, corrige
+  7 CVE 2026), Django REST framework 3.17.2 (2 CVE), pip de l'image mis à jour ; `pip-audit` et
+  `npm audit` à zéro.
 - Refresh token retiré du `localStorage` : cookie `httpOnly` limité à `/api/v1/auth`, SameSite=Lax,
   rotation à chaque rafraîchissement, contrôle de l'en-tête `Origin` sur refresh et logout.
   Un domaine commun frontend/API est requis en production (guide de déploiement, § 1 bis).

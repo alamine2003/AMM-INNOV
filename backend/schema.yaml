@@ -24,25 +24,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -103,7 +103,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this règle d'alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte.
         required: true
       tags:
       - v1
@@ -124,7 +124,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this règle d'alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte.
         required: true
       tags:
       - v1
@@ -157,7 +157,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this règle d'alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte.
         required: true
       tags:
       - v1
@@ -189,7 +189,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this règle d'alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) règle d'alerte.
         required: true
       tags:
       - v1
@@ -231,25 +231,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -304,7 +304,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) alerte.
         required: true
       tags:
       - v1
@@ -330,7 +330,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) alerte.
         required: true
       tags:
       - v1
@@ -367,7 +367,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) alerte.
         required: true
       tags:
       - v1
@@ -405,7 +405,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this alerte.
+        description: Un(une) Chaîne UUID identifiant ce(cette) alerte.
         required: true
       tags:
       - v1
@@ -472,7 +472,7 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - in: query
@@ -483,13 +483,13 @@ paths:
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -504,7 +504,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -592,7 +592,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       tags:
       - v1
@@ -617,7 +617,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       tags:
       - v1
@@ -654,7 +654,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       tags:
       - v1
@@ -690,7 +690,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       tags:
       - v1
@@ -717,7 +717,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       - in: query
         name: include_archived
@@ -756,7 +756,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       - in: query
         name: include_archived
@@ -803,7 +803,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       tags:
       - v1
@@ -862,12 +862,12 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - in: query
@@ -878,13 +878,13 @@ paths:
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -899,7 +899,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -990,12 +990,12 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - in: query
@@ -1006,13 +1006,13 @@ paths:
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -1027,7 +1027,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -1123,12 +1123,12 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this AMM.
+        description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - in: query
@@ -1139,13 +1139,13 @@ paths:
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -1160,7 +1160,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -1393,25 +1393,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -1645,25 +1645,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -1690,7 +1690,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this document.
+        description: Un(une) Chaîne UUID identifiant ce(cette) document.
         required: true
       tags:
       - v1
@@ -1715,7 +1715,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this document.
+        description: Un(une) Chaîne UUID identifiant ce(cette) document.
         required: true
       tags:
       - v1
@@ -1737,7 +1737,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this document.
+        description: Un(une) Chaîne UUID identifiant ce(cette) document.
         required: true
       tags:
       - v1
@@ -1764,7 +1764,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this document.
+        description: Un(une) Chaîne UUID identifiant ce(cette) document.
         required: true
       tags:
       - v1
@@ -1810,25 +1810,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -1877,7 +1877,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this import.
+        description: Un(une) Chaîne UUID identifiant ce(cette) import.
         required: true
       tags:
       - v1
@@ -1901,30 +1901,30 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this import.
+        description: Un(une) Chaîne UUID identifiant ce(cette) import.
         required: true
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -1972,25 +1972,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -2015,7 +2015,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this notification.
+        description: Un(une) Chaîne UUID identifiant ce(cette) notification.
         required: true
       tags:
       - v1
@@ -2039,7 +2039,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this notification.
+        description: Un(une) Chaîne UUID identifiant ce(cette) notification.
         required: true
       tags:
       - v1
@@ -2097,19 +2097,19 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -2132,7 +2132,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -2180,7 +2180,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2201,7 +2201,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2234,7 +2234,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2266,7 +2266,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2284,7 +2284,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2307,7 +2307,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this produit.
+        description: Un(une) Chaîne UUID identifiant ce(cette) produit.
         required: true
       tags:
       - v1
@@ -2383,25 +2383,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -2449,7 +2449,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this gamme.
+        description: Un(une) Chaîne UUID identifiant ce(cette) gamme.
         required: true
       tags:
       - v1
@@ -2470,7 +2470,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this gamme.
+        description: Un(une) Chaîne UUID identifiant ce(cette) gamme.
         required: true
       tags:
       - v1
@@ -2503,7 +2503,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this gamme.
+        description: Un(une) Chaîne UUID identifiant ce(cette) gamme.
         required: true
       tags:
       - v1
@@ -2535,7 +2535,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this gamme.
+        description: Un(une) Chaîne UUID identifiant ce(cette) gamme.
         required: true
       tags:
       - v1
@@ -2564,25 +2564,25 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       - in: query
@@ -2627,7 +2627,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this renouvellement.
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
         required: true
       tags:
       - v1
@@ -2652,7 +2652,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this renouvellement.
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
         required: true
       tags:
       - v1
@@ -2688,7 +2688,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this renouvellement.
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
         required: true
       tags:
       - v1
@@ -2725,7 +2725,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this renouvellement.
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
         required: true
       tags:
       - v1
@@ -2763,7 +2763,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this renouvellement.
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
         required: true
       tags:
       - v1
@@ -2803,19 +2803,19 @@ paths:
       - name: ordering
         required: false
         in: query
-        description: Which field to use when ordering the results.
+        description: Quel champ utiliser pour classer les résultats.
         schema:
           type: string
       - name: page
         required: false
         in: query
-        description: A page number within the paginated result set.
+        description: Un numéro de page de l'ensemble des résultats.
         schema:
           type: integer
       - name: page_size
         required: false
         in: query
-        description: Number of results to return per page.
+        description: Nombre de résultats à retourner par page.
         schema:
           type: integer
       - in: query
@@ -2834,7 +2834,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: A search term.
+        description: Un terme de recherche.
         schema:
           type: string
       tags:
@@ -2890,7 +2890,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this utilisateur.
+        description: Un(une) Chaîne UUID identifiant ce(cette) utilisateur.
         required: true
       tags:
       - v1
@@ -2915,7 +2915,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this utilisateur.
+        description: Un(une) Chaîne UUID identifiant ce(cette) utilisateur.
         required: true
       tags:
       - v1
@@ -2952,7 +2952,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this utilisateur.
+        description: Un(une) Chaîne UUID identifiant ce(cette) utilisateur.
         required: true
       tags:
       - v1
@@ -2988,7 +2988,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this utilisateur.
+        description: Un(une) Chaîne UUID identifiant ce(cette) utilisateur.
         required: true
       tags:
       - v1

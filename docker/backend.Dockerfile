@@ -41,6 +41,8 @@ RUN apt-get update \
     && useradd --uid "${APP_UID}" --gid app --create-home --shell /bin/bash app
 
 COPY --from=builder /opt/venv /opt/venv
+# pip système de l'image de base : jamais utilisé à l'exécution, mais signalé par les scanners
+RUN /usr/local/bin/python -m pip install --no-cache-dir --upgrade pip
 
 # Scripts utilitaires hors de /app : ils restent disponibles quand ./backend est monté en volume.
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
