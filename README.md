@@ -11,7 +11,7 @@ des autorisations et expose des tableaux de bord temps réel et Grafana.
 | Frontend | React 19 + TypeScript, Vite, MUI + Data Grid, TanStack Query |
 | Backend | Django 5 + DRF, Django Channels (WebSocket), Celery + beat, Daphne |
 | Données | PostgreSQL 16, Redis 7, MinIO/S3 (scans PDF) |
-| Pilotage | Grafana 11 (vues SQL du schéma `analytics`, rôle lecture seule) |
+| Pilotage | Grafana 12 (vues SQL du schéma `analytics`, rôle lecture seule) |
 | Infra | Docker Compose, nginx, Caddy (TLS), GitHub Actions, GHCR |
 
 Documents de référence : [prd.md](prd.md) · [architecture.md](architecture.md) ·
@@ -56,9 +56,9 @@ make bootstrap
 
 | Email | Rôle | Périmètre |
 |---|---|---|
-| `ceo@amm.local` | `VIEWER` (direction) | tous pays, lecture |
-| `siege@amm.local` | `REGULATORY_MANAGER` | tous pays |
-| `senegal@amm.local` | `COUNTRY_OFFICER` | Sénégal |
+| `ceo@amm.local` | `CEO_ADMIN` | CEO / administrateur, tous pays, tous droits |
+| `siege@amm.local` | `HQ_REGULATORY` | réglementaire siège, tous pays |
+| `senegal@amm.local` | `COUNTRY_REGULATORY` | réglementaire pays, Sénégal et Mali |
 
 Mot de passe commun : `Passw0rd!`
 
@@ -102,17 +102,24 @@ docker compose --profile monitoring up -d   # Prometheus (scrape de backend:8000
 ## Tests et qualité
 
 ```bash
-make test-backend        # pytest (SQLite par défaut ; DATABASE_URL=postgres://… pour Postgres)
+make test-backend        # pytest dans le conteneur backend (image de dev, stage `dev` du Dockerfile)
+                         # SQLite par défaut ; DATABASE_URL_TEST=postgres://… pour PostgreSQL
 make test-frontend       # vitest
 make lint                # ruff + eslint + prettier + tsc
 ```
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque push/PR vers `main` :
 
-1. **backend** : ruff, pytest avec PostgreSQL 16 et Redis 7 en services, rapport de couverture ;
+1. **backend** : ruff, pytest sur PostgreSQL 16 (`DATABASE_URL_TEST`) avec Redis 7 en service, rapport de couverture ;
 2. **frontend** : eslint/prettier, `tsc`, vitest, build Vite ;
-3. **docker** (push sur `main` uniquement) : build et push des images
+3. **docker** (push sur `main` uniquement) : build du stage `runtime` et push des images
    `ghcr.io/alamine2003/amm-innov-backend` et `…-frontend` taguées `<sha>` et `latest`.
+   Les images sont privées par défaut : le workflow Deploy les tire avec `GITHUB_TOKEN`
+   (permission `packages: read`) ; pour un `docker pull` manuel sur le serveur, utiliser un token
+   personnel `read:packages` ou rendre les packages publics.
+
+Dependabot ne propose que les mises à jour mineures et correctives, regroupées par écosystème ;
+les sauts majeurs (MUI, react-router, Django, Python…) se traitent manuellement.
 
 Dependabot (`.github/dependabot.yml`) surveille pip, npm, Docker et GitHub Actions chaque semaine.
 
@@ -152,6 +159,22 @@ docker compose -f docker-compose.prod.yml exec backend python manage.py createsu
 Déploiement depuis GitHub : workflow **Deploy** (`.github/workflows/deploy.yml`, déclenchement
 manuel, tag d'image en paramètre). Secrets requis : `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`
 (et `DEPLOY_PORT` si différent de 22). Il exécute `docker compose pull && up -d` dans `/opt/amm-innov`.
+
+### Première mise en service : éviter le déluge d'alertes
+
+L'historique importé contient plusieurs centaines d'AMM expirées depuis longtemps. Lancer
+l'évaluation des règles telle quelle enverrait plus d'un millier d'emails le premier jour.
+Deux garde-fous :
+
+1. Après l'import initial, créer les alertes historiques **sans notification** :
+   ```bash
+   docker compose -f docker-compose.prod.yml exec backend python manage.py evaluate_alerts --quiet
+   ```
+   Les alertes apparaissent dans l'application et les dashboards ; le passage nocturne suivant
+   ne notifie que les nouvelles.
+2. En régime permanent, `ALERTS_DISPATCH_MAX_AGE_DAYS` (30 jours par défaut) : une alerte dont
+   l'échéance est plus ancienne est créée sans notification, sauf si c'est la plus récente d'une
+   AMM encore active (une AMM ajoutée à 100 jours de sa fin reçoit bien son J-180).
 
 Sauvegardes : le service `backup` lance chaque nuit à `BACKUP_HOUR` (02:00 Dakar) un `pg_dump`
 compressé et une archive des médias dans `./backups`, rétention `BACKUP_RETENTION_DAYS` (30 jours).

@@ -239,6 +239,10 @@ STORAGES = {
 }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
 DOCUMENT_RETENTION_YEARS = 5
+# Déluge d'alertes au premier lancement : une alerte dont l'échéance est plus ancienne que ce
+# délai est créée (tableaux de bord, liste des alertes) mais ne déclenche pas de notification,
+# sauf s'il s'agit de la plus récente d'une AMM encore actionnable (non expirée).
+ALERTS_DISPATCH_MAX_AGE_DAYS = int(env("ALERTS_DISPATCH_MAX_AGE_DAYS", "30"))
 DATA_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_MB * 1024 * 1024 + 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 

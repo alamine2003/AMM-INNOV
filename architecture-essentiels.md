@@ -11,7 +11,7 @@ Une application web React/Django qui remplace le classeur Excel de suivi des AMM
 | Frontend | React 19 + TypeScript, Vite, MUI + Data Grid, TanStack Query, Zustand |
 | Backend | Django 5.1 + DRF, Django Channels (WebSocket), Celery + beat, JWT (simplejwt), django-prometheus |
 | Données | PostgreSQL 16, Redis 7 (channel layer + broker) |
-| Pilotage | Grafana 11 sur vues SQL en lecture seule |
+| Pilotage | Grafana 12 sur vues SQL en lecture seule |
 | Infra | Docker Compose, nginx, GitHub Actions |
 
 ## Schéma

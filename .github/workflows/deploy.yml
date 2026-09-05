@@ -24,6 +24,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read   # pull des images GHCR privées avec GITHUB_TOKEN
 
 jobs:
   deploy:

@@ -85,7 +85,9 @@ def test_alert_rules_permissions(country_client, hq_client, rules):
 
 def test_notifications_endpoints(country_client, users, open_alerts):
     unread = country_client.get("/api/v1/notifications/unread-count").json()
-    assert unread["unread"] == 2  # J-365 + J-180 in-app for SN
+    # J-180 seul : le J-365, échu depuis 265 jours, est créé mais silencieux
+    # (ALERTS_DISPATCH_MAX_AGE_DAYS)
+    assert unread["unread"] == 1
     listed = country_client.get("/api/v1/notifications?unread=1").json()
     assert (
         listed["count"]

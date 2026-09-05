@@ -139,3 +139,57 @@ def test_country_rule_overrides_global(make_amm, rules, countries):
 
 def test_reconcile_without_alerts_is_noop(make_amm):
     assert reconcile(make_amm()) == 0
+
+
+def test_stale_alerts_are_silenced_except_latest_actionable(make_amm, rules, users):
+    """Historique importé : pas de déluge, mais la dernière étape d'une AMM active est notifiée."""
+    expired_long_ago = make_amm(
+        start=None, original_end_date=TODAY - timedelta(days=900), original_end_date_manual=True
+    )
+    soon = make_amm(
+        country="ML",
+        start=None,
+        original_end_date=TODAY + timedelta(days=100),
+        original_end_date_manual=True,
+    )
+    result = evaluate_rules(today=TODAY)
+    assert codes(expired_long_ago) == ["J0"]
+    assert codes(soon) == ["J-180", "J-365"]
+    # J0 vieux de 900 jours : alerte créée, personne n'est notifié
+    assert not Notification.objects.filter(alert__amm=expired_long_ago).exists()
+    # J-365 (échue depuis 265 j) silencieuse, J-180 (échue depuis 80 j) notifiée car la plus récente
+    assert not Notification.objects.filter(alert__amm=soon, alert__rule__code="J-365").exists()
+    assert Notification.objects.filter(alert__amm=soon, alert__rule__code="J-180").exists()
+    assert result["created"] == 3
+    assert result["notified"] == 1
+    assert result["silenced"] == 2
+
+
+def test_quiet_first_run_creates_alerts_without_notifications(make_amm, rules, users):
+    make_amm(
+        start=None, original_end_date=TODAY + timedelta(days=170), original_end_date_manual=True
+    )
+    result = evaluate_rules(today=TODAY, dispatch=False)
+    assert result["created"] == 2
+    assert result["notified"] == 0
+    assert result["silenced"] == 2
+    assert Alert.objects.count() == 2
+    assert not Notification.objects.exists()
+    # Le passage nocturne suivant ne renvoie rien : les alertes existent déjà
+    again = evaluate_rules(today=TODAY)
+    assert again["created"] == 0
+    assert not Notification.objects.exists()
+
+
+def test_evaluate_alerts_command_quiet(make_amm, rules, users, capsys):
+    from django.core.management import call_command
+
+    make_amm(
+        start=None, original_end_date=TODAY - timedelta(days=3), original_end_date_manual=True
+    )
+    call_command("evaluate_alerts", "--quiet", today=TODAY.isoformat())
+    out = capsys.readouterr().out
+    assert "1 alerte(s) créée(s)" in out
+    assert "0 notifiée(s)" in out
+    assert Alert.objects.filter(rule__code="J0").exists()
+    assert not Notification.objects.exists()

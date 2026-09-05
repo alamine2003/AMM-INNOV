@@ -66,29 +66,59 @@ def due_date_for(
     return due if due <= today else None
 
 
-def evaluate_rules(today: date | None = None, dispatch: bool = True) -> dict:
-    """Creates the missing alerts for every AMM. Returns {"created": n, "evaluated": m}."""
+def evaluate_rules(
+    today: date | None = None, dispatch: bool = True, max_age_days: int | None = None
+) -> dict:
+    """Creates the missing alerts for every AMM.
+
+    Returns {"created", "evaluated", "notified", "silenced"}.
+
+    Notifications go out for a new alert whose due date is at most `max_age_days` old
+    (default `settings.ALERTS_DISPATCH_MAX_AGE_DAYS`). Older alerts are still created, so the
+    dashboards and the alert list stay complete, but they are silenced, except the most recent
+    one of an AMM that is still actionable (not expired): a freshly imported AMM expiring in
+    100 days still gets its J-180 notification, while 500 AMM expired years ago get none.
+    `dispatch=False` (first run at go-live, `manage.py evaluate_alerts --quiet`) silences all.
+    """
+    from django.conf import settings
+
     from apps.notifications.services import dispatch as dispatch_alert
 
     today = today or reference_today()
+    if max_age_days is None:
+        max_age_days = settings.ALERTS_DISPATCH_MAX_AGE_DAYS
     rules = list(AlertRule.objects.filter(is_active=True).select_related("country"))
-    created = 0
-    evaluated = 0
+    created = evaluated = notified = silenced = 0
     queryset = MarketingAuthorization.objects.select_related("country").prefetch_related("renewals")
     for amm in queryset.iterator(chunk_size=500):
         evaluated += 1
         renewals = list(amm.renewals.all())
+        fresh: list[Alert] = []
+        stale: list[Alert] = []
         for rule in applicable_rules(rules, amm.country_id):
             due = due_date_for(rule, amm, renewals, today)
             if due is None:
                 continue
             with transaction.atomic():
                 alert, was_created = Alert.objects.get_or_create(amm=amm, rule=rule, due_date=due)
-            if was_created:
-                created += 1
-                if dispatch:
-                    dispatch_alert(alert)
-    return {"created": created, "evaluated": evaluated}
+            if not was_created:
+                continue
+            created += 1
+            if (today - due).days <= max_age_days:
+                fresh.append(alert)
+            else:
+                stale.append(alert)
+        if not dispatch:
+            silenced += len(fresh) + len(stale)
+            continue
+        to_send = list(fresh)
+        if not fresh and stale and amm.status != MarketingAuthorization.Status.EXPIRE:
+            to_send.append(max(stale, key=lambda a: a.due_date))
+        for alert in to_send:
+            dispatch_alert(alert)
+        notified += len(to_send)
+        silenced += len(fresh) + len(stale) - len(to_send)
+    return {"created": created, "evaluated": evaluated, "notified": notified, "silenced": silenced}
 
 
 def reconcile(amm: MarketingAuthorization) -> int:

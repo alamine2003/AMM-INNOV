@@ -28,7 +28,7 @@ flowchart LR
         R[(Redis 7)]
         S3[Stockage fichiers<br/>volume local ou S3]
     end
-    G[Grafana 11]
+    G[Grafana 12]
     M[Serveur email SMTP]
 
     UI -- HTTPS JSON --> API
@@ -617,7 +617,7 @@ Les vues matérialisées sont rafraîchies par `refresh_analytics_views`.
 | `worker` | même image | — | `celery -A config worker` |
 | `beat` | même image | — | `celery -A config beat` avec `django-celery-beat` |
 | `frontend` | `docker/frontend.Dockerfile` | 5173 | Vite dev server ; en prod, build statique servi par nginx |
-| `grafana` | `grafana/grafana:11` | 3000 | provisioning monté |
+| `grafana` | `grafana/grafana:12` | 3000 | provisioning monté |
 | `mailpit` | `axllent/mailpit` | 8025 | Capture des emails en dev |
 | `minio` | `minio/minio` | 9000 / 9001 | Stockage objet S3 des scans PDF (optionnel en dev, recommandé en prod) ; bucket `amm-documents` créé à l'init |
 

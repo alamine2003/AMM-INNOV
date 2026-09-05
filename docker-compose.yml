@@ -154,7 +154,7 @@ services:
       - amm
 
   grafana:
-    image: grafana/grafana:${GRAFANA_VERSION:-11.6.0}
+    image: grafana/grafana:${GRAFANA_VERSION:-12.1.1}
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
