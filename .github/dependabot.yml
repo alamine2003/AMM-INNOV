@@ -1,4 +1,7 @@
 version: 2
+# Politique 1.x : seules les mises à jour mineures et correctives sont proposées,
+# regroupées en une PR par écosystème. Les sauts majeurs (MUI 9, react-router 8,
+# eslint 10, Python 3.14, DRF 3.18…) sont traités manuellement, hors Dependabot.
 updates:
   - package-ecosystem: pip
     directory: /backend
@@ -8,9 +11,14 @@ updates:
       time: "06:00"
       timezone: Africa/Dakar
     labels: [dependencies, backend]
+    open-pull-requests-limit: 3
     groups:
       python-minor:
+        patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
@@ -20,9 +28,14 @@ updates:
       time: "06:00"
       timezone: Africa/Dakar
     labels: [dependencies, frontend]
+    open-pull-requests-limit: 3
     groups:
       npm-minor:
+        patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /docker
@@ -30,13 +43,11 @@ updates:
       interval: weekly
       day: monday
     labels: [dependencies, docker]
-
-  - package-ecosystem: docker
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    labels: [dependencies, docker]
+    open-pull-requests-limit: 2
+    ignore:
+      # python:3.12 et nginx:1.27 sont figés pour la 1.x
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -44,3 +55,7 @@ updates:
       interval: weekly
       day: monday
     labels: [dependencies, ci]
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]

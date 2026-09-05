@@ -14,6 +14,7 @@ x-backend-common: &backend-common
   build:
     context: .
     dockerfile: docker/backend.Dockerfile
+    target: dev
   image: amm-innov-backend:dev
   env_file: .env
   environment:

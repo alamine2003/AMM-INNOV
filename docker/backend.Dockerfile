@@ -60,3 +60,12 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+
+# ---------- Stage 3 : image de développement (pytest, ruff, coverage) ----------
+# Ciblée par docker-compose.yml (target: dev). La CI et la production construisent "runtime".
+FROM runtime AS dev
+
+USER root
+COPY backend/requirements.txt backend/requirements-dev.txt /tmp/
+RUN pip install -r /tmp/requirements-dev.txt
+USER app
