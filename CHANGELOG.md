@@ -3,6 +3,17 @@
 Toutes les évolutions notables du projet sont consignées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement [SemVer](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Ajouté
+- Déploiement Netlify + Render : `netlify.toml`, `render.yaml`, guide `docs/deploiement-netlify-render.md`.
+
+### Corrigé
+- Stockage S3 des scans : `django-storages[s3]` (boto3) installé, un seul jeu de variables
+  `DOCUMENT_STORAGE` + `S3_*` reconnu en dev comme en prod.
+- Image frontend nginx : `VITE_API_BASE` vide par défaut (la valeur `/api` produisait des appels `/api/api/v1`).
+- Dockerfile backend : le stage par défaut est l'image d'exécution, pas l'image de dev.
+
 ## [1.0.0] — 2026-09-05
 
 Première version de production : remplacement du classeur `Dashboard AMM Afrique`.

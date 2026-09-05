@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# Netlify — frontend AMM INNOV (SPA React/Vite). Backend sur Render (render.yaml).
+# Les URL ci-dessous doivent correspondre au nom du service web Render.
+# Guide : docs/deploiement-netlify-render.md
+# ---------------------------------------------------------------------------
+[build]
+  base    = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+  # Le client ajoute /api/v1 lui-même : ne pas mettre /api ici.
+  VITE_API_BASE = "https://amm-innov-backend.onrender.com"
+  VITE_WS_URL   = "wss://amm-innov-backend.onrender.com/ws/"
+
+# Routage SPA : toutes les routes React renvoient index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options         = "DENY"
+    X-Content-Type-Options  = "nosniff"
+    Referrer-Policy         = "strict-origin-when-cross-origin"
+    Permissions-Policy      = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

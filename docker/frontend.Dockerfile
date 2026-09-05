@@ -10,8 +10,9 @@ FROM node:${NODE_VERSION}-alpine AS build
 
 WORKDIR /app
 
-# VITE_API_BASE est injecté au build (chemin relatif par défaut : nginx proxie /api).
-ARG VITE_API_BASE=/api
+# VITE_API_BASE est injecté au build. Vide = même origine : le client appelle /api/v1 et nginx proxie /api/.
+# (le client ajoute lui-même /api/v1 : ne pas mettre /api ici)
+ARG VITE_API_BASE=
 ENV VITE_API_BASE=${VITE_API_BASE} \
     CI=true
 

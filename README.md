@@ -142,6 +142,14 @@ l'application ; l'alerting Grafana est réservé au dashboard technique.
 
 ## Déploiement en production
 
+### Option retenue : Netlify + Render
+
+Frontend sur Netlify ([netlify.toml](netlify.toml)), backend, worker Celery, Redis et PostgreSQL sur
+Render via Blueprint ([render.yaml](render.yaml)), scans PDF sur un stockage S3 compatible, Grafana Cloud.
+Procédure complète : [docs/deploiement-netlify-render.md](docs/deploiement-netlify-render.md).
+
+### Option auto-hébergée : Docker Compose
+
 Un serveur unique (4 vCPU / 8 Go) avec Docker suffit. `docker-compose.prod.yml` utilise les images
 GHCR et ajoute **Caddy** (TLS Let's Encrypt automatique, ports 80/443) devant l'image frontend
 (nginx : SPA, `/api`, `/ws`, `/grafana/`), ainsi qu'un service `backup` quotidien.

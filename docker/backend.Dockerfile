@@ -69,3 +69,8 @@ USER root
 COPY backend/requirements.txt backend/requirements-dev.txt /tmp/
 RUN pip install -r /tmp/requirements-dev.txt
 USER app
+
+# ---------- Stage par défaut ----------
+# `docker build` sans --target (Render, build manuel) doit produire l'image d'exécution,
+# pas l'image de dev : Docker construit le dernier stage du fichier.
+FROM runtime AS final

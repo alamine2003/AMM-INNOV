@@ -237,6 +237,23 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+# Scans PDF : "local" (MEDIA_ROOT, volume Docker) ou "s3" (MinIO en dev, R2/B2/S3 en production).
+# Sur Render, "s3" est obligatoire : le service web et le worker n'ont pas de disque commun.
+DOCUMENT_STORAGE = env("DOCUMENT_STORAGE") or env("STORAGE_BACKEND") or "local"
+if DOCUMENT_STORAGE == "s3":
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "endpoint_url": env("S3_ENDPOINT_URL") or env("AWS_S3_ENDPOINT_URL"),
+            "bucket_name": env("S3_BUCKET") or env("AWS_STORAGE_BUCKET_NAME") or "amm-documents",
+            "access_key": env("S3_ACCESS_KEY") or env("AWS_ACCESS_KEY_ID"),
+            "secret_key": env("S3_SECRET_KEY") or env("AWS_SECRET_ACCESS_KEY"),
+            "region_name": env("S3_REGION", "auto"),
+            "file_overwrite": False,
+            "default_acl": None,
+            "signature_version": "s3v4",
+        },
+    }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
 DOCUMENT_RETENTION_YEARS = 5
 # Déluge d'alertes au premier lancement : une alerte dont l'échéance est plus ancienne que ce
