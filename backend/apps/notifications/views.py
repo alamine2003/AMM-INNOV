@@ -14,12 +14,15 @@ class NotificationViewSet(
 ):
     """The current user's notifications (`?unread=1` keeps only unread ones)."""
 
+    queryset = Notification.objects.none()  # remplacé par get_queryset ; utile au schéma OpenAPI
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
     filterset_fields = ["channel"]
     ordering_fields = ["created_at", "read_at"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Notification.objects.none()
         queryset = Notification.objects.filter(user=self.request.user).select_related(
             "alert", "alert__rule"
         )

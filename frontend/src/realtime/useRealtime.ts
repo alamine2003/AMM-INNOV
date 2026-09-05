@@ -14,12 +14,14 @@ const POLL_INTERVAL = 60000;
 /** Au-delà de ce nombre d'échecs consécutifs, on passe en mode polling (tout en continuant de tenter la reconnexion). */
 const POLLING_AFTER_FAILURES = 3;
 
-export function buildWsUrl(token: string): string {
+/** Sous-protocole WebSocket portant le jeton d'accès (jamais dans l'URL : les proxys journalisent les query strings). */
+export const WS_SUBPROTOCOL = 'amm.jwt';
+
+export function buildWsUrl(): string {
   const configured = import.meta.env.VITE_WS_URL as string | undefined;
-  if (configured)
-    return `${configured}${configured.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+  if (configured) return configured;
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  return `${proto}://${window.location.host}/ws/?token=${encodeURIComponent(token)}`;
+  return `${proto}://${window.location.host}/ws/`;
 }
 
 /**
@@ -68,7 +70,7 @@ export function useRealtime(enabled = true) {
       if (!token || closedByUsRef.current) return;
       let ws: WebSocket;
       try {
-        ws = new WebSocket(buildWsUrl(token));
+        ws = new WebSocket(buildWsUrl(), [WS_SUBPROTOCOL, token]);
       } catch {
         scheduleReconnect();
         return;

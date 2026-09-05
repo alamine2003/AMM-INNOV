@@ -194,7 +194,9 @@ from datetime import timedelta  # noqa: E402
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # PRD US1.1 : la session expire après 12 h d'inactivité. Le refresh est renouvelé à chaque
+    # rafraîchissement (rotation), donc 12 h glissantes tant que l'utilisateur est actif.
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
@@ -207,6 +209,22 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    # Noms stables pour les enums partagés (sinon « Status1d1Enum », qui change à chaque ajout).
+    "ENUM_NAME_OVERRIDES": {
+        "AmmStatusEnum": "apps.amm.models.MarketingAuthorization.Status",
+        "UrgencyEnum": "apps.amm.models.MarketingAuthorization.Urgency",
+        "DossierStateEnum": "apps.amm.models.MarketingAuthorization.DossierState",
+        "WorkflowStatusEnum": "apps.amm.models.Renewal.WorkflowStatus",
+        "AlertStatusEnum": "apps.alerts.models.Alert.Status",
+        "AlertResolutionEnum": "apps.alerts.models.Alert.Resolution",
+        "SeverityEnum": "apps.alerts.models.AlertRule.Severity",
+        "ChannelEnum": "apps.alerts.models.AlertRule.Channel",
+        "DocumentKindEnum": "apps.documents.models.Document.Kind",
+        "RoleEnum": "apps.accounts.models.User.Role",
+        "ImportStatusEnum": "apps.imports.models.ImportBatch.Status",
+        "ImportOutcomeEnum": "apps.imports.models.ImportRow.Outcome",
+        "RangeCodeEnum": "apps.catalog.models.ProductRange.Code",
+    },
 }
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")

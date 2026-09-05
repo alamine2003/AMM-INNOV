@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Alert,
   Autocomplete,
@@ -14,8 +15,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useCreateAmm } from '@/api/hooks/useAmms';
-import { useCountries, useProducts } from '@/api/hooks/useCatalog';
-import type { Amm } from '@/api/types';
+import { useCountries, useProductSearch } from '@/api/hooks/useCatalog';
+import type { Amm, Product } from '@/api/types';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { DateField } from '@/components/DateField';
 import { DOSSIER_STATES } from '@/lib/urgency';
 import { extractErrorMessage } from '@/api/client';
@@ -33,7 +35,12 @@ export function AmmCreateDialog({
 }) {
   const { t } = useTranslation();
   const countries = useCountries();
-  const products = useProducts();
+  const [productInput, setProductInput] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const products = useProductSearch(useDebouncedValue(productInput, 250));
+  const productOptions = selectedProduct
+    ? [selectedProduct, ...(products.data ?? []).filter((p) => p.id !== selectedProduct.id)]
+    : (products.data ?? []);
   const create = useCreateAmm();
   const user = useAuthStore((s) => s.user);
   const allowedCountries = (countries.data ?? []).filter(
@@ -81,10 +88,19 @@ export function AmmCreateDialog({
               name="product"
               render={({ field, fieldState }) => (
                 <Autocomplete
-                  options={products.data ?? []}
+                  options={productOptions}
                   getOptionLabel={(p) => p.name}
-                  value={(products.data ?? []).find((p) => p.id === field.value) ?? null}
-                  onChange={(_e, v) => field.onChange(v?.id ?? '')}
+                  isOptionEqualToValue={(a, b) => a.id === b.id}
+                  filterOptions={(x) => x}
+                  loading={products.isFetching}
+                  noOptionsText={productInput ? t('amm.productNoMatch') : t('amm.productTypeToSearch')}
+                  value={selectedProduct}
+                  inputValue={productInput}
+                  onInputChange={(_e, v) => setProductInput(v)}
+                  onChange={(_e, v) => {
+                    setSelectedProduct(v);
+                    field.onChange(v?.id ?? '');
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}

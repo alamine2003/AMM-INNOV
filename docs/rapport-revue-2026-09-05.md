@@ -234,5 +234,13 @@ d'un Prometheus ; doublons produits issus de l'import (décision métier).
 | Maintenabilité | A- | Conventions homogènes, migrations propres, documentation à jour, CI. |
 | Robustesse en production | B | Après correctifs : pool, verrous, contrainte d'unicité, 0 erreur à 100 utilisateurs. Un seul processus reste un point de fragilité. |
 
+## 16. Suite donnée le même jour
+
+Après ce rapport : contrat API ↔ frontend outillé (schéma OpenAPI et types générés versionnés,
+vérification en CI, assertions de compatibilité dans `frontend/src/api/contract.ts`) qui a révélé
+et corrigé quatre dérives supplémentaires (`last_renewal`, `amm_id` des renouvellements,
+`sent_at`, `range`) ; recherche serveur des produits dans le dialogue de création d'AMM ; jeton
+WebSocket transmis par sous-protocole ; session de 12 heures glissantes conforme au PRD.
+
 Vérification finale : ruff, 130 tests backend (SQLite et PostgreSQL), eslint, prettier, tsc,
 31 tests frontend, migrations cohérentes, script de concurrence rejoué au vert.

@@ -5,6 +5,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from apps.core import metrics
 
+from .middleware import SUBPROTOCOL
 from .publisher import GLOBAL_GROUP, country_group, user_group
 
 
@@ -30,7 +31,9 @@ class EventConsumer(AsyncJsonWebsocketConsumer):
         self.joined = await groups_for_user(user)
         for group in self.joined:
             await self.channel_layer.group_add(group, self.channel_name)
-        await self.accept()
+        # Le navigateur exige que le serveur confirme un sous-protocole proposé.
+        offered = self.scope.get("subprotocols", [])
+        await self.accept(subprotocol=SUBPROTOCOL if SUBPROTOCOL in offered else None)
         await database_sync_to_async(metrics.ws_connected)()
         await self.send_json({"type": "connected", "groups": self.joined})
 

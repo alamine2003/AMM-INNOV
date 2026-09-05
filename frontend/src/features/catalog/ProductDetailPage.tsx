@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
                           {a.country_name}
                         </MuiLink>
                       </TableCell>
-                      <TableCell>{a.current_renewal?.number ?? a.original_number ?? '—'}</TableCell>
+                      <TableCell>{a.last_renewal?.number ?? a.original_number ?? '—'}</TableCell>
                       <TableCell>
                         <StatusChip value={a.status} />
                       </TableCell>

@@ -84,6 +84,17 @@ lint-frontend: ## eslint + prettier + tsc
 
 lint: lint-backend lint-frontend ## Tous les linters
 
+api-schema: ## Régénère backend/schema.yaml (OpenAPI) depuis le code Django
+	$(BACKEND_EXEC) python manage.py spectacular --file /tmp/schema.yaml --validate
+	$(COMPOSE) cp backend:/tmp/schema.yaml backend/schema.yaml
+
+api-types: api-schema ## Régénère frontend/src/api/schema.d.ts depuis le schéma OpenAPI
+	$(FRONTEND_EXEC) npm run api:types
+
+api-check: api-types ## Vérifie que le contrat API/frontend est à jour et cohérent (CI locale)
+	git diff --exit-code -- backend/schema.yaml frontend/src/api/schema.d.ts
+	$(FRONTEND_EXEC) npm run typecheck
+
 # ---------------- Accès interactifs ----------------
 shell: ## Shell Django (shell_plus si disponible)
 	$(BACKEND_EXEC) sh -c 'python manage.py shell_plus 2>/dev/null || python manage.py shell'

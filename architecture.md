@@ -442,7 +442,7 @@ Digest hebdomadaire : tâche `send_weekly_digest` le lundi 08:00, un email par u
 
 ### 5.7 Temps réel (Django Channels)
 
-- Endpoint `wss://…/ws/?token=<access>` ; authentification JWT dans le middleware ASGI.
+- Endpoint `wss://…/ws/`, jeton d'accès transmis dans le sous-protocole `Sec-WebSocket-Protocol: amm.jwt, <access>` (jamais dans l'URL) ; authentification JWT dans le middleware ASGI.
 - Groupes :
   - `user.{id}` : notifications personnelles ;
   - `country.{iso2}` : mutations d'AMM, de renouvellements et d'alertes du pays ;

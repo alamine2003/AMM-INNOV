@@ -239,7 +239,9 @@
     },
     "notFound": "AMM introuvable",
     "readOnly": "Lecture seule : ce pays n'est pas dans votre périmètre.",
-    "rowsCount": "{{count}} AMM"
+    "rowsCount": "{{count}} AMM",
+    "productNoMatch": "Aucun produit ne correspond",
+    "productTypeToSearch": "Saisissez un nom de produit"
   },
   "renewals": {
     "title": "Renouvellements",

@@ -34,7 +34,7 @@ export default function AmmDetailPage() {
     enabled: !resolvedId && !!params.renewalId,
   });
   useEffect(() => {
-    if (renewalQuery.data) navigate(`/amms/${renewalQuery.data.amm}?tab=renewals`, { replace: true });
+    if (renewalQuery.data) navigate(`/amms/${renewalQuery.data.amm_id}?tab=renewals`, { replace: true });
   }, [renewalQuery.data, navigate]);
 
   const amm = useAmm(resolvedId);

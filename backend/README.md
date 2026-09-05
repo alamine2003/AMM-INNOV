@@ -1,6 +1,6 @@
 # Backend AMM INNOV (Django 5.1 / DRF)
 
-API REST `/api/v1/`, WebSocket `/ws/?token=<access>`, Celery (worker + beat), PostgreSQL, Redis.
+API REST `/api/v1/`, WebSocket `/ws/` (jeton d'accès dans le sous-protocole `amm.jwt`), Celery (worker + beat), PostgreSQL, Redis.
 
 ## Démarrage local (sans Docker Compose)
 

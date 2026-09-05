@@ -108,10 +108,15 @@ make test-frontend       # vitest
 make lint                # ruff + eslint + prettier + tsc
 ```
 
+Contrat API ↔ frontend : le schéma OpenAPI (`backend/schema.yaml`) et les types TypeScript
+(`frontend/src/api/schema.d.ts`) sont générés et versionnés ; `frontend/src/api/contract.ts` vérifie à
+la compilation que chaque réponse de l'API reste assignable aux types utilisés par l'interface.
+Après toute modification d'un serializer : `make api-types` puis commit (`make api-check` rejoue la CI).
+
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque push/PR vers `main` :
 
-1. **backend** : ruff, pytest sur PostgreSQL 16 (`DATABASE_URL_TEST`) avec Redis 7 en service, rapport de couverture ;
-2. **frontend** : eslint/prettier, `tsc`, vitest, build Vite ;
+1. **backend** : ruff, pytest sur PostgreSQL 16 (`DATABASE_URL_TEST`) avec Redis 7 en service, rapport de couverture, schéma OpenAPI à jour ;
+2. **frontend** : eslint/prettier, types générés à jour, `tsc` (contrat API), vitest, build Vite ;
 3. **docker** (push sur `main` uniquement) : build du stage `runtime` et push des images
    `ghcr.io/alamine2003/amm-innov-backend` et `…-frontend` taguées `<sha>` et `latest`.
    Les images sont privées par défaut : le workflow Deploy les tire avec `GITHUB_TOKEN`

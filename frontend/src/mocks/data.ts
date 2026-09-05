@@ -339,7 +339,7 @@ export function recomputeAmm(db: MockDb, ammId: string) {
   const amm = db.amms.find((a) => a.id === ammId);
   if (!amm) return;
   const country = db.countries.find((c) => c.iso2 === amm.country_iso2)!;
-  const renewals = db.renewals.filter((r) => r.amm === ammId);
+  const renewals = db.renewals.filter((r) => r.amm_id === ammId);
   if (amm.original_start_date && !amm.original_end_date_manual) {
     amm.original_end_date = iso(addYears(parseISO(amm.original_start_date), country.validity_years));
   }
@@ -350,7 +350,7 @@ export function recomputeAmm(db: MockDb, ammId: string) {
   const state = computeState(amm, renewals, country);
   Object.assign(amm, state);
   const current = [...renewals].sort((a, b) => b.sequence - a.sequence)[0];
-  amm.current_renewal = current
+  amm.last_renewal = current
     ? {
         id: current.id,
         sequence: current.sequence,
@@ -412,14 +412,14 @@ export function buildDb(): MockDb {
       notes: seed.notes ?? '',
       owner: null,
       has_current_scan: false,
-      current_renewal: null,
+      last_renewal: null,
       updated_at: '2026-08-18T10:00:00Z',
     };
     db.amms.push(amm);
     (seed.renewals ?? []).forEach((r, i) => {
       db.renewals.push({
         id: `${seed.id}-ren-${i + 1}`,
-        amm: seed.id,
+        amm_id: seed.id,
         sequence: i + 1,
         workflow_status: r.workflow_status,
         filing_date: r.filing_date ?? null,

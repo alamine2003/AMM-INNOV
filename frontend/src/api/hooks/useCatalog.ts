@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
 import type { AmmDocument, CoverageCell, Country, Paginated, Product, ProductRange } from '@/api/types';
@@ -38,6 +38,22 @@ export function useProducts(params: Record<string, unknown> = {}) {
   return useQuery({
     queryKey: queryKeys.products.list(params),
     queryFn: () => fetchAll<Product>('/products', params),
+  });
+}
+
+/** Recherche serveur (`?search=`), 20 résultats : évite de charger les 856 produits dans un sélecteur. */
+export function useProductSearch(search: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.products.search(search),
+    queryFn: async () =>
+      (
+        await api.get<Paginated<Product>>('/products', {
+          params: { search: search || undefined, page_size: 20, ordering: 'name' },
+        })
+      ).data.results,
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 

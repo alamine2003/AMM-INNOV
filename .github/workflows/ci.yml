@@ -83,6 +83,12 @@ jobs:
       - name: Tests (pytest + coverage)
         run: pytest -q --cov=apps --cov-report=xml --cov-report=term
 
+      - name: Schéma OpenAPI à jour (backend/schema.yaml)
+        run: |
+          python manage.py spectacular --file /tmp/schema.yaml --validate
+          diff -u schema.yaml /tmp/schema.yaml || {
+            echo "::error::backend/schema.yaml est périmé : lancer 'make api-schema' et committer."; exit 1; }
+
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -113,7 +119,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck
+      - name: Types TypeScript générés depuis le schéma OpenAPI à jour
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/api/schema.d.ts || {
+            echo "::error::src/api/schema.d.ts est périmé : lancer 'make api-types' et committer."; exit 1; }
+
+      - name: Typecheck (inclut src/api/contract.ts : dérive API/frontend = échec)
         run: npm run typecheck
 
       - name: Tests

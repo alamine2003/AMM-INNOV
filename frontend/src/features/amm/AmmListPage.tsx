@@ -132,20 +132,20 @@ export default function AmmListPage() {
       field: 'renewal_number',
       headerName: t('amm.columns.renewalNumber'),
       width: 150,
-      valueGetter: (_v, row) => row.current_renewal?.number ?? '',
+      valueGetter: (_v, row) => row.last_renewal?.number ?? '',
     },
     {
       field: 'renewal_start',
       headerName: t('amm.columns.renewalStart'),
       width: 120,
-      valueGetter: (_v, row) => row.current_renewal?.start_date ?? null,
+      valueGetter: (_v, row) => row.last_renewal?.start_date ?? null,
       valueFormatter: (value: string | null) => formatDate(value),
     },
     {
       field: 'renewal_end',
       headerName: t('amm.columns.renewalEnd'),
       width: 120,
-      valueGetter: (_v, row) => row.current_renewal?.end_date ?? null,
+      valueGetter: (_v, row) => row.last_renewal?.end_date ?? null,
       valueFormatter: (value: string | null) => formatDate(value),
     },
     {

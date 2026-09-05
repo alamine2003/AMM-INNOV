@@ -478,7 +478,7 @@ sequenceDiagram
     API-->>UI: access (15 min), refresh (7 j), user
     UI->>API: GET /me
     API-->>UI: rôle = COUNTRY_REGULATORY, countries = [SN, ML]
-    UI->>WS: connexion ws/?token=access
+    UI->>WS: connexion ws/ (sous-protocole amm.jwt + access)
     WS->>WS: valider le JWT, calculer les groupes
     WS-->>UI: abonné à user.{id}, country.SN, country.ML
     UI->>API: GET /amms?country=SN

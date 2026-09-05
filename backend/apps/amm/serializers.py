@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.permissions import ensure_country_in_scope
@@ -78,6 +79,18 @@ class RenewalTransitionSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True)
 
 
+class LastRenewalSerializer(serializers.Serializer):
+    """Shape of `last_renewal` in the AMM list (documentation of the OpenAPI schema)."""
+
+    id = serializers.UUIDField()
+    sequence = serializers.IntegerField()
+    workflow_status = serializers.ChoiceField(choices=Renewal.WorkflowStatus.choices)
+    number = serializers.CharField(allow_blank=True)
+    start_date = serializers.DateField(allow_null=True)
+    end_date = serializers.DateField(allow_null=True)
+    filing_date = serializers.DateField(allow_null=True)
+
+
 class AmmListSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     range_code = serializers.CharField(source="product.range.code", read_only=True, default=None)
@@ -135,6 +148,7 @@ class AmmListSerializer(serializers.ModelSerializer):
             return None
         return (obj.effective_end_date - today()).days
 
+    @extend_schema_field(LastRenewalSerializer(allow_null=True))
     def get_last_renewal(self, obj):
         renewals = list(obj.renewals.all())
         if not renewals:

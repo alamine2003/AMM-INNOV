@@ -13,6 +13,16 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   (« too many clients ») dès 30 utilisateurs simultanés sous ASGI.
 - `/metrics` protégé par `METRICS_TOKEN` (optionnel) ; `NUM_PROXIES` pour lire la vraie IP cliente.
 
+- Contrat API ↔ frontend outillé : `backend/schema.yaml` (OpenAPI) et `frontend/src/api/schema.d.ts`
+  générés et vérifiés en CI (`make api-check`) ; `src/api/contract.ts` fait échouer `tsc` dès qu'une
+  réponse de l'API n'est plus assignable aux types du frontend. Quatre dérives corrigées au passage :
+  `last_renewal` (colonnes et fiche AMM vides), `amm_id` des renouvellements (redirection
+  `/renewals/{id}` cassée), `sent_at` nullable, `range` produit nullable.
+- Sélecteur de produit du dialogue « Nouvelle AMM » en recherche serveur (20 résultats) au lieu du
+  chargement des 856 produits.
+- Jeton WebSocket transmis dans le sous-protocole `amm.jwt` au lieu de l'URL.
+- Session de 12 heures glissantes (PRD US1.1) : `REFRESH_TOKEN_LIFETIME` passe de 7 jours à 12 h.
+
 ### Sécurité
 - Couverture pays d'un produit : un réglementaire pays ne voit plus le statut des autres pays.
 - Assignation d'une alerte limitée aux utilisateurs ayant accès au pays de l'alerte.

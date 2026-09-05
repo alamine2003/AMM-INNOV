@@ -406,7 +406,7 @@ export const handlers = [
           (a) =>
             a.product_name.toLowerCase().includes(search) ||
             (a.original_number ?? '').toLowerCase().includes(search) ||
-            (a.current_renewal?.number ?? '').toLowerCase().includes(search),
+            (a.last_renewal?.number ?? '').toLowerCase().includes(search),
         );
       const ordering = sp.get('ordering') ?? 'effective_end_date';
       const desc = ordering.startsWith('-');
@@ -464,7 +464,7 @@ export const handlers = [
         notes: (body.notes as string) ?? '',
         owner: null,
         has_current_scan: false,
-        current_renewal: null,
+        last_renewal: null,
         updated_at: new Date().toISOString(),
       };
       db.amms.push(amm);
@@ -498,7 +498,7 @@ export const handlers = [
   // ---- Renouvellements ----
   http.get(
     url('/amms/:id/renewals'),
-    withAuth((_u, { params }) => HttpResponse.json(db.renewals.filter((r) => r.amm === params.id))),
+    withAuth((_u, { params }) => HttpResponse.json(db.renewals.filter((r) => r.amm_id === params.id))),
   ),
   http.post(
     url('/amms/:id/renewals'),
@@ -506,7 +506,7 @@ export const handlers = [
       const amm = db.amms.find((a) => a.id === params.id);
       if (!amm) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
       if (!inScope(user, amm.country_iso2)) return forbidden();
-      const existing = db.renewals.filter((r) => r.amm === amm.id);
+      const existing = db.renewals.filter((r) => r.amm_id === amm.id);
       if (existing.some((r) => !['OBTENU', 'REJETE', 'ABANDONNE'].includes(r.workflow_status))) {
         return HttpResponse.json(
           { detail: 'Un renouvellement est déjà en cours pour cette AMM' },
@@ -516,7 +516,7 @@ export const handlers = [
       const body = (await request.json()) as Partial<Renewal>;
       const renewal: Renewal = {
         id: nextId('ren'),
-        amm: amm.id,
+        amm_id: amm.id,
         sequence: existing.length + 1,
         workflow_status: 'PLANIFIE',
         filing_date: null,
@@ -580,14 +580,14 @@ export const handlers = [
         renewal.end_date_manual = true;
       }
       if (body.notes) renewal.notes = body.notes;
-      recomputeAmm(db, renewal.amm);
-      addHistory(renewal.amm, user, 'RENEWAL_TRANSITION', [
+      recomputeAmm(db, renewal.amm_id);
+      addHistory(renewal.amm_id, user, 'RENEWAL_TRANSITION', [
         { field: `renewal#${renewal.sequence}.workflow_status`, old, new: body.to },
       ]);
       if (['DEPOSE', 'OBTENU'].includes(body.to)) {
         for (const al of db.alerts) {
           if (
-            al.amm === renewal.amm &&
+            al.amm === renewal.amm_id &&
             al.status !== 'RESOLVED' &&
             (body.to === 'OBTENU' || ['J-180', 'J-90', 'J-30'].includes(al.rule_code))
           ) {
@@ -614,7 +614,7 @@ export const handlers = [
         db.documents.filter((d) => d.amm === amm.id && (includeArchived || (d.is_current && !d.archived_at))),
       );
       if (sp.get('group') !== 'period') return HttpResponse.json(docs);
-      const renewals = db.renewals.filter((r) => r.amm === amm.id).sort((a, b) => b.sequence - a.sequence);
+      const renewals = db.renewals.filter((r) => r.amm_id === amm.id).sort((a, b) => b.sequence - a.sequence);
       const groups: DocumentPeriod[] = renewals.map((r) => ({
         period: 'RENEWAL' as const,
         sequence: r.sequence,
@@ -649,7 +649,7 @@ export const handlers = [
       await delay(150);
       const renewal = db.renewals.find((r) => r.id === params.id);
       if (!renewal) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
-      const amm = db.amms.find((a) => a.id === renewal.amm)!;
+      const amm = db.amms.find((a) => a.id === renewal.amm_id)!;
       if (!inScope(user, amm.country_iso2)) return forbidden();
       const { form, file } = await readForm(request);
       if (!file) return HttpResponse.json({ file: ['Fichier requis'] }, { status: 400 });
@@ -816,7 +816,7 @@ export const handlers = [
       const unread = new URL(request.url).searchParams.get('unread') === '1';
       const list = db.notifications
         .filter((n) => !unread || !n.read_at)
-        .sort((a, b) => b.sent_at.localeCompare(a.sent_at));
+        .sort((a, b) => (b.sent_at ?? '').localeCompare(a.sent_at ?? ''));
       return HttpResponse.json(paginate(list, request));
     }),
   ),

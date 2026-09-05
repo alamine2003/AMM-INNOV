@@ -20,7 +20,7 @@ async def connect(user):
     from asgiref.sync import sync_to_async
 
     token = await sync_to_async(lambda: str(RefreshToken.for_user(user).access_token))()
-    communicator = WebsocketCommunicator(application(), f"/ws/?token={token}")
+    communicator = WebsocketCommunicator(application(), "/ws/", subprotocols=["amm.jwt", token])
     connected, _ = await communicator.connect()
     assert connected
     hello = await communicator.receive_json_from()

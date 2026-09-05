@@ -74,10 +74,10 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
         {info(t('amm.fields.filingDeadline'), formatDate(amm.filing_deadline))}
         {info(t('amm.fields.hasScan'), amm.has_current_scan ? t('app.yes') : t('app.no'))}
         {info(t('amm.fields.updatedAt'), formatDateTime(amm.updated_at))}
-        {amm.current_renewal &&
+        {amm.last_renewal &&
           info(
-            t('renewals.sequence', { n: amm.current_renewal.sequence }),
-            `${t(`workflow.${amm.current_renewal.workflow_status}`)}${amm.current_renewal.number ? ` — ${amm.current_renewal.number}` : ''}`,
+            t('renewals.sequence', { n: amm.last_renewal.sequence }),
+            `${t(`workflow.${amm.last_renewal.workflow_status}`)}${amm.last_renewal.number ? ` — ${amm.last_renewal.number}` : ''}`,
           )}
       </Grid>
       <Grid container spacing={2}>

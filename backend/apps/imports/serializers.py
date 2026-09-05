@@ -8,6 +8,7 @@ class ImportBatchSerializer(serializers.ModelSerializer):
         source="created_by.email", read_only=True, default=None
     )
     filename = serializers.SerializerMethodField()
+    summary = serializers.DictField(read_only=True)
 
     class Meta:
         model = ImportBatch
@@ -34,6 +35,8 @@ class ImportUploadSerializer(serializers.Serializer):
 
 
 class ImportRowSerializer(serializers.ModelSerializer):
+    raw = serializers.DictField(read_only=True)
+
     class Meta:
         model = ImportRow
         fields = ["id", "sheet", "row_number", "raw", "outcome", "message", "amm"]

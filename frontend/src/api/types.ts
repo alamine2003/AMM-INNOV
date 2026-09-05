@@ -52,7 +52,7 @@ export interface ProductRange {
 export interface Product {
   id: string;
   name: string;
-  range: string;
+  range: string | null;
   range_code: string;
   dci: string;
   dosage: string;
@@ -68,7 +68,7 @@ export type DossierState = 'COMPLET' | 'INCOMPLET' | 'INCONNU';
 export type WorkflowStatus =
   'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
 
-export interface CurrentRenewal {
+export interface LastRenewal {
   id: string;
   sequence: number;
   workflow_status: WorkflowStatus;
@@ -97,7 +97,7 @@ export interface Amm {
   notes: string;
   owner: string | null;
   has_current_scan: boolean;
-  current_renewal: CurrentRenewal | null;
+  last_renewal: LastRenewal | null;
   updated_at: string;
 }
 
@@ -136,14 +136,17 @@ export interface HistoryChange {
 
 export interface HistoryEntry {
   date: string;
-  user_email: string;
+  user_email: string | null;
   type: string;
+  /** `amm`, `renewal` ou `document` */
+  model?: string;
+  object_id?: string;
   changes: HistoryChange[];
 }
 
 export interface Renewal {
   id: string;
-  amm: string;
+  amm_id: string;
   sequence: number;
   workflow_status: WorkflowStatus;
   filing_date: string | null;
@@ -267,7 +270,7 @@ export interface Notification {
   body: string;
   link: string | null;
   channel: 'IN_APP' | 'EMAIL';
-  sent_at: string;
+  sent_at: string | null;
   read_at: string | null;
 }
 
@@ -322,7 +325,7 @@ export interface ImportRow {
   sheet: string;
   row_number: number;
   raw: Record<string, unknown>;
-  outcome: 'CREATED' | 'UPDATED' | 'SKIPPED' | 'ERROR';
+  outcome: 'CREATED' | 'UPDATED' | 'SKIPPED' | 'ERROR' | 'WARNING';
   message: string;
 }
 

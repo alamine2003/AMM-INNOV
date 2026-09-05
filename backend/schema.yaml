@@ -1,0 +1,5178 @@
+openapi: 3.0.3
+info:
+  title: AMM INNOV API
+  version: 1.0.0
+  description: Suivi des Autorisations de Mise sur le Marché en Afrique.
+paths:
+  /api/v1/alert-rules/:
+    get:
+      operationId: v1_alert_rules_list
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+      - in: query
+        name: country
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: severity
+        schema:
+          type: string
+          title: Sévérité
+          enum:
+          - CRITICAL
+          - INFO
+          - WARNING
+        description: |-
+          * `INFO` - Information
+          * `WARNING` - Avertissement
+          * `CRITICAL` - Critique
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlertRuleList'
+          description: ''
+    post:
+      operationId: v1_alert_rules_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+          description: ''
+  /api/v1/alert-rules/{id}/:
+    get:
+      operationId: v1_alert_rules_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this règle d'alerte.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+          description: ''
+    put:
+      operationId: v1_alert_rules_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this règle d'alerte.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlertRuleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+          description: ''
+    patch:
+      operationId: v1_alert_rules_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this règle d'alerte.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlertRuleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlertRuleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlertRuleRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+          description: ''
+    delete:
+      operationId: v1_alert_rules_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this règle d'alerte.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/alerts/:
+    get:
+      operationId: v1_alerts_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: amm
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: assigned_to
+        schema:
+          type: string
+      - in: query
+        name: code
+        schema:
+          type: string
+      - in: query
+        name: country
+        schema:
+          type: string
+      - in: query
+        name: due_before
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: severity
+        schema:
+          type: array
+          items:
+            type: string
+            title: Sévérité
+            enum:
+            - CRITICAL
+            - INFO
+            - WARNING
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut
+            enum:
+            - ACKNOWLEDGED
+            - OPEN
+            - RESOLVED
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlertList'
+          description: ''
+  /api/v1/alerts/{id}/:
+    get:
+      operationId: v1_alerts_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this alerte.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api/v1/alerts/{id}/acknowledge/:
+    post:
+      operationId: v1_alerts_acknowledge_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this alerte.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertAcknowledgeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlertAcknowledgeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlertAcknowledgeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api/v1/alerts/{id}/assign/:
+    post:
+      operationId: v1_alerts_assign_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this alerte.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertAssignRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlertAssignRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlertAssignRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api/v1/alerts/{id}/resolve/:
+    post:
+      operationId: v1_alerts_resolve_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this alerte.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertResolveRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlertResolveRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlertResolveRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+  /api/v1/amms/:
+    get:
+      operationId: v1_amms_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+      - in: query
+        name: dossier_state
+        schema:
+          type: array
+          items:
+            type: string
+            title: État du dossier
+            enum:
+            - COMPLET
+            - INCOMPLET
+            - INCONNU
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: expires_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: expires_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: has_current_scan
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: owner
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: range
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut
+            enum:
+            - EXPIRE
+            - INDETERMINE
+            - IN_PROCESS
+            - VALIDE
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: urgency
+        schema:
+          type: array
+          items:
+            type: string
+            title: Urgence
+            enum:
+            - A_PLANIFIER
+            - CRITIQUE
+            - DEPOT_URGENT
+            - EN_INSTRUCTION
+            - EXPIRE
+            - OK
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAmmListList'
+          description: ''
+    post:
+      operationId: v1_amms_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmmDetail'
+          description: ''
+  /api/v1/amms/{id}/:
+    get:
+      operationId: v1_amms_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmmDetail'
+          description: ''
+    put:
+      operationId: v1_amms_update
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AmmDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmmDetail'
+          description: ''
+    patch:
+      operationId: v1_amms_partial_update
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAmmDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAmmDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAmmDetailRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmmDetail'
+          description: ''
+    delete:
+      operationId: v1_amms_destroy
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/amms/{id}/documents/:
+    get:
+      operationId: v1_amms_documents_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: group
+        schema:
+          type: string
+        description: '`period` pour grouper par période'
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      - in: query
+        name: include_archived
+        schema:
+          type: boolean
+      - in: query
+        name: kind
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: v1_amms_documents_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: group
+        schema:
+          type: string
+        description: '`period` pour grouper par période'
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      - in: query
+        name: include_archived
+        schema:
+          type: boolean
+      - in: query
+        name: kind
+        schema:
+          type: string
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmmListRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AmmListRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AmmListRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/amms/{id}/documents/archive.zip/:
+    get:
+      operationId: v1_amms_documents_archive.zip_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/amms/{id}/history/:
+    get:
+      operationId: v1_amms_history_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+      - in: query
+        name: dossier_state
+        schema:
+          type: array
+          items:
+            type: string
+            title: État du dossier
+            enum:
+            - COMPLET
+            - INCOMPLET
+            - INCONNU
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: expires_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: expires_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: has_current_scan
+        schema:
+          type: boolean
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: owner
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: range
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut
+            enum:
+            - EXPIRE
+            - INDETERMINE
+            - IN_PROCESS
+            - VALIDE
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: urgency
+        schema:
+          type: array
+          items:
+            type: string
+            title: Urgence
+            enum:
+            - A_PLANIFIER
+            - CRITIQUE
+            - DEPOT_URGENT
+            - EN_INSTRUCTION
+            - EXPIRE
+            - OK
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHistoryEntryList'
+          description: ''
+  /api/v1/amms/{id}/renewals/:
+    get:
+      operationId: v1_amms_renewals_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+      - in: query
+        name: dossier_state
+        schema:
+          type: array
+          items:
+            type: string
+            title: État du dossier
+            enum:
+            - COMPLET
+            - INCOMPLET
+            - INCONNU
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: expires_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: expires_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: has_current_scan
+        schema:
+          type: boolean
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: owner
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: range
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut
+            enum:
+            - EXPIRE
+            - INDETERMINE
+            - IN_PROCESS
+            - VALIDE
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: urgency
+        schema:
+          type: array
+          items:
+            type: string
+            title: Urgence
+            enum:
+            - A_PLANIFIER
+            - CRITIQUE
+            - DEPOT_URGENT
+            - EN_INSTRUCTION
+            - EXPIRE
+            - OK
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRenewalList'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+    post:
+      operationId: v1_amms_renewals_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+      - in: query
+        name: dossier_state
+        schema:
+          type: array
+          items:
+            type: string
+            title: État du dossier
+            enum:
+            - COMPLET
+            - INCOMPLET
+            - INCONNU
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: expires_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: expires_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: has_current_scan
+        schema:
+          type: boolean
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AMM.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: owner
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: range
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut
+            enum:
+            - EXPIRE
+            - INDETERMINE
+            - IN_PROCESS
+            - VALIDE
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - in: query
+        name: urgency
+        schema:
+          type: array
+          items:
+            type: string
+            title: Urgence
+            enum:
+            - A_PLANIFIER
+            - CRITIQUE
+            - DEPOT_URGENT
+            - EN_INSTRUCTION
+            - EXPIRE
+            - OK
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRenewalList'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+  /api/v1/analytics/africa/:
+    get:
+      operationId: v1_analytics_africa_retrieve
+      parameters:
+      - in: query
+        name: today
+        schema:
+          type: string
+        description: 'Date de référence AAAA-MM-JJ (par défaut : aujourd''hui).'
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/analytics/country/{iso2}/:
+    get:
+      operationId: v1_analytics_country_retrieve
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        required: true
+      - in: query
+        name: today
+        schema:
+          type: string
+        description: 'Date de référence AAAA-MM-JJ (par défaut : aujourd''hui).'
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/analytics/export/:
+    get:
+      operationId: v1_analytics_export_retrieve
+      description: '`?format=xlsx|csv` with the same filters as `/amms` (`country`,
+        `status`, `search`…).'
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+        description: xlsx (défaut) ou csv
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/analytics/product/{id}/coverage/:
+    get:
+      operationId: v1_analytics_product_coverage_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/refresh/:
+    post:
+      operationId: v1_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/countries/:
+    get:
+      operationId: v1_countries_list
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCountryList'
+          description: ''
+    post:
+      operationId: v1_countries_create
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+          description: ''
+  /api/v1/countries/{iso2}/:
+    get:
+      operationId: v1_countries_retrieve
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+          description: ''
+    put:
+      operationId: v1_countries_update
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CountryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+          description: ''
+    patch:
+      operationId: v1_countries_partial_update
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCountryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCountryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCountryRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+          description: ''
+    delete:
+      operationId: v1_countries_destroy
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/countries/{iso2}/documents/:
+    get:
+      operationId: v1_countries_documents_retrieve
+      description: Countries are addressed by ISO2 code (`/countries/SN`) or by UUID.
+      parameters:
+      - in: path
+        name: iso2
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/documents/:
+    get:
+      operationId: v1_documents_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: amm
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: amm__country__iso2
+        schema:
+          type: string
+      - in: query
+        name: amm__product
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: document_date__gte
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: document_date__lte
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: document_date__year
+        schema:
+          type: number
+      - in: query
+        name: is_current
+        schema:
+          type: boolean
+      - in: query
+        name: kind
+        schema:
+          type: string
+          title: Type
+          enum:
+          - AMM
+          - AUTRE
+          - COURRIER
+          - RECEPISSE
+        description: |-
+          * `AMM` - AMM
+          * `RECEPISSE` - Récépissé de dépôt
+          * `COURRIER` - Courrier de l'autorité
+          * `AUTRE` - Autre
+      - in: query
+        name: kind__in
+        schema:
+          type: array
+          items:
+            type: string
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDocumentList'
+          description: ''
+  /api/v1/documents/{id}/:
+    get:
+      operationId: v1_documents_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this document.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+          description: ''
+    delete:
+      operationId: v1_documents_destroy
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this document.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/documents/{id}/file/:
+    get:
+      operationId: v1_documents_file_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this document.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/documents/{id}/replace/:
+    post:
+      operationId: v1_documents_replace_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this document.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentReplaceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentReplaceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+          description: ''
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/imports/:
+    get:
+      operationId: v1_imports_list
+      description: Upload of the workbook (`file` multipart); the import runs in Celery
+        (`run_import`).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImportBatchList'
+          description: ''
+    post:
+      operationId: v1_imports_create
+      description: Upload of the workbook (`file` multipart); the import runs in Celery
+        (`run_import`).
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ImportUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportBatch'
+          description: ''
+  /api/v1/imports/{id}/:
+    get:
+      operationId: v1_imports_retrieve
+      description: Upload of the workbook (`file` multipart); the import runs in Celery
+        (`run_import`).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this import.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportBatch'
+          description: ''
+  /api/v1/imports/{id}/rows/:
+    get:
+      operationId: v1_imports_rows_list
+      description: Upload of the workbook (`file` multipart); the import runs in Celery
+        (`run_import`).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this import.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImportRowList'
+          description: ''
+  /api/v1/me/:
+    get:
+      operationId: v1_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: v1_notifications_list
+      description: The current user's notifications (`?unread=1` keeps only unread
+        ones).
+      parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          title: Canal
+          enum:
+          - EMAIL
+          - IN_APP
+        description: |-
+          * `IN_APP` - In-app
+          * `EMAIL` - Email
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/notifications/{id}/:
+    get:
+      operationId: v1_notifications_retrieve
+      description: The current user's notifications (`?unread=1` keeps only unread
+        ones).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: v1_notifications_read_create
+      description: The current user's notifications (`?unread=1` keeps only unread
+        ones).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: v1_notifications_read_all_create
+      description: The current user's notifications (`?unread=1` keeps only unread
+        ones).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/notifications/unread-count/:
+    get:
+      operationId: v1_notifications_unread_count_retrieve
+      description: The current user's notifications (`?unread=1` keeps only unread
+        ones).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: range
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: range__code
+        schema:
+          type: string
+          enum:
+          - BIEN_ETRE
+          - CARDIO
+          - GENERALE
+        description: |-
+          * `GENERALE` - Générale
+          * `CARDIO` - Cardio
+          * `BIEN_ETRE` - Bien-être
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+    post:
+      operationId: v1_products_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: v1_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: v1_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: v1_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: v1_products_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{id}/documents/:
+    get:
+      operationId: v1_products_documents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/products/{id}/merge/:
+    post:
+      operationId: v1_products_merge_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this produit.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductMergeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductMergeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductMergeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/ranges/:
+    get:
+      operationId: v1_ranges_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductRangeList'
+          description: ''
+    post:
+      operationId: v1_ranges_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRange'
+          description: ''
+  /api/v1/ranges/{id}/:
+    get:
+      operationId: v1_ranges_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this gamme.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRange'
+          description: ''
+    put:
+      operationId: v1_ranges_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this gamme.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRange'
+          description: ''
+    patch:
+      operationId: v1_ranges_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this gamme.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRangeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRange'
+          description: ''
+    delete:
+      operationId: v1_ranges_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this gamme.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/renewals/:
+    get:
+      operationId: v1_renewals_list
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: query
+        name: amm
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: country
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: workflow_status
+        schema:
+          type: array
+          items:
+            type: string
+            title: Statut du workflow
+            enum:
+            - ABANDONNE
+            - DEPOSE
+            - EN_INSTRUCTION
+            - EN_PREPARATION
+            - OBTENU
+            - PLANIFIE
+            - REJETE
+        description: Les valeurs multiples doivent être séparées par des virgules.
+        explode: false
+        style: form
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRenewalList'
+          description: ''
+  /api/v1/renewals/{id}/:
+    get:
+      operationId: v1_renewals_retrieve
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this renouvellement.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+    put:
+      operationId: v1_renewals_update
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this renouvellement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+    patch:
+      operationId: v1_renewals_partial_update
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this renouvellement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+  /api/v1/renewals/{id}/documents/:
+    post:
+      operationId: v1_renewals_documents_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this renouvellement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RenewalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/renewals/{id}/transition/:
+    post:
+      operationId: v1_renewals_transition_create
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this renouvellement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewalTransitionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RenewalTransitionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RenewalTransitionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: ''
+  /api/v1/users/:
+    get:
+      operationId: v1_users_list
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          title: Rôle
+          enum:
+          - CEO_ADMIN
+          - COUNTRY_REGULATORY
+          - HQ_REGULATORY
+        description: |-
+          * `CEO_ADMIN` - CEO / administrateur
+          * `HQ_REGULATORY` - Réglementaire siège
+          * `COUNTRY_REGULATORY` - Réglementaire pays
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: v1_users_create
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/{id}/:
+    get:
+      operationId: v1_users_retrieve
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this utilisateur.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_users_update
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this utilisateur.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_users_partial_update
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this utilisateur.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: v1_users_destroy
+      description: |-
+        User management, CEO_ADMIN and HQ_REGULATORY only.
+
+        HQ_REGULATORY may only create and edit COUNTRY_REGULATORY accounts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this utilisateur.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        country_iso2:
+          type: string
+          readOnly: true
+        country_name:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        amm_status:
+          allOf:
+          - $ref: '#/components/schemas/AmmStatusEnum'
+          readOnly: true
+        amm_urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          readOnly: true
+        effective_end_date:
+          type: string
+          format: date
+          readOnly: true
+        rule:
+          type: string
+          format: uuid
+          readOnly: true
+        rule_code:
+          type: string
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        due_date:
+          type: string
+          format: date
+          readOnly: true
+          title: Échéance
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AlertStatusEnum'
+          readOnly: true
+          title: Statut
+        assigned_to:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Assignée à
+        assigned_to_email:
+          type: string
+          format: email
+          readOnly: true
+        triggered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Déclenchée le
+        acknowledged_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Acquittée le
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Résolue le
+        resolution:
+          readOnly: true
+          nullable: true
+          title: Résolution
+          oneOf:
+          - $ref: '#/components/schemas/AlertResolutionEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        comment:
+          type: string
+          readOnly: true
+          title: Commentaire
+      required:
+      - acknowledged_at
+      - amm_id
+      - amm_status
+      - amm_urgency
+      - assigned_to
+      - assigned_to_email
+      - comment
+      - country_iso2
+      - country_name
+      - due_date
+      - effective_end_date
+      - id
+      - product_name
+      - resolution
+      - resolved_at
+      - rule
+      - rule_code
+      - severity
+      - status
+      - triggered_at
+    AlertAcknowledgeRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+    AlertAssignRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+      - user_id
+    AlertResolutionEnum:
+      enum:
+      - AUTO_FILED
+      - AUTO_RENEWED
+      - MANUAL
+      type: string
+      description: |-
+        * `AUTO_FILED` - Dépôt enregistré
+        * `AUTO_RENEWED` - Renouvellement obtenu
+        * `MANUAL` - Résolution manuelle
+    AlertResolveRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 32
+        country:
+          type: string
+          format: uuid
+          nullable: true
+          title: Pays (vide = globale)
+        country_iso2:
+          type: string
+          readOnly: true
+        offset_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: Délai avant échéance (jours)
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          title: Sévérité
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleEnum'
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelEnum'
+        only_if_not_filed:
+          type: boolean
+          title: Seulement si aucun dépôt
+        is_active:
+          type: boolean
+          title: Active
+      required:
+      - channels
+      - code
+      - country_iso2
+      - id
+      - roles
+    AlertRuleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        country:
+          type: string
+          format: uuid
+          nullable: true
+          title: Pays (vide = globale)
+        offset_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: Délai avant échéance (jours)
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          title: Sévérité
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleEnum'
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelEnum'
+        only_if_not_filed:
+          type: boolean
+          title: Seulement si aucun dépôt
+        is_active:
+          type: boolean
+          title: Active
+      required:
+      - channels
+      - code
+      - roles
+    AlertStatusEnum:
+      enum:
+      - OPEN
+      - ACKNOWLEDGED
+      - RESOLVED
+      type: string
+      description: |-
+        * `OPEN` - Ouverte
+        * `ACKNOWLEDGED` - Acquittée
+        * `RESOLVED` - Résolue
+    AmmDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          title: Produit
+        product_name:
+          type: string
+          readOnly: true
+        range_code:
+          type: string
+          readOnly: true
+        range_label:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          format: uuid
+          title: Pays
+        country_iso2:
+          type: string
+          readOnly: true
+        country_name:
+          type: string
+          readOnly: true
+        original_number:
+          type: string
+          title: N° AMM d'origine
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début d'origine
+        original_end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin d'origine
+        original_end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AmmStatusEnum'
+          readOnly: true
+          title: Statut
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          readOnly: true
+          title: Urgence
+        effective_end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de fin effective
+        filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Deadline de dépôt
+        days_remaining:
+          type: integer
+          nullable: true
+          readOnly: true
+        dossier_state:
+          allOf:
+          - $ref: '#/components/schemas/DossierStateEnum'
+          title: État du dossier
+        notes:
+          type: string
+        owner:
+          type: string
+          format: uuid
+          nullable: true
+          title: Responsable
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        has_current_scan:
+          type: boolean
+          readOnly: true
+          default: false
+        last_renewal:
+          allOf:
+          - $ref: '#/components/schemas/LastRenewal'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        renewals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Renewal'
+          readOnly: true
+        pending_renewal_id:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - country
+      - country_iso2
+      - country_name
+      - created_at
+      - days_remaining
+      - effective_end_date
+      - filing_deadline
+      - has_current_scan
+      - id
+      - last_renewal
+      - owner_email
+      - pending_renewal_id
+      - product
+      - product_name
+      - range_code
+      - range_label
+      - renewals
+      - status
+      - updated_at
+      - urgency
+    AmmDetailRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+          title: Produit
+        country:
+          type: string
+          format: uuid
+          title: Pays
+        original_number:
+          type: string
+          title: N° AMM d'origine
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début d'origine
+        original_end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin d'origine
+        original_end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        dossier_state:
+          allOf:
+          - $ref: '#/components/schemas/DossierStateEnum'
+          title: État du dossier
+        notes:
+          type: string
+        owner:
+          type: string
+          format: uuid
+          nullable: true
+          title: Responsable
+      required:
+      - country
+      - product
+    AmmList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          title: Produit
+        product_name:
+          type: string
+          readOnly: true
+        range_code:
+          type: string
+          readOnly: true
+        range_label:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          format: uuid
+          title: Pays
+        country_iso2:
+          type: string
+          readOnly: true
+        country_name:
+          type: string
+          readOnly: true
+        original_number:
+          type: string
+          title: N° AMM d'origine
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début d'origine
+        original_end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin d'origine
+        original_end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AmmStatusEnum'
+          readOnly: true
+          title: Statut
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          readOnly: true
+          title: Urgence
+        effective_end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de fin effective
+        filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Deadline de dépôt
+        days_remaining:
+          type: integer
+          nullable: true
+          readOnly: true
+        dossier_state:
+          allOf:
+          - $ref: '#/components/schemas/DossierStateEnum'
+          title: État du dossier
+        notes:
+          type: string
+        owner:
+          type: string
+          format: uuid
+          nullable: true
+          title: Responsable
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        has_current_scan:
+          type: boolean
+          readOnly: true
+          default: false
+        last_renewal:
+          allOf:
+          - $ref: '#/components/schemas/LastRenewal'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - country
+      - country_iso2
+      - country_name
+      - created_at
+      - days_remaining
+      - effective_end_date
+      - filing_deadline
+      - has_current_scan
+      - id
+      - last_renewal
+      - owner_email
+      - product
+      - product_name
+      - range_code
+      - range_label
+      - status
+      - updated_at
+      - urgency
+    AmmListRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+          title: Produit
+        country:
+          type: string
+          format: uuid
+          title: Pays
+        original_number:
+          type: string
+          title: N° AMM d'origine
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début d'origine
+        original_end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin d'origine
+        original_end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        dossier_state:
+          allOf:
+          - $ref: '#/components/schemas/DossierStateEnum'
+          title: État du dossier
+        notes:
+          type: string
+        owner:
+          type: string
+          format: uuid
+          nullable: true
+          title: Responsable
+      required:
+      - country
+      - product
+    AmmStatusEnum:
+      enum:
+      - VALIDE
+      - EXPIRE
+      - IN_PROCESS
+      - INDETERMINE
+      type: string
+      description: |-
+        * `VALIDE` - Valide
+        * `EXPIRE` - Expirée
+        * `IN_PROCESS` - En cours d'instruction
+        * `INDETERMINE` - Indéterminé
+    ChannelEnum:
+      enum:
+      - IN_APP
+      - EMAIL
+      type: string
+      description: |-
+        * `IN_APP` - In-app
+        * `EMAIL` - Email
+    Country:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        iso2:
+          type: string
+          title: Code ISO
+          maxLength: 2
+        name:
+          type: string
+          title: Nom
+          maxLength: 100
+        authority:
+          type: string
+          title: Autorité réglementaire
+          maxLength: 200
+        validity_years:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Durée de validité (années)
+        filing_lead_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Délai de dépôt (mois)
+        timezone:
+          type: string
+          title: Fuseau horaire
+          maxLength: 64
+      required:
+      - id
+      - iso2
+      - name
+    CountryRequest:
+      type: object
+      properties:
+        iso2:
+          type: string
+          minLength: 1
+          title: Code ISO
+          maxLength: 2
+        name:
+          type: string
+          minLength: 1
+          title: Nom
+          maxLength: 100
+        authority:
+          type: string
+          title: Autorité réglementaire
+          maxLength: 200
+        validity_years:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Durée de validité (années)
+        filing_lead_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Délai de dépôt (mois)
+        timezone:
+          type: string
+          minLength: 1
+          title: Fuseau horaire
+          maxLength: 64
+      required:
+      - iso2
+      - name
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        renewal_id:
+          type: string
+          format: uuid
+          readOnly: true
+        renewal_sequence:
+          type: integer
+          readOnly: true
+        country_iso2:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DocumentKindEnum'
+          readOnly: true
+          title: Type
+        title:
+          type: string
+          readOnly: true
+          title: Titre
+        document_date:
+          type: string
+          format: date
+          readOnly: true
+          title: Date du document
+        content_type:
+          type: string
+          readOnly: true
+          title: Type MIME
+        sha256:
+          type: string
+          readOnly: true
+          title: Empreinte SHA-256
+        size_bytes:
+          type: integer
+          readOnly: true
+          title: Taille (octets)
+        page_count:
+          type: integer
+          readOnly: true
+          nullable: true
+          title: Nombre de pages
+        version:
+          type: integer
+          readOnly: true
+        replaces:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Remplace
+        is_current:
+          type: boolean
+          readOnly: true
+          title: Version courante
+        uploaded_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Téléversé par
+        uploaded_by_email:
+          type: string
+          format: email
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Téléversé le
+        archived_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Archivé le
+        file_url:
+          type: string
+          readOnly: true
+        download_url:
+          type: string
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        period:
+          type: string
+          readOnly: true
+      required:
+      - amm_id
+      - archived_at
+      - content_type
+      - country_iso2
+      - document_date
+      - download_url
+      - file_url
+      - filename
+      - id
+      - is_current
+      - kind
+      - page_count
+      - period
+      - product_name
+      - renewal_id
+      - renewal_sequence
+      - replaces
+      - sha256
+      - size_bytes
+      - title
+      - uploaded_at
+      - uploaded_by
+      - uploaded_by_email
+      - version
+    DocumentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        renewal_id:
+          type: string
+          format: uuid
+          readOnly: true
+        renewal_sequence:
+          type: integer
+          readOnly: true
+        country_iso2:
+          type: string
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DocumentKindEnum'
+          readOnly: true
+          title: Type
+        title:
+          type: string
+          readOnly: true
+          title: Titre
+        document_date:
+          type: string
+          format: date
+          readOnly: true
+          title: Date du document
+        content_type:
+          type: string
+          readOnly: true
+          title: Type MIME
+        sha256:
+          type: string
+          readOnly: true
+          title: Empreinte SHA-256
+        size_bytes:
+          type: integer
+          readOnly: true
+          title: Taille (octets)
+        page_count:
+          type: integer
+          readOnly: true
+          nullable: true
+          title: Nombre de pages
+        version:
+          type: integer
+          readOnly: true
+        replaces:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Remplace
+        is_current:
+          type: boolean
+          readOnly: true
+          title: Version courante
+        uploaded_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Téléversé par
+        uploaded_by_email:
+          type: string
+          format: email
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Téléversé le
+        archived_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Archivé le
+        file_url:
+          type: string
+          readOnly: true
+        download_url:
+          type: string
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        period:
+          type: string
+          readOnly: true
+        versions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - amm_id
+      - archived_at
+      - content_type
+      - country_iso2
+      - document_date
+      - download_url
+      - file_url
+      - filename
+      - id
+      - is_current
+      - kind
+      - page_count
+      - period
+      - product_name
+      - renewal_id
+      - renewal_sequence
+      - replaces
+      - sha256
+      - size_bytes
+      - title
+      - uploaded_at
+      - uploaded_by
+      - uploaded_by_email
+      - version
+      - versions
+    DocumentKindEnum:
+      enum:
+      - AMM
+      - RECEPISSE
+      - COURRIER
+      - AUTRE
+      type: string
+      description: |-
+        * `AMM` - AMM
+        * `RECEPISSE` - Récépissé de dépôt
+        * `COURRIER` - Courrier de l'autorité
+        * `AUTRE` - Autre
+    DocumentReplaceRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        document_date:
+          type: string
+          format: date
+          nullable: true
+        title:
+          type: string
+          maxLength: 255
+      required:
+      - file
+    DossierStateEnum:
+      enum:
+      - COMPLET
+      - INCOMPLET
+      - INCONNU
+      type: string
+      description: |-
+        * `COMPLET` - Dossier complet
+        * `INCOMPLET` - Dossier incomplet
+        * `INCONNU` - Inconnu
+    HistoryChange:
+      type: object
+      properties:
+        field:
+          type: string
+        old:
+          type: string
+          nullable: true
+        new:
+          type: string
+          nullable: true
+      required:
+      - field
+      - new
+      - old
+    HistoryEntry:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+        user_email:
+          type: string
+          format: email
+          nullable: true
+        type:
+          type: string
+        model:
+          type: string
+        object_id:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryChange'
+      required:
+      - changes
+      - date
+      - model
+      - object_id
+      - type
+      - user_email
+    ImportBatch:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ImportStatusEnum'
+          readOnly: true
+          title: Statut
+        summary:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        reference_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de référence
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_email:
+          type: string
+          format: email
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - created_by
+      - created_by_email
+      - filename
+      - finished_at
+      - id
+      - reference_date
+      - status
+      - summary
+    ImportOutcomeEnum:
+      enum:
+      - CREATED
+      - UPDATED
+      - SKIPPED
+      - ERROR
+      - WARNING
+      type: string
+      description: |-
+        * `CREATED` - Créée
+        * `UPDATED` - Mise à jour
+        * `SKIPPED` - Inchangée
+        * `ERROR` - Erreur
+        * `WARNING` - Avertissement
+    ImportRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sheet:
+          type: string
+          readOnly: true
+          title: Onglet
+        row_number:
+          type: integer
+          readOnly: true
+          title: Ligne
+        raw:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/ImportOutcomeEnum'
+          readOnly: true
+          title: Résultat
+        message:
+          type: string
+          readOnly: true
+        amm:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - amm
+      - id
+      - message
+      - outcome
+      - raw
+      - row_number
+      - sheet
+    ImportStatusEnum:
+      enum:
+      - PENDING
+      - RUNNING
+      - DONE
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - En attente
+        * `RUNNING` - En cours
+        * `DONE` - Terminé
+        * `FAILED` - Échoué
+    ImportUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        today:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - file
+    LastRenewal:
+      type: object
+      description: Shape of `last_renewal` in the AMM list (documentation of the OpenAPI
+        schema).
+      properties:
+        id:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+        workflow_status:
+          $ref: '#/components/schemas/WorkflowStatusEnum'
+        number:
+          type: string
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - end_date
+      - filing_date
+      - id
+      - number
+      - sequence
+      - start_date
+      - workflow_status
+    LoginRequest:
+      type: object
+      description: Returns access, refresh and the serialized user in the JSON body.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        alert_id:
+          type: string
+          format: uuid
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        severity:
+          type: string
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          readOnly: true
+          title: Canal
+        title:
+          type: string
+          readOnly: true
+          title: Titre
+        body:
+          type: string
+          readOnly: true
+          title: Contenu
+        link:
+          type: string
+          readOnly: true
+          title: Lien
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Envoyée le
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Lue le
+        is_read:
+          type: boolean
+          readOnly: true
+      required:
+      - alert_id
+      - amm_id
+      - body
+      - channel
+      - created_at
+      - id
+      - is_read
+      - link
+      - read_at
+      - sent_at
+      - severity
+      - title
+    NullEnum:
+      enum:
+      - null
+    PaginatedAlertList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+    PaginatedAlertRuleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+    PaginatedAmmListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmmList'
+    PaginatedCountryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Country'
+    PaginatedDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+    PaginatedHistoryEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+    PaginatedImportBatchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportBatch'
+    PaginatedImportRowList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportRow'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PaginatedProductRangeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductRange'
+    PaginatedRenewalList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Renewal'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedAlertRuleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        country:
+          type: string
+          format: uuid
+          nullable: true
+          title: Pays (vide = globale)
+        offset_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          title: Délai avant échéance (jours)
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          title: Sévérité
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleEnum'
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelEnum'
+        only_if_not_filed:
+          type: boolean
+          title: Seulement si aucun dépôt
+        is_active:
+          type: boolean
+          title: Active
+    PatchedAmmDetailRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+          title: Produit
+        country:
+          type: string
+          format: uuid
+          title: Pays
+        original_number:
+          type: string
+          title: N° AMM d'origine
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début d'origine
+        original_end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin d'origine
+        original_end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        dossier_state:
+          allOf:
+          - $ref: '#/components/schemas/DossierStateEnum'
+          title: État du dossier
+        notes:
+          type: string
+        owner:
+          type: string
+          format: uuid
+          nullable: true
+          title: Responsable
+    PatchedCountryRequest:
+      type: object
+      properties:
+        iso2:
+          type: string
+          minLength: 1
+          title: Code ISO
+          maxLength: 2
+        name:
+          type: string
+          minLength: 1
+          title: Nom
+          maxLength: 100
+        authority:
+          type: string
+          title: Autorité réglementaire
+          maxLength: 200
+        validity_years:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Durée de validité (années)
+        filing_lead_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Délai de dépôt (mois)
+        timezone:
+          type: string
+          minLength: 1
+          title: Fuseau horaire
+          maxLength: 64
+    PatchedProductRangeRequest:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/RangeCodeEnum'
+        label:
+          type: string
+          minLength: 1
+          title: Libellé
+          maxLength: 100
+    PatchedProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Libellé normalisé
+          maxLength: 255
+        range:
+          type: string
+          format: uuid
+          nullable: true
+          title: Gamme
+        dci:
+          type: string
+          maxLength: 255
+        dosage:
+          type: string
+          maxLength: 100
+        form:
+          type: string
+          title: Forme
+          maxLength: 100
+        presentation:
+          type: string
+          title: Présentation
+          maxLength: 100
+        is_active:
+          type: boolean
+          title: Actif
+        aliases:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 255
+    PatchedRenewalRequest:
+      type: object
+      properties:
+        workflow_status:
+          allOf:
+          - $ref: '#/components/schemas/WorkflowStatusEnum'
+          title: Statut du workflow
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de dépôt
+        decision_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de décision
+        number:
+          type: string
+          title: N° AMM
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin
+        end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        notes:
+          type: string
+    PatchedUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          title: Prénom
+          maxLength: 150
+        last_name:
+          type: string
+          title: Nom
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Rôle
+        countries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            title: Code ISO
+        is_active:
+          type: boolean
+          title: Actif
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Libellé normalisé
+          maxLength: 255
+        range:
+          type: string
+          format: uuid
+          nullable: true
+          title: Gamme
+        range_code:
+          type: string
+          readOnly: true
+        range_label:
+          type: string
+          readOnly: true
+        dci:
+          type: string
+          maxLength: 255
+        dosage:
+          type: string
+          maxLength: 100
+        form:
+          type: string
+          title: Forme
+          maxLength: 100
+        presentation:
+          type: string
+          title: Présentation
+          maxLength: 100
+        is_active:
+          type: boolean
+          title: Actif
+        aliases:
+          type: array
+          items:
+            type: string
+            maxLength: 255
+      required:
+      - id
+      - name
+      - range_code
+      - range_label
+    ProductMergeRequest:
+      type: object
+      properties:
+        duplicate_id:
+          type: string
+          format: uuid
+      required:
+      - duplicate_id
+    ProductRange:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          $ref: '#/components/schemas/RangeCodeEnum'
+        label:
+          type: string
+          title: Libellé
+          maxLength: 100
+      required:
+      - code
+      - id
+      - label
+    ProductRangeRequest:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/RangeCodeEnum'
+        label:
+          type: string
+          minLength: 1
+          title: Libellé
+          maxLength: 100
+      required:
+      - code
+      - label
+    ProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Libellé normalisé
+          maxLength: 255
+        range:
+          type: string
+          format: uuid
+          nullable: true
+          title: Gamme
+        dci:
+          type: string
+          maxLength: 255
+        dosage:
+          type: string
+          maxLength: 100
+        form:
+          type: string
+          title: Forme
+          maxLength: 100
+        presentation:
+          type: string
+          title: Présentation
+          maxLength: 100
+        is_active:
+          type: boolean
+          title: Actif
+        aliases:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 255
+      required:
+      - name
+    RangeCodeEnum:
+      enum:
+      - GENERALE
+      - CARDIO
+      - BIEN_ETRE
+      type: string
+      description: |-
+        * `GENERALE` - Générale
+        * `CARDIO` - Cardio
+        * `BIEN_ETRE` - Bien-être
+    Renewal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        sequence:
+          type: integer
+          readOnly: true
+          title: N° d'ordre
+        workflow_status:
+          allOf:
+          - $ref: '#/components/schemas/WorkflowStatusEnum'
+          title: Statut du workflow
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de dépôt
+        decision_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de décision
+        number:
+          type: string
+          title: N° AMM
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin
+        end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        notes:
+          type: string
+        allowed_transitions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - allowed_transitions
+      - amm_id
+      - created_at
+      - id
+      - sequence
+      - updated_at
+    RenewalRequest:
+      type: object
+      properties:
+        workflow_status:
+          allOf:
+          - $ref: '#/components/schemas/WorkflowStatusEnum'
+          title: Statut du workflow
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de dépôt
+        decision_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de décision
+        number:
+          type: string
+          title: N° AMM
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de début
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          title: Date de fin
+        end_date_manual:
+          type: boolean
+          title: Date de fin saisie manuellement
+        notes:
+          type: string
+    RenewalTransitionRequest:
+      type: object
+      properties:
+        to:
+          $ref: '#/components/schemas/WorkflowStatusEnum'
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+        decision_date:
+          type: string
+          format: date
+          nullable: true
+        number:
+          type: string
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+      required:
+      - to
+    RoleEnum:
+      enum:
+      - CEO_ADMIN
+      - HQ_REGULATORY
+      - COUNTRY_REGULATORY
+      type: string
+      description: |-
+        * `CEO_ADMIN` - CEO / administrateur
+        * `HQ_REGULATORY` - Réglementaire siège
+        * `COUNTRY_REGULATORY` - Réglementaire pays
+    SeverityEnum:
+      enum:
+      - INFO
+      - WARNING
+      - CRITICAL
+      type: string
+      description: |-
+        * `INFO` - Information
+        * `WARNING` - Avertissement
+        * `CRITICAL` - Critique
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UrgencyEnum:
+      enum:
+      - OK
+      - A_PLANIFIER
+      - DEPOT_URGENT
+      - CRITIQUE
+      - EXPIRE
+      - EN_INSTRUCTION
+      type: string
+      description: |-
+        * `OK` - OK
+        * `A_PLANIFIER` - À planifier
+        * `DEPOT_URGENT` - Dépôt urgent
+        * `CRITIQUE` - Critique
+        * `EXPIRE` - Expirée
+        * `EN_INSTRUCTION` - En instruction
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          title: Prénom
+          maxLength: 150
+        last_name:
+          type: string
+          title: Nom
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Rôle
+        countries:
+          type: array
+          items:
+            type: string
+            title: Code ISO
+        is_active:
+          type: boolean
+          title: Actif
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Dernière connexion
+      required:
+      - date_joined
+      - email
+      - full_name
+      - id
+      - last_login
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        first_name:
+          type: string
+          title: Prénom
+          maxLength: 150
+        last_name:
+          type: string
+          title: Nom
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Rôle
+        countries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            title: Code ISO
+        is_active:
+          type: boolean
+          title: Actif
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+    WorkflowStatusEnum:
+      enum:
+      - PLANIFIE
+      - EN_PREPARATION
+      - DEPOSE
+      - EN_INSTRUCTION
+      - OBTENU
+      - REJETE
+      - ABANDONNE
+      type: string
+      description: |-
+        * `PLANIFIE` - Planifié
+        * `EN_PREPARATION` - En préparation
+        * `DEPOSE` - Déposé
+        * `EN_INSTRUCTION` - En instruction
+        * `OBTENU` - Obtenu
+        * `REJETE` - Rejeté
+        * `ABANDONNE` - Abandonné
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
