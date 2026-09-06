@@ -4,10 +4,11 @@
 # (Settings > Networking > Generate Domain, renommable), ou au domaine personnalisé api.<domaine>.
 # Guide : docs/deploiement-netlify-railway.md
 # ---------------------------------------------------------------------------
+# Chemins relatifs à la racine du dépôt (pas de `base` : le CLI et l'interface Netlify
+# n'interprètent pas `publish` de la même façon quand `base` est défini).
 [build]
-  base    = "frontend"
-  command = "npm ci && npm run build"
-  publish = "dist"
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "24"
