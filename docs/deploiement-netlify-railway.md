@@ -94,7 +94,7 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
    Railway a d'abord détecté le projet autrement.
 2. Settings, **Networking, Generate Domain** : Railway propose un domaine
    `amm-innov-backend-production-xxxx.up.railway.app`, renommable (par exemple
-   `amm-innov-backend.up.railway.app` s'il est libre). Le port demandé est celui de la variable
+   `amm-innov-backend-production.up.railway.app` s'il est libre). Le port demandé est celui de la variable
    `PORT` ; laisser Railway le fixer.
 3. Settings, **Deploy, Wait for CI** : cocher, pour ne déployer qu'après la CI GitHub verte.
 4. Variables (onglet **Variables**, bouton **Raw Editor** pour coller le bloc) :
@@ -107,9 +107,9 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
    BIND_HOST=::
    WEB_CONCURRENCY=1
    NUM_PROXIES=1
-   ALLOWED_HOSTS=amm-innov-backend.up.railway.app
+   ALLOWED_HOSTS=amm-innov-backend-production.up.railway.app
    CORS_ALLOWED_ORIGINS=https://amm-innov.netlify.app
-   CSRF_TRUSTED_ORIGINS=https://amm-innov-backend.up.railway.app
+   CSRF_TRUSTED_ORIGINS=https://amm-innov-backend-production.up.railway.app
    FRONTEND_URL=https://amm-innov.netlify.app
    AUTH_REFRESH_COOKIE_SAMESITE=None
    AUTH_REFRESH_COOKIE_DOMAIN=
@@ -173,7 +173,7 @@ Le worker attend que le service web ait appliqué les migrations avant de démar
    `netlify.toml` : base `frontend`, build `npm ci && npm run build`, publication `dist`,
    Node 24, et les deux variables `VITE_API_BASE` et `VITE_WS_URL`.
 2. **Reporter le domaine Railway** de l'étape 3.2.2 dans `netlify.toml` (`VITE_API_BASE`,
-   `VITE_WS_URL`) si ce n'est pas `amm-innov-backend.up.railway.app`, ou le saisir dans
+   `VITE_WS_URL`) si ce n'est pas `amm-innov-backend-production.up.railway.app`, ou le saisir dans
    Site configuration, Environment variables (prioritaire sur le fichier).
 3. Site name : `amm-innov` (donne `https://amm-innov.netlify.app`). Si un autre nom ou un
    domaine personnalisé est utilisé, mettre à jour `CORS_ALLOWED_ORIGINS` et `FRONTEND_URL`
