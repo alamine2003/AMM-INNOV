@@ -58,7 +58,7 @@ EXPOSE 8000
 
 # Sonde de santé de l'API (vérifie base et Redis)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD curl -fsS http://localhost:8000/api/v1/health >/dev/null 2>&1 || exit 1
+    CMD curl -fsS "http://localhost:${PORT:-8000}/api/v1/health" >/dev/null 2>&1 || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]

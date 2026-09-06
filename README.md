@@ -152,11 +152,12 @@ Processus web : `WEB_CONCURRENCY=1` lance Daphne (dev) ; `WEB_CONCURRENCY=N` lan
 (prod, ~80 req/s par worker mesurés, 167 req/s avec 3). Chaque worker a son pool PostgreSQL
 (`DB_POOL_MAX_SIZE`) : garder N × pool sous `max_connections`.
 
-### Option retenue : Netlify + Render
+### Option retenue : Netlify + Railway
 
 Frontend sur Netlify ([netlify.toml](netlify.toml)), backend, worker Celery, Redis et PostgreSQL sur
-Render via Blueprint ([render.yaml](render.yaml)), scans PDF sur un stockage S3 compatible, Grafana Cloud.
-Procédure complète : [docs/deploiement-netlify-render.md](docs/deploiement-netlify-render.md).
+Railway ([railway.json](railway.json) pour le service web, [railway.worker.json](railway.worker.json) pour le worker),
+scans PDF sur un stockage S3 compatible, Grafana Cloud.
+Procédure complète : [docs/deploiement-netlify-railway.md](docs/deploiement-netlify-railway.md).
 
 ### Option auto-hébergée : Docker Compose
 

@@ -18,7 +18,7 @@ from apps.realtime.routing import websocket_urlpatterns  # noqa: E402
 
 def websocket_allowed_origins() -> list[str]:
     """Origines WebSocket acceptées : les origines CORS (frontend sur son propre domaine, par
-    exemple Netlify face à une API Render) et les hôtes de l'API (frontend servi par nginx)."""
+    exemple Netlify face à une API Railway) et les hôtes de l'API (frontend servi par nginx)."""
     if getattr(settings, "CORS_ALLOW_ALL_ORIGINS", False) or "*" in settings.ALLOWED_HOSTS:
         return ["*"]
     return list(settings.CORS_ALLOWED_ORIGINS) + list(settings.ALLOWED_HOSTS)

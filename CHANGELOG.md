@@ -6,7 +6,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ## [Non publié]
 
 ### Ajouté
-- Déploiement Netlify + Render : `netlify.toml`, `render.yaml`, guide `docs/deploiement-netlify-render.md`.
+- Déploiement Netlify + Railway : `netlify.toml`, `railway.json`, guide `docs/deploiement-netlify-railway.md`.
 - Revue complète du 5 septembre 2026 (`docs/rapport-revue-2026-09-05.md`) : tests de charge à 30, 60 et
   100 utilisateurs, tests de concurrence, durcissement (voir « Corrigé » et « Sécurité »).
 - Pool de connexions PostgreSQL (psycopg, `DB_POOL_MAX_SIZE`) : sans lui, l'API saturait PostgreSQL
@@ -39,12 +39,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 - Répétition du premier déploiement (settings de production, base vide, S3 MinIO, 2 workers
   uvicorn, worker Celery) : quatre blocages corrigés. Le WebSocket refusait l'origine du frontend
-  quand il n'est pas servi par l'API (Netlify face à Render) : les origines CORS sont désormais
+  quand il n'est pas servi par l'API (Netlify face à Railway) : les origines CORS sont désormais
   acceptées ; le worker Celery pouvait démarrer avant les migrations du service web (il les
   attend) ; `.dockerignore` (le contexte de build envoyait 550 Mo de `node_modules`) ; sommes de
   contrôle boto3 désactivées sauf exigence (compatibilité Cloudflare R2) et adressage `path`.
-  Blueprint Render : un seul processus web sur le plan starter (512 Mo), cookie de session
-  `SameSite=None` tant que Netlify et Render restent sur deux domaines.
+  configuration Railway : un seul processus web sur le plan starter (512 Mo), cookie de session
+  `SameSite=None` tant que Netlify et l'API restent sur deux domaines.
 
 ### Sécurité
 - Dépendances : Django 5.1 (fin de support sécurité) remplacé par Django 5.2 LTS (5.2.17, corrige

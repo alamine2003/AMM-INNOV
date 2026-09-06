@@ -199,8 +199,8 @@ from datetime import timedelta  # noqa: E402
 
 # Refresh token JWT en cookie httpOnly (jamais lisible par du JavaScript) sur le seul chemin
 # /api/v1/auth. SameSite=Lax suffit quand frontend et API partagent le même site (app.X / api.X) ;
-# entre deux domaines sans lien (*.netlify.app / *.onrender.com) il faut SameSite=None + Secure,
-# que Safari bloque : prévoir un domaine commun (docs/deploiement-netlify-render.md).
+# entre deux domaines sans lien (*.netlify.app / *.up.railway.app) il faut SameSite=None + Secure,
+# que Safari bloque : prévoir un domaine commun (docs/deploiement-netlify-railway.md).
 AUTH_REFRESH_COOKIE = {
     "name": env("AUTH_REFRESH_COOKIE_NAME", "amm_refresh"),
     "secure": env_bool("AUTH_REFRESH_COOKIE_SECURE", not DEBUG),
@@ -295,7 +295,8 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 # Scans PDF : "local" (MEDIA_ROOT, volume Docker) ou "s3" (MinIO en dev, R2/B2/S3 en production).
-# Sur Render, "s3" est obligatoire : le service web et le worker n'ont pas de disque commun.
+# Sur Railway (ou Render), "s3" est obligatoire : le service web et le worker n'ont pas de
+# disque commun.
 DOCUMENT_STORAGE = env("DOCUMENT_STORAGE") or env("STORAGE_BACKEND") or "local"
 if DOCUMENT_STORAGE == "s3":
     from botocore.config import Config as _BotoConfig

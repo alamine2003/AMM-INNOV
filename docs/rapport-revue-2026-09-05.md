@@ -186,7 +186,7 @@ Ressources au pic : backend 110 % CPU (un processus), PostgreSQL 38 %, 23 connex
 - **Endpoints les plus coûteux** : `PATCH /amms` (recalcul d'état, historique, réconciliation des
   alertes, trois publications Redis), `GET /products` en 2 pages de 500 (856 produits sérialisés
   avec alias), export CSV, acquittement (historique + publication).
-- **Sur Render starter (0,5 CPU)** : compter ~35 à 40 req/s, soit 30 utilisateurs actifs avec des
+- **Sur un conteneur à 0,5 CPU** : compter ~35 à 40 req/s, soit 30 utilisateurs actifs avec des
   temps de réponse sous la seconde. Un usage réglementaire réel (quelques requêtes par minute et
   par personne) laisse une marge confortable.
 
@@ -207,7 +207,7 @@ agrégat pays direct ; export unifié.
 
 1. Plusieurs processus web (Daphne × 2 à 4 derrière nginx, ou `uvicorn --workers`) quand la
    fréquentation dépassera 30 utilisateurs actifs en continu : débit ×2 à ×4, le pool par
-   processus doit alors être réduit (`DB_POOL_MAX_SIZE` × processus ≤ 80 sur Render basic).
+   processus doit alors être réduit (`DB_POOL_MAX_SIZE` × processus ≤ 80 sur la base Railway).
 2. Cache Redis 60 s sur `/analytics/africa` et `/products` (invalidé par les événements temps réel
    déjà émis) si les dashboards deviennent l'écran d'accueil de tous.
 3. Générer le client TypeScript depuis `/api/schema` (openapi-typescript) et faire échouer la CI en

@@ -39,15 +39,18 @@ fi
 
 # `serve` : serveur ASGI. WEB_CONCURRENCY=1 -> Daphne (un processus, dev) ;
 # WEB_CONCURRENCY>1 -> uvicorn avec N workers (production : ~80 req/s par worker mesurés).
+# PORT est imposé par la plateforme (Railway, Render) ; BIND_HOST=:: pour le réseau privé IPv6 de Railway.
 if [ "${1:-}" = "serve" ]; then
   : "${WEB_CONCURRENCY:=1}"
+  : "${PORT:=8000}"
+  : "${BIND_HOST:=0.0.0.0}"
   if [ "${WEB_CONCURRENCY}" -gt 1 ]; then
-    echo "[entrypoint] uvicorn, ${WEB_CONCURRENCY} workers"
-    exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 \
+    echo "[entrypoint] uvicorn, ${WEB_CONCURRENCY} workers, ${BIND_HOST}:${PORT}"
+    exec uvicorn config.asgi:application --host "${BIND_HOST}" --port "${PORT}" \
       --workers "${WEB_CONCURRENCY}" --proxy-headers --forwarded-allow-ips='*' --no-access-log
   fi
-  echo "[entrypoint] daphne"
-  exec daphne -b 0.0.0.0 -p 8000 config.asgi:application
+  echo "[entrypoint] daphne, ${BIND_HOST}:${PORT}"
+  exec daphne -b "${BIND_HOST}" -p "${PORT}" config.asgi:application
 fi
 
 echo "[entrypoint] exec: $*"

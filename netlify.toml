@@ -1,7 +1,8 @@
 # ---------------------------------------------------------------------------
-# Netlify — frontend AMM INNOV (SPA React/Vite). Backend sur Render (render.yaml).
-# Les URL ci-dessous doivent correspondre au nom du service web Render.
-# Guide : docs/deploiement-netlify-render.md
+# Netlify — frontend AMM INNOV (SPA React/Vite). Backend sur Railway (railway.json).
+# Les URL ci-dessous doivent correspondre au domaine public du service web Railway
+# (Settings > Networking > Generate Domain, renommable), ou au domaine personnalisé api.<domaine>.
+# Guide : docs/deploiement-netlify-railway.md
 # ---------------------------------------------------------------------------
 [build]
   base    = "frontend"
@@ -11,8 +12,8 @@
 [build.environment]
   NODE_VERSION = "24"
   # Le client ajoute /api/v1 lui-même : ne pas mettre /api ici.
-  VITE_API_BASE = "https://amm-innov-backend.onrender.com"
-  VITE_WS_URL   = "wss://amm-innov-backend.onrender.com/ws/"
+  VITE_API_BASE = "https://amm-innov-backend.up.railway.app"
+  VITE_WS_URL   = "wss://amm-innov-backend.up.railway.app/ws/"
 
 # Routage SPA : toutes les routes React renvoient index.html
 [[redirects]]
