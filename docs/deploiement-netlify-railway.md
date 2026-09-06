@@ -170,7 +170,9 @@ Le worker attend que le service web ait appliqué les migrations avant de démar
   plafond dur sur Hobby) ; garder `WEB_CONCURRENCY × DB_POOL_MAX_SIZE` sous la limite de
   connexions Postgres (100 par défaut).
 - Le WebSocket accepte les origines de `CORS_ALLOWED_ORIGINS` : le site Netlify doit y figurer.
-- Redéploiement : à chaque push sur `main` (après la CI si « Wait for CI » est coché).
+- Redéploiement : à chaque push sur `main` si l'application GitHub de Railway est installée sur
+  le dépôt (Settings du service, Source : « Connect GitHub » si ce n'est pas le cas). Sinon, à la
+  demande : `make deploy-backend` (`railway redeploy --from-source` sur les deux services).
 - Domaine personnalisé : Settings, Networking, Custom Domain (`api.amm-innov.com`) puis
   variables de l'étape 1 bis.
 

@@ -84,6 +84,10 @@ lint-frontend: ## eslint + prettier + tsc
 
 lint: lint-backend lint-frontend ## Tous les linters
 
+deploy-backend: ## Redéploie web et worker sur Railway depuis la branche main (railway link préalable)
+	railway redeploy -s amm-innov-backend -y --from-source
+	railway redeploy -s amm-innov-worker -y --from-source
+
 deploy-frontend: ## Construit et publie le frontend sur Netlify (production), d'après netlify.toml
 	npx --no-install netlify deploy --build --prod --message "AMM INNOV $$(git rev-parse --short HEAD)"
 
