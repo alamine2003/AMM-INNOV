@@ -86,6 +86,15 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
 
 ### 3.2 Service web `amm-innov-backend`
 
+Avec la CLI, l'équivalent des étapes 1, 2 et 4 tient en trois commandes (c'est ainsi que la 1.0 a
+été mise en ligne) :
+
+```bash
+railway add -s amm-innov-backend -r alamine2003/AMM-INNOV --branch main
+railway domain -s amm-innov-backend
+railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.settings.prod" --set ...
+```
+
 1. **+ New, GitHub Repo**, choisir `AMM-INNOV`, branche `main`. Railway détecte
    `railway.json` : build Docker avec `docker/backend.Dockerfile` (contexte = racine du dépôt,
    `.dockerignore` respecté), démarrage `entrypoint.sh serve`, sonde `/api/v1/health`.
@@ -167,9 +176,19 @@ Le worker attend que le service web ait appliqué les migrations avant de démar
 
 ## 4. Netlify : déployer le frontend
 
+Le site `amm-innov` existe (https://amm-innov.netlify.app), lié au dossier du dépôt par
+`.netlify/` (hors git). Deux façons de publier :
+
+- **Depuis le poste, avec la CLI** (c'est ainsi que la 1.0 a été publiée) :
+  ```bash
+  make deploy-frontend        # = npx netlify deploy --build --prod (build local avec netlify.toml)
+  ```
+- **Automatiquement à chaque push** : Netlify, Site configuration, Build & deploy, **Link
+  repository** (autorisation GitHub dans le navigateur). Netlify lit alors `netlify.toml`.
+
 1. Netlify, **Add new site, Import an existing project**, choisir le dépôt. Netlify lit
-   `netlify.toml` : base `frontend`, build `npm ci && npm run build`, publication `dist`,
-   Node 24, et les deux variables `VITE_API_BASE` et `VITE_WS_URL`.
+   `netlify.toml` : build `cd frontend && npm ci && npm run build`, publication
+   `frontend/dist`, Node 24, et les deux variables `VITE_API_BASE` et `VITE_WS_URL`.
 2. **Reporter le domaine Railway** de l'étape 3.2.2 dans `netlify.toml` (`VITE_API_BASE`,
    `VITE_WS_URL`) si ce n'est pas `amm-innov-backend-production.up.railway.app`, ou le saisir dans
    Site configuration, Environment variables (prioritaire sur le fichier).

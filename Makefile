@@ -84,6 +84,9 @@ lint-frontend: ## eslint + prettier + tsc
 
 lint: lint-backend lint-frontend ## Tous les linters
 
+deploy-frontend: ## Construit et publie le frontend sur Netlify (production), d'après netlify.toml
+	npx --no-install netlify deploy --build --prod --message "AMM INNOV $$(git rev-parse --short HEAD)"
+
 api-schema: ## Régénère backend/schema.yaml (OpenAPI) depuis le code Django (sur PostgreSQL : les bornes d'entiers diffèrent sous SQLite)
 	$(BACKEND_EXEC) python manage.py spectacular --file /tmp/schema.yaml --validate
 	$(COMPOSE) cp backend:/tmp/schema.yaml backend/schema.yaml
