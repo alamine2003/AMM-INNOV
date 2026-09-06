@@ -6,7 +6,7 @@ Architecture retenue pour la 1.0 :
 |---|---|---|
 | Frontend React (SPA) | Netlify, CDN, HTTPS automatique | [netlify.toml](../netlify.toml) |
 | API + WebSocket | Railway, service Docker `amm-innov-backend` | [railway.json](../railway.json) |
-| Celery worker + beat | Railway, service Docker `amm-innov-worker` (1 réplique) | [railway.worker.json](../railway.worker.json) |
+| Celery worker + beat | Railway, service Docker `amm-innov-worker` (1 réplique), variable `AMM_ROLE=worker` | [railway.json](../railway.json) |
 | Redis (broker, channel layer, cache) | Railway, service Redis | variables de référence |
 | PostgreSQL 16 | Railway, service Postgres | variables de référence |
 | Scans PDF | Stockage S3 compatible externe (Cloudflare R2 conseillé) | variables `S3_*` |
@@ -89,6 +89,9 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
 1. **+ New, GitHub Repo**, choisir `AMM-INNOV`, branche `main`. Railway détecte
    `railway.json` : build Docker avec `docker/backend.Dockerfile` (contexte = racine du dépôt,
    `.dockerignore` respecté), démarrage `entrypoint.sh serve`, sonde `/api/v1/health`.
+   Laisser **Root Directory** vide (racine du dépôt) : le Dockerfile copie `backend/` et `docker/`.
+   La variable `RAILWAY_DOCKERFILE_PATH=docker/backend.Dockerfile` force ce build même si
+   Railway a d'abord détecté le projet autrement.
 2. Settings, **Networking, Generate Domain** : Railway propose un domaine
    `amm-innov-backend-production-xxxx.up.railway.app`, renommable (par exemple
    `amm-innov-backend.up.railway.app` s'il est libre). Le port demandé est celui de la variable
@@ -144,9 +147,9 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
 
 ### 3.3 Service worker `amm-innov-worker`
 
-1. **+ New, GitHub Repo**, le même dépôt. Settings, **Config-as-code** : indiquer
-   `railway.worker.json` (démarrage `celery worker --concurrency 2 -B`, beat intégré).
+1. **+ New, GitHub Repo**, le même dépôt : même `railway.json`, même image.
 2. Variables : les mêmes que le service web (Raw Editor, coller le même bloc) **plus**
+   `AMM_ROLE=worker` (l'entrypoint lance alors Celery avec beat intégré au lieu du serveur web),
    `RUN_MIGRATIONS=0`, `COLLECT_STATIC=0`, `DB_POOL_MAX_SIZE=4`. Ne pas générer de domaine.
 3. **Une seule réplique** : beat est intégré au worker, deux répliques exécuteraient les jobs
    nocturnes en double.

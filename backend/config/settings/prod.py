@@ -24,6 +24,8 @@ PLATFORM_HOSTS = [
     for h in (
         env("RAILWAY_PUBLIC_DOMAIN"),
         env("RAILWAY_PRIVATE_DOMAIN"),
+        # la sonde de santé Railway se présente avec cet en-tête Host
+        "healthcheck.railway.app" if env("RAILWAY_ENVIRONMENT_ID") else None,
         env("RENDER_EXTERNAL_HOSTNAME"),
     )
     if h

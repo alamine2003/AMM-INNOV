@@ -40,6 +40,13 @@ fi
 # `serve` : serveur ASGI. WEB_CONCURRENCY=1 -> Daphne (un processus, dev) ;
 # WEB_CONCURRENCY>1 -> uvicorn avec N workers (production : ~80 req/s par worker mesurés).
 # PORT est imposé par la plateforme (Railway, Render) ; BIND_HOST=:: pour le réseau privé IPv6 de Railway.
+if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "worker" ]; then
+  # Railway : même image et même railway.json pour le web et le worker, rôle par variable.
+  echo "[entrypoint] worker Celery (beat intégré), concurrence ${CELERY_CONCURRENCY:-2}"
+  exec celery -A config worker -l info --concurrency "${CELERY_CONCURRENCY:-2}" \
+    -B --scheduler django_celery_beat.schedulers:DatabaseScheduler
+fi
+
 if [ "${1:-}" = "serve" ]; then
   : "${WEB_CONCURRENCY:=1}"
   : "${PORT:=8000}"

@@ -155,7 +155,7 @@ Processus web : `WEB_CONCURRENCY=1` lance Daphne (dev) ; `WEB_CONCURRENCY=N` lan
 ### Option retenue : Netlify + Railway
 
 Frontend sur Netlify ([netlify.toml](netlify.toml)), backend, worker Celery, Redis et PostgreSQL sur
-Railway ([railway.json](railway.json) pour le service web, [railway.worker.json](railway.worker.json) pour le worker),
+Railway ([railway.json](railway.json), même image pour le web et le worker, rôle par `AMM_ROLE`),
 scans PDF sur un stockage S3 compatible, Grafana Cloud.
 Procédure complète : [docs/deploiement-netlify-railway.md](docs/deploiement-netlify-railway.md).
 

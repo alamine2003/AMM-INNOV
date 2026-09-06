@@ -26,19 +26,26 @@ def prod_settings(monkeypatch):
 def test_railway_domains_are_allowed(prod_settings, monkeypatch):
     monkeypatch.setenv("RAILWAY_PUBLIC_DOMAIN", "amm-innov-backend-production.up.railway.app")
     monkeypatch.setenv("RAILWAY_PRIVATE_DOMAIN", "amm-innov-backend.railway.internal")
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_ID", "env-1")
     monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
     prod = prod_settings()
     assert prod.ALLOWED_HOSTS == [
         "api.amm-innov.com",
         "amm-innov-backend-production.up.railway.app",
         "amm-innov-backend.railway.internal",
+        "healthcheck.railway.app",
     ]
     assert "https://amm-innov-backend-production.up.railway.app" in prod.CSRF_TRUSTED_ORIGINS
     assert prod.REST_FRAMEWORK["NUM_PROXIES"] == 1
 
 
 def test_without_platform_hostname(prod_settings, monkeypatch):
-    for name in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN", "RENDER_EXTERNAL_HOSTNAME"):
+    for name in (
+        "RAILWAY_PUBLIC_DOMAIN",
+        "RAILWAY_PRIVATE_DOMAIN",
+        "RAILWAY_ENVIRONMENT_ID",
+        "RENDER_EXTERNAL_HOSTNAME",
+    ):
         monkeypatch.delenv(name, raising=False)
     prod = prod_settings()
     assert prod.ALLOWED_HOSTS == ["api.amm-innov.com"]

@@ -55,3 +55,6 @@ backups/*
 
 # Dossier de sortie de l'application Claude (bureau)
 Claude outputs/
+
+# Local Netlify folder
+.netlify
