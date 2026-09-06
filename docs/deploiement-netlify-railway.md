@@ -137,13 +137,11 @@ d'un service, les variables se saisissent dans le tableau de bord (ou avec la CL
 5. Déployer. Le premier déploiement construit l'image (4 à 6 minutes), applique les migrations
    et collecte les statiques (entrypoint). Vérifier
    `https://<domaine>/api/v1/health` : `{"status":"ok","database":true,"redis":true}`.
-6. Créer le premier compte administrateur (CLI Railway, depuis le dépôt) :
-   ```bash
-   railway login && railway link            # choisir le projet et le service amm-innov-backend
-   railway run python manage.py createsuperuser
-   ```
-   (`railway run` exécute la commande localement avec les variables du service ; la base est
-   joignable via le proxy TCP, ou utiliser `railway ssh` pour un shell dans le conteneur.)
+6. Premier compte administrateur : ajouter les variables `DJANGO_SUPERUSER_EMAIL` et
+   `DJANGO_SUPERUSER_PASSWORD` au service web ; l'entrypoint crée le compte (rôle CEO,
+   accès admin) au démarrage suivant et l'ignore ensuite s'il existe. Retirer
+   `DJANGO_SUPERUSER_PASSWORD` après la première connexion et changer le mot de passe dans
+   l'application. (`railway ssh` reste possible après `railway ssh keys github`.)
 
 ### 3.3 Service worker `amm-innov-worker`
 

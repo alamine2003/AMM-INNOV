@@ -32,6 +32,14 @@ elif [ "${WAIT_FOR_MIGRATIONS:-1}" = "1" ]; then
   done
 fi
 
+# Premier compte administrateur (plateformes sans shell : Railway, Render) : créé une seule fois
+# si DJANGO_SUPERUSER_EMAIL et DJANGO_SUPERUSER_PASSWORD sont définis, ignoré s'il existe déjà.
+if [ "${RUN_MIGRATIONS}" = "1" ] && [ -n "${DJANGO_SUPERUSER_EMAIL:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+  echo "[entrypoint] createsuperuser ${DJANGO_SUPERUSER_EMAIL} (ignoré s'il existe)"
+  python manage.py createsuperuser --noinput --email "${DJANGO_SUPERUSER_EMAIL}" 2>/dev/null \
+    || echo "[entrypoint] compte déjà présent, inchangé"
+fi
+
 if [ "${COLLECT_STATIC}" = "1" ]; then
   echo "[entrypoint] python manage.py collectstatic --noinput"
   python manage.py collectstatic --noinput
