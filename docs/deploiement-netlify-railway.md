@@ -9,7 +9,7 @@ Architecture retenue pour la 1.0 :
 | Celery worker + beat | Railway, service Docker `amm-innov-worker` (1 réplique), variable `AMM_ROLE=worker` | [railway.json](../railway.json) |
 | Redis (broker, channel layer, cache) | Railway, service Redis | variables de référence |
 | PostgreSQL 16 | Railway, service Postgres | variables de référence |
-| Scans PDF | Stockage S3 compatible externe (Cloudflare R2 conseillé) | variables `S3_*` |
+| Scans PDF | Bucket Railway (S3 compatible, même région que les services) | variables `S3_*` |
 | Grafana | Grafana Cloud (gratuit) branché sur la base Railway (proxy TCP) | dashboards `grafana/dashboards/` |
 | Emails | Fournisseur SMTP (Brevo, SendGrid, Resend…) | `EMAIL_URL` |
 
@@ -62,12 +62,25 @@ cookie tiers, Safari le bloque (l'utilisateur est déconnecté au bout de 15 min
 ## 2. Stockage S3 des scans PDF
 
 Sur Railway, le service web (qui reçoit les uploads) et le worker (qui lit les PDF) n'ont
-pas de disque partagé : le stockage objet est obligatoire.
+pas de disque partagé : le stockage objet est obligatoire. **Il sert aussi aux classeurs
+d'import** : sans lui, le worker ne peut pas lire le fichier que le web vient de recevoir et
+le lot reste « En attente ».
 
-1. Créer un bucket privé `amm-documents` (R2 : Cloudflare, R2, Create bucket).
-2. Créer un jeton d'API avec lecture et écriture sur ce bucket.
-3. Noter `S3_ENDPOINT_URL` (R2 : `https://<account-id>.r2.cloudflarestorage.com`),
-   `S3_ACCESS_KEY`, `S3_SECRET_KEY`. `S3_REGION` reste `auto` pour R2.
+Railway fournit des buckets S3 compatibles, dans les mêmes régions que les services (c'est
+la solution retenue pour la 1.0) :
+
+```bash
+railway bucket create amm-documents --region ams     # ams = EU West, comme les services
+railway bucket credentials --bucket amm-documents --json
+```
+
+La commande renvoie `endpoint`, `bucketName` (suffixé par Railway), `accessKeyId` et
+`secretAccessKey`, à reporter dans `S3_ENDPOINT_URL`, `S3_BUCKET`, `S3_ACCESS_KEY` et
+`S3_SECRET_KEY`, avec `S3_REGION=auto` et **`S3_ADDRESSING_STYLE=virtual`** (Railway adresse
+les buckets par sous-domaine ; Cloudflare R2 et MinIO utilisent `path`).
+
+Autre possibilité, un bucket privé Cloudflare R2 (`https://<account-id>.r2.cloudflarestorage.com`,
+`S3_ADDRESSING_STYLE=path`) ou tout stockage S3 compatible.
 
 Les fichiers ne sont jamais servis directement depuis le bucket : l'API vérifie le périmètre
 pays puis diffuse le PDF, le bucket peut donc rester entièrement privé.
@@ -126,11 +139,12 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
    EMAIL_URL=smtp+tls://utilisateur:motdepasse@smtp.fournisseur.tld:587
    DEFAULT_FROM_EMAIL=AMM INNOV <no-reply@amm-innov.com>
    DOCUMENT_STORAGE=s3
-   S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
-   S3_BUCKET=amm-documents
+   S3_ENDPOINT_URL=<endpoint du bucket Railway>
+   S3_BUCKET=<bucketName renvoyé par Railway>
    S3_ACCESS_KEY=<jeton R2>
    S3_SECRET_KEY=<secret R2>
    S3_REGION=auto
+   S3_ADDRESSING_STYLE=virtual
    DOCUMENT_MAX_MB=25
    ALERTS_DISPATCH_MAX_AGE_DAYS=30
    DB_POOL_MAX_SIZE=20
@@ -146,7 +160,10 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
 5. Déployer. Le premier déploiement construit l'image (4 à 6 minutes), applique les migrations
    et collecte les statiques (entrypoint). Vérifier
    `https://<domaine>/api/v1/health` : `{"status":"ok","database":true,"redis":true}`.
-6. Premier compte administrateur : ajouter les variables `DJANGO_SUPERUSER_EMAIL` et
+6. Commandes dans le conteneur : enregistrer une clé SSH une fois
+   (`railway ssh keys add -k ~/.ssh/id_ed25519.pub`), puis
+   `railway ssh -s amm-innov-backend -- python manage.py <commande>`.
+7. Premier compte administrateur : ajouter les variables `DJANGO_SUPERUSER_EMAIL` et
    `DJANGO_SUPERUSER_PASSWORD` au service web ; l'entrypoint crée le compte (rôle CEO,
    accès admin) au démarrage suivant et l'ignore ensuite s'il existe. Retirer
    `DJANGO_SUPERUSER_PASSWORD` après la première connexion et changer le mot de passe dans
@@ -206,17 +223,15 @@ le build depuis GitHub via un *build hook* après le job CI).
 
 ## 5. Mise en service des données
 
-Depuis un shell dans le conteneur web (`railway ssh`, service `amm-innov-backend`) :
+Depuis un shell dans le conteneur web (`railway ssh -s amm-innov-backend -- <commande>`) :
 
 ```bash
 # 1. Référentiels et règles d'alerte par défaut
 python manage.py seed_alert_rules
 
-# 2. Import du classeur : d'abord le déposer dans le conteneur (curl -o /tmp/classeur.xlsx <url signée>),
-#    ou le téléverser depuis l'application (Administration, Imports, case « Simulation » pour un
-#    premier passage à blanc)
-python manage.py import_excel /tmp/classeur.xlsx --user admin@votre-domaine.com --dry-run
-python manage.py import_excel /tmp/classeur.xlsx --user admin@votre-domaine.com
+# 2. Import du classeur : depuis l'application, Administration > Imports, en cochant
+#    « Simulation » pour un premier passage à blanc, puis sans la case pour l'import réel.
+#    (Le stockage S3 de l'étape 2 est indispensable : le worker lit le fichier déposé par le web.)
 
 # 3. Doublons de produits issus du classeur : fusion des groupes sans conflit
 python manage.py product_duplicates --merge

@@ -5,6 +5,16 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Mise en production (7 septembre 2026)
+- Frontend sur Netlify (https://amm-innov.netlify.app), API, worker, PostgreSQL et Redis sur
+  Railway ; scans PDF et classeurs d'import sur un bucket Railway (S3, région `ams`,
+  `S3_ADDRESSING_STYLE=virtual`).
+- Données : 15 pays, 3 gammes, 601 produits, 1 548 AMM, 500 renouvellements, importés du classeur
+  (3 lignes en erreur, 104 avertissements, aucun écart de statut avec l'Excel) ; 833 alertes
+  historiques créées sans notification (`evaluate_alerts --quiet`).
+- La clé de rapprochement des produits a fait son effet : zéro doublon à l'import, contre
+  185 groupes sur l'import local antérieur au correctif.
+
 ### Ajouté
 - Déploiement Netlify + Railway : `netlify.toml`, `railway.json`, guide `docs/deploiement-netlify-railway.md`.
 - Revue complète du 5 septembre 2026 (`docs/rapport-revue-2026-09-05.md`) : tests de charge à 30, 60 et
