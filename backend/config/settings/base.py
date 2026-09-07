@@ -258,6 +258,7 @@ FRONTEND_URL = env("FRONTEND_URL", "http://localhost:5173")
 # Email (EMAIL_URL : console:// | locmem:// | dummy://
 #   smtp+tls://utilisateur:motdepasse@smtp.gmail.com:587   STARTTLS (recommandé)
 #   smtps://utilisateur:motdepasse@smtp.example.com:465    TLS direct
+#   gmail://                                               API Gmail en HTTPS (GMAIL_* ci-dessous)
 #   Le mot de passe doit être encodé si besoin (@ -> %40, : -> %3A).
 # ---------------------------------------------------------------------------
 
@@ -271,6 +272,10 @@ def parse_email_url(url: str) -> dict:
         return {"EMAIL_BACKEND": "django.core.mail.backends.locmem.EmailBackend"}
     if scheme == "dummy":
         return {"EMAIL_BACKEND": "django.core.mail.backends.dummy.EmailBackend"}
+    if scheme in {"gmail", "gmail+api"}:
+        # API Gmail en HTTPS : seule voie possible là où les ports SMTP sortants sont bloqués
+        # (Railway). Identifiants dans GMAIL_CLIENT_ID / _SECRET / _REFRESH_TOKEN.
+        return {"EMAIL_BACKEND": "apps.notifications.backends.GmailApiBackend"}
     query = {k: v[0] for k, v in parse_qs(parsed.query).items()}
 
     def flag(name: str, default: bool) -> bool:
@@ -296,6 +301,12 @@ def parse_email_url(url: str) -> dict:
 
 globals().update(parse_email_url(env("EMAIL_URL", "console://")))
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "AMM INNOV <no-reply@amm.local>")
+
+# API Gmail (EMAIL_URL=gmail://) : jeton de rafraîchissement OAuth2, portée gmail.send.
+# Obtention : python -m scripts.gmail_oauth (voir docs/deploiement-netlify-railway.md).
+GMAIL_CLIENT_ID = env("GMAIL_CLIENT_ID", "")
+GMAIL_CLIENT_SECRET = env("GMAIL_CLIENT_SECRET", "")
+GMAIL_REFRESH_TOKEN = env("GMAIL_REFRESH_TOKEN", "")
 
 # ---------------------------------------------------------------------------
 # Files, i18n, static

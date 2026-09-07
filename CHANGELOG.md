@@ -56,6 +56,11 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   configuration Railway : un seul processus web sur le plan starter (512 Mo), cookie de session
   `SameSite=None` tant que Netlify et l'API restent sur deux domaines.
 
+### Ajouté
+- Envoi des e-mails par l'**API Gmail** en HTTPS (`EMAIL_URL=gmail://`, OAuth2 `gmail.send`,
+  `scripts/gmail_oauth.py` pour le jeton) : Railway bloque tous les ports SMTP sortants, mesuré
+  depuis un conteneur (25, 465, 587, 2525 injoignables ; 443 ouvert).
+
 ### Corrigé
 - `EMAIL_URL` : le schéma `smtp+tls://`, documenté partout, n'activait pas STARTTLS (le chiffrement
   ne s'obtenait qu'avec `?tls=1`) ; toute configuration SMTP sur le port 587, Gmail compris, aurait

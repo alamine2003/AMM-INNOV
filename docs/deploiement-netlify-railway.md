@@ -43,9 +43,9 @@ Netlify gratuit, R2 gratuit sous 10 Go, Grafana Cloud gratuit. Le plan Trial de 
 
 - Dépôt GitHub `alamine2003/AMM-INNOV` avec la CI verte sur `main`.
 - Un compte Railway (plan Hobby), un compte Netlify, un compte Cloudflare (R2) ou équivalent S3.
-- Un fournisseur SMTP et l'URL au format `smtp+tls://utilisateur:motdepasse@hote:587`.
-  Avec Gmail : validation en deux étapes activée, puis un **mot de passe d'application**
-  (myaccount.google.com/apppasswords) ; `DEFAULT_FROM_EMAIL` doit porter la même adresse.
+- Un moyen d'envoyer des e-mails. **Attention : Railway bloque tous les ports SMTP sortants**
+  (25, 465, 587, 2525) ; seul le port 443 passe. Un serveur SMTP classique, Gmail compris, est
+  donc inutilisable. Voir l'étape 2 bis.
 - Le classeur Excel de référence pour l'import initial.
 
 ## 1 bis. Un domaine commun pour la session
@@ -86,6 +86,46 @@ Autre possibilité, un bucket privé Cloudflare R2 (`https://<account-id>.r2.clo
 
 Les fichiers ne sont jamais servis directement depuis le bucket : l'API vérifie le périmètre
 pays puis diffuse le PDF, le bucket peut donc rester entièrement privé.
+
+## 2 bis. E-mails : l'API Gmail (le SMTP est bloqué)
+
+Vérifié depuis un conteneur Railway : `smtp.gmail.com` sur 25, 465 et 587, ainsi que les relais
+Brevo, SendGrid et Mailgun sur 2525, expirent tous ; `api.brevo.com:443` et
+`smtp.resend.com:2465` répondent. L'application sait donc envoyer par **l'API Gmail en HTTPS**
+(`EMAIL_URL=gmail://`, backend `apps.notifications.backends.GmailApiBackend`).
+
+1. **Projet Google Cloud** : console.cloud.google.com, créer un projet (`AMM INNOV`).
+2. **Activer l'API Gmail** : APIs & Services, Library, chercher « Gmail API », Enable.
+3. **Écran de consentement** : APIs & Services, OAuth consent screen, type **External**,
+   nom de l'application, adresse d'assistance et de contact. Laisser en mode **Testing** et
+   ajouter l'adresse expéditrice dans **Test users**. Portée à ajouter :
+   `https://www.googleapis.com/auth/gmail.send` (envoi seul, aucune lecture).
+4. **Identifiants** : Credentials, Create credentials, **OAuth client ID**, type
+   **Desktop app**. Google affiche un identifiant et un secret.
+5. **Jeton de rafraîchissement**, une seule fois, depuis un poste avec navigateur :
+   ```bash
+   python3 scripts/gmail_oauth.py --client-id <ID> --client-secret <SECRET>
+   ```
+   Le script ouvre la page de consentement, récupère le code sur `http://localhost`, et affiche
+   `GMAIL_REFRESH_TOKEN=…`.
+6. **Variables du service web et du worker** :
+   ```
+   EMAIL_URL=gmail://
+   GMAIL_CLIENT_ID=…
+   GMAIL_CLIENT_SECRET=…
+   GMAIL_REFRESH_TOKEN=…
+   DEFAULT_FROM_EMAIL=AMM INNOV <adresse-du-compte@gmail.com>
+   ```
+   L'adresse de `DEFAULT_FROM_EMAIL` doit être celle du compte autorisé, sinon Gmail réécrit
+   l'expéditeur. Un compte Gmail gratuit est limité à environ 500 messages par jour.
+
+En mode **Testing**, le jeton de rafraîchissement expire au bout de 7 jours : passer l'écran de
+consentement en **In production** (bouton « Publish app ») pour un jeton durable. L'application
+ne demandant qu'une portée non sensible d'envoi, aucune vérification Google n'est requise.
+
+Avec un nom de domaine (par exemple `innovpharma.net`), un service transactionnel donne une
+meilleure délivrabilité : Resend fonctionne depuis Railway par SMTP sur le port **2465**
+(`smtps://resend:<clé>@smtp.resend.com:2465`), sans code supplémentaire.
 
 ## 3. Railway : créer le projet
 
@@ -138,8 +178,11 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
    AUTH_REFRESH_COOKIE_SAMESITE=None
    AUTH_REFRESH_COOKIE_DOMAIN=
    TIME_ZONE=Africa/Dakar
-   EMAIL_URL=smtp+tls://utilisateur:motdepasse@smtp.fournisseur.tld:587
-   DEFAULT_FROM_EMAIL=AMM INNOV <no-reply@amm-innov.com>
+   EMAIL_URL=gmail://
+   GMAIL_CLIENT_ID=<étape 2 bis>
+   GMAIL_CLIENT_SECRET=<étape 2 bis>
+   GMAIL_REFRESH_TOKEN=<étape 2 bis>
+   DEFAULT_FROM_EMAIL=AMM INNOV <adresse-du-compte@gmail.com>
    DOCUMENT_STORAGE=s3
    S3_ENDPOINT_URL=<endpoint du bucket Railway>
    S3_BUCKET=<bucketName renvoyé par Railway>
