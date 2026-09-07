@@ -255,7 +255,10 @@ CORS_ALLOW_CREDENTIALS = True
 FRONTEND_URL = env("FRONTEND_URL", "http://localhost:5173")
 
 # ---------------------------------------------------------------------------
-# Email (EMAIL_URL: console:// | smtp://user:pass@host:port?tls=1 | locmem://)
+# Email (EMAIL_URL : console:// | locmem:// | dummy://
+#   smtp+tls://utilisateur:motdepasse@smtp.gmail.com:587   STARTTLS (recommandé)
+#   smtps://utilisateur:motdepasse@smtp.example.com:465    TLS direct
+#   Le mot de passe doit être encodé si besoin (@ -> %40, : -> %3A).
 # ---------------------------------------------------------------------------
 
 
@@ -269,14 +272,25 @@ def parse_email_url(url: str) -> dict:
     if scheme == "dummy":
         return {"EMAIL_BACKEND": "django.core.mail.backends.dummy.EmailBackend"}
     query = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+
+    def flag(name: str, default: bool) -> bool:
+        value = query.get(name)
+        return value.strip().lower() in {"1", "true", "yes", "on"} if value else default
+
+    # Le schéma porte le chiffrement : `smtp+tls` (STARTTLS, port 587) ou `smtps` (TLS direct,
+    # port 465) ; `?tls=` et `?ssl=` restent acceptés pour forcer l'un ou l'autre.
+    use_ssl = flag("ssl", scheme in {"smtps", "smtp+ssl"})
+    use_tls = False if use_ssl else flag("tls", scheme in {"smtp+tls", "smtp+starttls"})
     return {
         "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
         "EMAIL_HOST": parsed.hostname or "localhost",
-        "EMAIL_PORT": parsed.port or (465 if scheme == "smtps" else 25),
+        "EMAIL_PORT": parsed.port or (465 if use_ssl else 587 if use_tls else 25),
         "EMAIL_HOST_USER": unquote(parsed.username or ""),
         "EMAIL_HOST_PASSWORD": unquote(parsed.password or ""),
-        "EMAIL_USE_TLS": query.get("tls", "0") in {"1", "true"},
-        "EMAIL_USE_SSL": scheme == "smtps" or query.get("ssl", "0") in {"1", "true"},
+        "EMAIL_USE_TLS": use_tls,
+        "EMAIL_USE_SSL": use_ssl,
+        # Sans délai maximal, un SMTP muet bloquerait le worker Celery indéfiniment.
+        "EMAIL_TIMEOUT": int(query.get("timeout", "15")),
     }
 
 

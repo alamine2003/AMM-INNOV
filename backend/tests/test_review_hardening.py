@@ -259,3 +259,44 @@ def test_import_reuses_product_with_different_punctuation(ranges, countries):
     row.product_name = "ADNA FENUGREC CPR EFFV B10"
     assert _product_for(row, None).pk == existing.pk
     assert Product.objects.count() == 1
+
+
+# --- configuration SMTP
+
+
+@pytest.mark.parametrize(
+    "url,host,port,tls,ssl",
+    [
+        ("smtp+tls://u:p@smtp.gmail.com:587", "smtp.gmail.com", 587, True, False),
+        ("smtp+tls://u:p@smtp.gmail.com", "smtp.gmail.com", 587, True, False),
+        ("smtp+starttls://u:p@mail.example.com", "mail.example.com", 587, True, False),
+        ("smtps://u:p@mail.example.com", "mail.example.com", 465, False, True),
+        ("smtp://u:p@mail.example.com?tls=1", "mail.example.com", 587, True, False),
+        ("smtp://u:p@mail.example.com:25", "mail.example.com", 25, False, False),
+    ],
+)
+def test_email_url_scheme_drives_encryption(url, host, port, tls, ssl):
+    from config.settings.base import parse_email_url
+
+    conf = parse_email_url(url)
+    assert conf["EMAIL_HOST"] == host
+    assert conf["EMAIL_PORT"] == port
+    assert conf["EMAIL_USE_TLS"] is tls
+    assert conf["EMAIL_USE_SSL"] is ssl
+    # Django refuse les deux à la fois, et sans délai maximal un SMTP muet bloque le worker
+    assert not (conf["EMAIL_USE_TLS"] and conf["EMAIL_USE_SSL"])
+    assert conf["EMAIL_TIMEOUT"] == 15
+
+
+def test_email_url_password_is_url_decoded():
+    from config.settings.base import parse_email_url
+
+    conf = parse_email_url("smtp+tls://user%40gmail.com:ab%20cd%40ef@smtp.gmail.com:587")
+    assert conf["EMAIL_HOST_USER"] == "user@gmail.com"
+    assert conf["EMAIL_HOST_PASSWORD"] == "ab cd@ef"
+
+
+def test_console_backend_stays_the_default():
+    from config.settings.base import parse_email_url
+
+    assert parse_email_url("console://")["EMAIL_BACKEND"].endswith("console.EmailBackend")

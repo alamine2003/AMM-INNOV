@@ -44,6 +44,8 @@ Netlify gratuit, R2 gratuit sous 10 Go, Grafana Cloud gratuit. Le plan Trial de 
 - Dépôt GitHub `alamine2003/AMM-INNOV` avec la CI verte sur `main`.
 - Un compte Railway (plan Hobby), un compte Netlify, un compte Cloudflare (R2) ou équivalent S3.
 - Un fournisseur SMTP et l'URL au format `smtp+tls://utilisateur:motdepasse@hote:587`.
+  Avec Gmail : validation en deux étapes activée, puis un **mot de passe d'application**
+  (myaccount.google.com/apppasswords) ; `DEFAULT_FROM_EMAIL` doit porter la même adresse.
 - Le classeur Excel de référence pour l'import initial.
 
 ## 1 bis. Un domaine commun pour la session

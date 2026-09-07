@@ -56,6 +56,12 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   configuration Railway : un seul processus web sur le plan starter (512 Mo), cookie de session
   `SameSite=None` tant que Netlify et l'API restent sur deux domaines.
 
+### Corrigé
+- `EMAIL_URL` : le schéma `smtp+tls://`, documenté partout, n'activait pas STARTTLS (le chiffrement
+  ne s'obtenait qu'avec `?tls=1`) ; toute configuration SMTP sur le port 587, Gmail compris, aurait
+  échoué. Le schéma pilote désormais le chiffrement, le port par défaut suit (587 ou 465), et un
+  délai maximal de 15 s évite qu'un serveur muet ne bloque le worker.
+
 ### Sécurité
 - Dépendances : Django 5.1 (fin de support sécurité) remplacé par Django 5.2 LTS (5.2.17, corrige
   7 CVE 2026), Django REST framework 3.17.2 (2 CVE), pip de l'image mis à jour ; `pip-audit` et
