@@ -130,7 +130,10 @@ describe('import intelligent de dossiers AMM', () => {
     server.use(
       http.post(`${endpoint}/batch-1/confirm`, async ({ request }) => {
         payloads.push(await request.json());
-        return HttpResponse.json({ ...batch, status: 'APPLIED', amm_id: 'amm-1' });
+        // Le lot devient appliqué côté serveur : la relecture déclenchée par la confirmation
+        // doit renvoyer le même état, sinon l'écran repasserait en « à valider ».
+        Object.assign(batch, { status: 'APPLIED', amm_id: 'amm-1' });
+        return HttpResponse.json(batch);
       }),
     );
     detail(batch);

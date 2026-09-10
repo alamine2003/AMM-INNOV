@@ -72,6 +72,9 @@ function PreviewContent({ batch }: { batch: DossierImportBatch }) {
   const allowedCountries = (countries.data ?? []).filter(
     (c) => user?.role !== 'COUNTRY_REGULATORY' || user.countries.includes(c.iso2),
   );
+  // Tant que le catalogue n'est pas chargé — ou si le pays détecté est hors périmètre — la
+  // valeur n'a pas d'option correspondante : on affiche et on envoie « détection automatique ».
+  const selectedCountry = allowedCountries.some((c) => c.iso2 === country) ? country : '';
   const confirm = useConfirmDossier(batch.id);
   const analyze = useAnalyzeDossier(batch.id);
   const stale = axios.isAxiosError(confirm.error) && confirm.error.response?.status === 409;
@@ -482,7 +485,7 @@ function PreviewContent({ batch }: { batch: DossierImportBatch }) {
             select
             size="small"
             label="Pays du dossier"
-            value={country}
+            value={selectedCountry}
             onChange={(event) => setCountry(event.target.value)}
             sx={{ minWidth: 220 }}
             helperText="À préciser si les documents ne nomment pas le pays"
@@ -497,7 +500,7 @@ function PreviewContent({ batch }: { batch: DossierImportBatch }) {
           <Button
             variant="outlined"
             disabled={busy}
-            onClick={() => analyze.mutate(country ? { country } : {})}
+            onClick={() => analyze.mutate(selectedCountry ? { country: selectedCountry } : {})}
           >
             Relancer l’analyse
           </Button>

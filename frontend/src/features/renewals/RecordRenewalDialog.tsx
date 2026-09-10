@@ -8,10 +8,12 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useCountries } from '@/api/hooks/useCatalog';
@@ -21,18 +23,19 @@ import { DateField } from '@/components/DateField';
 import { formatDate, todayIso } from '@/lib/dates';
 import { projectObtainedRenewal } from '@/lib/urgency';
 
-const schema = z
-  .object({
-    number: z.string().trim().min(1),
-    start_date: z.string().nullable(),
+/**
+ * Les messages portés par le schéma sont ceux affichés : les champs date rendent l'erreur du
+ * champ, pas leur texte d'aide, et une seule source évite qu'ils divergent.
+ */
+const buildSchema = (t: TFunction) =>
+  z.object({
+    number: z.string().trim().min(1, t('renewals.numberRequired')),
+    start_date: z.string().nullable().refine(Boolean, t('renewals.startRequired')),
     decision_date: z.string().nullable().optional(),
     end_date: z.string().nullable().optional(),
     notes: z.string().optional(),
-  })
-  .superRefine((values, ctx) => {
-    if (!values.start_date) ctx.addIssue({ code: 'custom', path: ['start_date'], message: 'start_date' });
   });
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof buildSchema>>;
 
 /**
  * Enregistre un renouvellement déjà accordé par l'autorité (sa décision est en main), sans
@@ -53,6 +56,7 @@ export function RecordRenewalDialog({
   const countries = useCountries();
   const validityYears = countries.data?.find((c) => c.iso2 === amm.country_iso2)?.validity_years ?? 5;
 
+  const schema = useMemo(() => buildSchema(t), [t]);
   const { control, register, handleSubmit, formState } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -96,7 +100,7 @@ export function RecordRenewalDialog({
               label={t('renewals.number')}
               required
               error={!!formState.errors.number}
-              helperText={formState.errors.number ? t('renewals.numberRequired') : undefined}
+              helperText={formState.errors.number?.message}
               inputProps={{ 'data-testid': 'record-number' }}
               {...register('number')}
             />
@@ -105,8 +109,7 @@ export function RecordRenewalDialog({
               name="start_date"
               label={t('renewals.startDate')}
               required
-              helperText={formState.errors.start_date ? t('renewals.startRequired') : t('renewals.startHelp')}
-              error={!!formState.errors.start_date}
+              helperText={t('renewals.startHelp')}
               inputProps={{ 'data-testid': 'record-start' }}
             />
             <DateField control={control} name="decision_date" label={t('renewals.decisionDate')} />
