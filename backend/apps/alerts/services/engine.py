@@ -128,7 +128,8 @@ def reconcile(amm: MarketingAuthorization) -> int:
     )
     if not open_alerts:
         return 0
-    renewals = list(amm.renewals.all())
+    # Relecture explicite : appelée depuis un signal, l'AMM peut porter un prefetch obsolète.
+    renewals = list(Renewal.objects.filter(amm_id=amm.pk))
     pending = any(r.workflow_status in Renewal.PENDING_STATUSES for r in renewals)
     obtained = [
         r for r in renewals if r.workflow_status == Renewal.WorkflowStatus.OBTENU and r.end_date

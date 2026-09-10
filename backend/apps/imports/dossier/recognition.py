@@ -6,6 +6,20 @@ from datetime import date
 from pathlib import PurePosixPath
 
 
+def fold(value: str) -> str:
+    """Minuscules sans accents, à positions conservées : un caractère pour un caractère.
+
+    Permet de chercher sans se soucier de la casse ni des accents tout en renvoyant la
+    valeur telle qu'elle est imprimée sur la décision.
+    """
+    folded = []
+    for character in value:
+        ascii_form = unicodedata.normalize("NFKD", character).encode("ascii", "ignore").decode()
+        candidate = (ascii_form[:1] or character).lower()
+        folded.append(candidate[:1])
+    return "".join(folded)
+
+
 def normalize(value: str) -> str:
     value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
@@ -63,9 +77,13 @@ def parse_date(value: str) -> str | None:
         return None
 
 
-def _label_value(text: str, labels: str) -> str:
+def _label_value(text: str, labels: str, source: str | None = None) -> str:
+    """Valeur d'un champ étiqueté ; `source` (même longueur) fournit la casse d'origine."""
     match = re.search(rf"(?:^|\n)\s*(?:{labels})\s*(?::|=|\s[-–]\s)\s*([^\n]{{1,255}})", text, re.I)
-    return match.group(1).strip(" \t.;") if match else ""
+    if not match:
+        return ""
+    original = source if source is not None and len(source) == len(text) else text
+    return original[match.start(1) : match.end(1)].strip(" \t.;")
 
 
 def _labeled_date(text: str, labels: str) -> str | None:
@@ -92,7 +110,7 @@ def _mentions(text: str, names) -> list:
 def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     extraction = upload.extraction or {}
     text = extraction.get("text", "")[:160_000]
-    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
+    plain = fold(text)
     path = upload.relative_path
     path_text = normalize(f"{root_name} {path}")
     basename = normalize(PurePosixPath(path).name)
@@ -125,13 +143,14 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         plain,
         r"(?:nom\s+(?:du\s+)?(?:produit|medicament)|produit|specialite(?:\s+pharmaceutique)?"
         r"|denomination(?:\s+(?:du\s+)?(?:medicament|produit))?|product(?:\s+name)?)",
+        text,
     )
     matched_text = _mentions(explicit_product or text, product_names)
     matched_path = _mentions(path_text, product_names)
     matched_products = matched_text or matched_path
     product_confidence = reliability if matched_text else 60 if matched_path else reliability
 
-    explicit_country = _label_value(plain, r"pays|country")
+    explicit_country = _label_value(plain, r"pays|country", text)
     country_names = [(country, [country.name, country.iso2]) for country in countries]
     country_text = _mentions(explicit_country, country_names) if explicit_country else []
     if not country_text:
@@ -151,6 +170,7 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         r"(?:numero|n[°ºo.]*)\s*(?:d['’ ]*)?(?:amm|autorisation(?: de mise sur le marche)?)"
         r"|(?:amm|autorisation de mise sur le marche)\s*(?:n[°ºo.]*|numero)?"
         r"|(?:numero|n[°ºo.]*)\s*(?:du\s+)?renouvellement",
+        text,
     )
     if not number:
         number_match = re.search(
@@ -159,12 +179,16 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
             plain,
             re.I,
         )
-        number = number_match.group(1) if number_match else ""
-    number = re.split(r"\s+(?:du|date|delivre|valable|pour)\b", number, maxsplit=1)[0]
+        number = text[number_match.start(1) : number_match.end(1)] if number_match else ""
+    # Coupe « 00152 du 28/04/2025 » : recherche sur la forme repliée, découpe sur l'original.
+    cut = re.search(r"\s+(?:du|date|delivre|valable|pour)\b", fold(number))
+    if cut:
+        number = number[: cut.start()]
     number = number.upper()[:100]
     holder = _label_value(
         plain,
         r"titulaire(?:\s+de\s+l['’ ]?amm)?|laboratoire|holder|marketing authori[sz]ation holder",
+        text,
     )[:255]
     start_date = _labeled_date(
         plain,

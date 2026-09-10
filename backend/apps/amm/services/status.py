@@ -73,7 +73,12 @@ def compute_amm_state(amm, today: date | None = None, renewals=None) -> AmmState
     """Computes the state without writing it. `renewals` may be passed to avoid queries."""
     today = today or reference_today()
     if renewals is None:
-        renewals = list(amm.renewals.all()) if amm.pk else []
+        # Relecture de la base : `amm.renewals.all()` peut servir le prefetch de la vue
+        # appelante, obsolète dès qu'un renouvellement vient d'être créé ou modifié. Les
+        # traitements de masse qui détiennent un prefetch à jour passent `renewals`.
+        from apps.amm.models import Renewal
+
+        renewals = list(Renewal.objects.filter(amm_id=amm.pk)) if amm.pk else []
     obtained = [r for r in renewals if r.workflow_status == "OBTENU" and r.end_date]
     last = max(obtained, key=lambda r: r.sequence) if obtained else None
     pending = any(r.workflow_status in PENDING for r in renewals)
@@ -107,11 +112,11 @@ def apply_state(amm, today: date | None = None, save: bool = True) -> AmmState:
     return state
 
 
-def recompute_quietly(amm, today: date | None = None) -> bool:
+def recompute_quietly(amm, today: date | None = None, renewals=None) -> bool:
     """Recomputes and writes with `update()` (no signal, no history). Returns True if changed."""
     from apps.amm.models import MarketingAuthorization
 
-    state = compute_amm_state(amm, today=today)
+    state = compute_amm_state(amm, today=today, renewals=renewals)
     if not state.differs_from(amm):
         return False
     state.apply_to(amm)

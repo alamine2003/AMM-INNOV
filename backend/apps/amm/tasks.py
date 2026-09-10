@@ -16,7 +16,8 @@ def recompute_all_statuses(today: str | None = None) -> dict:
     changed = 0
     queryset = MarketingAuthorization.objects.select_related("country").prefetch_related("renewals")
     for amm in queryset.iterator(chunk_size=500):
-        if recompute_quietly(amm, today=reference):
+        # Le prefetch de ce parcours est à jour : on le passe pour éviter une requête par AMM.
+        if recompute_quietly(amm, today=reference, renewals=list(amm.renewals.all())):
             changed += 1
     publish_dashboard_refresh()
     return {"changed": changed}

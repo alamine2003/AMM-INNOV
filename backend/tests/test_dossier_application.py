@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 
 from apps.amm.history import amm_history
-from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.models import MarketingAuthorization
 from apps.documents.models import Document
 from apps.imports.dossier.application import StalePreview, apply_dossier, preview_token
 from apps.imports.dossier.preview import build_preview
@@ -58,7 +58,9 @@ def new_batch(user, root="AMM_PRODUIT"):
 
 
 def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, product, make_amm):
-    amm = make_amm(product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28))
+    amm = make_amm(
+        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
+    )
     batch = new_batch(users["hq"])
     proof = stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/notice.pdf", "Notice\n" + decision(product, number="X"))
@@ -84,7 +86,9 @@ def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, produ
     change = DossierChange.objects.get(amm=amm, field="original_number")
     assert (change.old_value, change.new_value) == ("AMM/SN/2025/00125", "AMM/SN/2025/00152")
     assert change.proof_file == proof and change.user == users["hq"] and change.confidence >= 90
-    assert DossierChange.objects.filter(amm=amm, field="holder", old_value=None).exists()
+    # Champ vide complété : journalisé aussi, l'ancienne valeur étant la chaîne vide.
+    completion = DossierChange.objects.get(amm=amm, field="holder")
+    assert not completion.old_value and completion.new_value == "Laboratoire Exemple"
     entry = next(e for e in amm_history(amm) if e["type"] == "documentary_correction")
     assert entry["changes"][0]["field"] == "original_number"
     assert entry["document_id"] == str(proof.document_id)
@@ -158,7 +162,10 @@ def test_pending_renewal_is_completed_instead_of_duplicated(users, product, make
     assert status_change["requires_confirmation"]
 
     apply_dossier(
-        batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[status_change["id"]]
+        batch.pk,
+        user=users["hq"],
+        token=batch.preview_token,
+        accepted_changes=[status_change["id"]],
     )
     assert amm.renewals.count() == 1
     pending.refresh_from_db()
@@ -171,7 +178,9 @@ def test_pending_renewal_is_completed_instead_of_duplicated(users, product, make
 
 
 def test_unaccepted_correction_is_kept_and_stale_token_refused(users, product, make_amm):
-    amm = make_amm(product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28))
+    amm = make_amm(
+        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
+    )
     batch = new_batch(users["hq"])
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     ready(batch)
@@ -195,7 +204,13 @@ def test_low_confidence_or_blocked_preview_cannot_be_applied(users, product, mak
         sha256="0" * 64,
         content_type="application/pdf",
         size_bytes=1,
-        extraction={"text": "", "source": "unreadable", "confidence": 0, "warnings": [], "errors": []},
+        extraction={
+            "text": "",
+            "source": "unreadable",
+            "confidence": 0,
+            "warnings": [],
+            "errors": [],
+        },
     )
     preview = ready(batch)
     assert not preview["can_apply"] and preview["level"] == "LOW"

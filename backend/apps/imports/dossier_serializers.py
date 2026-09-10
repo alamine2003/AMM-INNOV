@@ -82,7 +82,7 @@ class DossierUploadSerializer(serializers.Serializer):
 
 
 class DossierAnalyzeSerializer(serializers.Serializer):
-    """Relance de l'analyse ; `country` (ISO2) fixe le pays quand les documents ne le nomment pas."""
+    """Relance de l'analyse ; `country` (ISO2) impose le pays si les documents ne le nomment pas."""
 
     country = serializers.CharField(required=False, allow_blank=True, max_length=2)
 
