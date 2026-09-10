@@ -21,13 +21,17 @@ import { DateField } from '@/components/DateField';
 import { formatDate, todayIso } from '@/lib/dates';
 import { projectObtainedRenewal } from '@/lib/urgency';
 
-const schema = z.object({
-  number: z.string().trim().min(1),
-  start_date: z.string().nullable(),
-  decision_date: z.string().nullable().optional(),
-  end_date: z.string().nullable().optional(),
-  notes: z.string().optional(),
-});
+const schema = z
+  .object({
+    number: z.string().trim().min(1),
+    start_date: z.string().nullable(),
+    decision_date: z.string().nullable().optional(),
+    end_date: z.string().nullable().optional(),
+    notes: z.string().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (!values.start_date) ctx.addIssue({ code: 'custom', path: ['start_date'], message: 'start_date' });
+  });
 type Values = z.infer<typeof schema>;
 
 /**

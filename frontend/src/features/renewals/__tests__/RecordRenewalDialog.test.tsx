@@ -55,7 +55,8 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     await user.click(await screen.findByTestId('renewal-record', {}, { timeout: 5000 }));
     await screen.findByTestId('record-dialog');
     await user.click(screen.getByTestId('record-submit'));
-    expect(await screen.findByText(/numéro d’AMM est obligatoire|N° AMM/i)).toBeVisible();
+    expect(await screen.findByText("Le numéro d'AMM est obligatoire pour passer à « Obtenu »")).toBeVisible();
+    expect(screen.getByText('La date de début est obligatoire pour passer à « Obtenu »')).toBeVisible();
     expect(db.renewals.filter((r) => r.amm_id === 'amm-6')).toHaveLength(0);
   });
 });
