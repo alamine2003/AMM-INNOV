@@ -84,6 +84,7 @@ export interface Amm {
   country: string;
   country_iso2: string;
   country_name: string;
+  holder?: string;
   original_number: string | null;
   original_start_date: string | null;
   original_end_date: string | null;
@@ -141,6 +142,12 @@ export interface HistoryEntry {
   model?: string;
   object_id?: string;
   changes: HistoryChange[];
+  source?: string;
+  reason?: string;
+  confidence?: number;
+  proof_file_id?: string | null;
+  batch_id?: string;
+  document_id?: string | null;
 }
 
 export interface Renewal {
@@ -160,7 +167,10 @@ export interface Renewal {
 
 export interface RenewalWrite {
   notes?: string;
+  /** `OBTENU` enregistre une décision déjà obtenue ; par défaut le workflow démarre à `PLANIFIE`. */
+  workflow_status?: WorkflowStatus;
   filing_date?: string | null;
+  decision_date?: string | null;
   number?: string | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -352,6 +362,99 @@ export interface ImportRow {
   raw: Record<string, unknown>;
   outcome: 'CREATED' | 'UPDATED' | 'SKIPPED' | 'ERROR' | 'WARNING';
   message: string;
+}
+
+export interface DossierImportFile {
+  id: string;
+  relative_path: string;
+  sha256: string;
+  content_type: string;
+  size_bytes: number;
+  extraction: Record<string, unknown>;
+  document_id: string | null;
+}
+
+export interface DossierImportChange {
+  id: string;
+  target: string;
+  field: string;
+  old: unknown;
+  new: unknown;
+  proof_file_id: string | null;
+  confidence: number;
+  requires_confirmation: boolean;
+}
+
+export interface DossierImportPreview {
+  version: 1;
+  confidence: number;
+  level: 'HIGH' | 'MEDIUM' | 'LOW';
+  can_apply: boolean;
+  blockers: string[];
+  warnings: string[];
+  amm: {
+    id: string | null;
+    product_id: string | null;
+    product_name: string;
+    country_id: string | null;
+    country_iso2: string;
+    holder: string;
+  };
+  original: Record<string, unknown>;
+  candidates: {
+    id: string;
+    product_name: string;
+    country_iso2: string;
+    confidence: number;
+    reasons: string[];
+  }[];
+  documents: {
+    file_id: string;
+    path: string;
+    kind: string;
+    period: string;
+    document_date: string | null;
+    duplicate_id: string | null;
+  }[];
+  renewals: {
+    key: string;
+    existing_id: string | null;
+    number: string | null;
+    start_date: string | null;
+    decision_date: string | null;
+    end_date: string | null;
+    confidence: number;
+    proof_file_id: string | null;
+  }[];
+  changes: DossierImportChange[];
+}
+
+export interface DossierImportAudit {
+  id: string;
+  target: string;
+  field: string;
+  old_value: unknown;
+  new_value: unknown;
+  confidence: number;
+  proof_file_id: string | null;
+  document_id: string | null;
+  user_email: string;
+  created_at: string;
+  reason: string;
+}
+
+export interface DossierImportBatch {
+  id: string;
+  root_name: string;
+  status: 'PENDING' | 'RUNNING' | 'READY' | 'APPLIED' | 'FAILED';
+  preview: DossierImportPreview | null;
+  preview_token: string;
+  created_at: string;
+  finished_at: string | null;
+  error: string;
+  amm_id: string | null;
+  files: DossierImportFile[];
+  audit: DossierImportAudit[];
 }
 
 export type RealtimeEventType =

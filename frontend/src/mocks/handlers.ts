@@ -510,17 +510,23 @@ export const handlers = [
         );
       }
       const body = (await request.json()) as Partial<Renewal>;
+      // Comme l'API : `workflow_status` peut valoir OBTENU pour enregistrer une décision déjà
+      // délivrée ; numéro et date de début sont alors obligatoires.
+      const status = body.workflow_status ?? 'PLANIFIE';
+      if (status === 'OBTENU' && (!body.number || !body.start_date)) {
+        return HttpResponse.json({ number: ['Champ requis pour le statut OBTENU.'] }, { status: 400 });
+      }
       const renewal: Renewal = {
         id: nextId('ren'),
         amm_id: amm.id,
         sequence: existing.length + 1,
-        workflow_status: 'PLANIFIE',
-        filing_date: null,
-        decision_date: null,
-        number: null,
-        start_date: null,
-        end_date: null,
-        end_date_manual: false,
+        workflow_status: status,
+        filing_date: body.filing_date ?? null,
+        decision_date: body.decision_date ?? null,
+        number: body.number ?? null,
+        start_date: body.start_date ?? null,
+        end_date: body.end_date ?? null,
+        end_date_manual: !!body.end_date,
         notes: body.notes ?? '',
         created_at: new Date().toISOString(),
       };

@@ -58,3 +58,6 @@ Claude outputs/
 
 # Local Netlify folder
 .netlify
+
+# Base SQLite des tests (pytest)
+backend/.test-db.sqlite3

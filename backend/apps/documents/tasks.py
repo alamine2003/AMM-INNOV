@@ -42,6 +42,9 @@ def purge_archived_documents() -> dict:
     limit = timezone.now() - relativedelta(years=settings.DOCUMENT_RETENTION_YEARS)
     purged = 0
     for document in Document.objects.filter(archived_at__lt=limit):
+        # Les fichiers d'un dossier importé conservent leur propre blob : on détache la
+        # référence (PROTECT) avant de supprimer le document.
+        document.dossier_sources.update(document=None)
         document.file.delete(save=False)
         document.delete()
         purged += 1

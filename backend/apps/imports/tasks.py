@@ -1,9 +1,13 @@
+import logging
 from datetime import date
 
 from celery import shared_task
+from django.utils import timezone
 
 from .models import ImportBatch
 from .services import import_workbook
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(name="apps.imports.tasks.run_import")
@@ -16,3 +20,38 @@ def run_import(batch_id: str, today: str | None = None) -> dict:
     finally:
         batch.file.close()
     return summary.get("totals", {})
+
+
+@shared_task(name="apps.imports.tasks.analyze_dossier", soft_time_limit=1200, time_limit=1260)
+def analyze_dossier(batch_id: str) -> dict:
+    from .dossier.application import preview_token
+    from .dossier.preview import build_preview
+    from .models import DossierImport
+
+    claimed = DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.PENDING).update(
+        status=DossierImport.Status.RUNNING,
+        error="",
+    )
+    if not claimed:
+        return {"status": "skipped"}
+    batch = DossierImport.objects.select_related("created_by").get(pk=batch_id)
+    try:
+        if not batch.created_by or not batch.created_by.is_active:
+            raise ValueError("Utilisateur indisponible")
+        preview = build_preview(batch)
+        DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.RUNNING).update(
+            status=DossierImport.Status.READY,
+            preview=preview,
+            preview_token=preview_token(preview),
+            country_id=preview.get("amm", {}).get("country_id"),
+            finished_at=timezone.now(),
+        )
+        return {"status": "ready", "confidence": preview["confidence"]}
+    except Exception:
+        logger.exception("Échec de l'analyse du dossier %s", batch_id)
+        DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.RUNNING).update(
+            status=DossierImport.Status.FAILED,
+            finished_at=timezone.now(),
+            error="L'analyse a échoué. Vérifiez les documents puis relancez l'analyse.",
+        )
+        return {"status": "failed"}

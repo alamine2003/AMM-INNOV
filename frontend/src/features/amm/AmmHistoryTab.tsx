@@ -1,6 +1,7 @@
 import {
   Box,
   Chip,
+  Link as MuiLink,
   Table,
   TableBody,
   TableCell,
@@ -10,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { useAmmHistory } from '@/api/hooks/useAmms';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
@@ -33,7 +35,26 @@ export function AmmHistoryTab({ ammId }: { ammId: string }) {
           >
             {formatDateTime(entry.date)} — {entry.user_email}
             <Chip size="small" label={entry.type} variant="outlined" />
+            {entry.source === 'DOSSIER_IMPORT' && (
+              <Chip size="small" label="Dossier réglementaire importé" color="info" variant="outlined" />
+            )}
           </Typography>
+          {entry.source === 'DOSSIER_IMPORT' && (
+            <Box sx={{ my: 1 }}>
+              <Typography variant="body2">
+                {entry.reason}
+                {entry.confidence !== undefined ? ` · Confiance : ${entry.confidence} %` : ''}
+              </Typography>
+              {entry.batch_id && (
+                <MuiLink
+                  component={Link}
+                  to={`/dossier-imports/${entry.batch_id}${entry.proof_file_id ? `?file=${encodeURIComponent(entry.proof_file_id)}` : ''}`}
+                >
+                  Examiner l’import et le document de preuve
+                </MuiLink>
+              )}
+            </Box>
+          )}
           <TableContainer sx={{ overflowX: 'auto' }}>
             <Table size="small">
               <TableHead>

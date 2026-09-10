@@ -55,9 +55,37 @@ def entries_for_model(instances_history, model_label: str) -> list[dict]:
 def amm_history(amm) -> list[dict]:
     from apps.amm.models import MarketingAuthorization, Renewal
     from apps.documents.models import Document
+    from apps.imports.models import DossierChange
 
     entries = entries_for_model(MarketingAuthorization.history.filter(id=amm.pk), "amm")
     entries += entries_for_model(Renewal.history.filter(amm_id=amm.pk), "renewal")
     entries += entries_for_model(Document.history.filter(amm_id=amm.pk), "document")
+    for change in DossierChange.objects.filter(amm=amm).select_related("user", "proof_file"):
+        entries.append(
+            {
+                "date": change.created_at,
+                "user_email": change.user.email if change.user else None,
+                "type": "documentary_correction"
+                if change.old_value is not None
+                else "documentary_creation",
+                "model": "renewal" if change.renewal_id else "amm",
+                "object_id": str(change.renewal_id or amm.pk),
+                "changes": [
+                    {
+                        "field": change.field,
+                        "old": _label(change.old_value),
+                        "new": _label(change.new_value),
+                    }
+                ],
+                "source": change.source,
+                "reason": change.reason,
+                "confidence": change.confidence,
+                "batch_id": str(change.batch_id),
+                "proof_file_id": str(change.proof_file_id),
+                "document_id": str(change.proof_file.document_id)
+                if change.proof_file.document_id
+                else None,
+            }
+        )
     entries.sort(key=lambda e: e["date"], reverse=True)
     return entries

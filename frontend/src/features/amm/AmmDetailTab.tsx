@@ -68,6 +68,7 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
   return (
     <form onSubmit={handleSubmit(submit)} noValidate data-testid="amm-detail-form">
       <Grid container spacing={2} sx={{ mb: 3 }}>
+        {info('Titulaire / laboratoire', amm.holder || '—')}
         {info(t('amm.fields.status'), t(`status.${amm.status}`))}
         {info(t('amm.fields.urgency'), t(`urgency.${amm.urgency}`))}
         {info(t('amm.fields.effectiveEnd'), formatDate(amm.effective_end_date))}

@@ -20,6 +20,8 @@ const RangesAdminPage = lazy(() => import('@/features/admin/RangesAdminPage'));
 const AlertRulesAdminPage = lazy(() => import('@/features/admin/AlertRulesAdminPage'));
 const ImportsPage = lazy(() => import('@/features/imports/ImportsPage'));
 const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'));
+const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
+const DossierImportDetailPage = lazy(() => import('@/features/dossier-imports/DossierImportDetailPage'));
 
 const Fallback = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
@@ -44,6 +46,8 @@ export const routes: RouteObject[] = [
           { path: 'renewals/:renewalId', element: page(<AmmDetailPage />) },
           { path: 'alerts', element: page(<AlertsPage />) },
           { path: 'documents', element: page(<DocumentsLibraryPage />) },
+          { path: 'dossier-imports', element: page(<DossierImportsPage />) },
+          { path: 'dossier-imports/:id', element: page(<DossierImportDetailPage />) },
           { path: 'products', element: page(<ProductsPage />) },
           { path: 'products/:id', element: page(<ProductDetailPage />) },
           {

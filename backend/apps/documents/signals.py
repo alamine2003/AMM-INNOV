@@ -8,6 +8,8 @@ from .models import Document
 
 @receiver(post_save, sender=Document)
 def on_document_saved(sender, instance: Document, created: bool, **kwargs):
+    if getattr(instance, "_skip_signals", False):
+        return
     publish_amm_event(
         "document.created" if created else "document.updated",
         instance.amm,

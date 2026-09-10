@@ -4,7 +4,7 @@ import { navItemsForRole } from '@/app/layout/navigation';
 describe('menu par rôle', () => {
   it('masque l’administration au réglementaire pays', () => {
     const keys = navItemsForRole('COUNTRY_REGULATORY').map((i) => i.key);
-    expect(keys).toEqual(['dashboard', 'amms', 'alerts', 'documents', 'products']);
+    expect(keys).toEqual(['dashboard', 'amms', 'alerts', 'documents', 'dossier-imports', 'products']);
   });
   it('expose l’administration au siège et au CEO', () => {
     expect(navItemsForRole('HQ_REGULATORY').map((i) => i.key)).toContain('users');

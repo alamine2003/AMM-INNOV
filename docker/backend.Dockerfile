@@ -35,7 +35,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # libpq5 : client PostgreSQL pour psycopg ; curl : healthcheck ; tzdata : fuseau Dakar
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 curl tzdata \
+    && apt-get install -y --no-install-recommends libpq5 curl tzdata poppler-utils \
+        tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid "${APP_GID}" app \
     && useradd --uid "${APP_UID}" --gid app --create-home --shell /bin/bash app

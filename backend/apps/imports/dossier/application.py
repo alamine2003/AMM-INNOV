@@ -1,0 +1,299 @@
+"""Apply a reviewed server-side plan under locks, with field-level documentary provenance."""
+
+import hashlib
+import json
+from datetime import date
+
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.db import connection, transaction
+from django.utils import timezone
+from rest_framework.exceptions import APIException, PermissionDenied
+
+from apps.accounts.permissions import ALL_ROLES, ensure_country_in_scope
+from apps.amm.models import MarketingAuthorization, Renewal
+from apps.catalog.models import Country, Product
+from apps.catalog.normalize import normalize_product_name, product_key
+from apps.core.dates import today
+from apps.documents.models import Document
+from apps.documents.services.ingest import convert_image_to_pdf
+from apps.imports.models import DossierChange, DossierImport
+
+from .preview import build_preview
+
+AMM_FIELDS = {"original_number", "original_start_date", "original_end_date", "holder"}
+RENEWAL_FIELDS = {"number", "start_date", "end_date", "decision_date", "workflow_status"}
+
+
+class StalePreview(APIException):
+    status_code = 409
+    default_detail = "Les données ont changé. Relancez l'analyse avant de valider."
+
+
+def preview_token(preview):
+    return hashlib.sha256(
+        json.dumps(preview, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def value_json(value):
+    return value.isoformat() if isinstance(value, date) else value
+
+
+def typed_value(field, value):
+    return date.fromisoformat(value) if field.endswith("date") and value else value
+
+
+def _audit(batch, amm, target, field, old, new, proof, confidence, user, reason=None):
+    if old == new:
+        return
+    DossierChange.objects.create(
+        batch=batch,
+        amm=amm,
+        renewal=target if isinstance(target, Renewal) else None,
+        field=field,
+        old_value=value_json(old),
+        new_value=value_json(new),
+        proof_file=proof,
+        confidence=confidence,
+        user=user,
+        **({"reason": reason} if reason else {}),
+    )
+
+
+def _save_with_actor(obj, user):
+    obj._history_user = user
+    obj._change_reason = "Dossier réglementaire importé et validé"
+    # Domain events must describe committed state. Reconcile once after the transaction.
+    obj._skip_signals = True
+    obj.save()
+
+
+def _reconcile_after_commit(amm_id):
+    from apps.amm.signals import on_amm_saved
+    from apps.realtime.publisher import publish_amm_event
+
+    amm = MarketingAuthorization.objects.get(pk=amm_id)
+    on_amm_saved(MarketingAuthorization, amm, created=False)
+    publish_amm_event("document.created", amm, amm_id=str(amm.pk))
+
+
+def _proof(files, proof_id):
+    if str(proof_id) not in files:
+        raise ValidationError("La preuve documentaire est absente du dossier.")
+    return files[str(proof_id)]
+
+
+def _document(batch, source, amm, renewal, proposal, user, created_blobs):
+    existing = source.document
+    if existing and existing.archived_at is None and existing.amm_id == amm.pk:
+        return existing
+    duplicate = Document.objects.filter(
+        amm=amm,
+        sha256=source.sha256,
+        archived_at__isnull=True,
+    ).first()
+    converted = None
+    digest = source.sha256
+    if source.content_type != "application/pdf":
+        with source.file.open("rb") as stream:
+            converted = convert_image_to_pdf(stream.read())
+        if converted is None:
+            raise ValidationError("Impossible de convertir une image du dossier en PDF.")
+        digest = hashlib.sha256(converted).hexdigest()
+        duplicate = Document.objects.filter(
+            amm=amm, sha256=digest, archived_at__isnull=True
+        ).first()
+    if duplicate:
+        if duplicate.renewal_id != (renewal.pk if renewal else None):
+            raise ValidationError("Un fichier identique appartient déjà à une autre période.")
+        return duplicate
+    document = Document(
+        amm=amm,
+        renewal=renewal,
+        kind=proposal["kind"],
+        title=source.relative_path.rsplit("/", 1)[-1][:255],
+        document_date=typed_value("date", proposal.get("document_date"))
+        or (renewal.start_date if renewal else amm.original_start_date)
+        or today(),
+        content_type="application/pdf",
+        sha256=digest,
+        size_bytes=len(converted) if converted else source.size_bytes,
+        uploaded_by=user,
+    )
+    if converted is None:
+        # Copie indépendante : la preuve du dossier (DossierFile) reste intacte même si le
+        # document est remplacé, archivé puis purgé après la durée de rétention.
+        with source.file.open("rb") as stream:
+            converted = stream.read()
+    document.file.save("document.pdf", ContentFile(converted), save=False)
+    created_blobs.append((document.file.storage, document.file.name))
+    _save_with_actor(document, user)
+    return document
+
+
+def apply_dossier(batch_id, *, user, token, accepted_changes):
+    """Idempotent confirmation; a changed preview is never applied by surprise."""
+    created_blobs = []
+    try:
+        with transaction.atomic():
+            batch = DossierImport.objects.select_for_update().get(pk=batch_id)
+            if not user.is_active or user.role not in ALL_ROLES:
+                raise PermissionDenied()
+            if not user.is_global and batch.created_by_id != user.pk:
+                raise PermissionDenied()
+            ensure_country_in_scope(user, batch.country)
+            if batch.status == DossierImport.Status.APPLIED:
+                return batch
+            if batch.status != DossierImport.Status.READY or token != batch.preview_token:
+                raise StalePreview()
+            plan = batch.preview
+            if not plan.get("can_apply") or plan.get("confidence", 0) < 65:
+                raise ValidationError("Confiance insuffisante : aucune modification autorisée.")
+            identity = plan["amm"]
+            country = Country.objects.select_for_update().get(pk=identity["country_id"])
+            ensure_country_in_scope(user, country)
+            # Serialize catalog creation across countries as product keys are shared globally.
+            if connection.vendor == "postgresql":
+                key = product_key(identity["product_name"])
+                lock_key = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], signed=True)
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_advisory_xact_lock(%s)", [lock_key])
+            if identity.get("id"):
+                amm = MarketingAuthorization.objects.select_for_update().get(pk=identity["id"])
+                list(
+                    Renewal.objects.select_for_update().filter(amm=amm).values_list("pk", flat=True)
+                )
+            # Re-run reconciliation from stored extraction, under the same locks as application.
+            fresh = build_preview(batch)
+            if preview_token(fresh) != token:
+                raise StalePreview()
+            if identity.get("product_id"):
+                product = Product.objects.select_for_update().get(pk=identity["product_id"])
+            else:
+                if not user.is_global:
+                    raise PermissionDenied("La création d'un produit nécessite le siège.")
+                name = normalize_product_name(identity["product_name"])
+                if Product.objects.filter(key=product_key(name)).exists():
+                    raise StalePreview()
+                product = Product(name=name)
+                product._history_user = user
+                product.save()
+            files = {str(f.pk): f for f in batch.files.select_related("document")}
+            created_amm = not identity.get("id")
+            if created_amm:
+                if MarketingAuthorization.objects.filter(product=product, country=country).exists():
+                    raise StalePreview()
+                amm = MarketingAuthorization(product=product, country=country)
+                for field, value in plan["original"].items():
+                    if field in AMM_FIELDS and value not in (None, ""):
+                        _proof(files, plan["original_proofs"].get(field))
+                        setattr(amm, field, typed_value(field, value))
+                if plan["original"].get("original_end_date"):
+                    amm.original_end_date_manual = True
+                _save_with_actor(amm, user)
+                for field, value in plan["original"].items():
+                    if field in AMM_FIELDS and value not in (None, ""):
+                        _audit(
+                            batch,
+                            amm,
+                            amm,
+                            field,
+                            None,
+                            value,
+                            _proof(files, plan["original_proofs"].get(field)),
+                            plan["confidence"],
+                            user,
+                            "Création depuis le dossier réglementaire",
+                        )
+            targets = {"amm": amm}
+            for proposal in sorted(
+                plan["renewals"], key=lambda r: (r.get("start_date") or "", r["key"])
+            ):
+                if proposal.get("existing_id"):
+                    renewal = Renewal.objects.get(pk=proposal["existing_id"], amm=amm)
+                else:
+                    if not proposal.get("number") or not proposal.get("start_date"):
+                        raise ValidationError(
+                            "Un renouvellement obtenu exige un numéro et une date."
+                        )
+                    if proposal["confidence"] < 65:
+                        raise ValidationError("Renouvellement insuffisamment identifié.")
+                    proof = _proof(files, proposal["proof_file_id"])
+                    if Renewal.objects.filter(
+                        amm=amm,
+                        number=proposal["number"],
+                        start_date=proposal["start_date"],
+                    ).exists():
+                        raise StalePreview()
+                    renewal = Renewal(amm=amm, workflow_status=Renewal.WorkflowStatus.OBTENU)
+                    for field in ("number", "start_date", "end_date", "decision_date"):
+                        setattr(renewal, field, typed_value(field, proposal.get(field)))
+                    renewal.end_date_manual = bool(proposal.get("end_date"))
+                    _save_with_actor(renewal, user)
+                    for field in (*sorted(RENEWAL_FIELDS),):
+                        value = getattr(renewal, field)
+                        if value not in (None, ""):
+                            _audit(
+                                batch,
+                                amm,
+                                renewal,
+                                field,
+                                None,
+                                value,
+                                proof,
+                                proposal["confidence"],
+                                user,
+                                "Création d'un renouvellement depuis le dossier réglementaire",
+                            )
+                targets[proposal["key"]] = renewal
+            ids = {change["id"] for change in plan["changes"] if change["requires_confirmation"]}
+            if set(accepted_changes) - ids:
+                raise ValidationError("Une correction sélectionnée ne figure pas dans l'aperçu.")
+            dirty = set()
+            for change in plan["changes"]:
+                if change["requires_confirmation"] and change["id"] not in accepted_changes:
+                    continue
+                obj = targets[change["target"]]
+                field = change["field"]
+                allowed = AMM_FIELDS if isinstance(obj, MarketingAuthorization) else RENEWAL_FIELDS
+                if field not in allowed or change["confidence"] < 65:
+                    raise ValidationError("Modification non autorisée ou insuffisamment étayée.")
+                old = value_json(getattr(obj, field))
+                if old != change["old"]:
+                    raise StalePreview()
+                proof = _proof(files, change["proof_file_id"])
+                setattr(obj, field, typed_value(field, change["new"]))
+                if field in {"original_end_date", "end_date"}:
+                    setattr(obj, field + "_manual", True)
+                _audit(
+                    batch, amm, obj, field, old, change["new"], proof, change["confidence"], user
+                )
+                dirty.add(change["target"])
+            for key in dirty:
+                obj = targets[key]
+                start = obj.original_start_date if key == "amm" else obj.start_date
+                end = obj.original_end_date if key == "amm" else obj.end_date
+                if start and end and end < start:
+                    raise ValidationError("La date de fin précède la date de début.")
+                _save_with_actor(obj, user)
+            for proposal in plan["documents"]:
+                source = _proof(files, proposal["file_id"])
+                renewal = None if proposal["period"] == "original" else targets[proposal["period"]]
+                document = _document(batch, source, amm, renewal, proposal, user, created_blobs)
+                source.document = document
+                source.save(update_fields=["document"])
+            # Recompute once after all renewals, then publish only on successful commit.
+            _save_with_actor(amm, user)
+            batch.amm = amm
+            batch.country = country
+            batch.status = DossierImport.Status.APPLIED
+            batch.finished_at = timezone.now()
+            batch.error = ""
+            batch.save(update_fields=["amm", "country", "status", "finished_at", "error"])
+            transaction.on_commit(lambda: _reconcile_after_commit(amm.pk))
+            return batch
+    except Exception:
+        for storage, name in created_blobs:
+            storage.delete(name)
+        raise

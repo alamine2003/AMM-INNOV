@@ -24,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'amms', labelKey: 'nav.amms', to: '/amms', icon: 'amms' },
   { key: 'alerts', labelKey: 'nav.alerts', to: '/alerts', icon: 'alerts' },
   { key: 'documents', labelKey: 'nav.documents', to: '/documents', icon: 'documents' },
+  { key: 'dossier-imports', labelKey: 'nav.dossierImports', to: '/dossier-imports', icon: 'imports' },
   { key: 'products', labelKey: 'nav.products', to: '/products', icon: 'products' },
   {
     key: 'users',

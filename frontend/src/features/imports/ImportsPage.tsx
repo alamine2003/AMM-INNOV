@@ -66,7 +66,14 @@ export default function ImportsPage() {
 
   return (
     <Box>
-      <PageHeader title={t('admin.imports.title')} />
+      <PageHeader
+        title={t('admin.imports.title')}
+        actions={
+          <Button component={Link} to="/dossier-imports" variant="outlined">
+            Importer un dossier AMM
+          </Button>
+        }
+      />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
           <Stack spacing={2}>

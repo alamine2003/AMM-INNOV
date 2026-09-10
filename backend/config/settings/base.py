@@ -347,6 +347,15 @@ if DOCUMENT_STORAGE == "s3":
         },
     }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
+DOSSIER_MAX_FILES = int(env("DOSSIER_MAX_FILES", "200"))
+DOSSIER_MAX_MB = int(env("DOSSIER_MAX_MB", "250"))
+DOSSIER_MAX_PAGES = int(env("DOSSIER_MAX_PAGES", "100"))
+DOSSIER_MAX_IMAGE_PIXELS = int(env("DOSSIER_MAX_IMAGE_PIXELS", "40000000"))
+DOSSIER_CLAMAV_COMMAND = env("DOSSIER_CLAMAV_COMMAND", "")
+DOSSIER_REQUIRE_ANTIVIRUS = env_bool("DOSSIER_REQUIRE_ANTIVIRUS", False)
+DOSSIER_CLAMAV_TIMEOUT = int(env("DOSSIER_CLAMAV_TIMEOUT", "60"))
+# Multipart file bodies stream to temporary files; only metadata counts toward memory limit.
+DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
 DOCUMENT_RETENTION_YEARS = 5
 # /metrics (Prometheus) : public si vide, sinon exige `Authorization: Bearer <METRICS_TOKEN>`.
 METRICS_TOKEN = env("METRICS_TOKEN", "")

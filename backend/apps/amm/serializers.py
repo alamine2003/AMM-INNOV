@@ -36,6 +36,9 @@ class RenewalSerializer(serializers.ModelSerializer):
     def get_allowed_transitions(self, obj) -> list[str]:
         return sorted(workflow.allowed_transitions(obj))
 
+    # À la création : soit on démarre le workflow, soit on enregistre une décision déjà obtenue.
+    CREATABLE_STATUSES = (Renewal.WorkflowStatus.PLANIFIE, Renewal.WorkflowStatus.OBTENU)
+
     def validate(self, attrs):
         if (
             self.instance is not None
@@ -44,6 +47,20 @@ class RenewalSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError(
                 {"workflow_status": "Le statut change uniquement via /renewals/{id}/transition."}
+            )
+        if (
+            self.instance is None
+            and attrs.get("workflow_status")
+            and attrs["workflow_status"] not in self.CREATABLE_STATUSES
+        ):
+            raise serializers.ValidationError(
+                {
+                    "workflow_status": (
+                        "À la création, seuls « Planifié » (démarrage du workflow) et "
+                        "« Obtenu » (décision déjà délivrée) sont acceptés ; les états "
+                        "intermédiaires passent par /renewals/{id}/transition."
+                    )
+                }
             )
         status = attrs.get("workflow_status", getattr(self.instance, "workflow_status", None))
         if status:
@@ -63,8 +80,10 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         amm = validated_data.pop("amm")
+        request = self.context.get("request")
+        actor = getattr(request, "user", None) if request is not None else None
         try:
-            return workflow.create_renewal(amm, **validated_data)
+            return workflow.create_renewal(amm, actor=actor, **validated_data)
         except DjangoValidationError as exc:
             raise django_to_drf_validation_error(exc)
 
@@ -114,6 +133,7 @@ class AmmListSerializer(serializers.ModelSerializer):
             "country_iso2",
             "country_name",
             "original_number",
+            "holder",
             "original_start_date",
             "original_end_date",
             "original_end_date_manual",
@@ -212,6 +232,12 @@ class HistoryEntrySerializer(serializers.Serializer):
     model = serializers.CharField()
     object_id = serializers.CharField()
     changes = HistoryChangeSerializer(many=True)
+    source = serializers.CharField(required=False)
+    reason = serializers.CharField(required=False)
+    confidence = serializers.IntegerField(required=False)
+    batch_id = serializers.UUIDField(required=False)
+    proof_file_id = serializers.UUIDField(required=False)
+    document_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 def django_to_drf_validation_error(exc: DjangoValidationError) -> serializers.ValidationError:

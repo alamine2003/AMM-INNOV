@@ -51,16 +51,40 @@ def missing_fields(renewal: Renewal, to: str, fields: dict) -> list[str]:
 
 
 @transaction.atomic
-def create_renewal(amm: MarketingAuthorization, **fields) -> Renewal:
+def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal:
     """Creates a renewal for `amm`; refuses when one is still open.
 
     The AMM row is locked for the duration of the transaction so that two simultaneous
     requests cannot both pass the "no open renewal" check (and `sequence` stays unique).
+
+    `workflow_status=OBTENU` records a renewal already granted by the authority (its decision
+    is in hand) without replaying the workflow: `Renewal.save()` derives the end date from the
+    country's validity period, and the post-save signal recomputes the AMM state — an expired
+    AMM becomes valid again by itself. `actor` is carried to the history of both records.
     """
     MarketingAuthorization.objects.select_for_update().get(pk=amm.pk)
-    if Renewal.objects.filter(amm=amm, workflow_status__in=Renewal.OPEN_STATUSES).exists():
-        raise ValidationError({"detail": "Un renouvellement est déjà en cours pour cette AMM."})
-    return Renewal.objects.create(amm=amm, **fields)
+    open_renewal = (
+        Renewal.objects.filter(amm=amm, workflow_status__in=Renewal.OPEN_STATUSES)
+        .order_by("-sequence")
+        .first()
+    )
+    if open_renewal is not None:
+        raise ValidationError(
+            {
+                "detail": (
+                    f"Le renouvellement n°{open_renewal.sequence} est déjà en cours "
+                    f"({open_renewal.get_workflow_status_display()}) : concluez-le "
+                    "au lieu d'en créer un second."
+                )
+            }
+        )
+    renewal = Renewal(amm=amm, **fields)
+    if actor is not None:
+        renewal._history_user = actor
+        # Propagates the actor to the AMM recomputed by the post-save signal.
+        renewal._transition_actor = actor
+    renewal.save()
+    return renewal
 
 
 @transaction.atomic

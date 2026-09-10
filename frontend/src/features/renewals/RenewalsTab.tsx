@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Box, Button, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { useCreateRenewal, useRenewals } from '@/api/hooks/useRenewals';
@@ -10,6 +11,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate } from '@/lib/dates';
 import { TERMINAL_STATES, WORKFLOW_COLORS, WORKFLOW_TRANSITIONS } from '@/lib/urgency';
 import { extractErrorMessage } from '@/api/client';
+import { RecordRenewalDialog } from './RecordRenewalDialog';
 import { TransitionDialog } from './TransitionDialog';
 
 function RenewalCard({
@@ -82,6 +84,7 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
   const renewals = useRenewals(amm.id);
   const create = useCreateRenewal(amm.id);
   const [dialog, setDialog] = useState<{ renewal: Renewal; to: WorkflowStatus } | null>(null);
+  const [recording, setRecording] = useState(false);
 
   if (renewals.isPending) return <LoadingBlock />;
   if (renewals.isError) return <ErrorBlock error={renewals.error} onRetry={() => renewals.refetch()} />;
@@ -90,10 +93,30 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
 
   return (
     <Box>
+      {editable && amm.status === 'EXPIRE' && !hasOpen && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t('renewals.expiredHint')}
+        </Alert>
+      )}
       {editable && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ justifyContent: 'flex-end', mb: 2 }}
+        >
           <Button
             variant="contained"
+            startIcon={<TaskAltIcon />}
+            disabled={hasOpen}
+            onClick={() => setRecording(true)}
+            data-testid="renewal-record"
+          >
+            {t('renewals.record')}
+          </Button>
+          <Button
+            variant="outlined"
             startIcon={<AddIcon />}
             disabled={hasOpen || create.isPending}
             onClick={() =>
@@ -109,7 +132,12 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
           >
             {t('renewals.add')}
           </Button>
-        </Box>
+        </Stack>
+      )}
+      {editable && hasOpen && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('renewals.openBlocks')}
+        </Alert>
       )}
       {/* Frise du plus récent au plus ancien, AMM d'origine en bas */}
       <Stack
@@ -156,6 +184,7 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
           </CardContent>
         </Card>
       </Stack>
+      {recording && <RecordRenewalDialog amm={amm} open onClose={() => setRecording(false)} />}
       {dialog && (
         <TransitionDialog
           ammId={amm.id}

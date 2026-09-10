@@ -50,6 +50,7 @@
     "ranges": "Gammes",
     "alertRules": "Règles d'alerte",
     "imports": "Imports Excel",
+    "dossierImports": "Import de dossiers AMM",
     "logout": "Se déconnecter",
     "profile": "Mon profil",
     "grafana": "Grafana",
@@ -264,7 +265,18 @@
     "numberRequired": "Le numéro d'AMM est obligatoire pour passer à « Obtenu »",
     "startRequired": "La date de début est obligatoire pour passer à « Obtenu »",
     "terminal": "État terminal, aucune transition possible",
-    "addDocument": "Ajouter un document au renouvellement"
+    "addDocument": "Ajouter un document au renouvellement",
+    "record": "Enregistrer un renouvellement obtenu",
+    "recordTitle": "Enregistrer un renouvellement obtenu",
+    "recordHelp": "Saisissez la décision de renouvellement telle qu'elle a été délivrée : l'échéance (début + {{years}} ans) et le statut de l'AMM sont recalculés automatiquement.",
+    "recordDone": "Renouvellement enregistré : le statut de l'AMM a été recalculé",
+    "startHelp": "Date de prise d'effet indiquée sur la décision",
+    "endOverride": "Laisser vide pour appliquer la durée de validité du pays ({{years}} ans)",
+    "computedEnd": "Nouvelle échéance : {{date}}.",
+    "willBecomeValid": "L'AMM passera au statut « Valide ».",
+    "willStayExpired": "Cette échéance est déjà passée : l'AMM restera « Expirée ».",
+    "expiredHint": "Cette AMM est expirée. Si le renouvellement a été obtenu, enregistrez sa décision : le statut, l'échéance et la deadline de dépôt seront recalculés automatiquement.",
+    "openBlocks": "Un renouvellement est déjà en cours : concluez-le par ses transitions plutôt que d'en créer un second."
   },
   "documents": {
     "title": "Documents",

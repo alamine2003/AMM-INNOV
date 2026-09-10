@@ -1,4 +1,6 @@
+import { addYears, parseISO } from 'date-fns';
 import type { AlertStatus, AmmStatus, DossierState, Severity, Urgency, WorkflowStatus } from '@/api/types';
+import { toApiDate } from '@/lib/dates';
 
 export const URGENCY_COLORS: Record<Urgency, string> = {
   OK: '#2e7d32',
@@ -86,6 +88,22 @@ export const WORKFLOW_TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
 };
 
 export const TERMINAL_STATES: WorkflowStatus[] = ['OBTENU', 'REJETE', 'ABANDONNE'];
+
+/**
+ * Prévisualisation de ce que le serveur calculera en enregistrant un renouvellement obtenu :
+ * échéance = début + durée de validité du pays (sauf saisie manuelle), puis statut de l'AMM.
+ * Le serveur reste la source de vérité ; cette projection ne sert qu'à l'affichage.
+ */
+export function projectObtainedRenewal(
+  startDate: string | null | undefined,
+  validityYears: number,
+  manualEnd?: string | null,
+  today = new Date(),
+): { end: string | null; status: AmmStatus | null } {
+  const end = manualEnd || (startDate ? toApiDate(addYears(parseISO(startDate), validityYears)) : null);
+  if (!end) return { end: null, status: null };
+  return { end, status: parseISO(end) >= parseISO(toApiDate(today)) ? 'VALIDE' : 'EXPIRE' };
+}
 
 /** Champs obligatoires pour une transition donnée. */
 export function requiredFieldsFor(to: WorkflowStatus): ('filing_date' | 'number' | 'start_date')[] {

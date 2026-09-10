@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Box,
+  Button,
   FormControl,
   IconButton,
   InputLabel,
@@ -89,7 +90,15 @@ export default function DocumentsLibraryPage() {
 
   return (
     <Box>
-      <PageHeader title={t('documents.library')} subtitle={t('documents.librarySubtitle')} />
+      <PageHeader
+        title={t('documents.library')}
+        subtitle={t('documents.librarySubtitle')}
+        actions={
+          <Button component={Link} to="/dossier-imports" variant="outlined">
+            Importer un dossier AMM
+          </Button>
+        }
+      />
       <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel id="lib-country">{t('documents.filters.country')}</InputLabel>

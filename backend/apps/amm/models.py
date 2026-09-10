@@ -36,6 +36,7 @@ class MarketingAuthorization(models.Model):
         "catalog.Country", on_delete=models.PROTECT, related_name="amms", verbose_name="pays"
     )
     original_number = models.CharField("n° AMM d'origine", max_length=100, blank=True)
+    holder = models.CharField("titulaire / laboratoire", max_length=255, blank=True)
     original_start_date = models.DateField("date de début d'origine", null=True, blank=True)
     original_end_date = models.DateField("date de fin d'origine", null=True, blank=True)
     original_end_date_manual = models.BooleanField("date de fin saisie manuellement", default=False)
