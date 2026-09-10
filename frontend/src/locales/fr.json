@@ -236,7 +236,14 @@
       "empty": "Aucune modification enregistrée",
       "field": "Champ",
       "old": "Ancienne valeur",
-      "new": "Nouvelle valeur"
+      "new": "Nouvelle valeur",
+      "types": {
+        "created": "Création",
+        "updated": "Modification",
+        "deleted": "Suppression",
+        "documentary_correction": "Correction sur preuve",
+        "documentary_creation": "Renseigné sur preuve"
+      }
     },
     "notFound": "AMM introuvable",
     "readOnly": "Lecture seule : ce pays n'est pas dans votre périmètre.",

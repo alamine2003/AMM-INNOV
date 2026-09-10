@@ -89,8 +89,22 @@ def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, produ
     # Champ vide complété : journalisé aussi, l'ancienne valeur étant la chaîne vide.
     completion = DossierChange.objects.get(amm=amm, field="holder")
     assert not completion.old_value and completion.new_value == "Laboratoire Exemple"
-    entry = next(e for e in amm_history(amm) if e["type"] == "documentary_correction")
-    assert entry["changes"][0]["field"] == "original_number"
+    entries = amm_history(amm)
+    entry = next(
+        e
+        for e in entries
+        if e.get("source") == "DOSSIER_IMPORT" and e["changes"][0]["field"] == "original_number"
+    )
+    assert entry["type"] == "documentary_correction"
+    # Le titulaire était vide : renseigné, pas corrigé.
+    completed = next(
+        e
+        for e in entries
+        if e.get("source") == "DOSSIER_IMPORT" and e["changes"][0]["field"] == "holder"
+    )
+    assert completed["type"] == "documentary_creation"
+    # `apply_dossier` a rattaché le document sur sa propre instance : relire la nôtre.
+    proof.refresh_from_db()
     assert entry["document_id"] == str(proof.document_id)
     # Un document créé par l'import ne partage pas son fichier avec la preuve du dossier.
     assert proof.document.file.name != proof.file.name

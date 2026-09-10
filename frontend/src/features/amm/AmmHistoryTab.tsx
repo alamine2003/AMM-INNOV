@@ -34,7 +34,11 @@ export function AmmHistoryTab({ ammId }: { ammId: string }) {
             sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}
           >
             {formatDateTime(entry.date)} — {entry.user_email}
-            <Chip size="small" label={entry.type} variant="outlined" />
+            <Chip
+              size="small"
+              label={t(`amm.history.types.${entry.type}`, { defaultValue: entry.type })}
+              variant="outlined"
+            />
             {entry.source === 'DOSSIER_IMPORT' && (
               <Chip size="small" label="Dossier réglementaire importé" color="info" variant="outlined" />
             )}

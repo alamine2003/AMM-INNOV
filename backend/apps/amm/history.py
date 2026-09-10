@@ -65,8 +65,10 @@ def amm_history(amm) -> list[dict]:
             {
                 "date": change.created_at,
                 "user_email": change.user.email if change.user else None,
+                # Une valeur absente OU vide est renseignée, pas corrigée : seul un
+                # désaccord avec une donnée existante est une correction.
                 "type": "documentary_correction"
-                if change.old_value is not None
+                if change.old_value not in (None, "")
                 else "documentary_creation",
                 "model": "renewal" if change.renewal_id else "amm",
                 "object_id": str(change.renewal_id or amm.pk),
