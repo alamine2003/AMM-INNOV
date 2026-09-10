@@ -29,8 +29,8 @@ flowchart LR
 ## Modèle de données (cœur)
 - **Country** : iso2, autorité, `validity_years` (5), `filing_lead_months` (6).
 - **Product** → **ProductRange** (Générale, Cardio, Bien-être) ; **ProductAlias** conserve les libellés Excel.
-- **MarketingAuthorization** (unique produit × pays) : numéro et dates d'origine, `dossier_state`, champs calculés `status`, `urgency`, `effective_end_date`, `filing_deadline`.
-- **Renewal** (historique complet) : `workflow_status` PLANIFIE → EN_PREPARATION → DEPOSE → EN_INSTRUCTION → OBTENU | REJETE | ABANDONNE, numéro, dates.
+- **MarketingAuthorization** (unique produit × pays) : numéro et dates d'origine, champs calculés `status`, `urgency`, `effective_end_date`, `filing_deadline`, `dossier_state` (complet dès que la décision en vigueur porte son scan).
+- **Renewal** (historique complet) : numéro, dates, et `workflow_status`. Une décision en main s'enregistre en une étape (elle vaut OBTENU, et conclut le renouvellement ouvert s'il y en a un) ; le workflow PLANIFIE → EN_PREPARATION → DEPOSE → EN_INSTRUCTION → OBTENU | REJETE | ABANDONNE reste disponible pour suivre un dépôt en cours.
 - **AlertRule** (globale ou par pays) → **Alert** (unique AMM × règle × échéance) → **Notification** (in-app, email).
 - **Document** : scan PDF rattaché à l'AMM d'origine ou à un renouvellement, `kind` (AMM, récépissé, courrier), `document_date`, `sha256`, `version`/`replaces_id`, archivage logique.
 - **ImportBatch/ImportRow**, historique par `django-simple-history`.

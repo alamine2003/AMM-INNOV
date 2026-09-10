@@ -1,4 +1,4 @@
-"""Enregistrement d'un renouvellement déjà obtenu : l'AMM est recalculée automatiquement."""
+"""Ajout d'un renouvellement en une étape : l'AMM est recalculée automatiquement."""
 
 from datetime import date
 
@@ -15,7 +15,8 @@ EXPIRED_START = date(2019, 1, 1)  # + 5 ans => 2024-01-01, expirée au 04/09/202
 
 
 def record(client, amm, **payload):
-    body = {"workflow_status": "OBTENU", "number": "SN-2026-0042", "start_date": "2026-08-01"}
+    """La saisie minimale : un numéro et une date de début. Le statut n'est pas envoyé."""
+    body = {"number": "SN-2026-0042", "start_date": "2026-08-01"}
     body.update(payload)
     return client.post(f"/api/v1/amms/{amm.pk}/renewals", body, format="json")
 
@@ -82,21 +83,43 @@ def test_a_decision_already_expired_does_not_revive_the_amm(hq_client, make_amm)
     assert amm.urgency == MarketingAuthorization.Urgency.EXPIRE
 
 
-def test_obtained_requires_a_number_and_a_start_date(hq_client, make_amm):
+def test_a_dated_decision_still_needs_its_number(hq_client, make_amm):
     amm = make_amm(country="SN", start=EXPIRED_START)
     assert record(hq_client, amm, number="").status_code == 400
-    assert record(hq_client, amm, start_date=None).status_code == 400
     assert not Renewal.objects.filter(amm=amm).exists()
     amm.refresh_from_db()
     assert amm.status == MarketingAuthorization.Status.EXPIRE
 
 
-def test_an_open_renewal_must_be_concluded_rather_than_duplicated(
-    hq_client, make_amm, make_renewal
-):
+def test_a_renewal_without_a_start_date_is_only_planned(hq_client, make_amm):
+    """Sans date, il n'y a pas de décision : on planifie, et l'AMM reste expirée."""
+    amm = make_amm(country="SN", start=EXPIRED_START)
+    response = record(hq_client, amm, start_date=None)
+    assert response.status_code == 201, response.data
+    assert response.data["workflow_status"] == "PLANIFIE"
+    amm.refresh_from_db()
+    assert amm.status == MarketingAuthorization.Status.EXPIRE
+
+
+def test_an_open_renewal_is_completed_by_its_decision(hq_client, make_amm, make_renewal):
+    """Le dépôt en cours aboutit : même renouvellement, même n° d'ordre, dépôt conservé."""
+    amm = make_amm(country="SN", start=EXPIRED_START)
+    pending = make_renewal(amm, "DEPOSE", filing_date=date(2026, 3, 1))
+    response = record(hq_client, amm)
+    assert response.status_code == 201, response.data
+    assert Renewal.objects.filter(amm=amm).count() == 1
+    pending.refresh_from_db()
+    assert pending.workflow_status == "OBTENU" and pending.sequence == 1
+    assert pending.filing_date == date(2026, 3, 1)
+    assert pending.number == "SN-2026-0042" and pending.end_date == date(2031, 8, 1)
+    amm.refresh_from_db()
+    assert amm.status == MarketingAuthorization.Status.VALIDE
+
+
+def test_a_second_plan_is_refused_while_one_is_open(hq_client, make_amm, make_renewal):
     amm = make_amm(country="SN", start=EXPIRED_START)
     make_renewal(amm, "DEPOSE", filing_date=date(2026, 3, 1))
-    response = record(hq_client, amm)
+    response = hq_client.post(f"/api/v1/amms/{amm.pk}/renewals", {}, format="json")
     assert response.status_code == 400
     assert "déjà en cours" in str(response.data)
     assert Renewal.objects.filter(amm=amm).count() == 1

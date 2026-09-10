@@ -5,6 +5,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Modifié
+- **Ajouter un renouvellement se fait en une étape.** Un numéro et une date de début suffisent :
+  le statut se déduit de la saisie (une date, c'est une décision en main), l'échéance vient de la
+  durée de validité du pays et l'AMM est recalculée — une AMM expirée redevient valide d'elle-même.
+  Les réglementaires pays comme le siège y ont accès, chacun dans son périmètre. Si un
+  renouvellement est déjà ouvert, la décision le conclut au lieu d'être refusée : même dossier,
+  même n° d'ordre, date de dépôt conservée. Le workflow (Planifié → Déposé → En instruction)
+  reste disponible pour suivre un dépôt en cours, en action secondaire.
+- **L'état du dossier n'est plus déclaré, il est constaté.** Il vaut « complet » quand la décision
+  qui fait foi — le dernier renouvellement obtenu, sinon l'AMM d'origine — porte son scan, et
+  « incomplet » sinon. Le champ devient donc calculé : lecture seule dans l'API et dans l'admin,
+  recalculé à chaque ajout, remplacement ou archivage de scan. « Inconnu » disparaît, et la
+  colonne « dossier » du classeur Excel n'est plus appliquée à l'import.
+
 ### Mise en production (7 septembre 2026)
 - Frontend sur Netlify (https://amm-innov.netlify.app), API, worker, PostgreSQL et Redis sur
   Railway ; scans PDF et classeurs d'import sur un bucket Railway (S3, région `ams`,

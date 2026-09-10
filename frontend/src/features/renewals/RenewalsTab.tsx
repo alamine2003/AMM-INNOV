@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { useCreateRenewal, useRenewals } from '@/api/hooks/useRenewals';
@@ -108,16 +108,15 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
         >
           <Button
             variant="contained"
-            startIcon={<TaskAltIcon />}
-            disabled={hasOpen}
+            startIcon={<AddIcon />}
             onClick={() => setRecording(true)}
             data-testid="renewal-record"
           >
-            {t('renewals.record')}
+            {t('renewals.add')}
           </Button>
           <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
+            variant="text"
+            startIcon={<EventNoteIcon />}
             disabled={hasOpen || create.isPending}
             onClick={() =>
               create.mutate(
@@ -130,13 +129,13 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
             }
             data-testid="renewal-create"
           >
-            {t('renewals.add')}
+            {t('renewals.plan')}
           </Button>
         </Stack>
       )}
       {editable && hasOpen && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          {t('renewals.openBlocks')}
+          {t('renewals.openCompletes')}
         </Alert>
       )}
       {/* Frise du plus récent au plus ancien, AMM d'origine en bas */}

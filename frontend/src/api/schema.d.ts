@@ -1176,7 +1176,7 @@ export interface components {
             readonly filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
-            dossier_state?: components["schemas"]["DossierStateEnum"];
+            readonly dossier_state?: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1220,8 +1220,6 @@ export interface components {
             original_end_date?: string | null;
             /** Date de fin saisie manuellement */
             original_end_date_manual?: boolean;
-            /** État du dossier */
-            dossier_state?: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1277,7 +1275,7 @@ export interface components {
             readonly filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
-            dossier_state?: components["schemas"]["DossierStateEnum"];
+            readonly dossier_state?: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1319,8 +1317,6 @@ export interface components {
             original_end_date?: string | null;
             /** Date de fin saisie manuellement */
             original_end_date_manual?: boolean;
-            /** État du dossier */
-            dossier_state?: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1507,10 +1503,9 @@ export interface components {
         /**
          * @description * `COMPLET` - Dossier complet
          *     * `INCOMPLET` - Dossier incomplet
-         *     * `INCONNU` - Inconnu
          * @enum {string}
          */
-        DossierStateEnum: "COMPLET" | "INCOMPLET" | "INCONNU";
+        DossierStateEnum: "COMPLET" | "INCOMPLET";
         HistoryChange: {
             field: string;
             old: string | null;
@@ -1888,8 +1883,6 @@ export interface components {
             original_end_date?: string | null;
             /** Date de fin saisie manuellement */
             original_end_date_manual?: boolean;
-            /** État du dossier */
-            dossier_state?: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -2522,7 +2515,7 @@ export interface operations {
             query?: {
                 country?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
@@ -2773,7 +2766,7 @@ export interface operations {
             query?: {
                 country?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
@@ -2817,7 +2810,7 @@ export interface operations {
             query?: {
                 country?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;
@@ -2869,7 +2862,7 @@ export interface operations {
             query?: {
                 country?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                dossier_state?: ("COMPLET" | "INCOMPLET" | "INCONNU")[];
+                dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
                 has_current_scan?: boolean;

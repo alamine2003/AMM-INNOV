@@ -456,7 +456,7 @@ export const handlers = [
         urgency: 'A_PLANIFIER',
         effective_end_date: null,
         filing_deadline: null,
-        dossier_state: (body.dossier_state as Amm['dossier_state']) ?? 'INCONNU',
+        dossier_state: 'INCOMPLET', // calculé par recomputeAmm d'après le scan de la décision
         notes: (body.notes as string) ?? '',
         owner: null,
         has_current_scan: false,
@@ -503,34 +503,45 @@ export const handlers = [
       if (!amm) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
       if (!inScope(user, amm.country_iso2)) return forbidden();
       const existing = db.renewals.filter((r) => r.amm_id === amm.id);
-      if (existing.some((r) => !['OBTENU', 'REJETE', 'ABANDONNE'].includes(r.workflow_status))) {
+      const body = (await request.json()) as Partial<Renewal>;
+      // Comme l'API : une date de début vaut décision obtenue, sinon on planifie.
+      const status = body.workflow_status ?? (body.start_date ? 'OBTENU' : 'PLANIFIE');
+      if (status === 'OBTENU' && (!body.number || !body.start_date)) {
+        return HttpResponse.json({ number: ['Champ requis pour le statut OBTENU.'] }, { status: 400 });
+      }
+      const open = existing.find((r) => !['OBTENU', 'REJETE', 'ABANDONNE'].includes(r.workflow_status));
+      if (open && status !== 'OBTENU') {
         return HttpResponse.json(
           { detail: 'Un renouvellement est déjà en cours pour cette AMM' },
           { status: 400 },
         );
       }
-      const body = (await request.json()) as Partial<Renewal>;
-      // Comme l'API : `workflow_status` peut valoir OBTENU pour enregistrer une décision déjà
-      // délivrée ; numéro et date de début sont alors obligatoires.
-      const status = body.workflow_status ?? 'PLANIFIE';
-      if (status === 'OBTENU' && (!body.number || !body.start_date)) {
-        return HttpResponse.json({ number: ['Champ requis pour le statut OBTENU.'] }, { status: 400 });
-      }
-      const renewal: Renewal = {
+      // Une décision conclut le renouvellement ouvert au lieu d'en créer un second.
+      const renewal: Renewal = open ?? {
         id: nextId('ren'),
         amm_id: amm.id,
         sequence: existing.length + 1,
         workflow_status: status,
-        filing_date: body.filing_date ?? null,
-        decision_date: body.decision_date ?? null,
-        number: body.number ?? null,
-        start_date: body.start_date ?? null,
-        end_date: body.end_date ?? null,
-        end_date_manual: !!body.end_date,
-        notes: body.notes ?? '',
+        filing_date: null,
+        decision_date: null,
+        number: null,
+        start_date: null,
+        end_date: null,
+        end_date_manual: false,
+        notes: '',
         created_at: new Date().toISOString(),
       };
-      db.renewals.push(renewal);
+      Object.assign(renewal, {
+        workflow_status: status,
+        filing_date: body.filing_date ?? renewal.filing_date,
+        decision_date: body.decision_date ?? renewal.decision_date,
+        number: body.number || renewal.number,
+        start_date: body.start_date ?? renewal.start_date,
+        end_date: body.end_date ?? (body.start_date ? null : renewal.end_date),
+        end_date_manual: !!body.end_date,
+        notes: body.notes || renewal.notes,
+      });
+      if (!open) db.renewals.push(renewal);
       recomputeAmm(db, amm.id);
       addHistory(amm.id, user, 'RENEWAL_CREATED', [
         { field: 'renewal', old: null, new: `#${renewal.sequence}` },

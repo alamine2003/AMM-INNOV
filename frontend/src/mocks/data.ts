@@ -5,7 +5,6 @@ import type {
   AmmDocument,
   AmmStatus,
   Country,
-  DossierState,
   HistoryEntry,
   ImportBatch,
   ImportRow,
@@ -182,7 +181,6 @@ interface AmmSeed {
   country: string;
   original_number: string | null;
   original_start_date: string | null;
-  dossier_state: DossierState;
   renewals?: {
     workflow_status: WorkflowStatus;
     filing_date?: string;
@@ -200,7 +198,6 @@ const seeds: AmmSeed[] = [
     country: 'SN',
     original_number: 'SN-2019-0412',
     original_start_date: '2019-03-12',
-    dossier_state: 'COMPLET',
     renewals: [
       {
         workflow_status: 'OBTENU',
@@ -216,7 +213,6 @@ const seeds: AmmSeed[] = [
     country: 'SN',
     original_number: 'SN-2021-0888',
     original_start_date: shift(-365 * 5 + 120),
-    dossier_state: 'INCOMPLET',
   },
   {
     id: 'amm-3',
@@ -224,7 +220,6 @@ const seeds: AmmSeed[] = [
     country: 'SN',
     original_number: 'SN-2021-0910',
     original_start_date: shift(-365 * 5 + 45),
-    dossier_state: 'COMPLET',
   },
   {
     id: 'amm-4',
@@ -232,7 +227,6 @@ const seeds: AmmSeed[] = [
     country: 'SN',
     original_number: 'SN-2018-0021',
     original_start_date: '2018-01-15',
-    dossier_state: 'INCOMPLET',
     notes: 'Renouvellement à relancer',
   },
   // CI
@@ -242,7 +236,6 @@ const seeds: AmmSeed[] = [
     country: 'CI',
     original_number: 'CI-2020-1147',
     original_start_date: shift(-365 * 5 + 100),
-    dossier_state: 'COMPLET',
     renewals: [{ workflow_status: 'DEPOSE', filing_date: shift(-40) }],
   },
   {
@@ -251,7 +244,6 @@ const seeds: AmmSeed[] = [
     country: 'CI',
     original_number: 'CI-2023-0330',
     original_start_date: '2023-06-01',
-    dossier_state: 'COMPLET',
   },
   {
     id: 'amm-7',
@@ -259,7 +251,6 @@ const seeds: AmmSeed[] = [
     country: 'CI',
     original_number: 'CI-2022-0777',
     original_start_date: shift(-365 * 5 + 300),
-    dossier_state: 'INCOMPLET',
   },
   // CM
   {
@@ -268,7 +259,6 @@ const seeds: AmmSeed[] = [
     country: 'CM',
     original_number: '2021179002',
     original_start_date: '2021-07-20',
-    dossier_state: 'COMPLET',
   },
   {
     id: 'amm-9',
@@ -276,7 +266,6 @@ const seeds: AmmSeed[] = [
     country: 'CM',
     original_number: null,
     original_start_date: null,
-    dossier_state: 'INCONNU',
     notes: 'DATE ILLISIBLE — A RESSAISIR',
   },
   {
@@ -285,7 +274,6 @@ const seeds: AmmSeed[] = [
     country: 'CM',
     original_number: 'CM-2020-0555',
     original_start_date: shift(-365 * 5 + 20),
-    dossier_state: 'INCOMPLET',
     renewals: [{ workflow_status: 'EN_PREPARATION' }],
   },
 ];
@@ -365,12 +353,14 @@ export function recomputeAmm(db: MockDb, ammId: string) {
   const currentDocs = db.documents.filter(
     (d) => d.amm === ammId && d.is_current && !d.archived_at && d.kind === 'AMM',
   );
-  const obtained = [...renewals]
-    .filter((r) => r.workflow_status === 'OBTENU')
+  // La décision en vigueur porte-t-elle son scan ? C'est ce qui rend le dossier complet.
+  const inForce = [...renewals]
+    .filter((r) => r.workflow_status === 'OBTENU' && r.end_date)
     .sort((a, b) => b.sequence - a.sequence)[0];
-  amm.has_current_scan = obtained
-    ? currentDocs.some((d) => d.renewal === obtained.id)
+  amm.has_current_scan = inForce
+    ? currentDocs.some((d) => d.renewal === inForce.id)
     : currentDocs.some((d) => d.renewal === null);
+  amm.dossier_state = amm.has_current_scan ? 'COMPLET' : 'INCOMPLET';
   amm.updated_at = new Date().toISOString();
 }
 
@@ -411,7 +401,7 @@ export function buildDb(): MockDb {
       urgency: 'A_PLANIFIER',
       effective_end_date: null,
       filing_deadline: null,
-      dossier_state: seed.dossier_state,
+      dossier_state: 'INCOMPLET', // recalculé plus bas d'après le scan de la décision
       notes: seed.notes ?? '',
       owner: null,
       has_current_scan: false,

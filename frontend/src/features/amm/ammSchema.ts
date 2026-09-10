@@ -6,7 +6,6 @@ export const ammSchema = z.object({
   original_number: z.string().nullable().optional(),
   original_start_date: z.string().nullable().optional(),
   original_end_date: z.string().nullable().optional(),
-  dossier_state: z.enum(['COMPLET', 'INCOMPLET', 'INCONNU']),
   notes: z.string().optional(),
 });
 export type AmmFormValues = z.infer<typeof ammSchema>;

@@ -11,19 +11,15 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def open_alerts(make_amm, rules, users):
-    make_amm(
-        country="SN",
-        start=None,
-        original_end_date=TODAY + timedelta(days=100),
-        original_end_date_manual=True,
-    )
-    make_amm(
-        country="CI",
-        start=None,
-        original_end_date=TODAY + timedelta(days=100),
-        original_end_date_manual=True,
-    )
+def open_alerts(make_amm, make_scan, rules, users):
+    for iso2 in ("SN", "CI"):
+        amm = make_amm(
+            country=iso2,
+            start=None,
+            original_end_date=TODAY + timedelta(days=100),
+            original_end_date_manual=True,
+        )
+        make_scan(amm)  # dossier complet : deux alertes d'échéance par AMM, pas de DOSSIER
     evaluate_rules(today=TODAY)
     return Alert.objects.all()
 

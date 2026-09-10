@@ -113,13 +113,40 @@ def make_amm(countries, product, ranges):
         elif start is None:
             start = TODAY - timedelta(days=365)
         kwargs.setdefault("original_number", f"N-{counter['n']:04d}")
-        kwargs.setdefault("dossier_state", "COMPLET")
         return MarketingAuthorization.objects.create(
             product=product_obj,
             country=countries[country] if isinstance(country, str) else country,
             original_start_date=start,
             **kwargs,
         )
+
+    return _make
+
+
+@pytest.fixture
+def make_scan():
+    """Rattache le scan d'une décision : c'est lui qui rend le dossier complet."""
+
+    def _make(amm, renewal=None, kind="AMM"):
+        import hashlib
+
+        from django.core.files.base import ContentFile
+
+        from apps.documents.models import Document
+
+        content = MINIMAL_PDF + str(renewal.pk if renewal else amm.pk).encode()
+        document = Document(
+            amm=amm,
+            renewal=renewal,
+            kind=kind,
+            document_date=(renewal.start_date if renewal else amm.original_start_date) or TODAY,
+            sha256=hashlib.sha256(content).hexdigest(),
+            size_bytes=len(content),
+        )
+        document.file.save("scan.pdf", ContentFile(content), save=False)
+        document.save()
+        amm.refresh_from_db()
+        return document
 
     return _make
 

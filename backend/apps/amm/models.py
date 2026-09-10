@@ -26,7 +26,6 @@ class MarketingAuthorization(models.Model):
     class DossierState(models.TextChoices):
         COMPLET = "COMPLET", "Dossier complet"
         INCOMPLET = "INCOMPLET", "Dossier incomplet"
-        INCONNU = "INCONNU", "Inconnu"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(
@@ -54,8 +53,12 @@ class MarketingAuthorization(models.Model):
         "date de fin effective", null=True, blank=True, db_index=True
     )
     filing_deadline = models.DateField("deadline de dépôt", null=True, blank=True)
+    # Calculé : la décision en vigueur porte son scan, ou non. Voir services.status.
     dossier_state = models.CharField(
-        "état du dossier", max_length=16, choices=DossierState.choices, default=DossierState.INCONNU
+        "état du dossier",
+        max_length=16,
+        choices=DossierState.choices,
+        default=DossierState.INCOMPLET,
     )
     notes = models.TextField("notes", blank=True)
     owner = models.ForeignKey(
@@ -70,7 +73,13 @@ class MarketingAuthorization(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()
 
-    COMPUTED_FIELDS = ("status", "urgency", "effective_end_date", "filing_deadline")
+    COMPUTED_FIELDS = (
+        "status",
+        "urgency",
+        "effective_end_date",
+        "filing_deadline",
+        "dossier_state",
+    )
 
     class Meta:
         verbose_name = "AMM"

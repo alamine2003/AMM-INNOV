@@ -58,7 +58,6 @@ def test_create_amm_renewal_and_transition_resolves_alert(
             "country": str(countries["SN"].pk),
             "original_number": "SN-2021-001",
             "original_start_date": start.isoformat(),
-            "dossier_state": "COMPLET",
         },
     )
     assert created.status_code == 201, created.json()
@@ -68,7 +67,8 @@ def test_create_amm_renewal_and_transition_resolves_alert(
         amm["original_end_date"] == (start + timedelta(days=365 * 5 + 1)).isoformat()
         or amm["original_end_date"]
     )
-    assert amm["has_current_scan"] is False
+    # Sans scan rattaché, le dossier est incomplet : c'est la preuve qui l'établit, pas la saisie.
+    assert amm["has_current_scan"] is False and amm["dossier_state"] == "INCOMPLET"
 
     evaluate_rules(today=TODAY)
     assert Alert.objects.filter(amm_id=amm["id"], rule__code="J-180", status="OPEN").exists()
@@ -121,19 +121,26 @@ def test_create_amm_renewal_and_transition_resolves_alert(
 def test_patch_and_history(hq_client, make_amm):
     amm = make_amm(start=date(2024, 1, 1))
     response = hq_client.patch(
-        f"/api/v1/amms/{amm.pk}", {"dossier_state": "INCOMPLET", "notes": "à compléter"}
+        f"/api/v1/amms/{amm.pk}", {"original_number": "SN-2024-777", "notes": "à compléter"}
     )
-    assert response.status_code == 200 and response.json()["dossier_state"] == "INCOMPLET"
+    assert response.status_code == 200 and response.json()["original_number"] == "SN-2024-777"
     history = hq_client.get(f"/api/v1/amms/{amm.pk}/history")
     assert history.status_code == 200
     entries = history.json()
     assert entries[0]["type"] == "updated" and entries[0]["user_email"] == "hq@test.local"
     fields = {c["field"]: c for c in entries[0]["changes"]}
-    assert (
-        fields["dossier_state"]["old"] == "COMPLET"
-        and fields["dossier_state"]["new"] == "INCOMPLET"
-    )
+    assert fields["original_number"]["new"] == "SN-2024-777"
     assert entries[-1]["type"] == "created"
+
+
+def test_dossier_state_is_read_only(hq_client, make_amm):
+    """Il se déduit du scan de la décision : une déclaration contraire est ignorée."""
+    amm = make_amm(start=date(2024, 1, 1))
+    response = hq_client.patch(f"/api/v1/amms/{amm.pk}", {"dossier_state": "COMPLET"})
+    assert response.status_code == 200
+    assert response.json()["dossier_state"] == "INCOMPLET"
+    amm.refresh_from_db()
+    assert amm.dossier_state == "INCOMPLET"
 
 
 def test_manual_end_date_flag_on_patch(hq_client, make_amm):

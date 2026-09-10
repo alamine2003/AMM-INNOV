@@ -43,7 +43,6 @@ export const ALERT_STATUS_COLORS: Record<AlertStatus, string> = {
 export const DOSSIER_COLORS: Record<DossierState, string> = {
   COMPLET: '#2e7d32',
   INCOMPLET: '#ef6c00',
-  INCONNU: '#757575',
 };
 
 export const URGENCY_ORDER: Urgency[] = [
@@ -65,7 +64,7 @@ export const URGENCIES: Urgency[] = [
   'EXPIRE',
   'EN_INSTRUCTION',
 ];
-export const DOSSIER_STATES: DossierState[] = ['COMPLET', 'INCOMPLET', 'INCONNU'];
+export const DOSSIER_STATES: DossierState[] = ['COMPLET', 'INCOMPLET'];
 export const WORKFLOW_STATUSES: WorkflowStatus[] = [
   'PLANIFIE',
   'EN_PREPARATION',

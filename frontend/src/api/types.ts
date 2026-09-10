@@ -63,7 +63,7 @@ export interface Product {
 
 export type AmmStatus = 'VALIDE' | 'EXPIRE' | 'IN_PROCESS' | 'INDETERMINE';
 export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE' | 'EN_INSTRUCTION';
-export type DossierState = 'COMPLET' | 'INCOMPLET' | 'INCONNU';
+export type DossierState = 'COMPLET' | 'INCOMPLET';
 export type WorkflowStatus =
   'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
 
@@ -167,7 +167,8 @@ export interface Renewal {
 
 export interface RenewalWrite {
   notes?: string;
-  /** `OBTENU` enregistre une décision déjà obtenue ; par défaut le workflow démarre à `PLANIFIE`. */
+  /** Déduit de la saisie : une date de début vaut décision obtenue, sinon le renouvellement
+   * est seulement planifié. À ne préciser que pour forcer l'un des deux. */
   workflow_status?: WorkflowStatus;
   filing_date?: string | null;
   decision_date?: string | null;

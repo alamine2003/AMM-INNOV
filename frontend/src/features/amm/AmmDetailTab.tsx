@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Alert, Button, Grid2 as Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import { Controller, useForm } from 'react-hook-form';
+import { Alert, Button, Grid2 as Grid, Stack, TextField, Typography } from '@mui/material';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,6 @@ import { useSnackbar } from 'notistack';
 import { useUpdateAmm } from '@/api/hooks/useAmms';
 import type { Amm } from '@/api/types';
 import { DateField } from '@/components/DateField';
-import { DOSSIER_STATES } from '@/lib/urgency';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
 
@@ -16,7 +15,6 @@ const schema = z.object({
   original_number: z.string().nullable(),
   original_start_date: z.string().nullable(),
   original_end_date: z.string().nullable(),
-  dossier_state: z.enum(['COMPLET', 'INCOMPLET', 'INCONNU']),
   notes: z.string(),
 });
 type Values = z.infer<typeof schema>;
@@ -31,7 +29,6 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
       original_number: amm.original_number ?? '',
       original_start_date: amm.original_start_date,
       original_end_date: amm.original_end_date,
-      dossier_state: amm.dossier_state,
       notes: amm.notes ?? '',
     },
   });
@@ -41,7 +38,6 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
       original_number: amm.original_number ?? '',
       original_start_date: amm.original_start_date,
       original_end_date: amm.original_end_date,
-      dossier_state: amm.dossier_state,
       notes: amm.notes ?? '',
     });
   }, [amm, reset]);
@@ -74,6 +70,7 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
         {info(t('amm.fields.effectiveEnd'), formatDate(amm.effective_end_date))}
         {info(t('amm.fields.filingDeadline'), formatDate(amm.filing_deadline))}
         {info(t('amm.fields.hasScan'), amm.has_current_scan ? t('app.yes') : t('app.no'))}
+        {info(t('amm.fields.dossierState'), t(`dossier.${amm.dossier_state}`))}
         {info(t('amm.fields.updatedAt'), formatDateTime(amm.updated_at))}
         {amm.last_renewal &&
           info(
@@ -107,28 +104,7 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
             helperText={amm.original_end_date_manual ? t('amm.fields.endManual') : undefined}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Controller
-            control={control}
-            name="dossier_state"
-            render={({ field }) => (
-              <TextField
-                select
-                fullWidth
-                label={t('amm.fields.dossierState')}
-                disabled={!editable}
-                {...field}
-              >
-                {DOSSIER_STATES.map((d) => (
-                  <MenuItem key={d} value={d}>
-                    {t(`dossier.${d}`)}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid size={{ xs: 12 }}>
           <TextField
             label={t('amm.fields.notes')}
             fullWidth

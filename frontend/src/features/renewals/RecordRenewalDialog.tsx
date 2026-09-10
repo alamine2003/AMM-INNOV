@@ -38,8 +38,9 @@ const buildSchema = (t: TFunction) =>
 type Values = z.infer<ReturnType<typeof buildSchema>>;
 
 /**
- * Enregistre un renouvellement déjà accordé par l'autorité (sa décision est en main), sans
- * rejouer le workflow. Le serveur calcule l'échéance et recalcule le statut de l'AMM.
+ * Ajoute un renouvellement en une seule étape : on saisit la décision telle qu'elle a été
+ * délivrée, le serveur en dérive l'échéance et recalcule le statut de l'AMM. S'il existe déjà
+ * un renouvellement en cours, c'est lui que cette décision conclut.
  */
 export function RecordRenewalDialog({
   amm,
@@ -73,7 +74,7 @@ export function RecordRenewalDialog({
   const submit = (values: Values) =>
     create.mutate(
       {
-        workflow_status: 'OBTENU',
+        // Le statut se déduit côté serveur : une date de début, c'est une décision en main.
         number: values.number.trim(),
         start_date: values.start_date,
         decision_date: values.decision_date || null,

@@ -48,6 +48,34 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     expect(amm?.effective_end_date).toBe('2031-08-01');
   });
 
+  it('conclut le renouvellement en cours au lieu d’en créer un second', async () => {
+    const user = userEvent.setup();
+    loginAs('u-ceo');
+    const pending = db.renewals.filter((r) => r.amm_id === 'amm-5');
+    expect(pending).toHaveLength(1);
+    expect(pending[0].workflow_status).toBe('DEPOSE');
+    const filedOn = pending[0].filing_date; // relevé avant : le mock mute l'objet en place
+
+    renderApp('/amms/amm-5?tab=renewals');
+    expect(
+      await screen.findByText(/Un renouvellement est déjà en cours/, {}, { timeout: 5000 }),
+    ).toBeVisible();
+    await user.click(screen.getByTestId('renewal-record'));
+    await screen.findByTestId('record-dialog');
+    fireEvent.change(screen.getByTestId('record-number'), { target: { value: 'CI-2026-0808' } });
+    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '2026-08-01' } });
+    await user.click(screen.getByTestId('record-submit'));
+    await waitFor(() => expect(screen.queryByTestId('record-dialog')).toBeNull());
+
+    const renewals = db.renewals.filter((r) => r.amm_id === 'amm-5');
+    expect(renewals).toHaveLength(1);
+    expect(renewals[0].workflow_status).toBe('OBTENU');
+    expect(renewals[0].number).toBe('CI-2026-0808');
+    // La date de dépôt du renouvellement en cours est conservée : c'est le même dossier.
+    expect(renewals[0].filing_date).toBe(filedOn);
+    expect(db.amms.find((a) => a.id === 'amm-5')?.status).toBe('VALIDE');
+  });
+
   it('refuse la saisie sans numéro ni date de début', async () => {
     const user = userEvent.setup();
     loginAs('u-ceo');

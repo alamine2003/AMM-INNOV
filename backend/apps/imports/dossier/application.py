@@ -70,10 +70,13 @@ def _save_with_actor(obj, user):
 
 
 def _reconcile_after_commit(amm_id):
+    from apps.amm.services.status import recompute_quietly
     from apps.amm.signals import on_amm_saved
     from apps.realtime.publisher import publish_amm_event
 
     amm = MarketingAuthorization.objects.get(pk=amm_id)
+    # Les preuves viennent d'être rattachées : l'état du dossier en découle.
+    recompute_quietly(amm)
     on_amm_saved(MarketingAuthorization, amm, created=False)
     publish_amm_event("document.created", amm, amm_id=str(amm.pk))
 

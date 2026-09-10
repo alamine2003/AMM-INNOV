@@ -24,7 +24,13 @@ class AmmAdmin(SimpleHistoryAdmin):
     )
     list_filter = ("country", "status", "urgency", "dossier_state")
     search_fields = ("product__name", "original_number")
-    readonly_fields = ("status", "urgency", "effective_end_date", "filing_deadline")
+    readonly_fields = (
+        "status",
+        "urgency",
+        "effective_end_date",
+        "filing_deadline",
+        "dossier_state",
+    )
     inlines = [RenewalInline]
     autocomplete_fields = ("product",)
 

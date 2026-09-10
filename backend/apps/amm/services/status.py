@@ -1,10 +1,14 @@
-"""Single source of truth for the computed state of an AMM (status, urgency, dates).
+"""Single source of truth for the computed state of an AMM (status, urgency, dates, dossier).
 
 Transcription of the workbook formula:
 - end = end_date of the most recent OBTENU renewal with an end date, else original_end_date;
 - pending = a renewal is DEPOSE or EN_INSTRUCTION;
 - end None -> IN_PROCESS if pending else INDETERMINE;
 - end >= today -> VALIDE; else IN_PROCESS if pending else EXPIRE.
+
+The dossier state follows the proof, not a declaration: the decision in force is the renewal
+that carries `end` (or the original AMM when no renewal does), and the dossier is complete when
+that decision has its scan attached.
 """
 
 from dataclasses import dataclass
@@ -26,6 +30,9 @@ URGENCY_CRITIQUE = "CRITIQUE"
 URGENCY_EXPIRE = "EXPIRE"
 URGENCY_EN_INSTRUCTION = "EN_INSTRUCTION"
 
+DOSSIER_COMPLET = "COMPLET"
+DOSSIER_INCOMPLET = "INCOMPLET"
+
 PENDING = ("DEPOSE", "EN_INSTRUCTION")
 
 
@@ -35,6 +42,7 @@ class AmmState:
     filing_deadline: date | None
     status: str
     urgency: str
+    dossier_state: str = DOSSIER_INCOMPLET
     pending: bool = False
 
     def apply_to(self, amm) -> None:
@@ -42,6 +50,7 @@ class AmmState:
         amm.filing_deadline = self.filing_deadline
         amm.status = self.status
         amm.urgency = self.urgency
+        amm.dossier_state = self.dossier_state
 
     def differs_from(self, amm) -> bool:
         return (
@@ -49,6 +58,7 @@ class AmmState:
             or amm.filing_deadline != self.filing_deadline
             or amm.status != self.status
             or amm.urgency != self.urgency
+            or amm.dossier_state != self.dossier_state
         )
 
 
@@ -69,8 +79,42 @@ def derive_urgency(status: str, end: date | None, pending: bool, today: date) ->
     return URGENCY_OK
 
 
-def compute_amm_state(amm, today: date | None = None, renewals=None) -> AmmState:
-    """Computes the state without writing it. `renewals` may be passed to avoid queries."""
+def current_scans_prefetch(to_attr: str = "current_scans"):
+    """Prefetch of the AMM decision scans, for the batches that recompute many AMM at once."""
+    from django.db.models import Prefetch
+
+    from apps.documents.models import Document
+
+    return Prefetch(
+        "documents",
+        queryset=Document.objects.filter(
+            kind=Document.Kind.AMM, is_current=True, archived_at__isnull=True
+        ).only("id", "amm_id", "renewal_id"),
+        to_attr=to_attr,
+    )
+
+
+def derive_dossier_state(amm, decision, documents=None) -> str:
+    """COMPLET when the decision in force carries its scan; INCOMPLET otherwise.
+
+    `decision` is the renewal that sets the effective end date, or None for the original AMM.
+    `documents` may be passed by callers that already hold an up-to-date list.
+    """
+    from apps.documents.models import Document
+
+    if amm.pk is None:
+        return DOSSIER_INCOMPLET
+    if documents is None:
+        documents = Document.objects.filter(
+            amm_id=amm.pk, kind=Document.Kind.AMM, is_current=True, archived_at__isnull=True
+        )
+    renewal_id = decision.pk if decision is not None else None
+    proven = any(document.renewal_id == renewal_id for document in documents)
+    return DOSSIER_COMPLET if proven else DOSSIER_INCOMPLET
+
+
+def compute_amm_state(amm, today: date | None = None, renewals=None, documents=None) -> AmmState:
+    """Computes the state without writing it. `renewals`/`documents` avoid queries."""
     today = today or reference_today()
     if renewals is None:
         # Relecture de la base : `amm.renewals.all()` peut servir le prefetch de la vue
@@ -100,7 +144,8 @@ def compute_amm_state(amm, today: date | None = None, renewals=None) -> AmmState
     lead_months = amm.country.filing_lead_months if amm.country_id else 6
     deadline = end - relativedelta(months=lead_months) if end else None
     urgency = derive_urgency(status, end, pending, today)
-    return AmmState(end, deadline, status, urgency, pending)
+    dossier = derive_dossier_state(amm, last, documents)
+    return AmmState(end, deadline, status, urgency, dossier, pending)
 
 
 def apply_state(amm, today: date | None = None, save: bool = True) -> AmmState:
@@ -112,11 +157,11 @@ def apply_state(amm, today: date | None = None, save: bool = True) -> AmmState:
     return state
 
 
-def recompute_quietly(amm, today: date | None = None, renewals=None) -> bool:
+def recompute_quietly(amm, today: date | None = None, renewals=None, documents=None) -> bool:
     """Recomputes and writes with `update()` (no signal, no history). Returns True if changed."""
     from apps.amm.models import MarketingAuthorization
 
-    state = compute_amm_state(amm, today=today, renewals=renewals)
+    state = compute_amm_state(amm, today=today, renewals=renewals, documents=documents)
     if not state.differs_from(amm):
         return False
     state.apply_to(amm)
@@ -125,5 +170,6 @@ def recompute_quietly(amm, today: date | None = None, renewals=None) -> bool:
         urgency=state.urgency,
         effective_end_date=state.effective_end_date,
         filing_deadline=state.filing_deadline,
+        dossier_state=state.dossier_state,
     )
     return True

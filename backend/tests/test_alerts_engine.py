@@ -17,10 +17,11 @@ def codes(amm):
     return sorted(Alert.objects.filter(amm=amm).values_list("rule__code", flat=True))
 
 
-def test_j180_created_once(make_amm, rules, users):
+def test_j180_created_once(make_amm, make_scan, rules, users):
     amm = make_amm(
         start=None, original_end_date=TODAY + timedelta(days=170), original_end_date_manual=True
     )
+    make_scan(amm)  # dossier complet : seules les échéances déclenchent ici
     first = evaluate_rules(today=TODAY)
     assert first["created"] == 2  # J-365 and J-180
     assert codes(amm) == ["J-180", "J-365"]
@@ -48,10 +49,11 @@ def test_country_user_outside_scope_not_notified(make_amm, rules, users):
     assert Notification.objects.filter(user=users["hq"], channel="EMAIL").exists()
 
 
-def test_alerts_resolved_after_filing(make_amm, make_renewal, rules):
+def test_alerts_resolved_after_filing(make_amm, make_renewal, make_scan, rules):
     amm = make_amm(
         start=None, original_end_date=TODAY + timedelta(days=80), original_end_date_manual=True
     )
+    make_scan(amm)  # dossier complet : seules les échéances déclenchent ici
     evaluate_rules(today=TODAY)
     assert codes(amm) == ["J-180", "J-365", "J-90"]
     renewal = make_renewal(amm, "EN_PREPARATION")
@@ -89,22 +91,23 @@ def test_j0_on_expired(make_amm, rules):
     assert alert.due_date == amm.effective_end_date
 
 
-def test_dossier_rule(make_amm, rules):
+def test_dossier_rule(make_amm, make_scan, rules):
+    """Sans le scan de la décision en vigueur, le dossier est incomplet : la règle se déclenche."""
     incomplete = make_amm(
         start=None,
         original_end_date=TODAY + timedelta(days=250),
         original_end_date_manual=True,
-        dossier_state="INCOMPLET",
     )
     far = make_amm(
         start=None,
         original_end_date=TODAY + timedelta(days=400),
         original_end_date_manual=True,
-        dossier_state="INCOMPLET",
     )
     complete = make_amm(
         start=None, original_end_date=TODAY + timedelta(days=250), original_end_date_manual=True
     )
+    make_scan(complete)
+    assert complete.dossier_state == "COMPLET" and incomplete.dossier_state == "INCOMPLET"
     evaluate_rules(today=TODAY)
     assert "DOSSIER" in codes(incomplete)
     assert "DOSSIER" not in codes(far)
@@ -141,7 +144,7 @@ def test_reconcile_without_alerts_is_noop(make_amm):
     assert reconcile(make_amm()) == 0
 
 
-def test_stale_alerts_are_silenced_except_latest_actionable(make_amm, rules, users):
+def test_stale_alerts_are_silenced_except_latest_actionable(make_amm, make_scan, rules, users):
     """Historique importé : pas de déluge, mais la dernière étape d'une AMM active est notifiée."""
     expired_long_ago = make_amm(
         start=None, original_end_date=TODAY - timedelta(days=900), original_end_date_manual=True
@@ -152,6 +155,7 @@ def test_stale_alerts_are_silenced_except_latest_actionable(make_amm, rules, use
         original_end_date=TODAY + timedelta(days=100),
         original_end_date_manual=True,
     )
+    make_scan(soon)  # dossier complet : seules les échéances déclenchent ici
     result = evaluate_rules(today=TODAY)
     assert codes(expired_long_ago) == ["J0"]
     assert codes(soon) == ["J-180", "J-365"]
@@ -165,10 +169,11 @@ def test_stale_alerts_are_silenced_except_latest_actionable(make_amm, rules, use
     assert result["silenced"] == 2
 
 
-def test_quiet_first_run_creates_alerts_without_notifications(make_amm, rules, users):
-    make_amm(
+def test_quiet_first_run_creates_alerts_without_notifications(make_amm, make_scan, rules, users):
+    amm = make_amm(
         start=None, original_end_date=TODAY + timedelta(days=170), original_end_date_manual=True
     )
+    make_scan(amm)  # dossier complet : seules les échéances déclenchent ici
     result = evaluate_rules(today=TODAY, dispatch=False)
     assert result["created"] == 2
     assert result["notified"] == 0

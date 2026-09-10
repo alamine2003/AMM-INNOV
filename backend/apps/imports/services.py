@@ -149,10 +149,6 @@ def _apply_row(
     elif amm.original_end_date_manual:
         amm.original_end_date_manual = False
         changed = True
-    if amm.dossier_state != row.dossier_state:
-        amm.dossier_state = row.dossier_state
-        changed = True
-
     if changed:
         amm._skip_signals = True
         amm.save()
@@ -172,6 +168,8 @@ def _apply_row(
         row.warnings.append(
             f"statut Excel « {row.excel_status} » ≠ statut calculé « {amm.status} »"
         )
+    # La colonne « dossier » du classeur n'est plus appliquée : l'état se déduit du scan rattaché
+    # à la décision en vigueur. Elle reste dans la ligne importée, à titre de trace.
 
     if row.errors:
         outcome = "ERROR"

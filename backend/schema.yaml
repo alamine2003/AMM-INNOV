@@ -451,7 +451,6 @@ paths:
             enum:
             - COMPLET
             - INCOMPLET
-            - INCONNU
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
         style: form
@@ -839,7 +838,6 @@ paths:
             enum:
             - COMPLET
             - INCOMPLET
-            - INCONNU
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
         style: form
@@ -967,7 +965,6 @@ paths:
             enum:
             - COMPLET
             - INCOMPLET
-            - INCONNU
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
         style: form
@@ -1100,7 +1097,6 @@ paths:
             enum:
             - COMPLET
             - INCOMPLET
-            - INCONNU
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
         style: form
@@ -3311,6 +3307,7 @@ components:
         dossier_state:
           allOf:
           - $ref: '#/components/schemas/DossierStateEnum'
+          readOnly: true
           title: État du dossier
         notes:
           type: string
@@ -3398,10 +3395,6 @@ components:
         original_end_date_manual:
           type: boolean
           title: Date de fin saisie manuellement
-        dossier_state:
-          allOf:
-          - $ref: '#/components/schemas/DossierStateEnum'
-          title: État du dossier
         notes:
           type: string
         owner:
@@ -3488,6 +3481,7 @@ components:
         dossier_state:
           allOf:
           - $ref: '#/components/schemas/DossierStateEnum'
+          readOnly: true
           title: État du dossier
         notes:
           type: string
@@ -3564,10 +3558,6 @@ components:
         original_end_date_manual:
           type: boolean
           title: Date de fin saisie manuellement
-        dossier_state:
-          allOf:
-          - $ref: '#/components/schemas/DossierStateEnum'
-          title: État du dossier
         notes:
           type: string
         owner:
@@ -3960,12 +3950,10 @@ components:
       enum:
       - COMPLET
       - INCOMPLET
-      - INCONNU
       type: string
       description: |-
         * `COMPLET` - Dossier complet
         * `INCOMPLET` - Dossier incomplet
-        * `INCONNU` - Inconnu
     HistoryChange:
       type: object
       properties:
@@ -4639,10 +4627,6 @@ components:
         original_end_date_manual:
           type: boolean
           title: Date de fin saisie manuellement
-        dossier_state:
-          allOf:
-          - $ref: '#/components/schemas/DossierStateEnum'
-          title: État du dossier
         notes:
           type: string
         owner:

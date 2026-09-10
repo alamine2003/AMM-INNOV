@@ -10,12 +10,13 @@ from tests.conftest import TODAY
 pytestmark = pytest.mark.django_db
 
 
-def test_analytics_africa(hq_client, country_client, make_amm):
-    make_amm(country="SN")  # valid, OK
-    make_amm(country="SN", start=TODAY - timedelta(days=365 * 5 - 100))  # valid, expiring < 6m
-    make_amm(country="SN", start=date(2015, 1, 1))  # expired
-    make_amm(country="SN", original_start_date=None, dossier_state="INCONNU")  # undetermined
-    make_amm(country="CI", dossier_state="INCOMPLET")
+def test_analytics_africa(hq_client, country_client, make_amm, make_scan):
+    # Trois des quatre AMM sénégalaises portent le scan de leur décision : 75 % de complets.
+    make_scan(make_amm(country="SN"))  # valid, OK
+    make_scan(make_amm(country="SN", start=TODAY - timedelta(days=365 * 5 - 100)))  # < 6m
+    make_scan(make_amm(country="SN", start=date(2015, 1, 1)))  # expired
+    make_amm(country="SN", original_start_date=None)  # undetermined, sans scan
+    make_amm(country="CI")
     body = hq_client.get("/api/v1/analytics/africa").json()
     rows = {row["country_iso2"]: row for row in body["rows"]}
     assert rows["SN"]["total"] == 4 and rows["SN"]["valid"] == 2 and rows["SN"]["expired"] == 1

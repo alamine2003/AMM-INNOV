@@ -102,8 +102,7 @@
   },
   "dossier": {
     "COMPLET": "Dossier complet",
-    "INCOMPLET": "Dossier incomplet",
-    "INCONNU": "Inconnu"
+    "INCOMPLET": "Dossier incomplet"
   },
   "workflow": {
     "PLANIFIE": "Planifié",
@@ -220,7 +219,8 @@
       "effectiveEnd": "Date de fin effective",
       "filingDeadline": "Deadline de dépôt",
       "updatedAt": "Dernière modification",
-      "hasScan": "Scan en vigueur"
+      "hasScan": "Scan en vigueur",
+      "dossierHelp": "Complet dès que le scan de la décision en vigueur est rattaché"
     },
     "tabs": {
       "detail": "Détail",
@@ -254,7 +254,7 @@
   "renewals": {
     "title": "Renouvellements",
     "empty": "Aucun renouvellement",
-    "add": "Nouveau renouvellement",
+    "add": "Ajouter un renouvellement",
     "sequence": "Renouvellement n°{{n}}",
     "original": "AMM d'origine",
     "filingDate": "Date de dépôt",
@@ -273,17 +273,18 @@
     "startRequired": "La date de début est obligatoire pour passer à « Obtenu »",
     "terminal": "État terminal, aucune transition possible",
     "addDocument": "Ajouter un document au renouvellement",
-    "record": "Enregistrer un renouvellement obtenu",
-    "recordTitle": "Enregistrer un renouvellement obtenu",
-    "recordHelp": "Saisissez la décision de renouvellement telle qu'elle a été délivrée : l'échéance (début + {{years}} ans) et le statut de l'AMM sont recalculés automatiquement.",
+    "record": "Ajouter un renouvellement",
+    "recordTitle": "Ajouter un renouvellement",
+    "recordHelp": "Saisissez la décision telle qu'elle a été délivrée : l'échéance (début + {{years}} ans) et le statut de l'AMM sont recalculés automatiquement. Le scan se rattache ensuite depuis l'onglet Documents.",
     "recordDone": "Renouvellement enregistré : le statut de l'AMM a été recalculé",
     "startHelp": "Date de prise d'effet indiquée sur la décision",
     "endOverride": "Laisser vide pour appliquer la durée de validité du pays ({{years}} ans)",
     "computedEnd": "Nouvelle échéance : {{date}}.",
     "willBecomeValid": "L'AMM passera au statut « Valide ».",
     "willStayExpired": "Cette échéance est déjà passée : l'AMM restera « Expirée ».",
-    "expiredHint": "Cette AMM est expirée. Si le renouvellement a été obtenu, enregistrez sa décision : le statut, l'échéance et la deadline de dépôt seront recalculés automatiquement.",
-    "openBlocks": "Un renouvellement est déjà en cours : concluez-le par ses transitions plutôt que d'en créer un second."
+    "expiredHint": "Cette AMM est expirée. Ajoutez le renouvellement obtenu : le statut, l'échéance et la deadline de dépôt sont recalculés automatiquement.",
+    "plan": "Planifier un dépôt",
+    "openCompletes": "Un renouvellement est déjà en cours : ajouter sa décision le conclura, sans en créer un second."
   },
   "documents": {
     "title": "Documents",

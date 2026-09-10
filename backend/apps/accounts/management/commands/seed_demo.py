@@ -28,6 +28,8 @@ DEMO_PRODUCTS = [
 
 # (product index, iso2, start offset in days from today, dossier, renewal spec)
 # renewal spec: None | ("DEPOSE", filing offset) | ("OBTENU", start offset)
+# `dossier` n'est plus une donnée mais une conséquence : « COMPLET » ici veut dire que la démo
+# rattache le scan de la décision en vigueur, ce qui rend le dossier complet.
 DEMO_AMMS = [
     (0, "SN", -365 * 2, "COMPLET", None),  # valide, OK
     (1, "SN", -365 * 5 + 300, "COMPLET", None),  # A_PLANIFIER
@@ -36,7 +38,7 @@ DEMO_AMMS = [
     (4, "SN", -365 * 6, "COMPLET", None),  # EXPIRE
     (5, "SN", -365 * 6, "COMPLET", ("DEPOSE", -40)),  # IN_PROCESS
     (6, "SN", -365 * 7, "COMPLET", ("OBTENU", -365 * 2)),  # renouvelée, valide
-    (7, "SN", None, "INCONNU", None),  # INDETERMINE
+    (7, "SN", None, "INCOMPLET", None),  # INDETERMINE
     (0, "ML", -365 * 3, "COMPLET", None),
     (1, "ML", -365 * 5 + 120, "INCOMPLET", None),
     (2, "ML", -365 * 5 + 20, "COMPLET", None),
@@ -50,8 +52,38 @@ DEMO_AMMS = [
     (3, "CM", -365 * 5 + 10, "COMPLET", None),
     (6, "BJ", -365 * 5 - 30, "INCOMPLET", None),
     (7, "BJ", -365 * 2, "COMPLET", None),
-    (4, "GN", None, "INCONNU", ("DEPOSE", -15)),
+    (4, "GN", None, "INCOMPLET", ("DEPOSE", -15)),
 ]
+
+
+MINIMAL_PDF = (
+    b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+    b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+    b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\n"
+    b"xref\n0 4\n0000000000 65535 f \ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n0\n%%EOF\n"
+)
+
+
+def attach_demo_scan(amm, renewal=None):
+    """Rattache le scan de la décision en vigueur : c'est lui qui rend le dossier complet."""
+    import hashlib
+
+    from django.core.files.base import ContentFile
+
+    from apps.documents.models import Document
+
+    content = MINIMAL_PDF + str(renewal.pk if renewal else amm.pk).encode()
+    document = Document(
+        amm=amm,
+        renewal=renewal,
+        kind=Document.Kind.AMM,
+        title="Décision de démonstration",
+        document_date=(renewal.start_date if renewal else amm.original_start_date) or today(),
+        sha256=hashlib.sha256(content).hexdigest(),
+        size_bytes=len(content),
+    )
+    document.file.save("decision.pdf", ContentFile(content), save=False)
+    document.save()
 
 
 class Command(BaseCommand):
@@ -109,12 +141,12 @@ class Command(BaseCommand):
                     "original_start_date": reference + timedelta(days=offset)
                     if offset is not None
                     else None,
-                    "dossier_state": dossier,
                 },
             )
             if not created:
                 continue
             created_count += 1
+            in_force = None
             if renewal_spec:
                 kind, ren_offset = renewal_spec
                 if kind == "DEPOSE":
@@ -125,7 +157,7 @@ class Command(BaseCommand):
                         notes="Dépôt de démonstration",
                     )
                 else:
-                    Renewal.objects.create(
+                    in_force = Renewal.objects.create(
                         amm=amm,
                         workflow_status=Renewal.WorkflowStatus.OBTENU,
                         number=f"{iso2}-R-{index + 1:04d}",
@@ -133,6 +165,8 @@ class Command(BaseCommand):
                         decision_date=reference + timedelta(days=ren_offset),
                         start_date=reference + timedelta(days=ren_offset),
                     )
+            if dossier == "COMPLET":
+                attach_demo_scan(amm, in_force)
         self.stdout.write(
             self.style.SUCCESS(
                 f"Démo prête : {User.objects.count()} utilisateurs, "

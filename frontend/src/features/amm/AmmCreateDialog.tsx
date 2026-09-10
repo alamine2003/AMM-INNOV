@@ -19,7 +19,6 @@ import { useCountries, useProductSearch } from '@/api/hooks/useCatalog';
 import type { Amm, Product } from '@/api/types';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { DateField } from '@/components/DateField';
-import { DOSSIER_STATES } from '@/lib/urgency';
 import { extractErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/features/auth/authStore';
 import { ammSchema, type AmmFormValues } from './ammSchema';
@@ -55,7 +54,6 @@ export function AmmCreateDialog({
       original_number: '',
       original_start_date: null,
       original_end_date: null,
-      dossier_state: 'INCONNU',
       notes: '',
     },
   });
@@ -138,19 +136,6 @@ export function AmmCreateDialog({
               name="original_end_date"
               label={t('amm.fields.originalEnd')}
               helperText={t('amm.fields.endManual')}
-            />
-            <Controller
-              control={control}
-              name="dossier_state"
-              render={({ field }) => (
-                <TextField select label={t('amm.fields.dossierState')} {...field}>
-                  {DOSSIER_STATES.map((d) => (
-                    <MenuItem key={d} value={d}>
-                      {t(`dossier.${d}`)}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
             />
             <TextField label={t('amm.fields.notes')} multiline minRows={2} {...register('notes')} />
             {create.isError && <Alert severity="error">{extractErrorMessage(create.error)}</Alert>}

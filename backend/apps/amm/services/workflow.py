@@ -52,33 +52,51 @@ def missing_fields(renewal: Renewal, to: str, fields: dict) -> list[str]:
 
 @transaction.atomic
 def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal:
-    """Creates a renewal for `amm`; refuses when one is still open.
+    """Enregistre un renouvellement pour `amm`, en une seule étape.
 
-    The AMM row is locked for the duration of the transaction so that two simultaneous
-    requests cannot both pass the "no open renewal" check (and `sequence` stays unique).
+    Une décision déjà délivrée se saisit telle quelle : dès qu'une date de début est fournie, le
+    renouvellement est « Obtenu » sans repasser par le workflow. `Renewal.save()` en dérive
+    l'échéance à partir de la durée de validité du pays, et le signal post-save recalcule l'AMM —
+    une AMM expirée redevient valide d'elle-même.
 
-    `workflow_status=OBTENU` records a renewal already granted by the authority (its decision
-    is in hand) without replaying the workflow: `Renewal.save()` derives the end date from the
-    country's validity period, and the post-save signal recomputes the AMM state — an expired
-    AMM becomes valid again by itself. `actor` is carried to the history of both records.
+    Si un renouvellement est déjà ouvert, la décision le conclut au lieu d'être refusée : c'est le
+    même renouvellement qui aboutit, il garde son n° d'ordre et sa date de dépôt. Seul le fait
+    d'en planifier un second alors qu'un autre est ouvert reste refusé.
+
+    Sans date de début, on planifie : le workflow reste disponible pour suivre un dépôt en cours.
+
+    La ligne AMM est verrouillée le temps de la transaction pour que deux requêtes simultanées ne
+    créent pas deux renouvellements (et que `sequence` reste unique).
     """
     MarketingAuthorization.objects.select_for_update().get(pk=amm.pk)
+    fields.setdefault(
+        "workflow_status", S.OBTENU if fields.get("start_date") else S.PLANIFIE
+    )
     open_renewal = (
         Renewal.objects.filter(amm=amm, workflow_status__in=Renewal.OPEN_STATUSES)
         .order_by("-sequence")
         .first()
     )
-    if open_renewal is not None:
+    if open_renewal is not None and fields["workflow_status"] != S.OBTENU:
         raise ValidationError(
             {
                 "detail": (
                     f"Le renouvellement n°{open_renewal.sequence} est déjà en cours "
-                    f"({open_renewal.get_workflow_status_display()}) : concluez-le "
-                    "au lieu d'en créer un second."
+                    f"({open_renewal.get_workflow_status_display()}) : renseignez sa décision "
+                    "au lieu d'en planifier un second."
                 )
             }
         )
-    renewal = Renewal(amm=amm, **fields)
+    if open_renewal is not None:
+        renewal = open_renewal
+        renewal._transition_from = renewal.workflow_status
+        for name, value in fields.items():
+            # Une valeur vide ne vient pas effacer ce que le renouvellement porte déjà : la
+            # décision complète le dépôt, elle ne le remplace pas.
+            if value not in (None, "") or not getattr(renewal, name):
+                setattr(renewal, name, value)
+    else:
+        renewal = Renewal(amm=amm, **fields)
     if actor is not None:
         renewal._history_user = actor
         # Propagates the actor to the AMM recomputed by the post-save signal.

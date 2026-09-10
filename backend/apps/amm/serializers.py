@@ -40,6 +40,14 @@ class RenewalSerializer(serializers.ModelSerializer):
     CREATABLE_STATUSES = (Renewal.WorkflowStatus.PLANIFIE, Renewal.WorkflowStatus.OBTENU)
 
     def validate(self, attrs):
+        if self.instance is None and not attrs.get("workflow_status"):
+            # Le statut se déduit de la saisie : une date de début, c'est une décision en main ;
+            # sans date, c'est un renouvellement que l'on planifie.
+            attrs["workflow_status"] = (
+                Renewal.WorkflowStatus.OBTENU
+                if attrs.get("start_date")
+                else Renewal.WorkflowStatus.PLANIFIE
+            )
         if (
             self.instance is not None
             and "workflow_status" in attrs
@@ -151,12 +159,14 @@ class AmmListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+        # `dossier_state` se déduit du scan de la décision en vigueur : il ne se déclare plus.
         read_only_fields = [
             "id",
             "status",
             "urgency",
             "effective_end_date",
             "filing_deadline",
+            "dossier_state",
             "created_at",
             "updated_at",
         ]
