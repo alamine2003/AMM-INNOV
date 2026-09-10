@@ -1,7 +1,20 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Grid2 as Grid,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import UndoIcon from '@mui/icons-material/Undo';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { useCreateRenewal, useRenewals } from '@/api/hooks/useRenewals';
@@ -11,17 +24,22 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate } from '@/lib/dates';
 import { TERMINAL_STATES, WORKFLOW_COLORS, WORKFLOW_TRANSITIONS } from '@/lib/urgency';
 import { extractErrorMessage } from '@/api/client';
+import { CancelRenewalDialog } from './CancelRenewalDialog';
 import { RecordRenewalDialog } from './RecordRenewalDialog';
 import { TransitionDialog } from './TransitionDialog';
 
 function RenewalCard({
   renewal,
   editable,
+  cancellable,
   onTransition,
+  onCancel,
 }: {
   renewal: Renewal;
   editable: boolean;
+  cancellable: boolean;
   onTransition: (r: Renewal, to: WorkflowStatus) => void;
+  onCancel: (r: Renewal) => void;
 }) {
   const { t } = useTranslation();
   const transitions = WORKFLOW_TRANSITIONS[renewal.workflow_status];
@@ -64,6 +82,19 @@ function RenewalCard({
               {t('renewals.terminal')}
             </Typography>
           )}
+          {editable && cancellable && (
+            <Tooltip title={t('renewals.cancelHelp')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => onCancel(renewal)}
+                aria-label={t('renewals.cancel')}
+                data-testid={`renewal-cancel-${renewal.sequence}`}
+              >
+                <UndoIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Stack>
         <Grid container spacing={2}>
           {field(t('renewals.filingDate'), formatDate(renewal.filing_date))}
@@ -85,11 +116,13 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
   const create = useCreateRenewal(amm.id);
   const [dialog, setDialog] = useState<{ renewal: Renewal; to: WorkflowStatus } | null>(null);
   const [recording, setRecording] = useState(false);
+  const [cancelling, setCancelling] = useState<Renewal | null>(null);
 
   if (renewals.isPending) return <LoadingBlock />;
   if (renewals.isError) return <ErrorBlock error={renewals.error} onRetry={() => renewals.refetch()} />;
 
   const hasOpen = renewals.data.some((r) => !TERMINAL_STATES.includes(r.workflow_status));
+  const lastSequence = Math.max(0, ...renewals.data.map((r) => r.sequence));
 
   return (
     <Box>
@@ -162,7 +195,10 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
             key={r.id}
             renewal={r}
             editable={editable}
+            // Seul le plus récent s'annule : revenir en arrière, ce n'est pas trouer l'historique.
+            cancellable={r.sequence === lastSequence}
             onTransition={(renewal, to) => setDialog({ renewal, to })}
+            onCancel={setCancelling}
           />
         ))}
         <Card
@@ -184,6 +220,9 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
         </Card>
       </Stack>
       {recording && <RecordRenewalDialog amm={amm} open onClose={() => setRecording(false)} />}
+      {cancelling && (
+        <CancelRenewalDialog amm={amm} renewal={cancelling} open onClose={() => setCancelling(null)} />
+      )}
       {dialog && (
         <TransitionDialog
           ammId={amm.id}

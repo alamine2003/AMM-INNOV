@@ -558,6 +558,36 @@ export const handlers = [
         : HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
     }),
   ),
+  http.delete(
+    url('/renewals/:id'),
+    withAuth((user, { params }) => {
+      const renewal = db.renewals.find((r) => r.id === params.id);
+      if (!renewal) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
+      const amm = db.amms.find((a) => a.id === renewal.amm_id)!;
+      if (!inScope(user, amm.country_iso2))
+        return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
+      // Comme l'API : seul le plus récent s'annule, et ses scans sont archivés avec lui.
+      const last = Math.max(...db.renewals.filter((r) => r.amm_id === amm.id).map((r) => r.sequence));
+      if (renewal.sequence !== last) {
+        return HttpResponse.json(
+          { detail: `Le renouvellement n°${renewal.sequence} n'est pas le dernier.` },
+          { status: 400 },
+        );
+      }
+      for (const doc of db.documents.filter((d) => d.renewal === renewal.id && d.is_current)) {
+        doc.is_current = false;
+        doc.archived_at = new Date().toISOString();
+        doc.renewal = null;
+        doc.renewal_id = null;
+      }
+      db.renewals = db.renewals.filter((r) => r.id !== renewal.id);
+      recomputeAmm(db, amm.id);
+      addHistory(amm.id, user, 'RENEWAL_DELETED', [
+        { field: 'renewal', old: `#${renewal.sequence}`, new: null },
+      ]);
+      return new HttpResponse(null, { status: 204 });
+    }),
+  ),
   http.post(
     url('/renewals/:id/transition'),
     withAuth(async (user, { request, params }) => {

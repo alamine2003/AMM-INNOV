@@ -28,9 +28,15 @@ def entries_for_model(instances_history, model_label: str) -> list[dict]:
                 {"field": change.field, "old": _label(change.old), "new": _label(change.new)}
                 for change in delta.changes
             ]
-        elif record.history_type == "+":
+        elif record.history_type in ("+", "-"):
+            # Une suppression est l'inverse d'une création : on liste ce qui disparaît.
+            created = record.history_type == "+"
             changes = [
-                {"field": field.name, "old": None, "new": _label(getattr(record, field.name))}
+                {
+                    "field": field.name,
+                    "old": None if created else _label(getattr(record, field.name)),
+                    "new": _label(getattr(record, field.name)) if created else None,
+                }
                 for field in record.instance._meta.fields
                 if field.name not in EXCLUDED
                 and field.name != "id"

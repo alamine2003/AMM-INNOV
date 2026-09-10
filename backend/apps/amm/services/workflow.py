@@ -106,6 +106,49 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
 
 
 @transaction.atomic
+def delete_renewal(renewal: Renewal, actor=None) -> None:
+    """Revient en arrière sur le dernier renouvellement d'une AMM.
+
+    Seul le plus récent s'annule : on défait la dernière étape, on ne troue pas l'historique.
+    Les scans qui lui étaient rattachés sont archivés — la décision n'existe plus, sa preuve ne
+    peut pas se reporter sur l'AMM d'origine sous peine de lui prêter un dossier complet qu'elle
+    n'a pas. Le signal post-delete recalcule l'AMM : elle retrouve l'échéance et le statut que le
+    renouvellement précédent, ou l'AMM d'origine, lui donnent.
+    """
+    from django.utils import timezone
+
+    from apps.documents.models import Document
+
+    MarketingAuthorization.objects.select_for_update().get(pk=renewal.amm_id)
+    last = (
+        Renewal.objects.filter(amm_id=renewal.amm_id).order_by("-sequence").values("sequence")[:1]
+    )
+    if renewal.sequence != last[0]["sequence"]:
+        raise ValidationError(
+            {
+                "detail": (
+                    f"Le renouvellement n°{renewal.sequence} n'est pas le dernier : "
+                    "seul le plus récent peut être annulé."
+                )
+            }
+        )
+    archived = Document.objects.filter(
+        renewal_id=renewal.pk, is_current=True, archived_at__isnull=True
+    )
+    for document in archived:
+        document.is_current = False
+        document.archived_at = timezone.now()
+        if actor is not None:
+            document._history_user = actor
+        document._change_reason = f"Renouvellement n°{renewal.sequence} annulé"
+        document.save(update_fields=["is_current", "archived_at"])
+    if actor is not None:
+        renewal._history_user = actor
+        renewal._transition_actor = actor
+    renewal.delete()
+
+
+@transaction.atomic
 def transition(renewal: Renewal, to: str, actor=None, **fields) -> Renewal:
     """Moves a renewal to `to`, applying `fields`. Raises ValidationError when refused.
 

@@ -249,7 +249,8 @@
     "readOnly": "Lecture seule : ce pays n'est pas dans votre périmètre.",
     "rowsCount": "{{count}} AMM",
     "productNoMatch": "Aucun produit ne correspond",
-    "productTypeToSearch": "Saisissez un nom de produit"
+    "productTypeToSearch": "Saisissez un nom de produit",
+    "productAskHq": "Aucun produit ne correspond. Le catalogue est tenu par le siège : demandez-lui de créer le produit avant d'enregistrer cette AMM."
   },
   "renewals": {
     "title": "Renouvellements",
@@ -284,7 +285,13 @@
     "willStayExpired": "Cette échéance est déjà passée : l'AMM restera « Expirée ».",
     "expiredHint": "Cette AMM est expirée. Ajoutez le renouvellement obtenu : le statut, l'échéance et la deadline de dépôt sont recalculés automatiquement.",
     "plan": "Planifier un dépôt",
-    "openCompletes": "Un renouvellement est déjà en cours : ajouter sa décision le conclura, sans en créer un second."
+    "openCompletes": "Un renouvellement est déjà en cours : ajouter sa décision le conclura, sans en créer un second.",
+    "cancel": "Annuler ce renouvellement",
+    "cancelHelp": "Revenir en arrière : l'AMM retrouve son état précédent",
+    "cancelTitle": "Annuler le renouvellement n°{{n}}",
+    "cancelConfirm": "Renouvellement n° {{number}}, du {{start}} au {{end}}. Il sera supprimé et restera visible dans l'historique de l'AMM.",
+    "cancelConsequence": "L'AMM est aussitôt recalculée d'après le renouvellement précédent, ou son AMM d'origine : elle peut redevenir expirée. Les scans rattachés à cette décision sont archivés.",
+    "cancelDone": "Renouvellement annulé : le statut de l'AMM a été recalculé"
   },
   "documents": {
     "title": "Documents",

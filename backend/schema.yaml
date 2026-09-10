@@ -1782,6 +1782,188 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentDetail'
           description: ''
+  /api/v1/dossier-imports/:
+    get:
+      operationId: v1_dossier_imports_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDossierImportList'
+          description: ''
+    post:
+      operationId: v1_dossier_imports_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DossierUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DossierUploadRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierImport'
+          description: ''
+  /api/v1/dossier-imports/{id}/:
+    get:
+      operationId: v1_dossier_imports_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier import.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierImport'
+          description: ''
+  /api/v1/dossier-imports/{id}/analyze/:
+    post:
+      operationId: v1_dossier_imports_analyze_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier import.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DossierAnalyzeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DossierAnalyzeRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierAnalyzeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierImport'
+          description: ''
+  /api/v1/dossier-imports/{id}/confirm/:
+    post:
+      operationId: v1_dossier_imports_confirm_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier import.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DossierConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DossierConfirmRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierConfirmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierImport'
+          description: ''
+  /api/v1/dossier-imports/{id}/file/:
+    get:
+      operationId: v1_dossier_imports_file_retrieve
+      parameters:
+      - in: query
+        name: file_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier import.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/v1/health/:
     get:
       operationId: v1_health_retrieve
@@ -2708,6 +2890,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Renewal'
           description: ''
+    delete:
+      operationId: v1_renewals_destroy
+      description: |-
+        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+
+        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) renouvellement.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/renewals/{id}/documents/:
     post:
       operationId: v1_renewals_documents_create
@@ -3265,6 +3468,10 @@ components:
           type: string
           title: N° AMM d'origine
           maxLength: 100
+        holder:
+          type: string
+          title: Titulaire / laboratoire
+          maxLength: 255
         original_start_date:
           type: string
           format: date
@@ -3352,6 +3559,7 @@ components:
       - country_name
       - created_at
       - days_remaining
+      - dossier_state
       - effective_end_date
       - filing_deadline
       - has_current_scan
@@ -3382,6 +3590,10 @@ components:
           type: string
           title: N° AMM d'origine
           maxLength: 100
+        holder:
+          type: string
+          title: Titulaire / laboratoire
+          maxLength: 255
         original_start_date:
           type: string
           format: date
@@ -3439,6 +3651,10 @@ components:
           type: string
           title: N° AMM d'origine
           maxLength: 100
+        holder:
+          type: string
+          title: Titulaire / laboratoire
+          maxLength: 255
         original_start_date:
           type: string
           format: date
@@ -3517,6 +3733,7 @@ components:
       - country_name
       - created_at
       - days_remaining
+      - dossier_state
       - effective_end_date
       - filing_deadline
       - has_current_scan
@@ -3545,6 +3762,10 @@ components:
           type: string
           title: N° AMM d'origine
           maxLength: 100
+        holder:
+          type: string
+          title: Titulaire / laboratoire
+          maxLength: 255
         original_start_date:
           type: string
           format: date
@@ -3946,6 +4167,195 @@ components:
           maxLength: 255
       required:
       - file
+    DossierAnalyzeRequest:
+      type: object
+      description: Relance de l'analyse ; `country` (ISO2) impose le pays si les documents
+        ne le nomment pas.
+      properties:
+        country:
+          type: string
+          maxLength: 2
+    DossierChange:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        field:
+          type: string
+          readOnly: true
+        old_value:
+          readOnly: true
+          nullable: true
+        new_value:
+          readOnly: true
+          nullable: true
+        confidence:
+          type: integer
+          readOnly: true
+        proof_file_id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        user_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        target:
+          type: string
+          readOnly: true
+      required:
+      - confidence
+      - created_at
+      - document_id
+      - field
+      - id
+      - new_value
+      - old_value
+      - proof_file_id
+      - reason
+      - source
+      - target
+      - user_email
+    DossierConfirmRequest:
+      type: object
+      properties:
+        preview_token:
+          type: string
+          minLength: 64
+          maxLength: 64
+        accepted_changes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+          maxItems: 1000
+      required:
+      - preview_token
+    DossierFile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        relative_path:
+          type: string
+          readOnly: true
+        sha256:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        extraction:
+          readOnly: true
+        document_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - content_type
+      - document_id
+      - extraction
+      - id
+      - relative_path
+      - sha256
+      - size_bytes
+    DossierImport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        root_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DossierImportStatusEnum'
+          readOnly: true
+        preview:
+          readOnly: true
+        preview_token:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        error:
+          type: string
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierFile'
+          readOnly: true
+        audit:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierChange'
+          readOnly: true
+      required:
+      - amm_id
+      - audit
+      - created_at
+      - error
+      - files
+      - finished_at
+      - id
+      - preview
+      - preview_token
+      - root_name
+      - status
+    DossierImportStatusEnum:
+      enum:
+      - PENDING
+      - RUNNING
+      - READY
+      - APPLIED
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - En attente
+        * `RUNNING` - Analyse en cours
+        * `READY` - À valider
+        * `APPLIED` - Enregistré
+        * `FAILED` - Analyse échouée
     DossierStateEnum:
       enum:
       - COMPLET
@@ -3954,6 +4364,23 @@ components:
       description: |-
         * `COMPLET` - Dossier complet
         * `INCOMPLET` - Dossier incomplet
+    DossierUploadRequest:
+      type: object
+      properties:
+        root_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        paths: {}
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+      required:
+      - files
+      - paths
+      - root_name
     HistoryChange:
       type: object
       properties:
@@ -3989,6 +4416,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HistoryChange'
+        source:
+          type: string
+        reason:
+          type: string
+        confidence:
+          type: integer
+        batch_id:
+          type: string
+          format: uuid
+        proof_file_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+          nullable: true
       required:
       - changes
       - date
@@ -4380,6 +4823,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Document'
+    PaginatedDossierImportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierImport'
     PaginatedHistoryEntryList:
       type: object
       required:
@@ -4614,6 +5080,10 @@ components:
           type: string
           title: N° AMM d'origine
           maxLength: 100
+        holder:
+          type: string
+          title: Titulaire / laboratoire
+          maxLength: 255
         original_start_date:
           type: string
           format: date

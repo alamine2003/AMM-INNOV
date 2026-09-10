@@ -556,6 +556,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dossier-imports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_dossier_imports_list"];
+        put?: never;
+        post: operations["v1_dossier_imports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-imports/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_dossier_imports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-imports/{id}/analyze/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_dossier_imports_analyze_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-imports/{id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_dossier_imports_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-imports/{id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_dossier_imports_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/": {
         parameters: {
             query?: never;
@@ -896,7 +976,12 @@ export interface paths {
          */
         put: operations["v1_renewals_update"];
         post?: never;
-        delete?: never;
+        /**
+         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         *
+         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         */
+        delete: operations["v1_renewals_destroy"];
         options?: never;
         head?: never;
         /**
@@ -1148,6 +1233,8 @@ export interface components {
             readonly country_name: string;
             /** N° AMM d'origine */
             original_number?: string;
+            /** Titulaire / laboratoire */
+            holder?: string;
             /**
              * Date de début d'origine
              * Format: date
@@ -1176,7 +1263,7 @@ export interface components {
             readonly filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
-            readonly dossier_state?: components["schemas"]["DossierStateEnum"];
+            readonly dossier_state: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1208,6 +1295,8 @@ export interface components {
             country: string;
             /** N° AMM d'origine */
             original_number?: string;
+            /** Titulaire / laboratoire */
+            holder?: string;
             /**
              * Date de début d'origine
              * Format: date
@@ -1247,6 +1336,8 @@ export interface components {
             readonly country_name: string;
             /** N° AMM d'origine */
             original_number?: string;
+            /** Titulaire / laboratoire */
+            holder?: string;
             /**
              * Date de début d'origine
              * Format: date
@@ -1275,7 +1366,7 @@ export interface components {
             readonly filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
-            readonly dossier_state?: components["schemas"]["DossierStateEnum"];
+            readonly dossier_state: components["schemas"]["DossierStateEnum"];
             notes?: string;
             /**
              * Responsable
@@ -1305,6 +1396,8 @@ export interface components {
             country: string;
             /** N° AMM d'origine */
             original_number?: string;
+            /** Titulaire / laboratoire */
+            holder?: string;
             /**
              * Date de début d'origine
              * Format: date
@@ -1500,12 +1593,81 @@ export interface components {
             document_date?: string | null;
             title?: string;
         };
+        /** @description Relance de l'analyse ; `country` (ISO2) impose le pays si les documents ne le nomment pas. */
+        DossierAnalyzeRequest: {
+            country?: string;
+        };
+        DossierChange: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly field: string;
+            readonly old_value: unknown;
+            readonly new_value: unknown;
+            readonly confidence: number;
+            /** Format: uuid */
+            readonly proof_file_id: string;
+            /** Format: uuid */
+            readonly document_id: string | null;
+            /** Format: email */
+            readonly user_email: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly reason: string;
+            readonly source: string;
+            readonly target: string;
+        };
+        DossierConfirmRequest: {
+            preview_token: string;
+            accepted_changes?: string[];
+        };
+        DossierFile: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly relative_path: string;
+            readonly sha256: string;
+            readonly content_type: string;
+            readonly size_bytes: number;
+            readonly extraction: unknown;
+            /** Format: uuid */
+            readonly document_id: string | null;
+        };
+        DossierImport: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly root_name: string;
+            readonly status: components["schemas"]["DossierImportStatusEnum"];
+            readonly preview: unknown;
+            readonly preview_token: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly finished_at: string | null;
+            readonly error: string;
+            /** Format: uuid */
+            readonly amm_id: string | null;
+            readonly files: components["schemas"]["DossierFile"][];
+            readonly audit: components["schemas"]["DossierChange"][];
+        };
+        /**
+         * @description * `PENDING` - En attente
+         *     * `RUNNING` - Analyse en cours
+         *     * `READY` - À valider
+         *     * `APPLIED` - Enregistré
+         *     * `FAILED` - Analyse échouée
+         * @enum {string}
+         */
+        DossierImportStatusEnum: "PENDING" | "RUNNING" | "READY" | "APPLIED" | "FAILED";
         /**
          * @description * `COMPLET` - Dossier complet
          *     * `INCOMPLET` - Dossier incomplet
          * @enum {string}
          */
         DossierStateEnum: "COMPLET" | "INCOMPLET";
+        DossierUploadRequest: {
+            root_name: string;
+            paths: unknown;
+            files: string[];
+        };
         HistoryChange: {
             field: string;
             old: string | null;
@@ -1520,6 +1682,15 @@ export interface components {
             model: string;
             object_id: string;
             changes: components["schemas"]["HistoryChange"][];
+            source?: string;
+            reason?: string;
+            confidence?: number;
+            /** Format: uuid */
+            batch_id?: string;
+            /** Format: uuid */
+            proof_file_id?: string;
+            /** Format: uuid */
+            document_id?: string | null;
         };
         ImportBatch: {
             /** Format: uuid */
@@ -1720,6 +1891,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Document"][];
         };
+        PaginatedDossierImportList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["DossierImport"][];
+        };
         PaginatedHistoryEntryList: {
             /** @example 123 */
             count: number;
@@ -1871,6 +2057,8 @@ export interface components {
             country?: string;
             /** N° AMM d'origine */
             original_number?: string;
+            /** Titulaire / laboratoire */
+            holder?: string;
             /**
              * Date de début d'origine
              * Format: date
@@ -3390,6 +3578,161 @@ export interface operations {
             };
         };
     };
+    v1_dossier_imports_list: {
+        parameters: {
+            query?: {
+                /** @description Quel champ utiliser pour classer les résultats. */
+                ordering?: string;
+                /** @description Un numéro de page de l'ensemble des résultats. */
+                page?: number;
+                /** @description Nombre de résultats à retourner par page. */
+                page_size?: number;
+                /** @description Un terme de recherche. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDossierImportList"];
+                };
+            };
+        };
+    };
+    v1_dossier_imports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DossierUploadRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DossierUploadRequest"];
+                "application/json": components["schemas"]["DossierUploadRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierImport"];
+                };
+            };
+        };
+    };
+    v1_dossier_imports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierImport"];
+                };
+            };
+        };
+    };
+    v1_dossier_imports_analyze_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["DossierAnalyzeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DossierAnalyzeRequest"];
+                "application/json": components["schemas"]["DossierAnalyzeRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierImport"];
+                };
+            };
+        };
+    };
+    v1_dossier_imports_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DossierConfirmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DossierConfirmRequest"];
+                "application/json": components["schemas"]["DossierConfirmRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierImport"];
+                };
+            };
+        };
+    };
+    v1_dossier_imports_file_retrieve: {
+        parameters: {
+            query: {
+                file_id: string;
+            };
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
     v1_health_retrieve: {
         parameters: {
             query?: never;
@@ -4145,6 +4488,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Renewal"];
                 };
+            };
+        };
+    };
+    v1_renewals_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) renouvellement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

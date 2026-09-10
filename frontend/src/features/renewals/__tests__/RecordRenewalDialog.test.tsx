@@ -76,6 +76,35 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     expect(db.amms.find((a) => a.id === 'amm-5')?.status).toBe('VALIDE');
   });
 
+  it('annule un renouvellement ajouté par erreur et rend l’AMM à son état précédent', async () => {
+    const user = userEvent.setup();
+    loginAs('u-ceo');
+    // amm-8 porte le scan de son AMM d'origine : son dossier est complet avant l'ajout.
+    expect(db.amms.find((a) => a.id === 'amm-8')?.dossier_state).toBe('COMPLET');
+    renderApp('/amms/amm-8?tab=renewals');
+
+    // On ajoute, puis on revient en arrière.
+    await user.click(await screen.findByTestId('renewal-record', {}, { timeout: 5000 }));
+    await screen.findByTestId('record-dialog');
+    fireEvent.change(screen.getByTestId('record-number'), { target: { value: 'CM-2026-9999' } });
+    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '2026-08-01' } });
+    await user.click(screen.getByTestId('record-submit'));
+    await waitFor(() => expect(db.amms.find((a) => a.id === 'amm-8')?.status).toBe('VALIDE'));
+    // La décision qui fait foi est désormais le renouvellement, et lui n'a pas de scan.
+    expect(db.amms.find((a) => a.id === 'amm-8')?.dossier_state).toBe('INCOMPLET');
+
+    await user.click(await screen.findByTestId('renewal-cancel-1'));
+    await screen.findByTestId('cancel-dialog');
+    await user.click(screen.getByTestId('cancel-submit'));
+    await waitFor(() => expect(screen.queryByTestId('cancel-dialog')).toBeNull());
+
+    expect(db.renewals.filter((r) => r.amm_id === 'amm-8')).toHaveLength(0);
+    const amm = db.amms.find((a) => a.id === 'amm-8');
+    expect(amm?.status).toBe('EXPIRE');
+    // L'AMM d'origine redevient la décision en vigueur : son scan la prouve de nouveau.
+    expect(amm?.dossier_state).toBe('COMPLET');
+  });
+
   it('refuse la saisie sans numéro ni date de début', async () => {
     const user = userEvent.setup();
     loginAs('u-ceo');

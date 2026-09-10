@@ -156,3 +156,62 @@ def test_recording_resolves_the_open_alerts_of_the_amm(hq_client, make_amm, rule
 
     assert record(hq_client, amm).status_code == 201
     assert not Alert.objects.filter(amm=amm, status__in=Alert.OPEN_STATUSES).exists()
+
+
+def test_cancelling_the_last_renewal_puts_the_amm_back(hq_client, make_amm, users):
+    """Retour en arrière : l'AMM retrouve l'échéance et le statut d'avant l'ajout."""
+    amm = make_amm(country="SN", start=EXPIRED_START)
+    created = record(hq_client, amm)
+    assert created.status_code == 201, created.data
+    amm.refresh_from_db()
+    assert amm.status == MarketingAuthorization.Status.VALIDE
+
+    response = hq_client.delete(f"/api/v1/renewals/{created.data['id']}")
+    assert response.status_code == 204, response.data
+    assert not Renewal.objects.filter(amm=amm).exists()
+    amm.refresh_from_db()
+    assert amm.status == MarketingAuthorization.Status.EXPIRE
+    assert amm.effective_end_date == date(2024, 1, 1)  # de nouveau l'AMM d'origine
+
+    entry = next(e for e in amm_history(amm) if e["model"] == "renewal" and e["type"] == "deleted")
+    assert entry["user_email"] == users["hq"].email
+    fields = {change["field"]: change for change in entry["changes"]}
+    assert fields["number"]["old"] == "SN-2026-0042" and fields["number"]["new"] is None
+
+
+def test_only_the_most_recent_renewal_can_be_cancelled(hq_client, make_amm, make_renewal):
+    amm = make_amm(country="SN", start=EXPIRED_START)
+    first = make_renewal(amm, "OBTENU", number="R1", start_date=date(2024, 1, 1))
+    make_renewal(amm, "OBTENU", number="R2", start_date=date(2026, 1, 1))
+    response = hq_client.delete(f"/api/v1/renewals/{first.pk}")
+    assert response.status_code == 400
+    assert "le dernier" in str(response.data)
+    assert Renewal.objects.filter(amm=amm).count() == 2
+
+
+def test_cancelling_archives_the_scans_of_the_decision(hq_client, make_amm, make_scan, users):
+    """Le scan ne se reporte pas sur l'AMM d'origine : il est archivé avec sa décision."""
+    from apps.documents.models import Document
+
+    amm = make_amm(country="SN", start=EXPIRED_START)
+    created = record(hq_client, amm)
+    renewal = Renewal.objects.get(pk=created.data["id"])
+    scan = make_scan(amm, renewal=renewal)
+    amm.refresh_from_db()
+    assert amm.dossier_state == MarketingAuthorization.DossierState.COMPLET
+
+    assert hq_client.delete(f"/api/v1/renewals/{renewal.pk}").status_code == 204
+    scan.refresh_from_db()
+    assert scan.is_current is False and scan.archived_at is not None
+    assert scan.renewal_id is None  # la décision a disparu, le fichier reste rattaché à l'AMM
+    assert Document.objects.filter(amm=amm).count() == 1
+    amm.refresh_from_db()
+    assert amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
+    assert amm.status == MarketingAuthorization.Status.EXPIRE
+
+
+def test_a_country_user_cannot_cancel_outside_its_scope(country_client, hq_client, make_amm):
+    outside = make_amm(country="CI", start=EXPIRED_START)
+    created = record(hq_client, outside)
+    assert country_client.delete(f"/api/v1/renewals/{created.data['id']}").status_code == 404
+    assert Renewal.objects.filter(amm=outside).count() == 1

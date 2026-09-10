@@ -36,6 +36,16 @@ export function useCreateRenewal(ammId: string) {
   });
 }
 
+export function useDeleteRenewal(ammId: string) {
+  const invalidate = useInvalidateAmm(ammId);
+  return useMutation({
+    mutationFn: async (renewalId: string) => {
+      await api.delete(`/renewals/${renewalId}`);
+    },
+    onSuccess: invalidate,
+  });
+}
+
 export function useTransitionRenewal(ammId: string) {
   const invalidate = useInvalidateAmm(ammId);
   return useMutation({

@@ -131,6 +131,7 @@ class RenewalViewSet(
     CountryScopedQuerysetMixin,
     viewsets.mixins.RetrieveModelMixin,
     viewsets.mixins.UpdateModelMixin,
+    viewsets.mixins.DestroyModelMixin,
     viewsets.mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
@@ -140,6 +141,13 @@ class RenewalViewSet(
     filterset_class = RenewalFilter
     ordering_fields = ["sequence", "filing_date", "start_date", "end_date", "updated_at"]
     country_lookup = "amm__country"
+
+    def perform_destroy(self, instance):
+        """Annule le dernier renouvellement : l'AMM est recalculée, ses scans sont archivés."""
+        try:
+            workflow.delete_renewal(instance, actor=self.request.user)
+        except DjangoValidationError as exc:
+            raise django_to_drf_validation_error(exc)
 
     @extend_schema(request=RenewalTransitionSerializer, responses=RenewalSerializer)
     @action(detail=True, methods=["post"])

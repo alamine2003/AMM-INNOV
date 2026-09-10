@@ -49,6 +49,9 @@ def on_renewal_saved(sender, instance: Renewal, created: bool, **kwargs):
 @receiver(post_delete, sender=Renewal)
 def on_renewal_deleted(sender, instance: Renewal, **kwargs):
     try:
-        apply_state(instance.amm)
+        amm = instance.amm
     except MarketingAuthorization.DoesNotExist:
-        pass
+        return  # l'AMM part avec ses renouvellements : rien à recalculer
+    if getattr(instance, "_transition_actor", None) is not None:
+        amm._history_user = instance._transition_actor
+    apply_state(amm)  # l'AMM retrouve l'échéance du renouvellement précédent, ou celle d'origine

@@ -20,7 +20,7 @@ import type { Amm, Product } from '@/api/types';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { DateField } from '@/components/DateField';
 import { extractErrorMessage } from '@/api/client';
-import { useAuthStore } from '@/features/auth/authStore';
+import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { ammSchema, type AmmFormValues } from './ammSchema';
 
 export function AmmCreateDialog({
@@ -45,6 +45,7 @@ export function AmmCreateDialog({
   const allowedCountries = (countries.data ?? []).filter(
     (c) => user?.role !== 'COUNTRY_REGULATORY' || user.countries.includes(c.iso2),
   );
+  const canCreateProduct = isHqOrAdmin(user);
 
   const { control, handleSubmit, register, reset, formState } = useForm<AmmFormValues>({
     resolver: zodResolver(ammSchema),
@@ -91,7 +92,13 @@ export function AmmCreateDialog({
                   isOptionEqualToValue={(a, b) => a.id === b.id}
                   filterOptions={(x) => x}
                   loading={products.isFetching}
-                  noOptionsText={productInput ? t('amm.productNoMatch') : t('amm.productTypeToSearch')}
+                  noOptionsText={
+                    // Un réglementaire pays ne crée pas de produit : sans ce rappel, il reste
+                    // devant une liste vide sans savoir à qui s'adresser.
+                    productInput
+                      ? t(canCreateProduct ? 'amm.productNoMatch' : 'amm.productAskHq')
+                      : t('amm.productTypeToSearch')
+                  }
                   value={selectedProduct}
                   inputValue={productInput}
                   onInputChange={(_e, v) => setProductInput(v)}

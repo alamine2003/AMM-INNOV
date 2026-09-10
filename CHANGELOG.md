@@ -5,7 +5,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté
+- **Retour en arrière sur un renouvellement.** Le plus récent s'annule d'un geste (`DELETE
+  /api/v1/renewals/{id}`, bouton sur sa carte) : l'AMM est aussitôt recalculée d'après le
+  renouvellement précédent ou son AMM d'origine — elle peut redevenir expirée. Les scans
+  rattachés à la décision annulée sont archivés, jamais reportés sur l'AMM d'origine. Seul le
+  dernier est annulable : revenir en arrière n'est pas trouer l'historique, que `simple-history`
+  conserve avec le détail de ce qui a disparu.
+
 ### Modifié
+- Création d'AMM : quand la recherche de produit ne donne rien, un réglementaire pays lit
+  désormais que le catalogue est tenu par le siège, au lieu de rester devant une liste vide. Les
+  permissions sont inchangées — les pays créent AMM, renouvellements et documents dans leur
+  périmètre, le catalogue et l'administration restent au siège.
 - **Ajouter un renouvellement se fait en une étape.** Un numéro et une date de début suffisent :
   le statut se déduit de la saisie (une date, c'est une décision en main), l'échéance vient de la
   durée de validité du pays et l'AMM est recalculée — une AMM expirée redevient valide d'elle-même.
