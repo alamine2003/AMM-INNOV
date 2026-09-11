@@ -1,5 +1,7 @@
 # AMM INNOV
 
+[![CI](https://github.com/alamine2003/AMM-INNOV/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alamine2003/AMM-INNOV/actions/workflows/ci.yml?query=branch%3Amain)
+
 Plateforme de suivi des **Autorisations de Mise sur le Marché (AMM)** en Afrique.
 Elle remplace le classeur Excel `Dashboard AMM Afrique` (15 pays, ~1 550 AMM) par une
 application web multi-utilisateurs qui calcule les statuts, alerte **6 mois avant
@@ -116,9 +118,12 @@ Après toute modification d'un serializer : `make api-types` puis commit (`make 
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque push/PR vers `main` :
 
-1. **backend** : ruff, pytest sur PostgreSQL 16 (`DATABASE_URL_TEST`) avec Redis 7 en service, rapport de couverture, schéma OpenAPI à jour ;
+1. **backend** : ruff, pytest sur PostgreSQL 16 (`DATABASE_URL_TEST`) avec Redis 7 en service, rapport de couverture, migrations et schéma OpenAPI à jour ;
 2. **frontend** : eslint/prettier, types générés à jour, `tsc` (contrat API), vitest, build Vite ;
-3. **docker** (push sur `main` uniquement) : build du stage `runtime` et push des images
+3. **netlify** (push sur `main` uniquement) : publication du frontend, après le vert des deux
+   jobs précédents. Une CI rouge ne se déploie donc pas — c'est aussi ce qui rend un échec
+   visible autrement que par un e-mail ;
+4. **docker** (push sur `main` uniquement) : build du stage `runtime` et push des images
    `ghcr.io/alamine2003/amm-innov-backend` et `…-frontend` taguées `<sha>` et `latest`.
    Les images sont privées par défaut : le workflow Deploy les tire avec `GITHUB_TOKEN`
    (permission `packages: read`) ; pour un `docker pull` manuel sur le serveur, utiliser un token
