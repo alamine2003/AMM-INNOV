@@ -6,6 +6,14 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ## [Non publié]
 
 ### Ajouté
+- **Le frontend est publié par la CI** (job `netlify`), sur un push vers `main` et seulement
+  après le vert du backend et du frontend. Il publie l'état commité : `netlify deploy --build`
+  lancé depuis un poste construit le dossier de travail et peut mettre en ligne des
+  modifications non commitées — c'est arrivé le 10 septembre. `make deploy-frontend` reste
+  disponible en dépannage mais refuse un dépôt non propre. Secrets requis :
+  `NETLIFY_AUTH_TOKEN` et `NETLIFY_SITE_ID` ; à défaut le job avertit et passe son tour.
+- CI : `makemigrations --check --dry-run` échoue si un modèle a changé sans migration, ou si une
+  migration écrite à la main ne correspond pas à l'état des modèles.
 - **Retour en arrière sur un renouvellement.** Le plus récent s'annule d'un geste (`DELETE
   /api/v1/renewals/{id}`, bouton sur sa carte) : l'AMM est aussitôt recalculée d'après le
   renouvellement précédent ou son AMM d'origine — elle peut redevenir expirée. Les scans

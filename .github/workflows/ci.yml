@@ -83,6 +83,11 @@ jobs:
       - name: Tests (pytest + coverage)
         run: pytest -q --cov=apps --cov-report=xml --cov-report=term
 
+      - name: "Migrations à jour (aucun modèle sans migration)"
+        run: |
+          python manage.py makemigrations --check --dry-run || {
+            echo "::error::Un modèle a changé sans migration : lancer 'python manage.py makemigrations' et committer."; exit 1; }
+
       - name: "Schéma OpenAPI à jour (backend/schema.yaml)"
         run: |
           python manage.py spectacular --file /tmp/schema.yaml --validate
@@ -142,6 +147,38 @@ jobs:
           name: frontend-dist
           path: frontend/dist
           retention-days: 7
+
+  netlify:
+    name: Publier le frontend (Netlify)
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      # Secrets à créer dans Settings > Secrets and variables > Actions.
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Sans les secrets, on ne bloque pas la CI : on dit ce qui manque et on s'arrête là.
+      - name: "Secrets Netlify absents"
+        if: env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == ''
+        run: |
+          echo "::warning::NETLIFY_AUTH_TOKEN ou NETLIFY_SITE_ID manquant : publication ignorée."
+
+      # `--build` fait tourner la commande et les variables de netlify.toml : l'URL de l'API de
+      # production vient de là, et le contenu publié est l'état commité, pas un dossier local.
+      - name: "Construire et publier"
+        if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        run: >-
+          npx --yes netlify-cli@27 deploy --build --prod
+          --message "AMM INNOV ${{ github.sha }}"
 
   docker:
     name: Build & push images (GHCR)

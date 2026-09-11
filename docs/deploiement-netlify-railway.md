@@ -241,14 +241,28 @@ Le worker attend que le service web ait appliqué les migrations avant de démar
 ## 4. Netlify : déployer le frontend
 
 Le site `amm-innov` existe (https://amm-innov.netlify.app), lié au dossier du dépôt par
-`.netlify/` (hors git). Deux façons de publier :
+`.netlify/` (hors git).
 
-- **Depuis le poste, avec la CLI** (c'est ainsi que la 1.0 a été publiée) :
-  ```bash
-  make deploy-frontend        # = npx netlify deploy --build --prod (build local avec netlify.toml)
-  ```
-- **Automatiquement à chaque push** : Netlify, Site configuration, Build & deploy, **Link
-  repository** (autorisation GitHub dans le navigateur). Netlify lit alors `netlify.toml`.
+**La publication se fait par la CI**, job `netlify` de `.github/workflows/ci.yml` : sur un push
+vers `main`, après le passage au vert du backend et du frontend. Deux secrets sont requis dans
+Settings, Secrets and variables, Actions :
+
+| Secret | Où le trouver |
+|---|---|
+| `NETLIFY_AUTH_TOKEN` | Netlify, User settings, Applications, **New access token** |
+| `NETLIFY_SITE_ID` | Netlify, Site configuration, Site details, **Site ID** |
+
+Sans eux le job n'échoue pas : il inscrit un avertissement et passe son tour.
+
+Ce chemin publie **l'état commité**, et seulement s'il est vert. La CLI locale
+(`make deploy-frontend`), elle, construit le dossier de travail : elle publierait des
+modifications non commitées — c'est arrivé. Elle reste disponible en dépannage, mais refuse
+désormais de s'exécuter sur un dépôt non propre (`FORCE=1` pour outrepasser).
+
+Alternative sans secrets, si vous préférez : Netlify, Site configuration, Build & deploy,
+**Link repository** (autorisation GitHub dans le navigateur). Netlify construit alors lui-même à
+chaque push, mais sans attendre la CI — activer « Deploy only when checks pass » pour l'aligner.
+Dans ce cas, supprimer le job `netlify` de la CI pour ne pas publier deux fois.
 
 1. Netlify, **Add new site, Import an existing project**, choisir le dépôt. Netlify lit
    `netlify.toml` : build `cd frontend && npm ci && npm run build`, publication
@@ -262,9 +276,6 @@ Le site `amm-innov` existe (https://amm-innov.netlify.app), lié au dossier du d
 4. Déployer. Se connecter avec le superutilisateur créé à l'étape 3.2.6, puis créer les
    comptes siège et pays dans Administration, Utilisateurs.
 
-Netlify déploie à chaque push sur `main`, sans attendre la CI : pour l'aligner, activer
-« Deploy only when checks pass » dans Site configuration, Build & deploy (ou déclencher
-le build depuis GitHub via un *build hook* après le job CI).
 
 ## 5. Mise en service des données
 

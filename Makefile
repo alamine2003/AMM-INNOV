@@ -88,8 +88,9 @@ deploy-backend: ## Redéploie web et worker sur Railway depuis la branche main (
 	railway redeploy -s amm-innov-backend -y --from-source
 	railway redeploy -s amm-innov-worker -y --from-source
 
-deploy-frontend: ## Construit et publie le frontend sur Netlify (production), d'après netlify.toml
-	npx --no-install netlify deploy --build --prod --message "AMM INNOV $$(git rev-parse --short HEAD)"
+deploy-frontend: ## Publie le frontend sur Netlify — dépannage : la CI s'en charge sur un push vers main
+	@test -z "$$(git status --porcelain)" || (echo "Dépôt non propre : cette commande publie votre dossier de travail, pas le dernier commit. Committez d'abord, ou forcez avec FORCE=1." && test -n "$(FORCE)")
+	npx --yes netlify deploy --build --prod --message "AMM INNOV $$(git rev-parse --short HEAD)"
 
 api-schema: ## Régénère backend/schema.yaml (OpenAPI) depuis le code Django (sur PostgreSQL : les bornes d'entiers diffèrent sous SQLite)
 	$(BACKEND_EXEC) python manage.py spectacular --file /tmp/schema.yaml --validate
