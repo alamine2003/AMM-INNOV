@@ -1,3 +1,8 @@
+import concurrent.futures
+import logging
+import threading
+import time
+
 from django.conf import settings
 from django.db import connection
 from drf_spectacular.utils import extend_schema
@@ -13,7 +18,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import User
 from .permissions import GLOBAL_ROLES, RolePermission
-from .serializers import LoginSerializer, LogoutSerializer, UserSerializer
+from .serializers import HealthSerializer, LoginSerializer, LogoutSerializer, UserSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class LoginThrottle(AnonRateThrottle):
@@ -139,11 +146,69 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
+# redis-py résout le nom d'hôte par socket.getaddrinfo() AVANT d'appliquer
+# socket_connect_timeout/socket_timeout (redis/connection.py:_connect) : quand Redis est arrêté, un
+# nom DNS absent peut bloquer plusieurs secondes malgré ces réglages (mesuré ~4 s en local, cf.
+# cycle-2 fiche F1 ; possiblement plus en production selon le résolveur). On borne donc le contrôle
+# Redis entier (résolution + connexion + PING + fermeture) par un délai global, exécuté dans un
+# exécuteur de module à un seul worker : une résolution lente ne bloque qu'un thread d'arrière-plan,
+# jamais le thread de la requête. Les sondes concurrentes pendant un contrôle en cours attendent CE
+# contrôle (même future) au lieu d'en soumettre un autre — sous ASGI chaque requête a son propre
+# thread, il ne faut donc pas répondre `redis: false` à tort simplement parce qu'une autre sonde est
+# en vol pendant que Redis va bien — et aucune file ne grossit pendant une panne prolongée.
+HEALTH_REDIS_CHECK_TIMEOUT = 1.5  # secondes ; constante de module, patchée en test
+
+_redis_check_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="health-redis-check"
+)
+_redis_check_lock = threading.Lock()
+_redis_check_future: "concurrent.futures.Future | None" = None
+
+
+def _ping_redis() -> bool:
+    """Exécuté dans l'exécuteur dédié : ouvre un client Redis, ping, ferme toujours."""
+    import redis
+
+    client = redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1, socket_timeout=1)
+    try:
+        return bool(client.ping())
+    finally:
+        try:
+            client.close()
+        except Exception:  # pragma: no cover - fermeture au mieux
+            # Best-effort : ne doit jamais faire échouer la sonde de santé.
+            logger.debug("Échec de fermeture du client Redis dans HealthView", exc_info=True)
+
+
+def _check_redis_bounded() -> bool:
+    """Regroupe les sondes simultanées sur un seul contrôle Redis, borné par le délai global.
+
+    Si un contrôle est déjà en cours, la requête attend CE contrôle (même future) au lieu d'en
+    soumettre un autre. Délai dépassé ou ping en échec → False immédiatement ; un contrôle déjà en
+    vol peut se terminer en arrière-plan, son résultat est alors simplement ignoré (il ne casse
+    rien : la prochaine sonde en soumettra un nouveau une fois celui-ci terminé).
+    """
+    global _redis_check_future
+    deadline = time.monotonic() + HEALTH_REDIS_CHECK_TIMEOUT
+    with _redis_check_lock:
+        future = _redis_check_future
+        if future is None or future.done():
+            future = _redis_check_executor.submit(_ping_redis)
+            _redis_check_future = future
+    remaining = max(deadline - time.monotonic(), 0)
+    try:
+        return bool(future.result(timeout=remaining))
+    except Exception:
+        # Pas de journalisation ici : l'endpoint est interrogé en continu (sondes, polling du
+        # badge), une ligne par appel noierait les logs.
+        return False
+
+
 class HealthView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses={200: HealthSerializer, 503: HealthSerializer})
     def get(self, request):
         database = True
         try:
@@ -151,19 +216,15 @@ class HealthView(APIView):
                 cursor.execute("SELECT 1")
         except Exception:  # pragma: no cover - only on outage
             database = False
-        redis_ok = False
-        try:
-            import redis
-            from django.conf import settings
-
-            redis_ok = bool(
-                redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1).ping()
-            )
-        except Exception:
-            redis_ok = False
+        redis_ok = _check_redis_bounded()
         code = status.HTTP_200_OK if database else status.HTTP_503_SERVICE_UNAVAILABLE
         return Response(
-            {"status": "ok" if database else "degraded", "database": database, "redis": redis_ok},
+            {
+                "status": "ok" if database else "degraded",
+                "database": database,
+                "redis": redis_ok,
+                "version": settings.APP_VERSION,
+            },
             status=code,
         )
 

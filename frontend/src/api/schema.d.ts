@@ -1668,6 +1668,19 @@ export interface components {
             paths: unknown;
             files: string[];
         };
+        /** @description Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert au schéma OpenAPI). */
+        Health: {
+            status: components["schemas"]["HealthStatusEnum"];
+            database: boolean;
+            redis: boolean;
+            version: string;
+        };
+        /**
+         * @description * `ok` - OK
+         *     * `degraded` - Dégradé
+         * @enum {string}
+         */
+        HealthStatusEnum: "ok" | "degraded";
         HistoryChange: {
             field: string;
             old: string | null;
@@ -3747,9 +3760,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
                 };
             };
         };

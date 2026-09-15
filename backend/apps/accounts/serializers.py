@@ -1,10 +1,25 @@
 from django.contrib.auth.password_validation import validate_password
+from django.db import models
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.catalog.models import Country
 
 from .models import User
+
+
+class HealthStatus(models.TextChoices):
+    OK = "ok", "OK"
+    DEGRADED = "degraded", "Dégradé"
+
+
+class HealthSerializer(serializers.Serializer):
+    """Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert au schéma OpenAPI)."""
+
+    status = serializers.ChoiceField(choices=HealthStatus.choices)
+    database = serializers.BooleanField()
+    redis = serializers.BooleanField()
+    version = serializers.CharField(max_length=64)
 
 
 class UserSerializer(serializers.ModelSerializer):

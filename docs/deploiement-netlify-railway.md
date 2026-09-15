@@ -178,6 +178,7 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
    AUTH_REFRESH_COOKIE_SAMESITE=None
    AUTH_REFRESH_COOKIE_DOMAIN=
    TIME_ZONE=Africa/Dakar
+   APP_VERSION=<tag ou sha court, à mettre à jour à chaque mise en production>
    EMAIL_URL=gmail://
    GMAIL_CLIENT_ID=<étape 2 bis>
    GMAIL_CLIENT_SECRET=<étape 2 bis>
@@ -204,7 +205,7 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
    l'API ; `ALLOWED_HOSTS` sert surtout pour un domaine personnalisé.
 5. Déployer. Le premier déploiement construit l'image (4 à 6 minutes), applique les migrations
    et collecte les statiques (entrypoint). Vérifier
-   `https://<domaine>/api/v1/health` : `{"status":"ok","database":true,"redis":true}`.
+   `https://<domaine>/api/v1/health` : `{"status":"ok","database":true,"redis":true,"version":"<APP_VERSION>"}`.
 6. Commandes dans le conteneur : enregistrer une clé SSH une fois
    (`railway ssh keys add -k ~/.ssh/id_ed25519.pub`), puis
    `railway ssh -s amm-innov-backend -- python manage.py <commande>`.
@@ -338,7 +339,7 @@ Les scans PDF sont dans le bucket S3 : activer le versionnement du bucket, ou le
 
 ## 8. Vérifications après déploiement
 
-- `GET /api/v1/health` renvoie `database: true, redis: true`.
+- `GET /api/v1/health` renvoie `database: true, redis: true, version: "<APP_VERSION>"`.
 - Connexion sur Netlify, l'indicateur temps réel passe à « connecté » (WebSocket direct vers Railway).
 - Envoi d'un PDF depuis une fiche AMM, puis ouverture dans la visionneuse (stockage S3).
 - Railway, service worker, logs : `celery@… ready` et `beat: Starting…`, puis à 00:05 Dakar
