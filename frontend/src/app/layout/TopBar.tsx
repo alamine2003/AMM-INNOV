@@ -20,6 +20,7 @@ import { useAuthStore } from '@/features/auth/authStore';
 import { useLogout } from '@/api/hooks/useAuth';
 import { RealtimeIndicator } from '@/realtime/RealtimeIndicator';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { ApiHealthBadge } from './ApiHealthBadge';
 import { DRAWER_WIDTH } from './SideNav';
 
 export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
@@ -51,6 +52,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         <Typography variant="subtitle1" sx={{ flexGrow: 1, fontWeight: 600 }} noWrap>
           {t('app.tagline')}
         </Typography>
+        <ApiHealthBadge />
         <RealtimeIndicator />
         <NotificationBell />
         <Box>

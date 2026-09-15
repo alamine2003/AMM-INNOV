@@ -6,6 +6,7 @@ import type {
   AmmDocument,
   Country,
   DocumentPeriod,
+  Health,
   Product,
   ProductRange,
   Renewal,
@@ -171,7 +172,9 @@ export const handlers = [
     url('/me'),
     withAuth((user) => HttpResponse.json(user)),
   ),
-  http.get(url('/health'), () => HttpResponse.json({ status: 'ok' })),
+  http.get(url('/health'), () =>
+    HttpResponse.json({ status: 'ok', database: true, redis: true, version: 'mock' } satisfies Health),
+  ),
 
   // ---- Référentiels ----
   http.get(

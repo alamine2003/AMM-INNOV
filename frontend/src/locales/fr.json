@@ -78,6 +78,27 @@
     "polling": "Mode dégradé (actualisation toutes les 60 s)",
     "idle": "Temps réel inactif"
   },
+  "health": {
+    "checking": "Vérification de l'API…",
+    "online": "API en ligne · {{version}}",
+    "degraded": "API dégradée · {{version}}",
+    "unreachable": "API injoignable",
+    "versionUnknown": "version inconnue",
+    "short": {
+      "checking": "API…",
+      "online": "En ligne",
+      "degraded": "Dégradée",
+      "unreachable": "Injoignable"
+    },
+    "tooltip": {
+      "version": "Version déployée : {{version}}",
+      "database": "Base de données : {{state}}",
+      "redis": "Redis : {{state}}",
+      "up": "disponible",
+      "down": "indisponible",
+      "unreachable": "Aucune réponse exploitable de l'API (réseau coupé, délai de 5 s dépassé ou service arrêté)."
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "empty": "Aucune notification",
