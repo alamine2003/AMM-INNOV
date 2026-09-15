@@ -6,6 +6,13 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 ## [Non publié]
 
 ### Ajouté
+- **Version de l'API visible.** `/api/v1/health` expose `version` (variable `APP_VERSION` ;
+  « dev » si elle est absente ou non conforme : lettres, chiffres et `. _ + -`, 64 caractères au
+  plus) et la barre du haut affiche « API en ligne · <version> », « API dégradée » en rouge quand
+  la base ne répond plus, « API injoignable » quand l'API ne répond pas. Sonde toutes les 60 s,
+  délai de 5 s, sans nouvelle tentative. Le contrôle Redis du health est borné à 1,5 s au total,
+  résolution DNS comprise, et les sondes simultanées partagent un même contrôle : un Redis arrêté
+  ne ralentit plus la réponse de 4 s. Contrat 200/503 des sondes Railway et Docker inchangé.
 - **Le frontend est publié par la CI** (job `netlify`), sur un push vers `main` et seulement
   après le vert du backend et du frontend. Il publie l'état commité : `netlify deploy --build`
   lancé depuis un poste construit le dossier de travail et peut mettre en ligne des
