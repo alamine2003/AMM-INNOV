@@ -1,0 +1,631 @@
+{
+ "ceo | amms list": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 6.0,
+   "total_ms": 142.7,
+   "slowest_ms": 2.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 5.0,
+   "total_ms": 36.4,
+   "slowest_ms": 3.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "documents_document"
+   ],
+   "execution_ms": 0.876,
+   "plan_head": [
+    "Aggregate  (cost=13632.25..13632.26 rows=1 width=8) (actual time=0.862..0.862 rows=1 loops=1)",
+    "  Buffers: shared hit=1586",
+    "  ->  Unique  (cost=8.70..13612.25 rows=1600 width=149) (actual time=0.112..0.824 rows=1600 loops=1)",
+    "        Buffers: shared hit=1586",
+    "        ->  Incremental Sort  (cost=8.70..13540.25 rows=1600 width=149) (actual time=0.112..0.636 rows=1600 loops=1)",
+    "              Sort Key: amm_marketingauthorization.id, amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.urgency, amm_marketingauthorization.effective_end_date, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((hashed SubPlan 2))",
+    "              Presorted Key: amm_marketingauthorization.id",
+    "              Full-sort Groups: 50  Sort Method: quicksort  Average Memory: 30kB  Peak Memory: 30kB",
+    "              Buffers: shared hit=1586",
+    "              ->  Index Scan using amm_marketingauthorization_pkey on amm_marketingauthorization  (cost=0.28..13468.25 rows=1600 width=149) (actual time=0.084..0.413 rows=1600 loops=1)",
+    "                    Buffers: shared hit=1586",
+    "                    SubPlan 2"
+   ]
+  }
+ },
+ "ceo | amms search": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 7.0,
+   "total_ms": 13.9,
+   "slowest_ms": 4.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 9.0,
+   "total_ms": 63.1,
+   "slowest_ms": 5.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user",
+    "amm_marketingauthorization",
+    "amm_renewal",
+    "catalog_country",
+    "catalog_product",
+    "catalog_productalias",
+    "catalog_productrange"
+   ],
+   "execution_ms": 4.519,
+   "plan_head": [
+    "Limit  (cost=224.83..224.95 rows=1 width=2872) (actual time=4.452..4.477 rows=50 loops=1)",
+    "  Buffers: shared hit=3652",
+    "  ->  Unique  (cost=224.83..224.95 rows=1 width=2872) (actual time=4.452..4.475 rows=50 loops=1)",
+    "        Buffers: shared hit=3652",
+    "        ->  Sort  (cost=224.83..224.83 rows=1 width=2872) (actual time=4.451..4.459 rows=50 loops=1)",
+    "              Sort Key: amm_marketingauthorization.effective_end_date, catalog_product.name, amm_marketingauthorization.id, amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.urgency, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((SubPlan 1)), catalog_product.key, catalog_product.range_id, catalog_product.dci, catalog_product.dosage, catalog_product.form, catalog_product.presentation, catalog_product.is_active, catalog_productrange.id, catalog_productrange.code, catalog_productrange.label, catalog_country.iso2, catalog_country.name, catalog_country.authority, catalog_country.validity_years, catalog_country.filing_lead_months, catalog_country.timezone, accounts_user.password, accounts_user.last_login, accounts_user.is_superuser, accounts_user.id, accounts_user.email, accounts_user.first_name, accounts_user.last_name, accounts_user.role, accounts_user.is_active, accounts_user.is_staff, accounts_user.date_joined",
+    "              Sort Method: quicksort  Memory: 573kB",
+    "              Buffers: shared hit=3652",
+    "              ->  Hash Semi Join  (cost=137.26..224.82 rows=1 width=2872) (actual time=1.535..3.651 rows=1578 loops=1)",
+    "                    Hash Cond: (amm_marketingauthorization.id = v0.id)",
+    "                    Buffers: shared hit=3652",
+    "                    ->  Hash Left Join  (cost=10.39..85.44 rows=1600 width=2871) (actual time=0.064..1.023 rows=1600 loops=1)"
+   ]
+  }
+ },
+ "ceo | amms filter urgency": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 2.0,
+   "total_ms": 7.4,
+   "slowest_ms": 1.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 1.0,
+   "total_ms": 6.3,
+   "slowest_ms": 1.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "documents_document"
+   ],
+   "execution_ms": 0.095,
+   "plan_head": [
+    "Aggregate  (cost=248.12..248.13 rows=1 width=8) (actual time=0.084..0.085 rows=1 loops=1)",
+    "  Buffers: shared hit=49",
+    "  ->  Unique  (cost=246.68..247.80 rows=25 width=149) (actual time=0.077..0.082 rows=25 loops=1)",
+    "        Buffers: shared hit=49",
+    "        ->  Sort  (cost=246.68..246.74 rows=25 width=149) (actual time=0.077..0.078 rows=25 loops=1)",
+    "              Sort Key: amm_marketingauthorization.id, amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.effective_end_date, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((hashed SubPlan 2))",
+    "              Sort Method: quicksort  Memory: 29kB",
+    "              Buffers: shared hit=49",
+    "              ->  Bitmap Heap Scan on amm_marketingauthorization  (cost=4.47..246.10 rows=25 width=149) (actual time=0.063..0.070 rows=25 loops=1)",
+    "                    Recheck Cond: ((urgency)::text = 'CRITIQUE'::text)",
+    "                    Heap Blocks: exact=15",
+    "                    Buffers: shared hit=49"
+   ]
+  }
+ },
+ "ceo | amm detail": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 3.4,
+   "slowest_ms": 1.0
+  },
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user",
+    "catalog_country",
+    "catalog_product"
+   ],
+   "execution_ms": 0.064,
+   "plan_head": [
+    "Limit  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.042..0.043 rows=1 loops=1)",
+    "  Buffers: shared hit=12",
+    "  ->  Unique  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.042..0.043 rows=1 loops=1)",
+    "        Buffers: shared hit=12",
+    "        ->  Sort  (cost=24.65..24.65 rows=1 width=2872) (actual time=0.042..0.043 rows=1 loops=1)",
+    "              Sort Key: amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.urgency, amm_marketingauthorization.effective_end_date, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((SubPlan 1)), catalog_product.name, catalog_product.key, catalog_product.range_id, catalog_product.dci, catalog_product.dosage, catalog_product.form, catalog_product.presentation, catalog_product.is_active, catalog_productrange.id, catalog_productrange.code, catalog_productrange.label, catalog_country.iso2, catalog_country.name, catalog_country.authority, catalog_country.validity_years, catalog_country.filing_lead_months, catalog_country.timezone, accounts_user.password, accounts_user.last_login, accounts_user.is_superuser, accounts_user.id, accounts_user.email, accounts_user.first_name, accounts_user.last_name, accounts_user.role, accounts_user.is_active, accounts_user.is_staff, accounts_user.date_joined",
+    "              Sort Method: quicksort  Memory: 25kB",
+    "              Buffers: shared hit=12",
+    "              ->  Nested Loop  (cost=11.07..24.64 rows=1 width=2872) (actual time=0.023..0.035 rows=1 loops=1)",
+    "                    Join Filter: (amm_marketingauthorization.country_id = catalog_country.id)",
+    "                    Rows Removed by Join Filter: 1",
+    "                    Buffers: shared hit=12"
+   ]
+  }
+ },
+ "ceo | amm history": {
+  "page50": {
+   "status": 200,
+   "queries": 12,
+   "sql_ms": 3.0,
+   "total_ms": 8.2,
+   "slowest_ms": 1.0
+  },
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user",
+    "catalog_country",
+    "catalog_product"
+   ],
+   "execution_ms": 0.052,
+   "plan_head": [
+    "Limit  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.032..0.032 rows=1 loops=1)",
+    "  Buffers: shared hit=12",
+    "  ->  Unique  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.032..0.032 rows=1 loops=1)",
+    "        Buffers: shared hit=12",
+    "        ->  Sort  (cost=24.65..24.65 rows=1 width=2872) (actual time=0.031..0.032 rows=1 loops=1)",
+    "              Sort Key: amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.urgency, amm_marketingauthorization.effective_end_date, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((SubPlan 1)), catalog_product.name, catalog_product.key, catalog_product.range_id, catalog_product.dci, catalog_product.dosage, catalog_product.form, catalog_product.presentation, catalog_product.is_active, catalog_productrange.id, catalog_productrange.code, catalog_productrange.label, catalog_country.iso2, catalog_country.name, catalog_country.authority, catalog_country.validity_years, catalog_country.filing_lead_months, catalog_country.timezone, accounts_user.password, accounts_user.last_login, accounts_user.is_superuser, accounts_user.id, accounts_user.email, accounts_user.first_name, accounts_user.last_name, accounts_user.role, accounts_user.is_active, accounts_user.is_staff, accounts_user.date_joined",
+    "              Sort Method: quicksort  Memory: 25kB",
+    "              Buffers: shared hit=12",
+    "              ->  Nested Loop  (cost=11.07..24.64 rows=1 width=2872) (actual time=0.017..0.026 rows=1 loops=1)",
+    "                    Join Filter: (amm_marketingauthorization.country_id = catalog_country.id)",
+    "                    Rows Removed by Join Filter: 1",
+    "                    Buffers: shared hit=12"
+   ]
+  }
+ },
+ "ceo | amm documents": {
+  "page50": {
+   "status": 200,
+   "queries": 5,
+   "sql_ms": 2.0,
+   "total_ms": 4.4,
+   "slowest_ms": 1.0
+  },
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user",
+    "catalog_country",
+    "catalog_product"
+   ],
+   "execution_ms": 0.05,
+   "plan_head": [
+    "Limit  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.028..0.029 rows=1 loops=1)",
+    "  Buffers: shared hit=12",
+    "  ->  Unique  (cost=24.65..24.76 rows=1 width=2872) (actual time=0.028..0.029 rows=1 loops=1)",
+    "        Buffers: shared hit=12",
+    "        ->  Sort  (cost=24.65..24.65 rows=1 width=2872) (actual time=0.028..0.028 rows=1 loops=1)",
+    "              Sort Key: amm_marketingauthorization.product_id, amm_marketingauthorization.country_id, amm_marketingauthorization.original_number, amm_marketingauthorization.holder, amm_marketingauthorization.original_start_date, amm_marketingauthorization.original_end_date, amm_marketingauthorization.original_end_date_manual, amm_marketingauthorization.status, amm_marketingauthorization.urgency, amm_marketingauthorization.effective_end_date, amm_marketingauthorization.filing_deadline, amm_marketingauthorization.dossier_state, amm_marketingauthorization.notes, amm_marketingauthorization.owner_id, amm_marketingauthorization.created_at, amm_marketingauthorization.updated_at, ((SubPlan 1)), catalog_product.name, catalog_product.key, catalog_product.range_id, catalog_product.dci, catalog_product.dosage, catalog_product.form, catalog_product.presentation, catalog_product.is_active, catalog_productrange.id, catalog_productrange.code, catalog_productrange.label, catalog_country.iso2, catalog_country.name, catalog_country.authority, catalog_country.validity_years, catalog_country.filing_lead_months, catalog_country.timezone, accounts_user.password, accounts_user.last_login, accounts_user.is_superuser, accounts_user.id, accounts_user.email, accounts_user.first_name, accounts_user.last_name, accounts_user.role, accounts_user.is_active, accounts_user.is_staff, accounts_user.date_joined",
+    "              Sort Method: quicksort  Memory: 25kB",
+    "              Buffers: shared hit=12",
+    "              ->  Nested Loop  (cost=11.07..24.64 rows=1 width=2872) (actual time=0.015..0.024 rows=1 loops=1)",
+    "                    Join Filter: (amm_marketingauthorization.country_id = catalog_country.id)",
+    "                    Rows Removed by Join Filter: 1",
+    "                    Buffers: shared hit=12"
+   ]
+  }
+ },
+ "ceo | alerts open": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 2.0,
+   "total_ms": 6.4,
+   "slowest_ms": 2.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 3.0,
+   "total_ms": 22.7,
+   "slowest_ms": 3.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user",
+    "alerts_alert",
+    "alerts_alertrule",
+    "amm_marketingauthorization",
+    "catalog_country",
+    "catalog_product"
+   ],
+   "execution_ms": 1.035,
+   "plan_head": [
+    "Limit  (cost=141.44..141.57 rows=50 width=2969) (actual time=1.009..1.013 rows=50 loops=1)",
+    "  Buffers: shared hit=53",
+    "  ->  Sort  (cost=141.44..143.40 rows=783 width=2969) (actual time=1.009..1.011 rows=50 loops=1)",
+    "        Sort Key: alerts_alert.due_date DESC, alerts_alert.triggered_at DESC",
+    "        Sort Method: top-N heapsort  Memory: 69kB",
+    "        Buffers: shared hit=53",
+    "        ->  Hash Left Join  (cost=81.48..115.43 rows=783 width=2969) (actual time=0.338..0.781 rows=783 loops=1)",
+    "              Hash Cond: (alerts_alert.assigned_to_id = accounts_user.id)",
+    "              Buffers: shared hit=53",
+    "              ->  Hash Join  (cost=78.38..110.28 rows=783 width=1426) (actual time=0.324..0.701 rows=783 loops=1)",
+    "                    Hash Cond: (alerts_alert.rule_id = alerts_alertrule.id)",
+    "                    Buffers: shared hit=51"
+   ]
+  }
+ },
+ "ceo | renewals": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 4.1,
+   "slowest_ms": 1.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 3.0,
+   "total_ms": 19.6,
+   "slowest_ms": 3.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [],
+   "execution_ms": 0.223,
+   "plan_head": [
+    "Limit  (cost=59.49..107.60 rows=50 width=1133) (actual time=0.202..0.207 rows=50 loops=1)",
+    "  Buffers: shared hit=441",
+    "  ->  Incremental Sort  (cost=59.49..891.72 rows=865 width=1133) (actual time=0.202..0.204 rows=50 loops=1)",
+    "        Sort Key: catalog_country.iso2, catalog_product.name, amm_renewal.sequence",
+    "        Presorted Key: catalog_country.iso2",
+    "        Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 54kB  Peak Memory: 54kB",
+    "        Buffers: shared hit=441",
+    "        ->  Nested Loop  (cost=0.84..855.30 rows=865 width=1133) (actual time=0.009..0.123 rows=59 loops=1)",
+    "              Buffers: shared hit=441",
+    "              ->  Nested Loop  (cost=0.69..812.42 rows=865 width=1051) (actual time=0.007..0.087 rows=59 loops=1)",
+    "                    Buffers: shared hit=325",
+    "                    ->  Nested Loop  (cost=0.41..216.42 rows=1600 width=962) (actual time=0.004..0.032 rows=112 loops=1)"
+   ]
+  }
+ },
+ "ceo | documents": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 4.0,
+   "total_ms": 9.7,
+   "slowest_ms": 4.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 5.0,
+   "total_ms": 27.0,
+   "slowest_ms": 5.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [],
+   "execution_ms": 0.292,
+   "plan_head": [
+    "Limit  (cost=3.97..120.04 rows=50 width=3346) (actual time=0.175..0.252 rows=50 loops=1)",
+    "  Buffers: shared hit=468",
+    "  ->  Incremental Sort  (cost=3.97..955.72 rows=410 width=3346) (actual time=0.175..0.250 rows=50 loops=1)",
+    "        Sort Key: documents_document.document_date DESC, documents_document.uploaded_at DESC",
+    "        Presorted Key: documents_document.document_date",
+    "        Full-sort Groups: 2  Sort Method: quicksort  Average Memory: 57kB  Peak Memory: 57kB",
+    "        Buffers: shared hit=468",
+    "        ->  Nested Loop Left Join  (cost=1.55..938.04 rows=410 width=3346) (actual time=0.021..0.212 rows=51 loops=1)",
+    "              Buffers: shared hit=468",
+    "              ->  Nested Loop Left Join  (cost=1.41..857.41 rows=410 width=1803) (actual time=0.020..0.200 rows=51 loops=1)",
+    "                    Buffers: shared hit=468",
+    "                    ->  Nested Loop Left Join  (cost=1.13..594.14 rows=410 width=1468) (actual time=0.019..0.189 rows=51 loops=1)"
+   ]
+  }
+ },
+ "ceo | analytics africa": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 2.7,
+   "slowest_ms": 1.0
+  },
+  "explain_slowest": {
+   "seq_scans": [
+    "amm_marketingauthorization",
+    "catalog_country",
+    "catalog_product"
+   ],
+   "execution_ms": 0.528,
+   "plan_head": [
+    "HashAggregate  (cost=142.94..143.09 rows=15 width=294) (actual time=0.516..0.518 rows=15 loops=1)",
+    "  Group Key: catalog_country.iso2, catalog_country.name",
+    "  Batches: 1  Memory Usage: 24kB",
+    "  Buffers: shared hit=38",
+    "  ->  Hash Join  (cost=6.22..66.94 rows=1600 width=266) (actual time=0.015..0.312 rows=1600 loops=1)",
+    "        Hash Cond: (amm_marketingauthorization.product_id = catalog_product.id)",
+    "        Buffers: shared hit=38",
+    "        ->  Hash Join  (cost=1.34..57.73 rows=1600 width=282) (actual time=0.004..0.200 rows=1600 loops=1)",
+    "              Hash Cond: (amm_marketingauthorization.country_id = catalog_country.id)",
+    "              Buffers: shared hit=36",
+    "              ->  Seq Scan on amm_marketingauthorization  (cost=0.00..51.00 rows=1600 width=68) (actual time=0.001..0.045 rows=1600 loops=1)",
+    "                    Buffers: shared hit=35"
+   ]
+  }
+ },
+ "ceo | notifications": {
+  "page50": {
+   "status": 200,
+   "queries": 2,
+   "sql_ms": 0.0,
+   "total_ms": 1.8,
+   "slowest_ms": 0.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 2,
+   "sql_ms": 0.0,
+   "total_ms": 1.3,
+   "slowest_ms": 0.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user"
+   ],
+   "execution_ms": 0.006,
+   "plan_head": [
+    "Limit  (cost=0.00..2.61 rows=1 width=1543) (actual time=0.001..0.003 rows=1 loops=1)",
+    "  Buffers: shared hit=2",
+    "  ->  Seq Scan on accounts_user  (cost=0.00..2.61 rows=1 width=1543) (actual time=0.001..0.003 rows=1 loops=1)",
+    "        Filter: (id = '8800c3de-a306-469d-a30a-96778e8ca86b'::uuid)",
+    "        Rows Removed by Filter: 48",
+    "        Buffers: shared hit=2",
+    "Planning Time: 0.011 ms",
+    "Execution Time: 0.006 ms"
+   ]
+  }
+ },
+ "ceo | products": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 0.0,
+   "total_ms": 3.6,
+   "slowest_ms": 0.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 0.0,
+   "total_ms": 5.7,
+   "slowest_ms": 0.0
+  },
+  "n_plus_1_suspect": false,
+  "explain_slowest": {
+   "seq_scans": [
+    "accounts_user"
+   ],
+   "execution_ms": 0.005,
+   "plan_head": [
+    "Limit  (cost=0.00..2.61 rows=1 width=1543) (actual time=0.001..0.003 rows=1 loops=1)",
+    "  Buffers: shared hit=2",
+    "  ->  Seq Scan on accounts_user  (cost=0.00..2.61 rows=1 width=1543) (actual time=0.001..0.003 rows=1 loops=1)",
+    "        Filter: (id = '8800c3de-a306-469d-a30a-96778e8ca86b'::uuid)",
+    "        Rows Removed by Filter: 48",
+    "        Buffers: shared hit=2",
+    "Planning Time: 0.009 ms",
+    "Execution Time: 0.005 ms"
+   ]
+  }
+ },
+ "pays | amms list": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 3.0,
+   "total_ms": 8.6,
+   "slowest_ms": 2.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 3.0,
+   "total_ms": 17.8,
+   "slowest_ms": 2.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | amms search": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 6.0,
+   "total_ms": 40.0,
+   "slowest_ms": 4.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 6.0,
+   "total_ms": 19.3,
+   "slowest_ms": 4.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | amms filter urgency": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 1.0,
+   "total_ms": 4.5,
+   "slowest_ms": 1.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 1.0,
+   "total_ms": 4.1,
+   "slowest_ms": 1.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | amm detail": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 3.4,
+   "slowest_ms": 1.0
+  }
+ },
+ "pays | amm history": {
+  "page50": {
+   "status": 200,
+   "queries": 12,
+   "sql_ms": 1.0,
+   "total_ms": 7.2,
+   "slowest_ms": 1.0
+  }
+ },
+ "pays | amm documents": {
+  "page50": {
+   "status": 200,
+   "queries": 5,
+   "sql_ms": 1.0,
+   "total_ms": 3.9,
+   "slowest_ms": 1.0
+  }
+ },
+ "pays | alerts open": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 3.0,
+   "total_ms": 6.7,
+   "slowest_ms": 3.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 3.0,
+   "total_ms": 8.2,
+   "slowest_ms": 3.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | renewals": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 4.4,
+   "slowest_ms": 1.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 6.9,
+   "slowest_ms": 1.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | documents": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 5.0,
+   "total_ms": 9.6,
+   "slowest_ms": 5.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 4.0,
+   "total_ms": 9.1,
+   "slowest_ms": 4.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | analytics africa": {
+  "page50": {
+   "status": 200,
+   "queries": 3,
+   "sql_ms": 1.0,
+   "total_ms": 2.1,
+   "slowest_ms": 1.0
+  }
+ },
+ "pays | notifications": {
+  "page50": {
+   "status": 200,
+   "queries": 2,
+   "sql_ms": 0.0,
+   "total_ms": 1.3,
+   "slowest_ms": 0.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 2,
+   "sql_ms": 0.0,
+   "total_ms": 1.7,
+   "slowest_ms": 0.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "pays | products": {
+  "page50": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 0.0,
+   "total_ms": 3.0,
+   "slowest_ms": 0.0
+  },
+  "page500": {
+   "status": 200,
+   "queries": 4,
+   "sql_ms": 0.0,
+   "total_ms": 4.8,
+   "slowest_ms": 0.0
+  },
+  "n_plus_1_suspect": false
+ },
+ "_table_scans": [
+  {
+   "table": "amm_marketingauthorization",
+   "seq_scan": 18,
+   "idx_scan": 1,
+   "rows": 1600
+  },
+  {
+   "table": "amm_historicalmarketingauthorization",
+   "seq_scan": 13,
+   "idx_scan": 0,
+   "rows": 2015
+  },
+  {
+   "table": "alerts_historicalalert",
+   "seq_scan": 10,
+   "idx_scan": 0,
+   "rows": 783
+  },
+  {
+   "table": "alerts_alert",
+   "seq_scan": 10,
+   "idx_scan": 0,
+   "rows": 783
+  },
+  {
+   "table": "amm_historicalrenewal",
+   "seq_scan": 6,
+   "idx_scan": 0,
+   "rows": 865
+  },
+  {
+   "table": "amm_renewal",
+   "seq_scan": 5,
+   "idx_scan": 0,
+   "rows": 865
+  }
+ ]
+}

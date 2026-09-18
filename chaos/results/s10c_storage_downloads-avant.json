@@ -1,0 +1,30 @@
+{
+  "scenario": "s10c_storage_downloads",
+  "label": "avant",
+  "download_statuses": {
+    "500": 20
+  },
+  "download_latency_max_s": 27.1,
+  "unrelated_list_during": [
+    [
+      500,
+      10.04
+    ],
+    [
+      200,
+      5.82
+    ],
+    [
+      200,
+      0.02
+    ],
+    [
+      200,
+      0.01
+    ],
+    [
+      200,
+      0.01
+    ]
+  ]
+}

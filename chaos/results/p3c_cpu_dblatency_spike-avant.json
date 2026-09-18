@@ -1,0 +1,88 @@
+{
+  "scenario": "p3c_cpu_dblatency_spike",
+  "label": "avant",
+  "k6": {
+    "requests": 4153,
+    "rps": 34.3,
+    "error_rate": 0.0,
+    "server_errors": 0,
+    "latency_ms": {
+      "med": 8766,
+      "p(95)": 9706,
+      "p(99)": 10195,
+      "max": 10705
+    },
+    "by_kind_ms": {
+      "list": {
+        "med": 8810,
+        "p(95)": 9613,
+        "p(99)": 9771,
+        "max": 9898
+      },
+      "detail": {
+        "med": 8653,
+        "p(95)": 9522,
+        "p(99)": 9700,
+        "max": 9847
+      },
+      "analytics": {
+        "med": 8748,
+        "p(95)": 9509,
+        "p(99)": 9667,
+        "max": 9734
+      },
+      "alerts": {
+        "med": 8727,
+        "p(95)": 9545,
+        "p(99)": 9696,
+        "max": 9781
+      },
+      "unread": {
+        "med": 8575,
+        "p(95)": 9434,
+        "p(99)": 9660,
+        "max": 9798
+      },
+      "write": {
+        "med": 9500,
+        "p(95)": 10310,
+        "p(99)": 10502,
+        "max": 10705
+      }
+    },
+    "vus_max": 500,
+    "resources": {
+      "nginx_cpu": 1.29,
+      "nginx_mem": "16.98MiB",
+      "worker_cpu": 43.06,
+      "worker_mem": "256.3MiB",
+      "backend_cpu": 52.16,
+      "backend_mem": "194.9MiB",
+      "postgres_cpu": 16.77,
+      "postgres_mem": "179.5MiB",
+      "mock-gmail_cpu": 0.02,
+      "mock-gmail_mem": "14.79MiB",
+      "redis_cpu": 1.62,
+      "redis_mem": "15.66MiB",
+      "grafana_cpu": 0.02,
+      "grafana_mem": "16.04MiB",
+      "minio_cpu": 23.2,
+      "minio_mem": "233.2MiB",
+      "toxiproxy_cpu": 5.44,
+      "toxiproxy_mem": "32.77MiB",
+      "others_cpu": 27.3,
+      "pg_connections_max": 23,
+      "pg_idle_in_tx_max": 0
+    }
+  },
+  "health_after": [
+    200,
+    200,
+    200
+  ],
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "scenario": "s08_memory",
+  "label": "apres",
+  "archive_statuses": {
+    "0": 8
+  },
+  "archive_latency_s": [
+    6.2,
+    6.2,
+    6.2,
+    6.2,
+    6.2,
+    6.2,
+    6.2,
+    6.2
+  ],
+  "backend_restarts_during": 1,
+  "oom_killed_flag": "false",
+  "backend_mem_samples": [
+    "442.9MiB",
+    "112.3MiB",
+    "118.4MiB"
+  ],
+  "collateral": {
+    "window": {
+      "requests": 236,
+      "errors": 20,
+      "error_rate": 0.085,
+      "users_affected": 5,
+      "p50_ms": 18,
+      "p95_ms": 167,
+      "p99_ms": 540,
+      "max_ms": 648,
+      "statuses": {
+        "200": 216,
+        "502": 20
+      }
+    },
+    "outage": {
+      "first_error_s": 11.2,
+      "last_error_s": 13.2,
+      "duration_s": 2.0,
+      "failed_requests": 20,
+      "users_affected": 5
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

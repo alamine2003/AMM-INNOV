@@ -1,0 +1,54 @@
+{
+  "scenario": "s15_concurrency",
+  "label": "avant",
+  "a_same_decision_x10": {
+    "statuses": {
+      "201": 10
+    },
+    "renewals_created": 10
+  },
+  "b_plan_x20": {
+    "statuses": {
+      "201": 1,
+      "400": 19
+    },
+    "open_renewals": 1
+  },
+  "c_lost_update": {
+    "expected": "notes-59|holder-59",
+    "final": "notes-59|holder-56",
+    "lost": true,
+    "history_regressions": 52
+  },
+  "e_replace_x8": {
+    "statuses": {
+      "201": 8
+    },
+    "current_successors": 8
+  },
+  "f_same_file_x20": {
+    "statuses": {
+      "201": 1,
+      "400": 19
+    },
+    "stored": 1
+  },
+  "g_transitions_x12": {
+    "statuses": {
+      "200": 1,
+      "400": 11
+    },
+    "final": "OBTENU"
+  },
+  "integrity": {
+    "ok": false,
+    "violations": {
+      "single_current_version": 1
+    },
+    "samples": {
+      "single_current_version": [
+        "document 8d928e89-fe30-47b2-a3f8-bc718bc838d8: 8 successeurs actifs"
+      ]
+    }
+  }
+}

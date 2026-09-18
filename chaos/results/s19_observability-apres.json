@@ -1,0 +1,63 @@
+{
+  "scenario": "s19_observability",
+  "label": "apres",
+  "json_log_lines": 1914,
+  "requests_5xx_in_logs": 0,
+  "users_with_5xx": 0,
+  "breaker_events": [
+    {
+      "ts": "2026-09-18T15:47:35+0000",
+      "level": "ERROR",
+      "logger": "apps.core.resilience",
+      "msg": "redis : dépendance indisponible, appels suspendus 15 s",
+      "request_id": "2e3eff5a83d6b3a9657fc4a89aa51349"
+    },
+    {
+      "ts": "2026-09-18T15:47:51+0000",
+      "level": "ERROR",
+      "logger": "apps.core.resilience",
+      "msg": "redis : dépendance indisponible, appels suspendus 15 s",
+      "request_id": "3b8de28368b2e275ffcafdda8eec8879"
+    },
+    {
+      "ts": "2026-09-18T15:48:07+0000",
+      "level": "WARNING",
+      "logger": "apps.core.resilience",
+      "msg": "redis : dépendance rétablie, disjoncteur refermé",
+      "request_id": "d3a00d982ce25c343eb7bf72c4996277"
+    }
+  ],
+  "degraded_counters": [
+    "amm_degraded_operations_total{component=\"realtime_publish\"} 104.0"
+  ],
+  "sample_access_line": {
+    "ts": "2026-09-18T15:48:04+0000",
+    "level": "INFO",
+    "logger": "amm.access",
+    "msg": "GET /api/v1/alerts 200",
+    "request_id": "2f43e93d0718f2ccc8efcfbb803f6ed5",
+    "method": "GET",
+    "path": "/api/v1/alerts",
+    "status": 200,
+    "duration_ms": 9.4,
+    "user_id": "e17497bd-6981-432e-a9f0-aba650f09f7b"
+  },
+  "probe_outage": {
+    "first_error_s": null,
+    "last_error_s": null,
+    "duration_s": 0
+  },
+  "probe_window": {
+    "requests": 1670,
+    "errors": 0,
+    "error_rate": 0.0,
+    "users_affected": 0,
+    "p50_ms": 14,
+    "p95_ms": 28,
+    "p99_ms": 50,
+    "max_ms": 75,
+    "statuses": {
+      "200": 1670
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "scenario": "s02e_pg_pool_saturation",
+  "label": "apres-code-sans-options",
+  "concurrent": 150,
+  "burst_duration_s": 11.0,
+  "statuses": {
+    "200": 68,
+    "503": 82
+  },
+  "p50_s": 10.18,
+  "p95_s": 10.38,
+  "max_s": 10.96,
+  "error_bodies": [
+    "{\"detail\":\"Service momentanément indisponible, réessayez dans quelques secondes.\"}"
+  ],
+  "after_statuses": [
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "resources": {
+    "worker_cpu": 10.59,
+    "worker_mem": "256.5MiB",
+    "backend_cpu": 21.99,
+    "backend_mem": "147.3MiB",
+    "nginx_cpu": 0.52,
+    "nginx_mem": "18.25MiB",
+    "postgres_cpu": 7.87,
+    "postgres_mem": "100.1MiB",
+    "redis_cpu": 1.01,
+    "redis_mem": "10.73MiB",
+    "mock-gmail_cpu": 0.01,
+    "mock-gmail_mem": "22.49MiB",
+    "grafana_cpu": 0.01,
+    "grafana_mem": "16.34MiB",
+    "minio_cpu": 2.78,
+    "minio_mem": "233.2MiB",
+    "toxiproxy_cpu": 1.2,
+    "toxiproxy_mem": "39.15MiB",
+    "others_cpu": 7.5,
+    "pg_connections_max": 14,
+    "pg_idle_in_tx_max": 0
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

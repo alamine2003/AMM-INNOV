@@ -1,0 +1,6 @@
+# copie figée du code d'origine (tests « avant »), instantanés et sorties volumineuses
+frozen-avant-backend/
+snapshots/
+results/*.jsonl
+results/tokens.json
+results/*.log

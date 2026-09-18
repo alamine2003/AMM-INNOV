@@ -1,0 +1,38 @@
+{
+  "scenario": "s12b_worker_kill_mid_task",
+  "label": "apres",
+  "killed_pids": [
+    7,
+    29,
+    30,
+    31
+  ],
+  "dossier_running_before_kill": true,
+  "state_before_kill": "RUNNING",
+  "after_restart_90s": {
+    "dossier": "RUNNING",
+    "emails": {
+      "created": 6,
+      "marked_sent": 5
+    }
+  },
+  "sweeper": "{\"ts\": \"2026-09-18T14:32:33+0000\", \"level\": \"WARNING\", \"logger\": \"apps.core.tasks\", \"msg\": \"Rattrapage du travail en attente : {'emails': 1, 'dossiers_republished': 0, 'dossiers_interrupted': 1, 'imports_republished': 0, 'previews': 0}\", \"request_id\": \"-\"}",
+  "dossier_relaunch": {
+    "status": 202,
+    "body": "{\"id\":\"3b5c7867-db32-4804-a041-6e6951f688e8\",\"root_name\":\"dossier-s12b\",\"status\":\"PENDING\",\"preview\":{},\"preview_token\":\"\",\"created_at\":\"2026-09-18T14:00:41.831"
+  },
+  "dossier_after_relaunch": "READY",
+  "relaunch_done_s": 3.2,
+  "emails": {
+    "created": 6,
+    "marked_sent": 6
+  },
+  "gmail_messages_received": 6,
+  "redis_unacked_after_restart": "2",
+  "redis_queue_after_restart": "0",
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

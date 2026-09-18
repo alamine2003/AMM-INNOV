@@ -1,0 +1,539 @@
+{
+  "scenario": "s05_load_steps",
+  "label": "avant",
+  "steps": {
+    "10": {
+      "requests": 590,
+      "rps": 9.6,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 14,
+        "p(95)": 34,
+        "p(99)": 71,
+        "max": 87
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 17,
+          "p(95)": 40,
+          "p(99)": 81,
+          "max": 86
+        },
+        "detail": {
+          "med": 11,
+          "p(95)": 21,
+          "p(99)": 73,
+          "max": 87
+        },
+        "analytics": {
+          "med": 8,
+          "p(95)": 15,
+          "p(99)": 37,
+          "max": 78
+        },
+        "alerts": {
+          "med": 16,
+          "p(95)": 29,
+          "p(99)": 48,
+          "max": 57
+        },
+        "unread": {
+          "med": 6,
+          "p(95)": 13,
+          "p(99)": 34,
+          "max": 60
+        },
+        "write": {
+          "med": 21,
+          "p(95)": 42,
+          "p(99)": 56,
+          "max": 56
+        }
+      },
+      "vus_max": 10,
+      "resources": {
+        "nginx_cpu": 0.32,
+        "nginx_mem": "14.27MiB",
+        "worker_cpu": 31.89,
+        "worker_mem": "231.4MiB",
+        "backend_cpu": 13.68,
+        "backend_mem": "117.3MiB",
+        "postgres_cpu": 7.6,
+        "postgres_mem": "83.88MiB",
+        "mock-gmail_cpu": 0.02,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.72,
+        "redis_mem": "10.35MiB",
+        "grafana_cpu": 0.01,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 2.29,
+        "minio_mem": "231.3MiB",
+        "toxiproxy_cpu": 0.93,
+        "toxiproxy_mem": "16.5MiB",
+        "others_cpu": 105.2,
+        "pg_connections_max": 9,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "12",
+        "blocked_clients": "1",
+        "used_memory_human": "1.61M",
+        "instantaneous_ops_per_sec": "3",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.7 ms | 149 appels | 104 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.3 ms | 179 appels | 57 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.6 ms | 52 appels | 33 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.1 ms | 162 appels | 20 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \"",
+        "0.2 ms | 83 appels | 17 ms total | SELECT \"catalog_country\".\"iso2\" AS \"country__iso2\", \"catalog_country\".\"name\" AS \"country__name\", COUNT(\"amm_marketingauthorization\".\"id\") AS"
+      ]
+    },
+    "30": {
+      "requests": 1767,
+      "rps": 28.8,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 13,
+        "p(95)": 35,
+        "p(99)": 242,
+        "max": 307
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 15,
+          "p(95)": 36,
+          "p(99)": 233,
+          "max": 304
+        },
+        "detail": {
+          "med": 9,
+          "p(95)": 24,
+          "p(99)": 284,
+          "max": 304
+        },
+        "analytics": {
+          "med": 7,
+          "p(95)": 17,
+          "p(99)": 51,
+          "max": 297
+        },
+        "alerts": {
+          "med": 15,
+          "p(95)": 45,
+          "p(99)": 55,
+          "max": 234
+        },
+        "unread": {
+          "med": 5,
+          "p(95)": 30,
+          "p(99)": 217,
+          "max": 242
+        },
+        "write": {
+          "med": 20,
+          "p(95)": 54,
+          "p(99)": 293,
+          "max": 307
+        }
+      },
+      "vus_max": 30,
+      "resources": {
+        "nginx_cpu": 0.55,
+        "nginx_mem": "14.6MiB",
+        "worker_cpu": 0.33,
+        "worker_mem": "207.1MiB",
+        "backend_cpu": 35.83,
+        "backend_mem": "124.3MiB",
+        "postgres_cpu": 14.71,
+        "postgres_mem": "135MiB",
+        "mock-gmail_cpu": 0.02,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.28,
+        "redis_mem": "10.16MiB",
+        "grafana_cpu": 0.02,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 10.09,
+        "minio_mem": "235.4MiB",
+        "toxiproxy_cpu": 3.78,
+        "toxiproxy_mem": "19.49MiB",
+        "others_cpu": 106.2,
+        "pg_connections_max": 17,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "14",
+        "blocked_clients": "1",
+        "used_memory_human": "1.64M",
+        "instantaneous_ops_per_sec": "1",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.6 ms | 466 appels | 285 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.2 ms | 594 appels | 148 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.5 ms | 161 appels | 82 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.5 ms | 128 appels | 63 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.1 ms | 498 appels | 52 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \""
+      ]
+    },
+    "100": {
+      "requests": 5899,
+      "rps": 96.1,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 16,
+        "p(95)": 85,
+        "p(99)": 427,
+        "max": 707
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 18,
+          "p(95)": 87,
+          "p(99)": 479,
+          "max": 707
+        },
+        "detail": {
+          "med": 12,
+          "p(95)": 72,
+          "p(99)": 356,
+          "max": 703
+        },
+        "analytics": {
+          "med": 10,
+          "p(95)": 72,
+          "p(99)": 500,
+          "max": 691
+        },
+        "alerts": {
+          "med": 16,
+          "p(95)": 83,
+          "p(99)": 317,
+          "max": 666
+        },
+        "unread": {
+          "med": 8,
+          "p(95)": 66,
+          "p(99)": 385,
+          "max": 692
+        },
+        "write": {
+          "med": 24,
+          "p(95)": 117,
+          "p(99)": 370,
+          "max": 692
+        }
+      },
+      "vus_max": 100,
+      "resources": {
+        "nginx_cpu": 1.77,
+        "nginx_mem": "18.42MiB",
+        "worker_cpu": 0.3,
+        "worker_mem": "207.1MiB",
+        "backend_cpu": 88.49,
+        "backend_mem": "155.7MiB",
+        "postgres_cpu": 25.59,
+        "postgres_mem": "177.9MiB",
+        "mock-gmail_cpu": 0.01,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.09,
+        "redis_mem": "11.63MiB",
+        "grafana_cpu": 0.01,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 1.66,
+        "minio_mem": "235.4MiB",
+        "toxiproxy_cpu": 5.93,
+        "toxiproxy_mem": "24.84MiB",
+        "others_cpu": 18.4,
+        "pg_connections_max": 23,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "15",
+        "blocked_clients": "1",
+        "used_memory_human": "1.68M",
+        "instantaneous_ops_per_sec": "1",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.5 ms | 1342 appels | 669 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.2 ms | 1695 appels | 328 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.6 ms | 351 appels | 210 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.4 ms | 511 appels | 201 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.1 ms | 1696 appels | 145 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \""
+      ]
+    },
+    "250": {
+      "requests": 7704,
+      "rps": 123.9,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 915,
+        "p(95)": 1375,
+        "p(99)": 1639,
+        "max": 2141
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 913,
+          "p(95)": 1379,
+          "p(99)": 1638,
+          "max": 2013
+        },
+        "detail": {
+          "med": 894,
+          "p(95)": 1374,
+          "p(99)": 1660,
+          "max": 2103
+        },
+        "analytics": {
+          "med": 899,
+          "p(95)": 1336,
+          "p(99)": 1584,
+          "max": 2004
+        },
+        "alerts": {
+          "med": 909,
+          "p(95)": 1372,
+          "p(99)": 1630,
+          "max": 1962
+        },
+        "unread": {
+          "med": 890,
+          "p(95)": 1336,
+          "p(99)": 1569,
+          "max": 1901
+        },
+        "write": {
+          "med": 1019,
+          "p(95)": 1412,
+          "p(99)": 1710,
+          "max": 2141
+        }
+      },
+      "vus_max": 250,
+      "resources": {
+        "nginx_cpu": 1.7,
+        "nginx_mem": "17.04MiB",
+        "worker_cpu": 0.32,
+        "worker_mem": "207.3MiB",
+        "backend_cpu": 108.7,
+        "backend_mem": "180.1MiB",
+        "postgres_cpu": 35.23,
+        "postgres_mem": "176.8MiB",
+        "mock-gmail_cpu": 0.01,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.62,
+        "redis_mem": "10.46MiB",
+        "grafana_cpu": 0.01,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 3.1,
+        "minio_mem": "235.5MiB",
+        "toxiproxy_cpu": 7.11,
+        "toxiproxy_mem": "26.49MiB",
+        "others_cpu": 193.3,
+        "pg_connections_max": 23,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "19",
+        "blocked_clients": "1",
+        "used_memory_human": "1.71M",
+        "instantaneous_ops_per_sec": "0",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.5 ms | 1760 appels | 918 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.2 ms | 2202 appels | 436 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.6 ms | 443 appels | 267 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.4 ms | 633 appels | 266 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.1 ms | 2230 appels | 201 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \""
+      ]
+    },
+    "500": {
+      "requests": 7214,
+      "rps": 111.1,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 3344,
+        "p(95)": 3996,
+        "p(99)": 4763,
+        "max": 6674
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 3355,
+          "p(95)": 4207,
+          "p(99)": 4811,
+          "max": 6621
+        },
+        "detail": {
+          "med": 3318,
+          "p(95)": 3852,
+          "p(99)": 4655,
+          "max": 6346
+        },
+        "analytics": {
+          "med": 3316,
+          "p(95)": 3853,
+          "p(99)": 4272,
+          "max": 6391
+        },
+        "alerts": {
+          "med": 3339,
+          "p(95)": 3913,
+          "p(99)": 4733,
+          "max": 6285
+        },
+        "unread": {
+          "med": 3326,
+          "p(95)": 3869,
+          "p(99)": 4849,
+          "max": 6378
+        },
+        "write": {
+          "med": 3441,
+          "p(95)": 4008,
+          "p(99)": 4789,
+          "max": 6674
+        }
+      },
+      "vus_max": 500,
+      "resources": {
+        "nginx_cpu": 4.77,
+        "nginx_mem": "16.77MiB",
+        "worker_cpu": 23.0,
+        "worker_mem": "207.1MiB",
+        "backend_cpu": 106.35,
+        "backend_mem": "210.3MiB",
+        "postgres_cpu": 24.19,
+        "postgres_mem": "177.5MiB",
+        "mock-gmail_cpu": 0.01,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.49,
+        "redis_mem": "10.45MiB",
+        "grafana_cpu": 0.01,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 9.33,
+        "minio_mem": "235.5MiB",
+        "toxiproxy_cpu": 5.77,
+        "toxiproxy_mem": "25.93MiB",
+        "others_cpu": 101.3,
+        "pg_connections_max": 23,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "19",
+        "blocked_clients": "1",
+        "used_memory_human": "1.67M",
+        "instantaneous_ops_per_sec": "1",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.5 ms | 1656 appels | 837 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.2 ms | 2073 appels | 403 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.6 ms | 444 appels | 265 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.4 ms | 625 appels | 256 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.1 ms | 2091 appels | 183 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \""
+      ]
+    },
+    "1000": {
+      "requests": 6919,
+      "rps": 102.5,
+      "error_rate": 0.0,
+      "server_errors": 0,
+      "latency_ms": {
+        "med": 8535,
+        "p(95)": 9577,
+        "p(99)": 11444,
+        "max": 12634
+      },
+      "by_kind_ms": {
+        "list": {
+          "med": 8500,
+          "p(95)": 9533,
+          "p(99)": 11396,
+          "max": 12311
+        },
+        "detail": {
+          "med": 8509,
+          "p(95)": 9537,
+          "p(99)": 11419,
+          "max": 12345
+        },
+        "analytics": {
+          "med": 8511,
+          "p(95)": 9570,
+          "p(99)": 12051,
+          "max": 12313
+        },
+        "alerts": {
+          "med": 8535,
+          "p(95)": 9598,
+          "p(99)": 11438,
+          "max": 12194
+        },
+        "unread": {
+          "med": 8489,
+          "p(95)": 9535,
+          "p(99)": 11367,
+          "max": 12320
+        },
+        "write": {
+          "med": 8727,
+          "p(95)": 9700,
+          "p(99)": 10773,
+          "max": 12634
+        }
+      },
+      "vus_max": 1000,
+      "resources": {
+        "nginx_cpu": 8.07,
+        "nginx_mem": "25.25MiB",
+        "worker_cpu": 0.28,
+        "worker_mem": "207.6MiB",
+        "backend_cpu": 107.85,
+        "backend_mem": "257.2MiB",
+        "postgres_cpu": 26.01,
+        "postgres_mem": "180.1MiB",
+        "mock-gmail_cpu": 0.01,
+        "mock-gmail_mem": "14.78MiB",
+        "redis_cpu": 1.36,
+        "redis_mem": "11.69MiB",
+        "grafana_cpu": 0.01,
+        "grafana_mem": "16.07MiB",
+        "minio_cpu": 5.02,
+        "minio_mem": "236MiB",
+        "toxiproxy_cpu": 6.07,
+        "toxiproxy_mem": "27.52MiB",
+        "others_cpu": 109.5,
+        "pg_connections_max": 23,
+        "pg_idle_in_tx_max": 0
+      },
+      "redis": {
+        "connected_clients": "19",
+        "blocked_clients": "1",
+        "used_memory_human": "1.69M",
+        "instantaneous_ops_per_sec": "2",
+        "celery_queue": "0"
+      },
+      "top_sql": [
+        "0.5 ms | 1606 appels | 819 ms total | SELECT DISTINCT \"amm_marketingauthorization\".\"id\", \"amm_marketingauthorization\".\"product_id\", \"amm_marketingauthorization\".\"country_id\", \"am",
+        "0.2 ms | 1992 appels | 386 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.4 ms | 587 appels | 242 ms total | SELECT \"alerts_alert\".\"id\", \"alerts_alert\".\"amm_id\", \"alerts_alert\".\"rule_id\", \"alerts_alert\".\"due_date\", \"alerts_alert\".\"status\", \"alerts_a",
+        "0.6 ms | 406 appels | 240 ms total | SELECT COUNT(*) FROM (SELECT DISTINCT \"amm_marketingauthorization\".\"id\" AS \"col1\", \"amm_marketingauthorization\".\"product_id\" AS \"col2\", \"amm",
+        "0.1 ms | 1993 appels | 176 ms total | SELECT \"amm_renewal\".\"id\", \"amm_renewal\".\"amm_id\", \"amm_renewal\".\"sequence\", \"amm_renewal\".\"workflow_status\", \"amm_renewal\".\"filing_date\", \""
+      ]
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

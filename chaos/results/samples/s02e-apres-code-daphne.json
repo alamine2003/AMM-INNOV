@@ -1,0 +1,51 @@
+{
+  "scenario": "s02e_pg_pool_saturation",
+  "label": "apres-code-daphne",
+  "concurrent": 150,
+  "burst_duration_s": 11.5,
+  "statuses": {
+    "200": 74,
+    "503": 76
+  },
+  "p50_s": 10.27,
+  "p95_s": 10.98,
+  "max_s": 11.46,
+  "error_bodies": [
+    "{\"detail\":\"Service momentanément indisponible, réessayez dans quelques secondes.\"}"
+  ],
+  "after_statuses": [
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "resources": {
+    "worker_cpu": 3.53,
+    "worker_mem": "257.3MiB",
+    "backend_cpu": 10.76,
+    "backend_mem": "144.8MiB",
+    "nginx_cpu": 0.16,
+    "nginx_mem": "18.3MiB",
+    "postgres_cpu": 6.94,
+    "postgres_mem": "103.2MiB",
+    "redis_cpu": 0.94,
+    "redis_mem": "10.78MiB",
+    "mock-gmail_cpu": 0.02,
+    "mock-gmail_mem": "22.49MiB",
+    "grafana_cpu": 0.02,
+    "grafana_mem": "16.34MiB",
+    "minio_cpu": 2.74,
+    "minio_mem": "231.3MiB",
+    "toxiproxy_cpu": 2.43,
+    "toxiproxy_mem": "38.71MiB",
+    "others_cpu": 17.3,
+    "pg_connections_max": 15,
+    "pg_idle_in_tx_max": 0
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}
