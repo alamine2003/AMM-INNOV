@@ -1967,6 +1967,24 @@ paths:
   /api/v1/health/:
     get:
       operationId: v1_health_retrieve
+      description: 'Disponibilité : 503 si la base est injoignable ; Redis est signalé
+        sans être exigé.'
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/health/live/:
+    get:
+      operationId: v1_health_live_retrieve
+      description: 'Vivacité : le processus répond, sans interroger aucune dépendance.'
       tags:
       - v1
       security:

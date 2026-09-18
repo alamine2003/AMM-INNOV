@@ -73,6 +73,22 @@ def test_message_is_sent_through_the_api(google):
     assert send_call["headers"]["Authorization"] == "Bearer jeton-1"
 
 
+@pytest.fixture(autouse=True)
+def fresh_token_cache():
+    GmailApiBackend.reset_token_cache()
+    yield
+    GmailApiBackend.reset_token_cache()
+
+
+def test_access_token_is_shared_across_send_mail_calls(google):
+    """send_mail() crée un backend par message : le jeton doit survivre à l'instance."""
+    with override_settings(**GMAIL_SETTINGS):
+        send_mail("un", "a", None, ["x@example.com"])
+        send_mail("deux", "b", None, ["y@example.com"])
+    assert google.token_calls == 1
+    assert len(google.sent_messages()) == 2
+
+
 def test_access_token_is_reused_across_messages(google):
     with override_settings(**GMAIL_SETTINGS):
         backend = GmailApiBackend()

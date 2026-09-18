@@ -12,6 +12,12 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="apps.imports.tasks.run_import")
 def run_import(batch_id: str, today: str | None = None) -> dict:
+    # Prise en charge exclusive : la tâche peut être redistribuée (acks tardifs) ou republiée.
+    claimed = ImportBatch.objects.filter(pk=batch_id, status=ImportBatch.Status.PENDING).update(
+        status=ImportBatch.Status.RUNNING
+    )
+    if not claimed:
+        return {"status": "skipped"}
     batch = ImportBatch.objects.get(pk=batch_id)
     reference = date.fromisoformat(today) if today else batch.reference_date
     batch.file.open("rb")
@@ -31,6 +37,7 @@ def analyze_dossier(batch_id: str) -> dict:
     claimed = DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.PENDING).update(
         status=DossierImport.Status.RUNNING,
         error="",
+        started_at=timezone.now(),
     )
     if not claimed:
         return {"status": "skipped"}

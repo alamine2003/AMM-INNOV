@@ -1,8 +1,13 @@
 """Document endpoints. The AMM/renewal/country/product routes are implemented as functions
 called from the owning viewsets so that URLs match the specification."""
 
+import itertools
+import logging
+
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.http import FileResponse, HttpResponse
+from django.core.handlers.asgi import ASGIRequest
+from django.db import connection
+from django.http import FileResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
@@ -20,6 +25,7 @@ from apps.accounts.permissions import (
 )
 from apps.amm.models import Renewal
 from apps.amm.serializers import django_to_drf_validation_error
+from apps.core.exceptions import StorageUnavailable
 
 from .models import Document
 from .serializers import (
@@ -28,8 +34,27 @@ from .serializers import (
     DocumentSerializer,
     DocumentUploadSerializer,
 )
-from .services.archive import build_archive
+from .services.archive import aiter_blocks, iter_archive
 from .services.ingest import archive_document, ingest_document
+
+logger = logging.getLogger(__name__)
+
+
+def open_stored_file(field_file) -> None:
+    """Ouvre un scan pour le servir, sans garder de connexion PostgreSQL pendant la lecture.
+
+    La vue a fini de lire la base : sa connexion retourne au pool avant l'appel au stockage.
+    Stockage en panne, 20 téléchargements tenaient 20 connexions pendant les relances S3 et les
+    requêtes sans rapport échouaient faute de connexion (s10c).
+    """
+    if not connection.in_atomic_block:
+        connection.close()  # retour au pool (Django la reprendra si la requête en a besoin)
+    try:
+        field_file.open("rb")
+        field_file.read(0)  # S3 : le téléchargement a lieu ici ; une panne donne un 503 propre
+    except Exception as exc:
+        logger.warning("Stockage indisponible pour %s : %s", field_file.name, exc)
+        raise StorageUnavailable() from exc
 
 
 def _apply_common_filters(queryset, request):
@@ -126,11 +151,24 @@ def amm_documents_archive(request, amm):
     queryset = _apply_common_filters(
         Document.objects.filter(amm=amm).select_related("amm__country", "amm__product"), request
     )
-    payload = build_archive(list(queryset))
-    response = HttpResponse(payload, content_type="application/zip")
-    response["Content-Disposition"] = (
-        f'attachment; filename="{amm.country.iso2}_{amm.product.slug.upper()}_documents.zip"'
-    )
+    documents = list(queryset)
+    filename = f"{amm.country.iso2}_{amm.product.slug.upper()}_documents.zip"
+    if not connection.in_atomic_block:
+        connection.close()  # la lecture des scans ne tient pas de connexion du pool
+    stream = iter_archive(documents)
+    try:
+        first = next(stream)  # ouvre le premier scan : stockage en panne ⇒ 503 propre
+    except StopIteration:
+        first = b""
+    except Exception as exc:
+        logger.warning("Archive impossible pour l'AMM %s : %s", amm.pk, exc)
+        raise StorageUnavailable() from exc
+    if isinstance(getattr(request, "_request", request), ASGIRequest):
+        content = aiter_blocks(first, stream)
+    else:
+        content = itertools.chain([first], stream)
+    response = StreamingHttpResponse(content, content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
 
@@ -199,12 +237,13 @@ class DocumentViewSet(
     def file(self, request, pk=None):
         document = self.get_object()
         download = request.query_params.get("download", "").lower() in {"1", "true"}
-        document.file.open("rb")
+        filename = document.export_filename()
+        open_stored_file(document.file)
         response = FileResponse(
             document.file,
             content_type=document.content_type,
             as_attachment=download,
-            filename=document.export_filename(),
+            filename=filename,
         )
         response["Cache-Control"] = "private, max-age=300"
         response["X-Content-Type-Options"] = "nosniff"

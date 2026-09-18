@@ -27,6 +27,11 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     sent_at = models.DateTimeField("envoyée le", null=True, blank=True)
     read_at = models.DateTimeField("lue le", null=True, blank=True)
+    # Suivi des envois (campagne de chaos s13) : un e-mail en échec disait seulement
+    # « sent_at vide », sans combien de tentatives ni pourquoi.
+    send_attempts = models.PositiveSmallIntegerField("tentatives d'envoi", default=0)
+    last_attempt_at = models.DateTimeField("dernière tentative", null=True, blank=True)
+    last_error = models.CharField("dernière erreur", max_length=500, blank=True)
 
     class Meta:
         verbose_name = "notification"
