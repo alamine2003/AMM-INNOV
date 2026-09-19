@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.core.observability.RequestContextMiddleware",
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -103,32 +104,92 @@ DATABASE_URL = env("DATABASE_URL", "postgres://amm:amm@localhost:5432/amm")
 # saturait (« too many clients ») dès 30 utilisateurs simultanés. Avec le pool, les requêtes
 # en excès attendent une connexion libre (DB_POOL_TIMEOUT) au lieu d'échouer.
 DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=0)}
-if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql" and env_bool("DB_POOL", True):
-    DATABASES["default"].setdefault("OPTIONS", {})["pool"] = {
-        "min_size": int(env("DB_POOL_MIN_SIZE", "1")),
-        "max_size": int(env("DB_POOL_MAX_SIZE", "20")),
-        "timeout": float(env("DB_POOL_TIMEOUT", "10")),
-    }
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+    _db_options = DATABASES["default"].setdefault("OPTIONS", {})
+    # Délais bornés (campagne de chaos s02b/s02c) : sans eux, une base figée ou une requête
+    # emballée retenait la requête HTTP jusqu'au délai de nginx (120 s) et une transaction
+    # abandonnée gardait ses verrous. statement_timeout se relève pour le worker
+    # (DB_STATEMENT_TIMEOUT_MS) si un traitement de masse le demande.
+    _db_options["connect_timeout"] = int(env("DB_CONNECT_TIMEOUT", "5"))
+    _db_options["options"] = " ".join(
+        f"-c {name}={env(var, default)}"
+        for name, var, default in (
+            ("statement_timeout", "DB_STATEMENT_TIMEOUT_MS", "30000"),
+            ("lock_timeout", "DB_LOCK_TIMEOUT_MS", "10000"),
+            ("idle_in_transaction_session_timeout", "DB_IDLE_TX_TIMEOUT_MS", "60000"),
+        )
+    )
+    if env_bool("DB_POOL", True):
+        _db_options["pool"] = {
+            "min_size": int(env("DB_POOL_MIN_SIZE", "1")),
+            "max_size": int(env("DB_POOL_MAX_SIZE", "20")),
+            "timeout": float(env("DB_POOL_TIMEOUT", "10")),
+        }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
+# Redis ne sert qu'à des fonctions accessoires à la requête (temps réel, throttle, file des
+# tâches) : ses appels doivent échouer vite. redis-py attend 5 s par défaut ; mesuré en
+# laboratoire (s03, s04), une écriture d'AMM payait ce délai trois fois, connexion PostgreSQL
+# tenue. Voir aussi apps/core/resilience.py (disjoncteur).
+REDIS_CONNECT_TIMEOUT = float(env("REDIS_CONNECT_TIMEOUT", "1"))
+REDIS_SOCKET_TIMEOUT = float(env("REDIS_SOCKET_TIMEOUT", "1"))
 
 # Cache partagé entre les processus web : throttles de connexion et futurs caches applicatifs.
 CACHES = {
-    "default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "socket_connect_timeout": REDIS_CONNECT_TIMEOUT,
+            "socket_timeout": REDIS_SOCKET_TIMEOUT,
+        },
+    }
 }
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [REDIS_URL]},
+        "CONFIG": {
+            "hosts": [
+                {
+                    "address": REDIS_URL,
+                    "socket_connect_timeout": REDIS_CONNECT_TIMEOUT,
+                    # La réception WebSocket attend 5 s en BZPOPMIN (channels_redis) : un délai
+                    # socket de 5 s (défaut redis-py) ou moins la couperait. La publication, elle,
+                    # est bornée à part (apps/realtime/publisher.py).
+                    "socket_timeout": 8,
+                }
+            ]
+        },
     }
 }
 
 CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+# Aucun code ne lit les résultats des tâches. Le backend de résultats Redis abonnait chaque
+# processus web au pub/sub des résultats : Redis figé, `delay()` ne rendait plus la main (s03b).
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_BROKER_CONNECTION_TIMEOUT = 2
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "socket_connect_timeout": REDIS_CONNECT_TIMEOUT,
+    "socket_timeout": 3,  # au-dessus du BRPOP d'une seconde du worker
+    # doit dépasser la plus longue tâche (analyse de dossier : 21 min) et la plus longue
+    # relance différée (e-mails : 10 min), sinon la tâche serait redistribuée en double
+    "visibility_timeout": 3600,
+}
+# Publication d'une tâche depuis une requête : un essai de plus, pas quatre (19 s mesurées).
+CELERY_TASK_PUBLISH_RETRY_POLICY = {
+    "max_retries": 1,
+    "interval_start": 0,
+    "interval_step": 0.5,
+    "interval_max": 0.5,
+}
+# Worker tué en cours de tâche (s12b) : la tâche était déjà acquittée, donc perdue. Acquittée
+# après exécution, elle est redistribuée ; les tâches sont idempotentes (voir chaque tâche).
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = env("TIME_ZONE", "Africa/Dakar")
 CELERY_ENABLE_UTC = True
@@ -160,6 +221,16 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.documents.tasks.purge_archived_documents",
         "schedule": crontab(hour=4, minute=0, day_of_month="1", month_of_year="1"),
     },
+    # Rattrapage : e-mails non partis, analyses bloquées, aperçus manquants (tâches perdues
+    # quand Redis ou le worker sont tombés). La base est la source de vérité du travail restant.
+    "recover-pending-work": {
+        "task": "apps.core.tasks.recover_pending_work",
+        "schedule": crontab(minute="*/5"),
+    },
+    "check-integrity": {
+        "task": "apps.core.tasks.check_integrity",
+        "schedule": crontab(hour=5, minute=0),
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -186,6 +257,7 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
     # Anti force brute : par adresse IP (un bureau derrière un NAT compte pour une IP) et par
     # compte visé (plusieurs IP sur un même email). Derrière un proxy, NUM_PROXIES (prod) permet
     # de lire la vraie IP cliente dans X-Forwarded-For.
@@ -335,6 +407,10 @@ if DOCUMENT_STORAGE == "s3":
                 request_checksum_calculation="when_required",
                 response_checksum_validation="when_required",
                 s3={"addressing_style": env("S3_ADDRESSING_STYLE", "path")},
+                # défauts boto : 60 s de connexion et de lecture, relances « legacy » (s10b)
+                connect_timeout=float(env("S3_CONNECT_TIMEOUT", "3")),
+                read_timeout=float(env("S3_READ_TIMEOUT", "10")),
+                retries={"max_attempts": 2, "mode": "standard"},
             ),
             "endpoint_url": env("S3_ENDPOINT_URL") or env("AWS_S3_ENDPOINT_URL"),
             "bucket_name": env("S3_BUCKET") or env("AWS_STORAGE_BUCKET_NAME") or "amm-documents",
@@ -342,6 +418,13 @@ if DOCUMENT_STORAGE == "s3":
             "secret_key": env("S3_SECRET_KEY") or env("AWS_SECRET_ACCESS_KEY"),
             "region_name": env("S3_REGION", "auto"),
             "file_overwrite": False,
+            # Scan lu depuis S3 : en mémoire jusqu'à 5 Mo, sur disque au-delà. Le défaut (0)
+            # gardait tout le fichier en mémoire du processus web pendant le téléchargement.
+            "max_memory_size": 5 * 1024 * 1024,
+            # Téléchargement S3 séquentiel : par défaut, boto3 tire chaque scan en parts de 8 Mo
+            # sur 10 fils, en mémoire. Mesuré (s08) : 8 archives simultanées portaient le
+            # processus web à 641 Mio de mémoire anonyme, et 755 Mio après trois séries.
+            "use_threads": False,
             "default_acl": None,
             "signature_version": "s3v4",
         },
@@ -371,10 +454,25 @@ TIME_ZONE = env("TIME_ZONE", "Africa/Dakar")
 USE_I18N = True
 USE_TZ = True
 
+# Journaux JSON en production (une ligne par événement, avec l'identifiant de requête),
+# texte lisible en développement. Voir apps/core/observability.py.
+LOG_FORMAT = env("LOG_FORMAT", "text" if DEBUG else "json")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
+    "filters": {"request_id": {"()": "apps.core.observability.RequestIdFilter"}},
+    "formatters": {
+        "text": {"format": "%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s"},
+        "json": {"()": "apps.core.observability.JsonFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json" if LOG_FORMAT == "json" else "text",
+            "filters": ["request_id"],
+        }
+    },
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", "INFO")},
 }
+# Le worker garde ce format au lieu du sien : mêmes champs dans les journaux web et Celery.
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False

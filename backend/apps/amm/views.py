@@ -26,6 +26,7 @@ from .serializers import (
     django_to_drf_validation_error,
 )
 from .services import workflow
+from .services.workflow import lock_amm
 
 
 def amm_base_queryset():
@@ -83,6 +84,16 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
                 {"detail": "Une AMM existe déjà pour ce produit dans ce pays."}
             )
 
+    def update(self, request, *args, **kwargs):
+        # Modification atomique, ligne verrouillée avant d'être relue (campagne de chaos s15c,
+        # H6) : l'UPDATE, l'entrée d'historique et la réconciliation des alertes partaient en
+        # autocommit (un crash entre deux laissait une modification sans trace d'audit), et deux
+        # éditeurs simultanés s'écrasaient : chacun relisait la ligne avant l'autre puis
+        # réécrivait tous ses champs.
+        with transaction.atomic():
+            lock_amm(kwargs[self.lookup_url_kwarg or self.lookup_field])
+            return super().update(request, *args, **kwargs)
+
     @extend_schema(responses=HistoryEntrySerializer(many=True))
     @action(detail=True, methods=["get"])
     def history(self, request, pk=None):
@@ -102,8 +113,12 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
         serializer = RenewalSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         renewal = serializer.save(amm=amm)
+        replayed = getattr(renewal, "_replayed", False)
         renewal.refresh_from_db()
-        return Response(RenewalSerializer(renewal).data, status=status.HTTP_201_CREATED)
+        # La même décision renvoyée (double clic, relance après un délai dépassé) : 200 et le
+        # renouvellement existant, au lieu d'un doublon (s02b, s15a).
+        code = status.HTTP_200_OK if replayed else status.HTTP_201_CREATED
+        return Response(RenewalSerializer(renewal).data, status=code)
 
     @extend_schema(
         parameters=[
@@ -141,6 +156,22 @@ class RenewalViewSet(
     filterset_class = RenewalFilter
     ordering_fields = ["sequence", "filing_date", "start_date", "end_date", "updated_at"]
     country_lookup = "amm__country"
+
+    def update(self, request, *args, **kwargs):
+        # Même ordre de verrouillage que le workflow (AMM puis renouvellement) : atomique, sans
+        # mise à jour perdue ni interblocage avec une décision enregistrée en même temps.
+        with transaction.atomic():
+            try:
+                amm_id = (
+                    Renewal.objects.filter(pk=kwargs[self.lookup_url_kwarg or self.lookup_field])
+                    .values_list("amm_id", flat=True)
+                    .first()
+                )
+            except (ValueError, DjangoValidationError):  # identifiant mal formé : 404 ci-dessous
+                amm_id = None
+            if amm_id is not None:
+                lock_amm(amm_id)
+            return super().update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         """Annule le dernier renouvellement : l'AMM est recalculée, ses scans sont archivés."""

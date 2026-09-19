@@ -16,8 +16,10 @@ def on_amm_saved(sender, instance: MarketingAuthorization, created: bool, **kwar
     from apps.alerts.services.engine import reconcile
 
     reconcile(instance)
+    # amm.created/amm.updated suffisent : le client recharge aussi les tableaux de bord
+    # (frontend/src/realtime/invalidation.ts). Un dashboard.refresh global en plus faisait
+    # recharger /analytics/africa à tous les clients à chaque écriture (s18).
     publish_amm_event("amm.created" if created else "amm.updated", instance)
-    publish_dashboard_refresh()
 
 
 @receiver(post_delete, sender=MarketingAuthorization)

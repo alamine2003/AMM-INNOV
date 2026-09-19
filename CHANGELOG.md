@@ -5,6 +5,31 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Résilience (campagne de chaos du 18/09/2026, `docs/audit-resilience/RAPPORT.md`)
+- **Redis devient optionnel.** Le temps réel part après le commit, borné à 1 s, derrière un
+  disjoncteur ; sans Redis on se connecte toujours (repli local du throttle) et les écritures ne
+  l'attendent plus. Mesuré : Redis figé sous 40 utilisateurs faisait échouer les lectures et durer
+  les écritures 25 s.
+- **Délais bornés** sur PostgreSQL (`connect_timeout`, `statement_timeout`, `lock_timeout`,
+  `idle_in_transaction_session_timeout`), Redis, S3 et Gmail, réglables par variables
+  d'environnement (`.env.example`). Erreur de base ou pool saturé : 503 JSON avec `Retry-After`.
+- **Aucune tâche perdue.** Acquittement tardif des tâches Celery ; `recover_pending_work` (toutes
+  les 5 min) republie e-mails non partis, aperçus manquants, analyses en attente, et libère les
+  analyses interrompues ; e-mails relancés sur ~15 min puis jusqu'à ~5 h, tentatives et dernière
+  erreur tracées (`send_attempts`, `last_error`), `Message-ID` stable.
+- **Écritures protégées.** `PATCH` d'AMM et de renouvellement atomiques et verrouillés (plus de
+  mise à jour perdue ni de modification sans historique) ; une seule version courante par scan ;
+  la même décision envoyée deux fois n'en crée qu'une (`200` au second envoi).
+- **Exploitation.** uvicorn aussi en un seul processus (arrêt gracieux, `GRACEFUL_TIMEOUT`) ;
+  `/api/v1/health/live` ; journaux JSON avec `X-Request-ID` propagé aux tâches ; compteurs
+  `amm_degraded_operations_total` ; vue `analytics.v_ops_backlog` pour les alertes Grafana ;
+  `manage.py check_integrity` (12 invariants), lancé chaque nuit.
+- nginx résout `backend` et `grafana` dynamiquement : il démarre sans Grafana et suit une
+  nouvelle IP du backend. Archive ZIP envoyée en flux, bloc par bloc, y compris sous ASGI, et scans lus depuis S3
+  sans téléchargement parallèle en mémoire. Reconnexion
+  WebSocket avec jitter ; un événement d'AMM ne part plus qu'au groupe de son pays.
+- Laboratoire de chaos rejouable : `chaos/` (Compose jetable, toxiproxy, scénarios avant/après).
+
 ### Ajouté
 - **Le frontend est publié par la CI** (job `netlify`), sur un push vers `main` et seulement
   après le vert du backend et du frontend. Il publie l'état commité : `netlify deploy --build`

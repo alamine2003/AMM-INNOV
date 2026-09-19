@@ -643,7 +643,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Disponibilité : 503 si la base est injoignable ; Redis est signalé sans être exigé. */
         get: operations["v1_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/live/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Vivacité : le processus répond, sans interroger aucune dépendance. */
+        get: operations["v1_health_live_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3734,6 +3752,27 @@ export interface operations {
         };
     };
     v1_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_health_live_retrieve: {
         parameters: {
             query?: never;
             header?: never;

@@ -18,6 +18,7 @@ from apps.accounts.permissions import RolePermission, ensure_country_in_scope
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.catalog.models import Country
 from apps.core.tasks import enqueue
+from apps.documents.views import open_stored_file
 
 from .dossier.application import StalePreview, apply_dossier
 from .dossier.upload import stage_dossier
@@ -136,8 +137,9 @@ class DossierImportViewSet(
         params = DossierFileRequestSerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         source = get_object_or_404(batch.files.all(), pk=params.validated_data["file_id"])
+        open_stored_file(source.file)
         response = FileResponse(
-            source.file.open("rb"),
+            source.file,
             content_type=source.content_type,
             filename=source.relative_path.rsplit("/", 1)[-1],
         )

@@ -16,8 +16,22 @@ echo "[entrypoint] attente des dépendances (timeout ${WAIT_TIMEOUT}s)…"
 python /usr/local/bin/wait-for.py --timeout "${WAIT_TIMEOUT}" "${DATABASE_URL}" "${REDIS_URL}"
 
 if [ "${RUN_MIGRATIONS}" = "1" ]; then
+  # Un port TCP ouvert ne prouve pas que la base répond (proxy, pooler, plateforme) : on
+  # retente la migration sur place plutôt que de sortir. Sortir faisait boucler le conteneur
+  # en redémarrages, avec une nouvelle IP à chaque fois (campagne de chaos s16).
+  # Délais applicatifs levés pour la migration (0 = aucun) : elle peut attendre un verrou tenu
+  # par la version encore en service, ou durer plus de 30 s sur une reprise de données.
   echo "[entrypoint] python manage.py migrate --noinput"
-  python manage.py migrate --noinput
+  waited=0
+  until DB_STATEMENT_TIMEOUT_MS=0 DB_LOCK_TIMEOUT_MS=0 python manage.py migrate --noinput; do
+    waited=$((waited + 5))
+    if [ "${waited}" -ge "${WAIT_TIMEOUT}" ]; then
+      echo "[entrypoint] base toujours indisponible après ${WAIT_TIMEOUT}s, abandon"
+      exit 1
+    fi
+    echo "[entrypoint] base pas prête, nouvel essai dans 5 s"
+    sleep 5
+  done
 elif [ "${WAIT_FOR_MIGRATIONS:-1}" = "1" ]; then
   # worker et beat démarrent en même temps que le web : attendre ses migrations (1er déploiement)
   echo "[entrypoint] attente des migrations (timeout ${WAIT_TIMEOUT}s)…"
@@ -45,8 +59,11 @@ if [ "${COLLECT_STATIC}" = "1" ]; then
   python manage.py collectstatic --noinput
 fi
 
-# `serve` : serveur ASGI. WEB_CONCURRENCY=1 -> Daphne (un processus, dev) ;
-# WEB_CONCURRENCY>1 -> uvicorn avec N workers (production : ~80 req/s par worker mesurés).
+# `serve` : serveur ASGI uvicorn, WEB_CONCURRENCY processus (production : ~80 req/s par worker).
+# Plus de Daphne, même pour un seul processus : sur SIGTERM (redéploiement, docker stop), Daphne
+# coupait les requêtes en vol (18/20 en 502) puis restait vivant sans écouter, conteneur
+# « running » et jamais redémarré (campagne de chaos s11a). uvicorn draine les requêtes en vol
+# pendant GRACEFUL_TIMEOUT secondes puis se termine.
 # PORT est imposé par la plateforme (Railway, Render) ; BIND_HOST=:: pour le réseau privé IPv6 de Railway.
 if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "worker" ]; then
   # Railway : même image et même railway.json pour le web et le worker, rôle par variable.
@@ -59,13 +76,12 @@ if [ "${1:-}" = "serve" ]; then
   : "${WEB_CONCURRENCY:=1}"
   : "${PORT:=8000}"
   : "${BIND_HOST:=0.0.0.0}"
-  if [ "${WEB_CONCURRENCY}" -gt 1 ]; then
-    echo "[entrypoint] uvicorn, ${WEB_CONCURRENCY} workers, ${BIND_HOST}:${PORT}"
-    exec uvicorn config.asgi:application --host "${BIND_HOST}" --port "${PORT}" \
-      --workers "${WEB_CONCURRENCY}" --proxy-headers --forwarded-allow-ips='*' --no-access-log
-  fi
-  echo "[entrypoint] daphne, ${BIND_HOST}:${PORT}"
-  exec daphne -b "${BIND_HOST}" -p "${PORT}" config.asgi:application
+  : "${GRACEFUL_TIMEOUT:=20}"
+  echo "[entrypoint] uvicorn, ${WEB_CONCURRENCY} worker(s), ${BIND_HOST}:${PORT}"
+  # --no-access-log : le journal d'accès (JSON, avec identifiant de requête) est écrit par Django
+  exec uvicorn config.asgi:application --host "${BIND_HOST}" --port "${PORT}" \
+    --workers "${WEB_CONCURRENCY}" --proxy-headers --forwarded-allow-ips='*' --no-access-log \
+    --timeout-graceful-shutdown "${GRACEFUL_TIMEOUT}"
 fi
 
 echo "[entrypoint] exec: $*"

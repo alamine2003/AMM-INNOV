@@ -2,11 +2,13 @@
 
 import logging
 from datetime import timedelta
+from email.utils import parseaddr
 
 from celery import shared_task
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
+from django.db.models import F
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -25,8 +27,13 @@ logger = logging.getLogger(__name__)
     name="apps.notifications.tasks.send_alert_email",
     bind=True,
     autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={"max_retries": 3},
+    # 30 s, 1, 2, 4, 8 min (≈ 15 min) : l'ancienne politique (1, 2, 4 s) abandonnait l'e-mail
+    # après 7 s d'erreurs Gmail (s13). Au-delà, recover_pending_work reprend toutes les 15 min.
+    # Plafond sous le visibility_timeout Redis (1 h), sinon la relance serait redistribuée.
+    retry_backoff=30,
+    retry_backoff_max=600,
+    retry_jitter=True,
+    max_retries=5,
 )
 def send_alert_email(self, notification_id: str) -> dict:
     try:
@@ -43,19 +50,35 @@ def send_alert_email(self, notification_id: str) -> dict:
             "frontend_url": settings.FRONTEND_URL,
         },
     )
+    Notification.objects.filter(pk=notification.pk).update(
+        send_attempts=F("send_attempts") + 1, last_attempt_at=timezone.now()
+    )
     try:
-        send_mail(
-            subject=notification.title,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[notification.user.email],
-        )
-    except Exception:
+        send_alert_message(notification, message)
+    except Exception as exc:
         metrics.email_failed()
+        Notification.objects.filter(pk=notification.pk).update(
+            last_error=f"{type(exc).__name__}: {exc}"[:500]
+        )
         raise
     metrics.email_sent()
-    Notification.objects.filter(pk=notification.pk).update(sent_at=timezone.now())
+    Notification.objects.filter(pk=notification.pk).update(sent_at=timezone.now(), last_error="")
     return {"status": "sent"}
+
+
+def send_alert_message(notification: Notification, body: str) -> None:
+    """Un Message-ID stable par notification : si Google a envoyé le message mais que sa réponse
+    s'est perdue, la relance repart avec le même identifiant, que Gmail et la plupart des
+    messageries fusionnent au lieu d'afficher un doublon (s13 « ack_lost » : 4 envois par
+    e-mail). Mieux vaut un doublon fusionné qu'une alerte réglementaire perdue."""
+    domain = parseaddr(settings.DEFAULT_FROM_EMAIL)[1].rpartition("@")[2] or "amm-innov.local"
+    EmailMessage(
+        subject=notification.title,
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[notification.user.email],
+        headers={"Message-ID": f"<notification-{notification.pk}@{domain}>"},
+    ).send()
 
 
 def digest_for_user(user: User, today=None) -> dict | None:
@@ -94,8 +117,17 @@ def send_weekly_digest(today: str | None = None) -> dict:
     from datetime import date
 
     reference = date.fromisoformat(today) if today else reference_today()
-    sent = 0
+    title = f"Digest hebdomadaire du {reference:%d/%m/%Y}"
+    already = set(
+        Notification.objects.filter(
+            channel=Notification.Channel.EMAIL, title=title, sent_at__isnull=False
+        ).values_list("user_id", flat=True)
+    )
+    sent = failed = 0
     for user in User.objects.filter(is_active=True).prefetch_related("countries"):
+        # Relancé après un échec partiel, le digest ne repart qu'aux utilisateurs non servis.
+        if user.pk in already:
+            continue
         digest = digest_for_user(user, today=reference)
         if digest is None:
             continue
@@ -103,22 +135,29 @@ def send_weekly_digest(today: str | None = None) -> dict:
             "notifications/weekly_digest.txt",
             {"user": user, "today": reference, "frontend_url": settings.FRONTEND_URL, **digest},
         )
-        send_mail(
-            subject=f"AMM INNOV — Digest hebdomadaire du {reference:%d/%m/%Y}",
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-        )
+        try:
+            send_mail(
+                subject=f"AMM INNOV — {title}",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+            )
+        except Exception:
+            # Un destinataire en échec n'arrête plus la tournée des suivants.
+            failed += 1
+            metrics.email_failed()
+            logger.exception("Digest non envoyé à %s", user.email)
+            continue
         Notification.objects.create(
             user=user,
             channel=Notification.Channel.EMAIL,
-            title=f"Digest hebdomadaire du {reference:%d/%m/%Y}",
+            title=title,
             body=message,
             link=f"{settings.FRONTEND_URL.rstrip('/')}/alerts",
             sent_at=timezone.now(),
         )
         sent += 1
-    return {"sent": sent}
+    return {"sent": sent, "failed": failed}
 
 
 @shared_task(name="apps.notifications.tasks.cleanup_notifications")

@@ -44,8 +44,8 @@ async def test_country_user_groups_and_events(users, make_amm):
     await sync_to_async(publish_amm_event)("amm.updated", amm)
     event = await communicator.receive_json_from()
     assert event == {"type": "amm.updated", "id": str(amm.pk), "country": "SN"}
-    # the same event was also sent on `global`, which the user joined too
-    assert (await communicator.receive_json_from())["type"] == "amm.updated"
+    # une seule fois : l'événement ne part plus aussi sur `global` (amplification, s18)
+    assert await communicator.receive_nothing(timeout=0.2)
 
     await sync_to_async(publish)("country.CI", {"type": "amm.updated", "id": "x", "country": "CI"})
     assert await communicator.receive_nothing(timeout=0.2)
