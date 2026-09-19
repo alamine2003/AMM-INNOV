@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Prefetch
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -100,9 +100,17 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
         amm = self.get_object()
         return Response(HistoryEntrySerializer(amm_history(amm), many=True).data)
 
+    @extend_schema(methods=["GET"], responses=RenewalSerializer(many=True))
     @extend_schema(
+        methods=["POST"],
         request=RenewalSerializer,
-        responses={200: RenewalSerializer(many=True), 201: RenewalSerializer},
+        responses={
+            201: RenewalSerializer,
+            200: OpenApiResponse(
+                RenewalSerializer,
+                description="Même décision déjà enregistrée : le renouvellement existant.",
+            ),
+        },
     )
     @action(detail=True, methods=["get", "post"])
     def renewals(self, request, pk=None):
