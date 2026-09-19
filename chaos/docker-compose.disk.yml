@@ -1,0 +1,14 @@
+# Surcouche « disque plein » : base et stockage objet sur des systèmes de fichiers de taille
+# bornée (tmpfs), que l'on remplit sans jamais toucher au disque de la machine.
+services:
+  postgres:
+    volumes: !override
+      - pgsmall:/var/lib/postgresql/data
+  minio:
+    volumes: !override
+      - miniosmall:/data
+volumes:
+  pgsmall:
+    driver_opts: {type: tmpfs, device: tmpfs, o: "size=320m,uid=999"}
+  miniosmall:
+    driver_opts: {type: tmpfs, device: tmpfs, o: "size=160m"}

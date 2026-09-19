@@ -1,0 +1,52 @@
+{
+  "scenario": "s16_full_restart",
+  "label": "avant",
+  "cold_start": {
+    "stop_s": 3.8,
+    "api_ready_s": 18.5,
+    "worker_ready_after_api_s": 9.4
+  },
+  "late_database": {
+    "web_state_while_db_absent": "running restarts=8",
+    "api_back_after_db_start_s": null,
+    "backend_direct_back_s": 2.3,
+    "backend_ip_before": "172.26.0.8",
+    "backend_ip_after": "172.26.0.7",
+    "worker_back_s": 3.7,
+    "stuck_diagnostic": {
+      "backend": "running restarts=8 exit=0 health=healthy",
+      "backend_log": [
+        "[entrypoint] attente des dépendances (timeout 60s)…",
+        "[wait-for] toxiproxy:15432 … ok (0.0s)",
+        "[wait-for] toxiproxy:16379 … ok (0.0s)",
+        "[entrypoint] python manage.py migrate --noinput",
+        "Operations to perform:",
+        "  Apply all migrations: accounts, admin, alerts, amm, analytics, auth, catalog, contenttypes, django_celery_beat, documents, imports, notifications, sessions, token_blacklist",
+        "Running migrations:",
+        "  No migrations to apply.",
+        "[entrypoint] daphne, 0.0.0.0:8000",
+        "127.0.0.1:50912 - - [18/Sep/2026:13:10:29] \"GET /api/v1/health\" 200 44",
+        "192.168.65.1:39915 - - [18/Sep/2026:13:10:29] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:35764 - - [18/Sep/2026:13:10:59] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:48664 - - [18/Sep/2026:13:11:29] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:40390 - - [18/Sep/2026:13:11:59] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:35766 - - [18/Sep/2026:13:12:30] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:51852 - - [18/Sep/2026:13:13:00] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:42522 - - [18/Sep/2026:13:13:30] \"GET /api/v1/health\" 200 44",
+        "127.0.0.1:59464 - - [18/Sep/2026:13:14:00] \"GET /api/v1/health\" 200 44",
+        "django.db.utils.OperationalError: couldn't get a connection after 10.00 sec",
+        "/opt/venv/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/staticfiles/",
+        "  mw_instance = middleware(adapted_handler)",
+        "2026-09-18 13:10:29,438 INFO daphne.cli Starting server at tcp:port=8000:interface=0.0.0.0",
+        "2026-09-18 13:10:29,439 INFO daphne.server HTTP/2 support not enabled (install the http2 and tls Twisted extras)",
+        "2026-09-18 13:10:29,439 INFO daphne.server Configuring endpoint tcp:port=8000:interface=0.0.0.0",
+        "2026-09-18 13:10:29,439 INFO daphne.server Listening on TCP address 0.0.0.0:8000"
+      ]
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

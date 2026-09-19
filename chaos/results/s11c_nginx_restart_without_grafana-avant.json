@@ -1,0 +1,8 @@
+{
+  "scenario": "s11c_nginx_restart_without_grafana",
+  "label": "avant",
+  "api_status_with_grafana_down": 0,
+  "nginx_state": "running restarts=1",
+  "nginx_log": [],
+  "api_back_after_grafana_start_s": 0.0
+}

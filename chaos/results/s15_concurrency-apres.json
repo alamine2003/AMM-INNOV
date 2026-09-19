@@ -1,0 +1,50 @@
+{
+  "scenario": "s15_concurrency",
+  "label": "apres",
+  "a_same_decision_x10": {
+    "statuses": {
+      "200": 9,
+      "201": 1
+    },
+    "renewals_created": 1
+  },
+  "b_plan_x20": {
+    "statuses": {
+      "201": 1,
+      "400": 19
+    },
+    "open_renewals": 1
+  },
+  "c_lost_update": {
+    "expected": "notes-59|holder-59",
+    "final": "notes-59|holder-59",
+    "lost": false,
+    "history_regressions": 0
+  },
+  "e_replace_x8": {
+    "statuses": {
+      "201": 1,
+      "400": 7
+    },
+    "current_successors": 1
+  },
+  "f_same_file_x20": {
+    "statuses": {
+      "201": 1,
+      "400": 19
+    },
+    "stored": 1
+  },
+  "g_transitions_x12": {
+    "statuses": {
+      "200": 2,
+      "400": 10
+    },
+    "final": "ABANDONNE"
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

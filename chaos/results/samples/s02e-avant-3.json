@@ -1,0 +1,51 @@
+{
+  "scenario": "s02e_pg_pool_saturation",
+  "label": "avant",
+  "concurrent": 150,
+  "burst_duration_s": 11.8,
+  "statuses": {
+    "200": 93,
+    "500": 57
+  },
+  "p50_s": 10.34,
+  "p95_s": 11.21,
+  "max_s": 11.76,
+  "error_bodies": [
+    "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1"
+  ],
+  "after_statuses": [
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "resources": {
+    "worker_cpu": 0.33,
+    "worker_mem": "207.3MiB",
+    "backend_cpu": 41.23,
+    "backend_mem": "146.8MiB",
+    "nginx_cpu": 0.58,
+    "nginx_mem": "18.48MiB",
+    "postgres_cpu": 7.94,
+    "postgres_mem": "108MiB",
+    "redis_cpu": 1.43,
+    "redis_mem": "11.17MiB",
+    "mock-gmail_cpu": 0.03,
+    "mock-gmail_mem": "22.49MiB",
+    "grafana_cpu": 0.02,
+    "grafana_mem": "16.34MiB",
+    "minio_cpu": 2.16,
+    "minio_mem": "225.6MiB",
+    "toxiproxy_cpu": 1.73,
+    "toxiproxy_mem": "36.68MiB",
+    "others_cpu": 15.9,
+    "pg_connections_max": 16,
+    "pg_idle_in_tx_max": 0
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

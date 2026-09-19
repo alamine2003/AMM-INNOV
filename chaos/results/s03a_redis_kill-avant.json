@@ -1,0 +1,591 @@
+{
+  "scenario": "s03a_redis_kill",
+  "label": "avant",
+  "injected_at_s": 15.0,
+  "healed_at_s": 75.1,
+  "injection": {
+    "how": "docker kill redis"
+  },
+  "phases": {
+    "avant": {
+      "requests": 296,
+      "errors": 0,
+      "error_rate": 0.0,
+      "users_affected": 0,
+      "p50_ms": 15,
+      "p95_ms": 51,
+      "p99_ms": 115,
+      "max_ms": 118,
+      "statuses": {
+        "200": 296
+      }
+    },
+    "pendant": {
+      "requests": 216,
+      "errors": 0,
+      "error_rate": 0.0,
+      "users_affected": 0,
+      "p50_ms": 17,
+      "p95_ms": 15043,
+      "p99_ms": 15050,
+      "max_ms": 15055,
+      "statuses": {
+        "200": 216
+      }
+    },
+    "apres": {
+      "requests": 733,
+      "errors": 0,
+      "error_rate": 0.0,
+      "users_affected": 0,
+      "p50_ms": 14,
+      "p95_ms": 38,
+      "p99_ms": 10534,
+      "max_ms": 25067,
+      "statuses": {
+        "200": 733
+      }
+    }
+  },
+  "per_kind": {
+    "list": {
+      "avant": {
+        "requests": 123,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 17,
+        "p95_ms": 62,
+        "p99_ms": 95,
+        "max_ms": 115,
+        "statuses": {
+          "200": 123
+        }
+      },
+      "pendant": {
+        "requests": 78,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 21,
+        "p95_ms": 30,
+        "p99_ms": 71,
+        "max_ms": 97,
+        "statuses": {
+          "200": 78
+        }
+      },
+      "apres": {
+        "requests": 253,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 16,
+        "p95_ms": 29,
+        "p99_ms": 74,
+        "max_ms": 181,
+        "statuses": {
+          "200": 253
+        }
+      }
+    },
+    "detail": {
+      "avant": {
+        "requests": 44,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 10,
+        "p95_ms": 18,
+        "p99_ms": 23,
+        "max_ms": 26,
+        "statuses": {
+          "200": 44
+        }
+      },
+      "pendant": {
+        "requests": 46,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 12,
+        "p95_ms": 21,
+        "p99_ms": 36,
+        "max_ms": 47,
+        "statuses": {
+          "200": 46
+        }
+      },
+      "apres": {
+        "requests": 135,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 9,
+        "p95_ms": 18,
+        "p99_ms": 42,
+        "max_ms": 58,
+        "statuses": {
+          "200": 135
+        }
+      }
+    },
+    "analytics": {
+      "avant": {
+        "requests": 41,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 9,
+        "p95_ms": 19,
+        "p99_ms": 83,
+        "max_ms": 118,
+        "statuses": {
+          "200": 41
+        }
+      },
+      "pendant": {
+        "requests": 31,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 9,
+        "p95_ms": 16,
+        "p99_ms": 18,
+        "max_ms": 18,
+        "statuses": {
+          "200": 31
+        }
+      },
+      "apres": {
+        "requests": 120,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 7,
+        "p95_ms": 20,
+        "p99_ms": 63,
+        "max_ms": 66,
+        "statuses": {
+          "200": 120
+        }
+      }
+    },
+    "alerts": {
+      "avant": {
+        "requests": 34,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 61,
+        "p99_ms": 117,
+        "max_ms": 117,
+        "statuses": {
+          "200": 34
+        }
+      },
+      "pendant": {
+        "requests": 22,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 19,
+        "p95_ms": 48,
+        "p99_ms": 73,
+        "max_ms": 79,
+        "statuses": {
+          "200": 22
+        }
+      },
+      "apres": {
+        "requests": 80,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 60,
+        "p99_ms": 169,
+        "max_ms": 171,
+        "statuses": {
+          "200": 80
+        }
+      }
+    },
+    "write": {
+      "avant": {
+        "requests": 44,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 18,
+        "p95_ms": 30,
+        "p99_ms": 45,
+        "max_ms": 52,
+        "statuses": {
+          "200": 44
+        }
+      },
+      "pendant": {
+        "requests": 28,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15041,
+        "p95_ms": 15052,
+        "p99_ms": 15055,
+        "max_ms": 15055,
+        "statuses": {
+          "200": 28
+        }
+      },
+      "apres": {
+        "requests": 117,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 19,
+        "p95_ms": 11057,
+        "p99_ms": 23451,
+        "max_ms": 25067,
+        "statuses": {
+          "200": 117
+        }
+      }
+    },
+    "me": {
+      "avant": {
+        "requests": 10,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 7,
+        "p95_ms": 41,
+        "p99_ms": 62,
+        "max_ms": 67,
+        "statuses": {
+          "200": 10
+        }
+      },
+      "pendant": {
+        "requests": 11,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 9,
+        "p95_ms": 16,
+        "p99_ms": 18,
+        "max_ms": 18,
+        "statuses": {
+          "200": 11
+        }
+      },
+      "apres": {
+        "requests": 28,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 5,
+        "p95_ms": 12,
+        "p99_ms": 27,
+        "max_ms": 31,
+        "statuses": {
+          "200": 28
+        }
+      }
+    }
+  },
+  "outage": {
+    "first_error_s": null,
+    "last_error_s": null,
+    "duration_s": 0
+  },
+  "recovered_s_after_heal": 8.3,
+  "health": {
+    "during": {
+      "0": 10
+    },
+    "max_latency_s": 5.0
+  },
+  "actions": {
+    "login": {
+      "pendant": {
+        "attempts": 13,
+        "failed": 13,
+        "statuses": {
+          "500": 13
+        },
+        "max_latency_s": 5.029
+      },
+      "apres": {
+        "attempts": 14,
+        "failed": 1,
+        "statuses": {
+          "200": 13,
+          "500": 1
+        },
+        "max_latency_s": 5.026
+      }
+    },
+    "upload": {
+      "pendant": {
+        "attempts": 1,
+        "failed": 1,
+        "statuses": {
+          "0": 1
+        },
+        "max_latency_s": 60.003
+      },
+      "apres": {
+        "attempts": 11,
+        "failed": 0,
+        "statuses": {
+          "201": 11
+        },
+        "max_latency_s": 7.351
+      },
+      "persistence": {
+        "saved_ok": 15,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 1
+      }
+    },
+    "renewal": {
+      "pendant": {
+        "attempts": 4,
+        "failed": 0,
+        "statuses": {
+          "201": 4
+        },
+        "max_latency_s": 35.052
+      },
+      "apres": {
+        "attempts": 8,
+        "failed": 0,
+        "statuses": {
+          "201": 8
+        },
+        "max_latency_s": 0.036
+      },
+      "persistence": {
+        "saved_ok": 15,
+        "saved_but_error": 0,
+        "not_saved_error": 0
+      }
+    }
+  },
+  "timeline": [
+    {
+      "t": 0.0,
+      "requests": 103,
+      "errors": 0,
+      "p50_ms": 16,
+      "p95_ms": 67,
+      "max_ms": 118
+    },
+    {
+      "t": 5.0,
+      "requests": 96,
+      "errors": 0,
+      "p50_ms": 14,
+      "p95_ms": 34,
+      "max_ms": 79
+    },
+    {
+      "t": 10.0,
+      "requests": 97,
+      "errors": 0,
+      "p50_ms": 15,
+      "p95_ms": 30,
+      "max_ms": 65
+    },
+    {
+      "t": 15.0,
+      "requests": 38,
+      "errors": 0,
+      "p50_ms": 18,
+      "p95_ms": 47,
+      "max_ms": 63
+    },
+    {
+      "t": 20.0,
+      "requests": 6,
+      "errors": 0,
+      "p50_ms": 15,
+      "p95_ms": 26,
+      "max_ms": 29
+    },
+    {
+      "t": 30.0,
+      "requests": 37,
+      "errors": 0,
+      "p50_ms": 18,
+      "p95_ms": 15044,
+      "max_ms": 15055
+    },
+    {
+      "t": 35.0,
+      "requests": 15,
+      "errors": 0,
+      "p50_ms": 17,
+      "p95_ms": 4533,
+      "max_ms": 15042
+    },
+    {
+      "t": 40.0,
+      "requests": 10,
+      "errors": 0,
+      "p50_ms": 13,
+      "p95_ms": 24,
+      "max_ms": 28
+    },
+    {
+      "t": 45.0,
+      "requests": 24,
+      "errors": 0,
+      "p50_ms": 18,
+      "p95_ms": 15044,
+      "max_ms": 15053
+    },
+    {
+      "t": 50.0,
+      "requests": 36,
+      "errors": 0,
+      "p50_ms": 16,
+      "p95_ms": 15026,
+      "max_ms": 15050
+    },
+    {
+      "t": 55.0,
+      "requests": 15,
+      "errors": 0,
+      "p50_ms": 19,
+      "p95_ms": 4529,
+      "max_ms": 15020
+    },
+    {
+      "t": 60.0,
+      "requests": 6,
+      "errors": 0,
+      "p50_ms": 13,
+      "p95_ms": 15041,
+      "max_ms": 15043
+    },
+    {
+      "t": 65.0,
+      "requests": 15,
+      "errors": 0,
+      "p50_ms": 14,
+      "p95_ms": 15044,
+      "max_ms": 15046
+    },
+    {
+      "t": 70.0,
+      "requests": 13,
+      "errors": 0,
+      "p50_ms": 20,
+      "p95_ms": 15045,
+      "max_ms": 15048
+    },
+    {
+      "t": 75.0,
+      "requests": 15,
+      "errors": 0,
+      "p50_ms": 23,
+      "p95_ms": 25053,
+      "max_ms": 25067
+    },
+    {
+      "t": 80.0,
+      "requests": 42,
+      "errors": 0,
+      "p50_ms": 22,
+      "p95_ms": 11272,
+      "max_ms": 15072
+    },
+    {
+      "t": 85.0,
+      "requests": 92,
+      "errors": 0,
+      "p50_ms": 14,
+      "p95_ms": 61,
+      "max_ms": 181
+    },
+    {
+      "t": 90.0,
+      "requests": 99,
+      "errors": 0,
+      "p50_ms": 15,
+      "p95_ms": 27,
+      "max_ms": 53
+    },
+    {
+      "t": 95.0,
+      "requests": 95,
+      "errors": 0,
+      "p50_ms": 13,
+      "p95_ms": 25,
+      "max_ms": 88
+    },
+    {
+      "t": 100.0,
+      "requests": 104,
+      "errors": 0,
+      "p50_ms": 12,
+      "p95_ms": 22,
+      "max_ms": 33
+    },
+    {
+      "t": 105.0,
+      "requests": 94,
+      "errors": 0,
+      "p50_ms": 14,
+      "p95_ms": 23,
+      "max_ms": 43
+    },
+    {
+      "t": 110.0,
+      "requests": 95,
+      "errors": 0,
+      "p50_ms": 13,
+      "p95_ms": 33,
+      "max_ms": 49
+    },
+    {
+      "t": 115.0,
+      "requests": 92,
+      "errors": 0,
+      "p50_ms": 12,
+      "p95_ms": 31,
+      "max_ms": 77
+    },
+    {
+      "t": 120.0,
+      "requests": 6,
+      "errors": 0,
+      "p50_ms": 11,
+      "p95_ms": 18,
+      "max_ms": 18
+    }
+  ],
+  "resources": {
+    "worker_cpu": 16.95,
+    "backend_cpu": 30.37,
+    "redis_cpu": 1.39,
+    "grafana_cpu": 0.02,
+    "nginx_cpu": 0.43,
+    "postgres_cpu": 8.04,
+    "mock-gmail_cpu": 0.02,
+    "minio_cpu": 3.27,
+    "toxiproxy_cpu": 3.41,
+    "pg_connections_max": 18,
+    "pg_idle_in_tx_max": 0
+  },
+  "extra": {},
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "scenario": "p3b_crash_worker_down_gmail_down",
+  "label": "apres",
+  "api": {
+    "window": {
+      "requests": 3954,
+      "errors": 28,
+      "error_rate": 0.007,
+      "users_affected": 10,
+      "p50_ms": 15,
+      "p95_ms": 29,
+      "p99_ms": 65,
+      "max_ms": 184,
+      "statuses": {
+        "200": 3926,
+        "502": 28
+      }
+    },
+    "outage": {
+      "first_error_s": 12.7,
+      "last_error_s": 14.2,
+      "duration_s": 1.5,
+      "failed_requests": 28,
+      "users_affected": 10
+    }
+  },
+  "emails": {
+    "created": 10,
+    "marked_sent": 7
+  },
+  "gmail_messages_received": 7,
+  "previews": "5/5",
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}
