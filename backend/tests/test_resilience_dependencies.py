@@ -155,13 +155,18 @@ def test_amm_write_is_fast_when_realtime_is_down(ceo_client, make_amm):
 
 @pytest.mark.django_db
 def test_login_works_when_the_cache_is_unavailable(users, anon_client):
+    import secrets
+
     from django.core.cache import cache
 
+    credential = secrets.token_urlsafe(16)  # tiré au hasard : aucun secret dans le dépôt
+    users["ceo"].set_password(credential)
+    users["ceo"].save(update_fields=["password"])
     with mock.patch.object(cache, "get", side_effect=ConnectionError("down")), mock.patch.object(
         cache, "set", side_effect=ConnectionError("down")
     ):
         response = anon_client.post(
-            "/api/v1/auth/login", {"email": "ceo@test.local", "password": "Passw0rd!"}
+            "/api/v1/auth/login", {"email": users["ceo"].email, "password": credential}
         )
     assert response.status_code == 200
 
