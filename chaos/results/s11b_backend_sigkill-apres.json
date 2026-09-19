@@ -1,0 +1,52 @@
+{
+  "scenario": "s11b_backend_sigkill",
+  "label": "apres",
+  "signal": "KILL",
+  "pids": [
+    7
+  ],
+  "inflight_statuses": {
+    "502": 20
+  },
+  "back_after_s": 2.5,
+  "ip_before": "172.26.0.4",
+  "diagnostic": [
+    {
+      "t": 1.3,
+      "container": "restarting restarts=1 exit=137",
+      "direct": 0,
+      "via_nginx": 502,
+      "ip": "172.26.0.4",
+      "procs": []
+    },
+    {
+      "t": 2.5,
+      "container": "running restarts=1 exit=0",
+      "direct": 200,
+      "via_nginx": 200,
+      "ip": "172.26.0.4",
+      "procs": [
+        7
+      ]
+    }
+  ],
+  "backend_log_tail": [
+    "INFO:     Started server process [7]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     ASGI 'lifespan' protocol appears unsupported.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "/opt/venv/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/staticfiles/",
+    "  mw_instance = middleware(adapted_handler)",
+    "INFO:     Started server process [7]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     ASGI 'lifespan' protocol appears unsupported.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)"
+  ],
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

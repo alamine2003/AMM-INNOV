@@ -1,0 +1,48 @@
+{
+  "scenario": "s02e_pg_pool_saturation",
+  "label": "avant",
+  "concurrent": 150,
+  "burst_duration_s": 8.1,
+  "statuses": {
+    "200": 150
+  },
+  "p50_s": 4.58,
+  "p95_s": 8.09,
+  "max_s": 8.11,
+  "error_bodies": [],
+  "after_statuses": [
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "resources": {
+    "worker_cpu": 0.15,
+    "worker_mem": "207.3MiB",
+    "backend_cpu": 19.85,
+    "backend_mem": "153.8MiB",
+    "nginx_cpu": 0.15,
+    "nginx_mem": "18.34MiB",
+    "postgres_cpu": 8.38,
+    "postgres_mem": "145.7MiB",
+    "redis_cpu": 1.24,
+    "redis_mem": "11.34MiB",
+    "mock-gmail_cpu": 0.01,
+    "mock-gmail_mem": "22.49MiB",
+    "grafana_cpu": 0.01,
+    "grafana_mem": "16.34MiB",
+    "minio_cpu": 2.1,
+    "minio_mem": "230.1MiB",
+    "toxiproxy_cpu": 2.02,
+    "toxiproxy_mem": "42.33MiB",
+    "others_cpu": 6.6,
+    "pg_connections_max": 23,
+    "pg_idle_in_tx_max": 0
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

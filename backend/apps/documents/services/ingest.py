@@ -11,10 +11,12 @@ from datetime import date
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
+from apps.amm.services.workflow import lock_amm
 from apps.core.dates import today as reference_today
+from apps.core.exceptions import StorageUnavailable
 from apps.core.tasks import enqueue
 from apps.documents.models import Document
 
@@ -70,7 +72,6 @@ def read_upload(uploaded_file) -> bytes:
     return content
 
 
-@transaction.atomic
 def ingest_document(
     amm,
     uploaded_file,
@@ -82,7 +83,12 @@ def ingest_document(
     user=None,
     replaces: Document | None = None,
 ) -> Document:
-    """Validates and stores an upload. Raises ValidationError on refusal."""
+    """Validates and stores an upload. Raises ValidationError on refusal.
+
+    Aucune transaction ni connexion PostgreSQL n'est tenue pendant l'écriture S3 : seules les
+    écritures en base sont atomiques. Auparavant la fonction entière l'était ; stockage figé,
+    la transaction restait ouverte pendant tout l'appel S3 (s10b).
+    """
     if kind not in Document.Kind.values:
         raise ValidationError({"kind": f"Type de document inconnu : {kind}."})
     content = read_upload(uploaded_file)
@@ -121,20 +127,42 @@ def ingest_document(
         document._history_user = user
     extension = {"application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png"}[content_type]
     original_name = getattr(uploaded_file, "name", "") or "document"
-    document.file.save(
-        f"{original_name.rsplit('.', 1)[0]}.{extension}", ContentFile(content), save=False
-    )
+    if not connection.in_atomic_block:
+        connection.close()  # retour au pool pendant l'appel au stockage
+    try:
+        document.file.save(
+            f"{original_name.rsplit('.', 1)[0]}.{extension}", ContentFile(content), save=False
+        )
+    except Exception as exc:
+        raise StorageUnavailable() from exc
     try:
         with transaction.atomic():
+            # Verrous pris ici seulement, fichier déjà écrit : ni la lecture de l'envoi, ni la
+            # conversion, ni l'appel S3 ne se font verrou tenu. AMM d'abord (son état de dossier
+            # sera recalculé), puis la version remplacée, relue sous le verrou : huit
+            # remplacements simultanés produisaient huit versions « courantes » (s15e).
+            lock_amm(amm.pk)
+            if replaces is not None:
+                replaces = Document.objects.select_for_update().get(pk=replaces.pk)
+                if not replaces.is_current or replaces.archived_at is not None:
+                    raise ValidationError(
+                        {"file": "Ce document vient d'être remplacé : rechargez la page, "
+                         "puis réessayez."}
+                    )
             document.save()
+            if replaces is not None:
+                replaces.is_current = False
+                if user is not None:
+                    replaces._history_user = user
+                replaces.save(update_fields=["is_current"])
     except IntegrityError:  # envoi simultané du même fichier : la contrainte tranche
         document.file.delete(save=False)
         raise duplicate_error
-    if replaces is not None:
-        replaces.is_current = False
-        if user is not None:
-            replaces._history_user = user
-        replaces.save(update_fields=["is_current"])
+    except Exception:
+        # refus sous verrou, ou base indisponible après l'écriture du fichier : pas de fichier
+        # orphelin (s02d)
+        document.file.delete(save=False)
+        raise
     from apps.documents.tasks import generate_document_preview
 
     enqueue(generate_document_preview, str(document.pk))

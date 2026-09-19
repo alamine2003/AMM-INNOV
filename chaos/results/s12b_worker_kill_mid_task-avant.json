@@ -1,0 +1,50 @@
+{
+  "scenario": "s12b_worker_kill_mid_task",
+  "label": "avant",
+  "killed_pids": [
+    7,
+    15,
+    16,
+    17
+  ],
+  "dossier_running_before_kill": true,
+  "state_before_kill": "RUNNING",
+  "after_restart_90s": {
+    "dossier": "RUNNING",
+    "emails": {
+      "created": 6,
+      "marked_sent": 0
+    }
+  },
+  "sweeper": "pas de rattrapage",
+  "dossier_relaunch": {
+    "status": 409,
+    "body": "{\"detail\":\"Ce dossier est en cours d'analyse ou déjà enregistré.\"}"
+  },
+  "dossier_after_relaunch": "RUNNING",
+  "relaunch_done_s": null,
+  "emails": {
+    "created": 6,
+    "marked_sent": 0
+  },
+  "gmail_messages_received": 0,
+  "redis_unacked_after_restart": "5",
+  "redis_queue_after_restart": "0",
+  "integrity": {
+    "ok": false,
+    "violations": {
+      "email_delivered": 6,
+      "no_stuck_job": 1
+    },
+    "samples": {
+      "email_delivered": [
+        "notification cb2249f0-28a5-4330-b1bb-65dd54b628b1",
+        "notification e2131cfb-1215-452d-99c4-cdebba508725",
+        "notification ad454b90-5781-430f-a7c5-147815be5673"
+      ],
+      "no_stuck_job": [
+        "DossierImport 7611cf54-1378-4e0b-a142-dd28192d6ac6: RUNNING"
+      ]
+    }
+  }
+}

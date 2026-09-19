@@ -8,7 +8,15 @@ from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import SimpleRouter
 
-from apps.accounts.views import HealthView, LoginView, LogoutView, MeView, RefreshView, UserViewSet
+from apps.accounts.views import (
+    HealthView,
+    LivenessView,
+    LoginView,
+    LogoutView,
+    MeView,
+    RefreshView,
+    UserViewSet,
+)
 from apps.alerts.views import AlertRuleViewSet, AlertViewSet
 from apps.amm.views import AmmViewSet, RenewalViewSet
 from apps.analytics.views import AfricaView, CountryView, ExportView, ProductCoverageView
@@ -39,6 +47,7 @@ api_v1 = [
     re_path(r"^auth/logout/?$", LogoutView.as_view(), name="auth-logout"),
     re_path(r"^me/?$", MeView.as_view(), name="me"),
     re_path(r"^health/?$", HealthView.as_view(), name="health"),
+    re_path(r"^health/live/?$", LivenessView.as_view(), name="health-live"),
     re_path(r"^analytics/africa/?$", AfricaView.as_view(), name="analytics-africa"),
     re_path(
         r"^analytics/country/(?P<iso2>[A-Za-z]{2})/?$",

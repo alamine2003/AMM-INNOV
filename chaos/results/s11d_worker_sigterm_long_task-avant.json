@@ -1,0 +1,24 @@
+{
+  "scenario": "s11d_worker_sigterm_long_task",
+  "label": "avant",
+  "stop_took_s": 3.3,
+  "emails": {
+    "created": 4,
+    "marked_sent": 0
+  },
+  "gmail_messages_received": 0,
+  "sweeper": "pas de rattrapage",
+  "integrity": {
+    "ok": false,
+    "violations": {
+      "email_delivered": 4
+    },
+    "samples": {
+      "email_delivered": [
+        "notification e70af951-60f6-4562-a66e-94c19107efb6",
+        "notification 3df69735-2503-4063-8b82-68a02b4c71e7",
+        "notification 494b15f4-db6a-43be-830a-29a0ccfac012"
+      ]
+    }
+  }
+}

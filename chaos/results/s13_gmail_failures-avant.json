@@ -1,0 +1,102 @@
+{
+  "scenario": "s13_gmail_failures",
+  "label": "avant",
+  "modes": {
+    "http500": {
+      "attempts_during": 20,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 0,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "http429": {
+      "attempts_during": 20,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 0,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "invalid": {
+      "attempts_during": 20,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 0,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "slow": {
+      "attempts_during": 8,
+      "token_calls": 13,
+      "emails": {
+        "created": 5,
+        "marked_sent": 5
+      },
+      "gmail_messages_received": 5,
+      "preview_latency_s": 37.8,
+      "previews": "3/3"
+    },
+    "hang": {
+      "attempts_during": 8,
+      "token_calls": 5,
+      "emails": {
+        "created": 5,
+        "marked_sent": 5
+      },
+      "gmail_messages_received": 5,
+      "preview_latency_s": 37.9,
+      "previews": "3/3"
+    },
+    "down": {
+      "attempts_during": 20,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 0,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "ack_lost": {
+      "attempts_during": 40,
+      "token_calls": 20,
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 20,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "outage_3min": {
+      "emails": {
+        "created": 5,
+        "marked_sent": 0
+      },
+      "gmail_messages_received": 0
+    },
+    "after_sweep": {
+      "sweeper": "pas de rattrapage",
+      "emails_total": 40,
+      "emails_sent": 10,
+      "outage_3min_sent": 0,
+      "outage_3min_extra_messages": 0
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

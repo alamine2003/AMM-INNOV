@@ -1,0 +1,7 @@
+{
+  "scenario": "s11e_redis_kill_with_queue",
+  "label": "apres",
+  "queued_before_kill": "200",
+  "queued_after_restart": "200",
+  "redis_persistence": "appendonly yes (docker-compose.prod.yml)"
+}

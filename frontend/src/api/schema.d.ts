@@ -643,7 +643,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Disponibilité : 503 si la base est injoignable ; Redis est signalé sans être exigé. */
         get: operations["v1_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/live/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Vivacité : le processus répond, sans interroger aucune dépendance. */
+        get: operations["v1_health_live_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3035,41 +3053,11 @@ export interface operations {
                     "application/json": components["schemas"]["PaginatedRenewalList"];
                 };
             };
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Renewal"];
-                };
-            };
         };
     };
     v1_amms_renewals_create: {
         parameters: {
-            query?: {
-                country?: string;
-                /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                dossier_state?: ("COMPLET" | "INCOMPLET")[];
-                expires_after?: string;
-                expires_before?: string;
-                has_current_scan?: boolean;
-                /** @description Quel champ utiliser pour classer les résultats. */
-                ordering?: string;
-                owner?: string;
-                /** @description Un numéro de page de l'ensemble des résultats. */
-                page?: number;
-                /** @description Nombre de résultats à retourner par page. */
-                page_size?: number;
-                product?: string;
-                range?: string;
-                /** @description Un terme de recherche. */
-                search?: string;
-                /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
-                /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Un(une) Chaîne UUID identifiant ce(cette) AMM. */
@@ -3085,12 +3073,13 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Même décision déjà enregistrée : le renouvellement existant. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedRenewalList"];
+                    "application/json": components["schemas"]["Renewal"];
                 };
             };
             201: {
@@ -3734,6 +3723,27 @@ export interface operations {
         };
     };
     v1_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    v1_health_live_retrieve: {
         parameters: {
             query?: never;
             header?: never;

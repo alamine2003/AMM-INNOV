@@ -41,6 +41,19 @@ def can_transition(renewal: Renewal, to: str) -> bool:
     return to in allowed_transitions(renewal)
 
 
+def lock_amm(amm_id) -> None:
+    """Verrou de ligne sur l'AMM, pris en premier par toute écriture qui la recalcule.
+
+    Un seul ordre de verrouillage (AMM, puis renouvellement) : une transition (qui verrouillait
+    le renouvellement puis réécrivait l'AMM) et une décision enregistrée en même temps (AMM puis
+    renouvellement) pouvaient s'interbloquer.
+    """
+    try:
+        list(MarketingAuthorization.objects.select_for_update().filter(pk=amm_id).values("pk"))
+    except (ValueError, ValidationError):  # identifiant mal formé : la vue répondra 404
+        return
+
+
 def missing_fields(renewal: Renewal, to: str, fields: dict) -> list[str]:
     missing = []
     for name in REQUIRED_FIELDS.get(to, ()):
@@ -68,10 +81,22 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
     La ligne AMM est verrouillée le temps de la transaction pour que deux requêtes simultanées ne
     créent pas deux renouvellements (et que `sequence` reste unique).
     """
-    MarketingAuthorization.objects.select_for_update().get(pk=amm.pk)
+    lock_amm(amm.pk)
     fields.setdefault(
         "workflow_status", S.OBTENU if fields.get("start_date") else S.PLANIFIE
     )
+    if fields["workflow_status"] == S.OBTENU and fields.get("number"):
+        # Idempotence : la même décision (n° et date de début) déjà enregistrée est renvoyée
+        # telle quelle. Sous le verrou de l'AMM, deux envois simultanés ne font qu'un.
+        existing = Renewal.objects.filter(
+            amm=amm,
+            workflow_status=S.OBTENU,
+            number=fields["number"],
+            start_date=fields.get("start_date"),
+        ).first()
+        if existing is not None:
+            existing._replayed = True
+            return existing
     open_renewal = (
         Renewal.objects.filter(amm=amm, workflow_status__in=Renewal.OPEN_STATUSES)
         .order_by("-sequence")
@@ -119,7 +144,7 @@ def delete_renewal(renewal: Renewal, actor=None) -> None:
 
     from apps.documents.models import Document
 
-    MarketingAuthorization.objects.select_for_update().get(pk=renewal.amm_id)
+    lock_amm(renewal.amm_id)
     last = (
         Renewal.objects.filter(amm_id=renewal.amm_id).order_by("-sequence").values("sequence")[:1]
     )
@@ -157,6 +182,7 @@ def transition(renewal: Renewal, to: str, actor=None, **fields) -> Renewal:
     """
     if to not in S.values:
         raise ValidationError({"to": f"Statut inconnu : {to}."})
+    lock_amm(renewal.amm_id)  # AMM d'abord : même ordre que create_renewal et delete_renewal
     list(Renewal.objects.select_for_update().filter(pk=renewal.pk).values("pk"))  # verrou ligne
     renewal.refresh_from_db(fields=["workflow_status"])
     if not can_transition(renewal, to):

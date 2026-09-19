@@ -1,0 +1,2 @@
+/opt/venv/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/staticfiles/
+  mw_instance = middleware(adapted_handler)

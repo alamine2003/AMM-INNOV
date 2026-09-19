@@ -17,6 +17,22 @@ const POLLING_AFTER_FAILURES = 3;
 /** Sous-protocole WebSocket portant le jeton d'accès (jamais dans l'URL : les proxys journalisent les query strings). */
 export const WS_SUBPROTOCOL = 'amm.jwt';
 
+/**
+ * Délai avant la n-ième tentative de reconnexion : palier exponentiel 1 s → 30 s, tiré au hasard
+ * entre la moitié et la totalité du palier (« equal jitter »). Sans ce tirage, tous les clients
+ * coupés par le même redémarrage du serveur revenaient à la même milliseconde, par vagues
+ * (campagne de chaos, s17).
+ */
+export function reconnectDelay(failures: number, random: () => number = Math.random): number {
+  const ceiling = Math.min(MAX_DELAY, MIN_DELAY * 2 ** Math.max(0, failures - 1));
+  return Math.round(ceiling / 2 + random() * (ceiling / 2));
+}
+
+/** Période de polling propre à chaque client (60 à 70 s), pour ne pas synchroniser les rechargements. */
+export function pollInterval(random: () => number = Math.random): number {
+  return POLL_INTERVAL + Math.round(random() * 10000);
+}
+
 export function buildWsUrl(): string {
   const configured = import.meta.env.VITE_WS_URL as string | undefined;
   if (configured) return configured;
@@ -25,7 +41,7 @@ export function buildWsUrl(): string {
 }
 
 /**
- * Connexion WebSocket unique, reconnexion exponentielle 1 s → 30 s, repli en polling 60 s.
+ * Connexion WebSocket unique, reconnexion exponentielle 1 s → 30 s avec jitter, repli en polling 60-70 s.
  * À monter une seule fois dans le layout authentifié.
  */
 export function useRealtime(enabled = true) {
@@ -100,7 +116,7 @@ export function useRealtime(enabled = true) {
 
     const scheduleReconnect = () => {
       failuresRef.current += 1;
-      const delay = Math.min(MAX_DELAY, MIN_DELAY * 2 ** (failuresRef.current - 1));
+      const delay = reconnectDelay(failuresRef.current);
       setStatus(failuresRef.current >= POLLING_AFTER_FAILURES ? 'polling' : 'reconnecting');
       clearTimer();
       timerRef.current = setTimeout(connect, delay);
@@ -125,7 +141,7 @@ export function useRealtime(enabled = true) {
       void qc.invalidateQueries({ queryKey: queryKeys.alerts.all });
       void qc.invalidateQueries({ queryKey: queryKeys.analytics.all });
       void qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
-    }, POLL_INTERVAL);
+    }, pollInterval());
     return () => clearInterval(id);
   }, [enabled, access, status, qc]);
 

@@ -59,7 +59,7 @@ def test_upload_list_zip_and_file(country_client, make_amm, make_renewal):
 
     archive = country_client.get(f"/api/v1/amms/{amm.pk}/documents/archive.zip")
     assert archive.status_code == 200 and archive["Content-Type"] == "application/zip"
-    names = zipfile.ZipFile(BytesIO(archive.content)).namelist()
+    names = zipfile.ZipFile(BytesIO(b"".join(archive.streaming_content))).namelist()
     assert names[0].endswith("_AMM_2024-02-02.pdf") and names[1].endswith("_AMM_2019-01-01.pdf")
 
     doc_id = first.json()["id"]

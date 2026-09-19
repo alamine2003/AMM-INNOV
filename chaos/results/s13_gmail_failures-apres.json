@@ -1,0 +1,102 @@
+{
+  "scenario": "s13_gmail_failures",
+  "label": "apres",
+  "modes": {
+    "http500": {
+      "attempts_during": 13,
+      "token_calls": 1,
+      "emails": {
+        "created": 5,
+        "marked_sent": 3
+      },
+      "gmail_messages_received": 3,
+      "preview_latency_s": 3.3,
+      "previews": "3/3"
+    },
+    "http429": {
+      "attempts_during": 17,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 2
+      },
+      "gmail_messages_received": 4,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "invalid": {
+      "attempts_during": 17,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 5
+      },
+      "gmail_messages_received": 5,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "slow": {
+      "attempts_during": 11,
+      "token_calls": 6,
+      "emails": {
+        "created": 5,
+        "marked_sent": 5
+      },
+      "gmail_messages_received": 11,
+      "preview_latency_s": 28.0,
+      "previews": "3/3"
+    },
+    "hang": {
+      "attempts_during": 13,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 3
+      },
+      "gmail_messages_received": 4,
+      "preview_latency_s": 28.9,
+      "previews": "3/3"
+    },
+    "down": {
+      "attempts_during": 19,
+      "token_calls": 0,
+      "emails": {
+        "created": 5,
+        "marked_sent": 1
+      },
+      "gmail_messages_received": 2,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "ack_lost": {
+      "attempts_during": 18,
+      "token_calls": 1,
+      "emails": {
+        "created": 5,
+        "marked_sent": 3
+      },
+      "gmail_messages_received": 21,
+      "preview_latency_s": 0.1,
+      "previews": "3/3"
+    },
+    "outage_3min": {
+      "emails": {
+        "created": 5,
+        "marked_sent": 3
+      },
+      "gmail_messages_received": 4
+    },
+    "after_sweep": {
+      "sweeper": "rapage du travail en attente : {'emails': 8, 'dossiers_republished': 0, 'dossiers_interrupted': 0, 'imports_republished': 0, 'previews': 0}\", \"request_id\": \"-\"}",
+      "emails_total": 40,
+      "emails_sent": 40,
+      "outage_3min_sent": 5,
+      "outage_3min_extra_messages": 8
+    }
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}
