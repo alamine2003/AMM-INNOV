@@ -1,8 +1,11 @@
 # ---------------------------------------------------------------------------
 # Laboratoire de chaos AMM INNOV — JETABLE, jamais branché sur une vraie donnée.
 #
-#   docker compose -f chaos/docker-compose.lab.yml -p amm-lab up -d --build
+#   docker compose -f chaos/docker-compose.lab.yml -p amm-lab up -d --build --wait
 #   docker compose -f chaos/docker-compose.lab.yml -p amm-lab down -v   (efface tout)
+#
+# Mise en place complète (image d'origine, code figé, état de référence) : section « Rejouer la
+# campagne » de docs/audit-resilience/RAPPORT.md.
 #
 # Reproduit la topologie de production Railway (docs/deploiement-netlify-railway.md) :
 #   - web  : un seul processus Daphne (WEB_CONCURRENCY=1), réglages config.settings.prod ;
@@ -20,8 +23,10 @@ x-backend: &backend
     context: ..
     dockerfile: docker/backend.Dockerfile
     target: runtime
-  # image « avant » (Daphne) ou « après » (entrypoint corrigé), choisie par scenarios.py
-  image: ${AMM_BACKEND_IMAGE:-amm-lab-backend:latest}
+  # image « avant » (Daphne, amm-lab-backend:latest) ou « après » (entrypoint corrigé), choisie
+  # par scenarios.py. Par défaut « après » : un --build reconstruit ainsi le code courant sous ce
+  # nom, et ne remplace plus l'image d'origine dont les tests « avant » ont besoin.
+  image: ${AMM_BACKEND_IMAGE:-amm-lab-backend:apres}
   environment: &backend-env
     DJANGO_SETTINGS_MODULE: config.settings.prod
     DJANGO_SECRET_KEY: lab-only-secret-key-0123456789abcdef-not-for-prod

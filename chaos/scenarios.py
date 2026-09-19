@@ -19,10 +19,10 @@ import time
 from typing import Callable, Dict, List, Optional
 
 from lab import (
-    API, Probe, Sampler, Toxi, app_pids, compose, container, crash, docker, exec_backend,
-    http, integrity, iso_now, lab_password, log, mock_mode, mock_reset, mock_stats, multipart, now,
-    pdf_bytes, pg_connections, psql, redis_info, restarts, restore_baseline, save, tokens,
-    wait_healthy,
+    API, Probe, Sampler, Toxi, app_pids, compose, container, crash, docker, exclusive_lab,
+    exec_backend, http, integrity, iso_now, lab_password, log, mock_mode, mock_reset, mock_stats,
+    multipart, now, pdf_bytes, pg_connections, psql, redis_info, refresh_statuses, restarts,
+    restore_baseline, save, save_baseline, tokens, wait_healthy,
 )
 
 SCENARIOS: Dict[str, Callable] = {}
@@ -1226,6 +1226,7 @@ def s09_disk_full(label: str, restore: bool = True):
             raise RuntimeError(f"surcouche disque non appliquée à {target} : arrêt du scénario")
     compose("up", "-d", "--no-deps", "backend", "worker")
     wait_healthy()
+    refresh_statuses()
     since0 = iso_now()
     report = {"scenario": "s09_disk_full", "label": label, "levels": {}}
     try:
@@ -1638,6 +1639,8 @@ def main():
     parser.add_argument("--label", default="avant")
     parser.add_argument("--no-restore", action="store_true")
     parser.add_argument("--list", action="store_true")
+    parser.add_argument("--save-baseline", action="store_true",
+                        help="fige l'état actuel du labo comme état de référence (après seed_lab.py)")
     args = parser.parse_args()
     import os
 
@@ -1651,15 +1654,20 @@ def main():
     os.environ["AMM_NGINX_CONF"] = str(
         HERE / "frozen-avant-nginx.conf" if args.label == "avant" else HERE.parent / "docker/nginx.conf"
     )
+    if args.save_baseline:
+        with exclusive_lab():
+            save_baseline()
+        return
     if args.list or not args.name:
         for name, fn in SCENARIOS.items():
             print(f"{name:32} {fn.__doc__.strip().splitlines()[0]}")
         return
-    try:
-        SCENARIOS[args.name](args.label, restore=not args.no_restore)
-    finally:
-        Toxi.clear()
-        mock_reset()
+    with exclusive_lab():
+        try:
+            SCENARIOS[args.name](args.label, restore=not args.no_restore)
+        finally:
+            Toxi.clear()
+            mock_reset()
 
 
 if __name__ == "__main__":

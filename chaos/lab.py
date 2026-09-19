@@ -13,15 +13,18 @@ Briques :
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import random
 import statistics
 import subprocess
 import threading
+import sys
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -538,6 +541,7 @@ def restore_baseline():
     # défait la surcouche disque du scénario s09)
     compose("up", "-d", "--no-deps", "backend", "worker")
     wait_healthy("http://localhost:19800/api/v1/health")  # backend en direct
+    refresh_statuses()
     try:
         wait_healthy(timeout=15)  # puis à travers nginx
     except TimeoutError:
@@ -547,6 +551,69 @@ def restore_baseline():
         compose("up", "-d", "--force-recreate", "nginx")
         wait_healthy()
     log("état de référence restauré")
+
+
+def refresh_statuses() -> None:
+    """Recalcule statuts et urgences pour aujourd'hui, comme la tâche nocturne de production.
+
+    L'urgence d'une AMM dépend de la date du jour, l'instantané de celle où il a été pris : un
+    jour plus tard, les AMM qui franchissaient un seuil (90, 180, 365 jours) étaient signalées par
+    check_integrity sans qu'aucune panne n'y soit pour rien (3 AMM, rejeu du 19/09/2026).
+    """
+    out = exec_backend("from apps.amm.tasks import recompute_all_statuses\n"
+                       "print(recompute_all_statuses())")
+    log(f"statuts recalculés pour aujourd'hui : {out.strip().splitlines()[-1]}")
+
+
+def save_baseline() -> None:
+    """Fige l'état actuel du labo comme état de référence (chaos/snapshots/, non versionné).
+
+    Une fois, sur un labo neuf, juste après seed_lab.py. Les scans du jeu de données sont des PDF
+    de démonstration sans pages lisibles : marqués sans aperçu (page_count = 0), sinon le balayeur
+    de rattrapage les republierait à chaque scénario.
+    """
+    snapshots = HERE / "snapshots"
+    snapshots.mkdir(exist_ok=True)
+    psql("update documents_document set page_count = 0 where page_count is null")
+    with open(snapshots / "baseline.dump", "wb") as out:
+        subprocess.run([*COMPOSE, "exec", "-T", "postgres", "pg_dump", "-U", "amm", "-Fc", "amm"],
+                       stdout=out, check=True)
+    compose("stop", "minio")  # archive cohérente : plus aucune écriture pendant la copie
+    try:
+        docker("run", "--rm", "-v", "amm-lab_miniodata:/data:ro", "-v", f"{snapshots}:/snap",
+               "python:3.12-slim", "sh", "-c", "tar czf /snap/minio-baseline.tgz -C /data .")
+    finally:
+        compose("up", "-d", "--no-deps", "--wait", "minio")
+    log(f"état de référence enregistré dans {snapshots}")
+
+
+LAB_LOCK = Path(os.environ.get("AMM_LAB_LOCK", "/tmp/amm-lab.lock"))
+
+
+@contextmanager
+def exclusive_lab():
+    """Un seul scénario à la fois : la pile amm-lab (projet Compose, ports) est unique sur la machine.
+
+    Rejeu du 19/09/2026 : deux exécutions simultanées de s03a ; la remise à zéro de l'une a arrêté
+    le backend et rechargé la base de l'autre en pleine injection de panne. Verrou système : libéré
+    à la fin du processus, même s'il est tué.
+    """
+    handle = open(LAB_LOCK, "a+")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.seek(0)
+        owner = handle.read().strip() or "processus inconnu"
+        handle.close()
+        raise SystemExit(f"Le labo est déjà utilisé ({owner}) : attendez la fin de ce scénario.")
+    handle.seek(0)
+    handle.truncate()
+    handle.write(f"PID {os.getpid()}, {' '.join(sys.argv)}, depuis {time.strftime('%H:%M:%S')}")
+    handle.flush()
+    try:
+        yield
+    finally:
+        handle.close()
 
 
 def app_pids(service: str, needle: str) -> List[int]:
