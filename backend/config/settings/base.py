@@ -7,6 +7,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 import dj_database_url
 from celery.schedules import crontab
 
+from config.sentry import init_sentry
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -456,6 +458,20 @@ USE_TZ = True
 
 # Journaux JSON en production (une ligne par événement, avec l'identifiant de requête),
 # texte lisible en développement. Voir apps/core/observability.py.
+# Sentry : surveillance des erreurs du web et du worker, inactive tant que SENTRY_DSN est vide.
+# Aucune donnée personnelle n'est envoyée (voir config/sentry.py) ; les traces de performance sont
+# désactivées par défaut, les latences venant déjà des journaux JSON et de Prometheus.
+SENTRY_DSN = env("SENTRY_DSN", "")
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "dev" if DEBUG else "production")
+SENTRY_RELEASE = env("SENTRY_RELEASE", "")
+SENTRY_TRACES_SAMPLE_RATE = float(env("SENTRY_TRACES_SAMPLE_RATE", "0") or 0)
+SENTRY_ENABLED = init_sentry(
+    SENTRY_DSN,
+    environment=SENTRY_ENVIRONMENT,
+    release=SENTRY_RELEASE,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+)
+
 LOG_FORMAT = env("LOG_FORMAT", "text" if DEBUG else "json")
 LOGGING = {
     "version": 1,

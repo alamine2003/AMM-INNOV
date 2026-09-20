@@ -19,6 +19,8 @@ import logging
 import time
 import uuid
 
+from config import sentry
+
 request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
 
 access_logger = logging.getLogger("amm.access")
@@ -59,6 +61,7 @@ class RequestContextMiddleware:
         request_id = (request.headers.get("X-Request-ID") or uuid.uuid4().hex)[:64]
         token = request_id_var.set(request_id)
         started = time.monotonic()
+        sentry.bind_request(request_id)
         try:
             response = self.get_response(request)
             response["X-Request-ID"] = request_id
@@ -77,6 +80,8 @@ class RequestContextMiddleware:
                         "user_id": getattr(user, "pk", None),
                     },
                 )
+            # L'utilisateur n'est connu qu'après l'authentification, donc après la vue.
+            sentry.bind_request(user_id=getattr(getattr(request, "user", None), "pk", None))
             return response
         finally:
             request_id_var.reset(token)
@@ -93,3 +98,4 @@ def attach_request_id(headers=None, **kwargs) -> None:
 def bind_task_context(task=None, task_id=None, **kwargs) -> None:
     parent = getattr(task.request, "request_id", None) if task is not None else None
     request_id_var.set(parent or f"task-{task_id}")
+    sentry.bind_task(getattr(task, "name", None), parent)
