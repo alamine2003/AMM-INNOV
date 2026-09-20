@@ -29,6 +29,9 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   sans téléchargement parallèle en mémoire. Reconnexion
   WebSocket avec jitter ; un événement d'AMM ne part plus qu'au groupe de son pays.
 - Laboratoire de chaos rejouable : `chaos/` (Compose jetable, toxiproxy, scénarios avant/après).
+  Statuts recalculés pour le jour du rejeu après chaque remise à zéro, un seul scénario à la
+  fois, `--build` sans risque pour l'image d'origine, état de référence créé par
+  `scenarios.py --save-baseline`.
 
 ### Ajouté
 - **Le frontend est publié par la CI** (job `netlify`), sur un push vers `main` et seulement

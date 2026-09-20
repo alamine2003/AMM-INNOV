@@ -664,18 +664,34 @@ la matrice ; en production, sans vieillissement artificiel, la vérification noc
 
 ## Rejouer la campagne
 
+Mise en place, une fois par machine :
+
 ```bash
-docker compose -f chaos/docker-compose.lab.yml -p amm-lab up -d --build
+# code d'origine figé et image d'origine (Daphne), pour les tests « avant »
+./chaos/make_frozen.sh
+git worktree add /tmp/amm-avant 6351395
+docker build -f /tmp/amm-avant/docker/backend.Dockerfile --target runtime -t amm-lab-backend:latest /tmp/amm-avant
+# labo (image du code courant : amm-lab-backend:apres), jeu de données, état de référence
+docker compose -f chaos/docker-compose.lab.yml -p amm-lab up -d --build --wait
 docker compose -f chaos/docker-compose.lab.yml -p amm-lab exec backend python /chaos/seed_lab.py
+python3 chaos/scenarios.py --save-baseline
+```
+
+Puis, à chaque rejeu :
+
+```bash
 python3 chaos/scenarios.py --list
 python3 chaos/scenarios.py s03c_redis_hang_load --label apres
 python3 chaos/summarize.py > chaos/results/summary.json
 docker compose -f chaos/docker-compose.lab.yml -p amm-lab down -v
 ```
 
-`--label avant` rejoue sur le code d'origine figé (à recréer par `chaos/make_frozen.sh`
-si `chaos/frozen-avant-backend` est absent). Les pannes sont réversibles et l'état de référence
-est restauré avant chaque scénario.
+`--label avant` rejoue sur le code d'origine figé et son image ; `--label apres` sur le code
+courant. Avant chaque scénario, l'état de référence (`chaos/snapshots/`, non versionné) est
+restauré, puis les statuts sont recalculés pour la date du jour, comme le fait la tâche nocturne :
+sans cela, les AMM qui franchissent un seuil d'urgence depuis la prise de l'instantané seraient
+signalées par `check_integrity`. Un seul scénario tourne à la fois : une seconde exécution
+simultanée est refusée (la remise à zéro de l'une détruirait la mesure de l'autre).
 
 ## Hypothèses de la cartographie : confirmées, nuancées, découvertes
 
