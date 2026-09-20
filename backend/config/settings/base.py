@@ -1,6 +1,7 @@
 """Base settings shared by every environment. Everything is driven by environment variables."""
 
 import os
+import re
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -26,6 +27,21 @@ def env_bool(name: str, default: bool = False) -> bool:
 def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
 
+
+_APP_VERSION_RE = re.compile(r"[0-9A-Za-z][0-9A-Za-z._+-]{0,63}")
+
+
+def clean_app_version(raw: str | None) -> str:
+    """Version publique de /api/v1/health : lettres, chiffres et . _ + -, 64 caractères au plus.
+
+    Vide ou non conforme → « dev ». `env("APP_VERSION", "dev")` ne suffit pas : docker compose
+    transmet une chaîne vide pour la ligne `APP_VERSION=` de .env.
+    """
+    value = (raw or "").strip()
+    return value if _APP_VERSION_RE.fullmatch(value) else "dev"
+
+
+APP_VERSION = clean_app_version(env("APP_VERSION"))
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", False)
@@ -318,6 +334,7 @@ SPECTACULAR_SETTINGS = {
         "ChannelEnum": "apps.alerts.models.AlertRule.Channel",
         "DocumentKindEnum": "apps.documents.models.Document.Kind",
         "RoleEnum": "apps.accounts.models.User.Role",
+        "HealthStatusEnum": "apps.accounts.serializers.HealthStatus",
         "ImportStatusEnum": "apps.imports.models.ImportBatch.Status",
         "ImportOutcomeEnum": "apps.imports.models.ImportRow.Outcome",
         "RangeCodeEnum": "apps.catalog.models.ProductRange.Code",

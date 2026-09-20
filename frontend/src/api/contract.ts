@@ -16,6 +16,7 @@ import type {
   Amm,
   AmmDocument,
   Country,
+  Health,
   HistoryEntry,
   ImportBatch,
   ImportRow,
@@ -47,6 +48,7 @@ export type _AmmDetail = Assert<Assignable<Schemas['AmmDetail'], Amm>>;
 export type _Renewal = Assert<Assignable<Schemas['Renewal'], Renewal>>;
 export type _Document = Assert<Assignable<Schemas['Document'], AmmDocument>>;
 export type _DocumentDetail = Assert<Assignable<Schemas['DocumentDetail'], AmmDocument>>;
+export type _Health = Assert<Assignable<Schemas['Health'], Health>>;
 export type _Notification = Assert<Assignable<Schemas['Notification'], Notification>>;
 export type _Product = Assert<Assignable<Schemas['Product'], Product>>;
 export type _ProductRange = Assert<Assignable<Schemas['ProductRange'], ProductRange>>;

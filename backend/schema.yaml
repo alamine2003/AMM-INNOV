@@ -1871,8 +1871,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/Health'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
           description: ''
   /api/v1/health/live/:
     get:
@@ -4292,6 +4297,33 @@ components:
       - files
       - paths
       - root_name
+    Health:
+      type: object
+      description: 'Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert
+        au schéma OpenAPI).'
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatusEnum'
+        database:
+          type: boolean
+        redis:
+          type: boolean
+        version:
+          type: string
+          maxLength: 64
+      required:
+      - database
+      - redis
+      - status
+      - version
+    HealthStatusEnum:
+      enum:
+      - ok
+      - degraded
+      type: string
+      description: |-
+        * `ok` - OK
+        * `degraded` - Dégradé
     HistoryChange:
       type: object
       properties:

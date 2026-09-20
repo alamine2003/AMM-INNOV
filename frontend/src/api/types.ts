@@ -476,3 +476,14 @@ export interface RealtimeEvent {
   title?: string;
   body?: string;
 }
+
+export type HealthStatus = 'ok' | 'degraded';
+
+/** Réponse de GET /api/v1/health : 200 si la base répond, 503 « degraded » sinon. */
+export interface Health {
+  status: HealthStatus;
+  database: boolean;
+  redis: boolean;
+  /** APP_VERSION côté API (« dev » par défaut) ; '' si l'API ne l'expose pas encore. */
+  version: string;
+}
