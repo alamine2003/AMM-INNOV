@@ -196,6 +196,9 @@ railway variables -s amm-innov-backend --set "DJANGO_SETTINGS_MODULE=config.sett
    GRAFANA_DB_PASSWORD=<mot de passe du rôle grafana_ro>
    METRICS_TOKEN=<jeton du scrape Prometheus, optionnel>
    WAIT_TIMEOUT=120
+   SENTRY_DSN=<DSN du projet Sentry « backend », optionnel, voir 6 bis>
+   SENTRY_ENVIRONMENT=production
+   SENTRY_RELEASE=${{RAILWAY_GIT_COMMIT_SHA}}
    ```
 
    `${{Postgres.DATABASE_URL}}` et `${{Redis.REDIS_URL}}` sont des **références** Railway : elles
@@ -270,6 +273,8 @@ Dans ce cas, supprimer le job `netlify` de la CI pour ne pas publier deux fois.
 2. **Reporter le domaine Railway** de l'étape 3.2.2 dans `netlify.toml` (`VITE_API_BASE`,
    `VITE_WS_URL`) si ce n'est pas `amm-innov-backend-production.up.railway.app`, ou le saisir dans
    Site configuration, Environment variables (prioritaire sur le fichier).
+   Au même endroit, `VITE_SENTRY_DSN` (DSN du projet Sentry « frontend », optionnel, voir 6 bis)
+   et `VITE_SENTRY_ENVIRONMENT=production`.
 3. Site name : `amm-innov` (donne `https://amm-innov.netlify.app`). Si un autre nom ou un
    domaine personnalisé est utilisé, mettre à jour `CORS_ALLOWED_ORIGINS` et `FRONTEND_URL`
    côté Railway (les liens des emails d'alerte utilisent `FRONTEND_URL`).
@@ -321,6 +326,27 @@ Ne pas lancer `seed_demo` en production : il crée des comptes avec un mot de pa
    (renseigner `METRICS_TOKEN` côté Railway et le même jeton en « Bearer » dans la configuration
    du scrape).
 
+## 6 bis. Sentry (surveillance des erreurs, optionnel)
+
+Sans Sentry, les erreurs ne sont visibles que dans les journaux Railway. Avec, chaque exception du
+web, du worker ou de l'interface devient un incident daté, regroupé, avec sa pile d'appels et le
+`request_id` des journaux JSON (docs/audit-resilience/RAPPORT.md, section Observabilité).
+
+1. Sur sentry.io, créer une organisation, puis deux projets : **Django** (nommé `amm-innov-backend`)
+   et **React** (`amm-innov-frontend`). Chaque projet donne un DSN.
+2. Railway : `SENTRY_DSN` sur le service web **et** sur le worker (bloc de l'étape 3.2.4) ;
+   `SENTRY_RELEASE=${{RAILWAY_GIT_COMMIT_SHA}}` relie chaque erreur au commit déployé.
+3. Netlify : `VITE_SENTRY_DSN` (étape 4.2).
+4. Vérifier : Railway, service web, **Shell** :
+   `python -c "import django; django.setup(); import sentry_sdk; sentry_sdk.capture_message('test AMM INNOV')"`
+   fait apparaître un événement dans le projet backend en moins d'une minute.
+5. Sentry, Alerts : une règle « nouvel incident → e-mail » par projet suffit pour commencer.
+
+Ce qui n'est pas envoyé, par construction (`backend/config/sentry.py`) : adresse IP, cookies,
+en-têtes d'authentification, corps des requêtes (scans, fiches d'AMM). L'utilisateur n'est
+désigné que par son identifiant interne. Les traces de performance restent désactivées
+(`SENTRY_TRACES_SAMPLE_RATE=0`) ; les sondes `/api/v1/health` et `/metrics` en sont exclues.
+
 ## 7. Sauvegardes
 
 Railway conserve des sauvegardes de Postgres (quotidiennes sur le plan Pro ; sur Hobby, vérifier
@@ -344,6 +370,7 @@ Les scans PDF sont dans le bucket S3 : activer le versionnement du bucket, ou le
 - Railway, service worker, logs : `celery@… ready` et `beat: Starting…`, puis à 00:05 Dakar
   `recompute_all_statuses` et à 00:15 `evaluate_alert_rules`.
 - Un email d'alerte de test arrive (créer une AMM à 100 jours de sa fin).
+- Si Sentry est configuré : l'événement de test de l'étape 6 bis.4 est visible.
 
 ## 9. Ce qui ne s'applique plus
 

@@ -5,6 +5,13 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Surveillance
+- **Sentry**, actif seulement si `SENTRY_DSN` (web, worker) ou `VITE_SENTRY_DSN` (interface) est
+  défini : erreurs et journaux ERROR remontés avec le `request_id` des journaux JSON, la version
+  déployée et l'environnement. Aucune donnée personnelle (ni IP, ni cookies, ni corps de requête ;
+  identifiant interne de l'utilisateur seulement), traces de performance désactivées par défaut.
+  Paquet absent ou DSN vide : l'application démarre comme avant.
+
 ### Résilience (campagne de chaos du 18/09/2026, `docs/audit-resilience/RAPPORT.md`)
 - **Redis devient optionnel.** Le temps réel part après le commit, borné à 1 s, derrière un
   disjoncteur ; sans Redis on se connecte toujours (repli local du throttle) et les écritures ne

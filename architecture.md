@@ -483,7 +483,7 @@ Module `imports/excel_parser.py` :
 L'import est transactionnel par onglet.
 
 ### 5.10 Configuration
-Variables d'environnement (fichier `.env`, jamais commité, `.env.example` fourni) : `DJANGO_SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `EMAIL_URL`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`, `STORAGE_BACKEND=filesystem|s3`, `MEDIA_ROOT` ou `S3_ENDPOINT_URL`/`S3_BUCKET`/`S3_ACCESS_KEY`/`S3_SECRET_KEY`, `DOCUMENT_MAX_MB=25`, `TIME_ZONE=Africa/Dakar`, `SENTRY_DSN` (optionnel).
+Variables d'environnement (fichier `.env`, jamais commité, `.env.example` fourni) : `DJANGO_SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `EMAIL_URL`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`, `STORAGE_BACKEND=filesystem|s3`, `MEDIA_ROOT` ou `S3_ENDPOINT_URL`/`S3_BUCKET`/`S3_ACCESS_KEY`/`S3_SECRET_KEY`, `DOCUMENT_MAX_MB=25`, `TIME_ZONE=Africa/Dakar`, `SENTRY_DSN` (optionnel : surveillance des erreurs, voir 9.2).
 
 ### 5.11 Gestion documentaire (scans PDF des AMM)
 
@@ -625,7 +625,12 @@ Les vues matérialisées sont rafraîchies par `refresh_analytics_views`.
 - Serveur unique (VPS 4 vCPU / 8 Go) ou équivalent cloud ; `docker-compose.prod.yml` avec nginx en frontal (TLS via Let's Encrypt, `/api` et `/ws` vers Daphne, `/` statique React, `/grafana` vers Grafana).
 - Migrations exécutées au démarrage du conteneur backend (`migrate` puis `collectstatic`).
 - Secrets injectés par variables d'environnement.
-- Logs JSON collectés par Docker ; Sentry optionnel.
+- Logs JSON collectés par Docker, avec un `X-Request-ID` par requête, propagé aux tâches Celery.
+- Sentry, si `SENTRY_DSN` est défini (`config/sentry.py`) : erreurs et journaux ERROR du web et du
+  worker, étiquetés du même `request_id`, et erreurs de l'interface (`VITE_SENTRY_DSN`,
+  `frontend/src/lib/sentry.ts`). Aucune donnée personnelle : ni IP, ni cookies, ni corps de
+  requête ; seul l'identifiant interne de l'utilisateur. Traces de performance désactivées par
+  défaut. Sans le paquet ou sans DSN, l'application démarre normalement.
 
 ### 9.3 CI/CD (GitHub Actions)
 1. `lint` : ruff, mypy, ESLint, Prettier, `tsc --noEmit`.
