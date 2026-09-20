@@ -1,0 +1,400 @@
+{
+  "scenario": "s09_disk_full",
+  "label": "avant",
+  "levels": {
+    "postgres_80": {
+      "disk": {
+        "size_kb": 327680,
+        "used_kb": 262152,
+        "pct": 81
+      },
+      "window": {
+        "requests": 497,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 34,
+        "p99_ms": 87,
+        "max_ms": 112,
+        "statuses": {
+          "200": 497
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.168
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.042
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "postgres_90": {
+      "disk": {
+        "size_kb": 327680,
+        "used_kb": 294912,
+        "pct": 90
+      },
+      "window": {
+        "requests": 495,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 16,
+        "p95_ms": 35,
+        "p99_ms": 75,
+        "max_ms": 94,
+        "statuses": {
+          "200": 495
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.137
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.038
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "postgres_95": {
+      "disk": {
+        "size_kb": 327680,
+        "used_kb": 311296,
+        "pct": 95
+      },
+      "window": {
+        "requests": 485,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 35,
+        "p99_ms": 87,
+        "max_ms": 114,
+        "statuses": {
+          "200": 485
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.183
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.047
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "postgres_100": {
+      "disk": {
+        "size_kb": 327680,
+        "used_kb": 327680,
+        "pct": 100
+      },
+      "window": {
+        "requests": 501,
+        "errors": 118,
+        "error_rate": 0.236,
+        "users_affected": 8,
+        "p50_ms": 14,
+        "p95_ms": 31,
+        "p99_ms": 59,
+        "max_ms": 86,
+        "statuses": {
+          "200": 383,
+          "500": 118
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.139
+      },
+      "upload_persistence": "n/a",
+      "renewal": {
+        "attempts": 5,
+        "failed": 4,
+        "statuses": {
+          "201": 1,
+          "500": 4
+        },
+        "max_latency_s": 0.025
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "minio_80": {
+      "disk": {
+        "size_kb": 163840,
+        "used_kb": 131072,
+        "pct": 80
+      },
+      "window": {
+        "requests": 497,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 29,
+        "p99_ms": 64,
+        "max_ms": 118,
+        "statuses": {
+          "200": 497
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.122
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.026
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "minio_90": {
+      "disk": {
+        "size_kb": 163840,
+        "used_kb": 147456,
+        "pct": 90
+      },
+      "window": {
+        "requests": 501,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 30,
+        "p99_ms": 64,
+        "max_ms": 90,
+        "statuses": {
+          "200": 501
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.158
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.034
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "minio_95": {
+      "disk": {
+        "size_kb": 163840,
+        "used_kb": 155648,
+        "pct": 95
+      },
+      "window": {
+        "requests": 493,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 16,
+        "p95_ms": 35,
+        "p99_ms": 74,
+        "max_ms": 83,
+        "statuses": {
+          "200": 493
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 0,
+        "statuses": {
+          "201": 7
+        },
+        "max_latency_s": 0.086
+      },
+      "upload_persistence": {
+        "saved_ok": 7,
+        "saved_but_error": 0,
+        "lost_after_error": 0,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.037
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    },
+    "minio_100": {
+      "disk": {
+        "size_kb": 163840,
+        "used_kb": 163840,
+        "pct": 100
+      },
+      "window": {
+        "requests": 503,
+        "errors": 0,
+        "error_rate": 0.0,
+        "users_affected": 0,
+        "p50_ms": 15,
+        "p95_ms": 34,
+        "p99_ms": 111,
+        "max_ms": 118,
+        "statuses": {
+          "200": 503
+        }
+      },
+      "upload": {
+        "attempts": 7,
+        "failed": 7,
+        "statuses": {
+          "500": 7
+        },
+        "max_latency_s": 0.148
+      },
+      "upload_persistence": {
+        "saved_ok": 0,
+        "saved_but_error": 0,
+        "lost_after_error": 7,
+        "saved_after_timeout": 0
+      },
+      "renewal": {
+        "attempts": 5,
+        "failed": 0,
+        "statuses": {
+          "201": 5
+        },
+        "max_latency_s": 0.034
+      },
+      "health": {
+        "status": 200,
+        "body": "{\"status\":\"ok\",\"database\":true,\"redis\":true}"
+      },
+      "postgres": "running restarts=0"
+    }
+  },
+  "postgres_after_cleanup": {
+    "health": 200,
+    "pg": "running restarts=0"
+  },
+  "minio_after_cleanup": {
+    "health": 200,
+    "pg": "running restarts=0"
+  },
+  "integrity": {
+    "ok": false,
+    "violations": {
+      "history_matches_rows": 10
+    },
+    "samples": {
+      "history_matches_rows": [
+        "AMM 31a3caf3-108c-4419-b9eb-95c739697dd8: notes modifiés sans historique",
+        "AMM 11ae2437-04f9-4b45-8d7b-aca404fed011: original_end_date, notes modifiés sans historique",
+        "AMM 411783ed-2cb8-4cc5-9249-dd7f5d3a03e8: notes modifiés sans historique"
+      ]
+    }
+  }
+}

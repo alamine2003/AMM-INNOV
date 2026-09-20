@@ -40,8 +40,11 @@ def _clean_redis_health_check_state():
     _drain()
 
 
-def test_health_body_has_exactly_four_keys(anon_client, settings, django_assert_num_queries):
-    with django_assert_num_queries(1):
+def test_health_body_has_exactly_four_keys(anon_client, settings, django_assert_max_num_queries):
+    # Au plus une requête : la sonde reste bon marché. Sur PostgreSQL elle n'en fait aucune par la
+    # connexion Django, car elle ouvre une connexion directe hors pool (campagne de chaos s02a) ;
+    # sur SQLite elle passe par le curseur habituel.
+    with django_assert_max_num_queries(1):
         response = anon_client.get("/api/v1/health")
     assert response.status_code == 200
     body = response.json()

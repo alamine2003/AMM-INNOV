@@ -1,0 +1,22 @@
+{
+  "scenario": "s12a_worker_down",
+  "label": "apres",
+  "queued_while_down": "31",
+  "drained_after_restart_s": 6.6,
+  "emails": {
+    "created": 20,
+    "marked_sent": 20
+  },
+  "gmail_messages_received": 20,
+  "gmail_token_calls": 2,
+  "previews": "10/10",
+  "dossier": {
+    "upload": "PENDING",
+    "final": "READY"
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

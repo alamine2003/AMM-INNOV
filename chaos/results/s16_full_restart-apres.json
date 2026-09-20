@@ -1,0 +1,23 @@
+{
+  "scenario": "s16_full_restart",
+  "label": "apres",
+  "cold_start": {
+    "stop_s": 3.5,
+    "api_ready_s": 18.2,
+    "worker_ready_after_api_s": 9.2
+  },
+  "late_database": {
+    "web_state_while_db_absent": "running restarts=0",
+    "api_back_after_db_start_s": 4.4,
+    "backend_direct_back_s": 4.4,
+    "backend_ip_before": "172.26.0.8",
+    "backend_ip_after": "172.26.0.4",
+    "worker_back_s": 9.3,
+    "stuck_diagnostic": null
+  },
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

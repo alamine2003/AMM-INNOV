@@ -28,7 +28,6 @@ CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = "memory://"
-CELERY_RESULT_BACKEND = "cache+memory://"
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 MEDIA_ROOT = tempfile.mkdtemp(prefix="amm-test-media-")

@@ -1070,12 +1070,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRenewalList'
           description: ''
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Renewal'
-          description: ''
     post:
       operationId: v1_amms_renewals_create
       description: |-
@@ -1083,37 +1077,6 @@ paths:
 
         `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
       parameters:
-      - in: query
-        name: country
-        schema:
-          type: string
-      - in: query
-        name: dossier_state
-        schema:
-          type: array
-          items:
-            type: string
-            title: État du dossier
-            enum:
-            - COMPLET
-            - INCOMPLET
-        description: Les valeurs multiples doivent être séparées par des virgules.
-        explode: false
-        style: form
-      - in: query
-        name: expires_after
-        schema:
-          type: string
-          format: date
-      - in: query
-        name: expires_before
-        schema:
-          type: string
-          format: date
-      - in: query
-        name: has_current_scan
-        schema:
-          type: boolean
       - in: path
         name: id
         schema:
@@ -1121,76 +1084,6 @@ paths:
           format: uuid
         description: Un(une) Chaîne UUID identifiant ce(cette) AMM.
         required: true
-      - name: ordering
-        required: false
-        in: query
-        description: Quel champ utiliser pour classer les résultats.
-        schema:
-          type: string
-      - in: query
-        name: owner
-        schema:
-          type: string
-          format: uuid
-      - name: page
-        required: false
-        in: query
-        description: Un numéro de page de l'ensemble des résultats.
-        schema:
-          type: integer
-      - name: page_size
-        required: false
-        in: query
-        description: Nombre de résultats à retourner par page.
-        schema:
-          type: integer
-      - in: query
-        name: product
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: range
-        schema:
-          type: string
-      - name: search
-        required: false
-        in: query
-        description: Un terme de recherche.
-        schema:
-          type: string
-      - in: query
-        name: status
-        schema:
-          type: array
-          items:
-            type: string
-            title: Statut
-            enum:
-            - EXPIRE
-            - INDETERMINE
-            - IN_PROCESS
-            - VALIDE
-        description: Les valeurs multiples doivent être séparées par des virgules.
-        explode: false
-        style: form
-      - in: query
-        name: urgency
-        schema:
-          type: array
-          items:
-            type: string
-            title: Urgence
-            enum:
-            - A_PLANIFIER
-            - CRITIQUE
-            - DEPOT_URGENT
-            - EN_INSTRUCTION
-            - EXPIRE
-            - OK
-        description: Les valeurs multiples doivent être séparées par des virgules.
-        explode: false
-        style: form
       tags:
       - v1
       requestBody:
@@ -1207,18 +1100,18 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedRenewalList'
-          description: ''
         '201':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Renewal'
           description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Renewal'
+          description: 'Même décision déjà enregistrée : le renouvellement existant.'
   /api/v1/analytics/africa/:
     get:
       operationId: v1_analytics_africa_retrieve
@@ -1967,6 +1860,8 @@ paths:
   /api/v1/health/:
     get:
       operationId: v1_health_retrieve
+      description: 'Disponibilité : 503 si la base est injoignable ; Redis est signalé
+        sans être exigé.'
       tags:
       - v1
       security:
@@ -1983,6 +1878,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/health/live/:
+    get:
+      operationId: v1_health_live_retrieve
+      description: 'Vivacité : le processus répond, sans interroger aucune dépendance.'
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/imports/:
     get:

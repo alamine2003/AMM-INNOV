@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 import threading
 import time
 import urllib.error
@@ -25,10 +26,17 @@ from django.core.mail.backends.base import BaseEmailBackend
 
 logger = logging.getLogger(__name__)
 
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+# Surchargeables pour pointer un faux service Gmail (laboratoire de chaos, chaos/mock_gmail.py).
+TOKEN_URL = os.environ.get("GMAIL_TOKEN_URL") or "https://oauth2.googleapis.com/token"
+SEND_URL = (
+    os.environ.get("GMAIL_SEND_URL")
+    or "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+)
 SCOPE = "https://www.googleapis.com/auth/gmail.send"
-TIMEOUT = 20
+# Borne d'un appel à Google. Le worker n'a que deux emplacements : Gmail lent, chaque appel les
+# tenait 20 s et les autres tâches (aperçus, analyses) attendaient 38 s (s13). Un envoi échoué
+# est relancé (send_alert_email), il n'y a donc rien à gagner à attendre plus longtemps.
+TIMEOUT = 10
 
 
 class GmailConfigurationError(RuntimeError):
@@ -48,22 +56,32 @@ def _post(url: str, *, data: bytes, headers: dict[str, str]) -> dict:
 class GmailApiBackend(BaseEmailBackend):
     """Backend e-mail Django s'appuyant sur `users.messages.send` de l'API Gmail."""
 
+    # Jeton partagé par le processus : `send_mail()` crée un backend par message, et chaque
+    # e-mail refaisait l'échange OAuth (s12a : 20 appels au jeton pour 20 e-mails), doublant
+    # les appels à Google et l'exposition à ses pannes.
+    _tokens: dict[tuple[str, str], tuple[str, float]] = {}
+    _lock = threading.Lock()
+
     def __init__(self, fail_silently: bool = False, **kwargs):
         super().__init__(fail_silently=fail_silently)
         self.client_id = getattr(settings, "GMAIL_CLIENT_ID", "") or ""
         self.client_secret = getattr(settings, "GMAIL_CLIENT_SECRET", "") or ""
         self.refresh_token = getattr(settings, "GMAIL_REFRESH_TOKEN", "") or ""
-        self._token = ""
-        self._expires_at = 0.0
-        self._lock = threading.Lock()
+
+    @classmethod
+    def reset_token_cache(cls) -> None:
+        with cls._lock:
+            cls._tokens.clear()
 
     # --- OAuth2
 
     def access_token(self) -> str:
         """Jeton d'accès valide, renouvelé au besoin (cache par processus)."""
+        key = (self.client_id, self.refresh_token)
         with self._lock:
-            if self._token and time.monotonic() < self._expires_at:
-                return self._token
+            token, expires_at = self._tokens.get(key, ("", 0.0))
+            if token and time.monotonic() < expires_at:
+                return token
             missing = [
                 name
                 for name, value in (
@@ -90,12 +108,13 @@ class GmailApiBackend(BaseEmailBackend):
                 data=payload,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            self._token = data.get("access_token", "")
-            if not self._token:
+            token = data.get("access_token", "")
+            if not token:
                 raise GmailConfigurationError("Google n'a pas renvoyé de jeton d'accès.")
             # marge d'une minute avant l'expiration annoncée
-            self._expires_at = time.monotonic() + max(int(data.get("expires_in", 3600)) - 60, 0)
-            return self._token
+            expires_at = time.monotonic() + max(int(data.get("expires_in", 3600)) - 60, 0)
+            self._tokens[key] = (token, expires_at)
+            return token
 
     # --- API Django
 

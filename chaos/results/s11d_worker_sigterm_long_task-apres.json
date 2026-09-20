@@ -1,0 +1,16 @@
+{
+  "scenario": "s11d_worker_sigterm_long_task",
+  "label": "apres",
+  "stop_took_s": 0.1,
+  "emails": {
+    "created": 4,
+    "marked_sent": 4
+  },
+  "gmail_messages_received": 4,
+  "sweeper": "{'emails': 0, 'dossiers_republished': 0, 'dossiers_interrupted': 0, 'imports_republished': 0, 'previews': 0}",
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

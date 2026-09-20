@@ -1,0 +1,53 @@
+{
+  "scenario": "s11a_backend_sigterm",
+  "label": "apres",
+  "signal": "TERM",
+  "pids": [
+    7
+  ],
+  "inflight_statuses": {
+    "200": 15,
+    "503": 5
+  },
+  "back_after_s": 17.7,
+  "ip_before": "172.26.0.8",
+  "diagnostic": [
+    {
+      "t": 12.2,
+      "container": "running restarts=0 exit=0",
+      "direct": 0,
+      "via_nginx": 502,
+      "ip": "invalid IP",
+      "procs": []
+    },
+    {
+      "t": 17.6,
+      "container": "running restarts=1 exit=0",
+      "direct": 200,
+      "via_nginx": 200,
+      "ip": "172.26.0.8",
+      "procs": [
+        7
+      ]
+    }
+  ],
+  "backend_log_tail": [
+    "{\"ts\": \"2026-09-18T14:23:04+0000\", \"level\": \"INFO\", \"logger\": \"amm.access\", \"msg\": \"PATCH /api/v1/amms/16f29077-2c08-4ae5-8775-6286614bdfc5 200\", \"request_id\": \"21d0621eb92aa54f8f70077d70d0d158\", \"met",
+    "{\"ts\": \"2026-09-18T14:23:05+0000\", \"level\": \"INFO\", \"logger\": \"amm.access\", \"msg\": \"PATCH /api/v1/amms/1a8665fe-1bb3-499d-83d5-7fbaf8adc8da 200\", \"request_id\": \"b8ca84589b40461a2089c53be4fab101\", \"met",
+    "{\"ts\": \"2026-09-18T14:23:06+0000\", \"level\": \"INFO\", \"logger\": \"amm.access\", \"msg\": \"PATCH /api/v1/amms/16578ff4-c2cb-4ba7-9933-a5190a43efeb 200\", \"request_id\": \"ac3c7e18fc0934a1ed261656bf6d018b\", \"met",
+    "{\"ts\": \"2026-09-18T14:23:06+0000\", \"level\": \"INFO\", \"logger\": \"amm.access\", \"msg\": \"PATCH /api/v1/amms/1585b938-fd0d-4351-bed8-664c692499bc 200\", \"request_id\": \"886bea8e38b0aac5ac238c62bb569185\", \"met",
+    "INFO:     Finished server process [7]",
+    "/opt/venv/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/staticfiles/",
+    "  mw_instance = middleware(adapted_handler)",
+    "INFO:     Started server process [7]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     ASGI 'lifespan' protocol appears unsupported.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)"
+  ],
+  "integrity": {
+    "ok": true,
+    "violations": {},
+    "samples": {}
+  }
+}

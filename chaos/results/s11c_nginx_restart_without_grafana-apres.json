@@ -1,0 +1,10 @@
+{
+  "scenario": "s11c_nginx_restart_without_grafana",
+  "label": "apres",
+  "api_status_with_grafana_down": 200,
+  "nginx_state": "running restarts=0",
+  "nginx_log": [
+    "2026/09/18 14:23:48 [error] 21#21: grafana could not be resolved (2: Server failure)"
+  ],
+  "api_back_after_grafana_start_s": 0.5
+}

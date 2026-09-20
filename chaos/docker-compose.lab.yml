@@ -1,0 +1,230 @@
+# ---------------------------------------------------------------------------
+# Laboratoire de chaos AMM INNOV — JETABLE, jamais branché sur une vraie donnée.
+#
+#   docker compose -f chaos/docker-compose.lab.yml -p amm-lab up -d --build
+#   docker compose -f chaos/docker-compose.lab.yml -p amm-lab down -v   (efface tout)
+#
+# Reproduit la topologie de production Railway (docs/deploiement-netlify-railway.md) :
+#   - web  : un seul processus Daphne (WEB_CONCURRENCY=1), réglages config.settings.prod ;
+#   - worker : Celery + beat embarqué (-B), comme AMM_ROLE=worker sur Railway ;
+#   - scans PDF sur stockage S3 (MinIO ici, bucket Railway en production) ;
+#   - e-mails par l'API Gmail (simulée par mock-gmail).
+# Chaque dépendance est jointe à travers toxiproxy : latence, coupure, perte de paquets et
+# connexions figées s'injectent sans toucher aux services (API toxiproxy : localhost:19474).
+# Le code backend est monté depuis le dépôt : une correction s'applique par un simple restart.
+# ---------------------------------------------------------------------------
+name: amm-lab
+
+x-backend: &backend
+  build:
+    context: ..
+    dockerfile: docker/backend.Dockerfile
+    target: runtime
+  # image « avant » (Daphne) ou « après » (entrypoint corrigé), choisie par scenarios.py
+  image: ${AMM_BACKEND_IMAGE:-amm-lab-backend:latest}
+  environment: &backend-env
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+    DJANGO_SECRET_KEY: lab-only-secret-key-0123456789abcdef-not-for-prod
+    DJANGO_DEBUG: "0"
+    ALLOWED_HOSTS: "*"
+    CORS_ALLOWED_ORIGINS: http://localhost:19080
+    CSRF_TRUSTED_ORIGINS: http://localhost:19080
+    FRONTEND_URL: http://localhost:19080
+    NUM_PROXIES: "1"
+    TIME_ZONE: Africa/Dakar
+    # toutes les dépendances passent par toxiproxy
+    DATABASE_URL: postgres://amm:amm@toxiproxy:15432/amm
+    REDIS_URL: redis://toxiproxy:16379/0
+    DB_POOL: "1"
+    DB_POOL_MAX_SIZE: "20"
+    DB_POOL_TIMEOUT: "10"
+    DOCUMENT_STORAGE: s3
+    S3_ENDPOINT_URL: http://toxiproxy:19000
+    S3_ACCESS_KEY: minio
+    S3_SECRET_KEY: minio12345
+    S3_BUCKET: amm-documents
+    S3_REGION: us-east-1
+    S3_ADDRESSING_STYLE: path
+    EMAIL_URL: gmail://
+    GMAIL_CLIENT_ID: lab-client
+    GMAIL_CLIENT_SECRET: lab-secret
+    GMAIL_REFRESH_TOKEN: lab-refresh
+    GMAIL_TOKEN_URL: http://toxiproxy:18443/token
+    GMAIL_SEND_URL: http://toxiproxy:18443/gmail/v1/users/me/messages/send
+    WEB_CONCURRENCY: ${AMM_WEB_CONCURRENCY:-1}
+    CELERY_CONCURRENCY: "2"
+    COLLECT_STATIC: "0"
+    WAIT_TIMEOUT: "60"
+    LOG_LEVEL: INFO
+  volumes:
+    # code « avant » figé (chaos/frozen-avant-backend) ou code corrigé (../backend) :
+    # scenarios.py choisit selon --label, pour rejouer exactement le même test sur les deux.
+    - ${AMM_BACKEND_SRC:-../backend}:/app
+    - ./:/chaos:ro
+  restart: unless-stopped
+  # init (tini) en PID 1 : un SIGKILL du processus applicatif est alors un vrai crash, que la
+  # politique de redémarrage traite comme en production (docker kill = arrêt manuel, ignoré).
+  init: true
+  networks: [lab]
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - track_io_timing=on
+    environment:
+      POSTGRES_USER: amm
+      POSTGRES_PASSWORD: amm
+      POSTGRES_DB: amm
+      TZ: Africa/Dakar
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amm -d amm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: {cpus: "2", memory: 1g}
+    networks: [lab]
+
+  redis:
+    # mêmes options que docker-compose.prod.yml
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits: {cpus: "1", memory: 300m}
+    networks: [lab]
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [lab]
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio: {condition: service_healthy}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set local http://minio:9000 minio minio12345
+        mc mb --ignore-existing local/amm-documents
+        mc anonymous set none local/amm-documents
+    networks: [lab]
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    restart: unless-stopped
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ./toxiproxy.json:/config/toxiproxy.json:ro
+    ports:
+      - "19474:8474"
+    networks: [lab]
+
+  mock-gmail:
+    image: python:3.12-slim
+    restart: unless-stopped
+    command: ["python", "/chaos/mock_gmail.py"]
+    volumes:
+      - ./:/chaos:ro
+    ports:
+      - "19081:8080"
+    networks: [lab]
+
+  backend:
+    <<: *backend
+    command: ["serve"]
+    ports:
+      - "19800:8000"
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      toxiproxy: {condition: service_started}
+      minio-init: {condition: service_completed_successfully}
+    deploy:
+      resources:
+        limits: {cpus: "2", memory: 1g}
+
+  worker:
+    <<: *backend
+    # Railway : même image, rôle worker, beat embarqué (-B)
+    command: ["serve"]
+    environment:
+      <<: *backend-env
+      AMM_ROLE: worker
+      RUN_MIGRATIONS: "0"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q pong"]
+      interval: 60s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+    depends_on:
+      backend: {condition: service_started}
+    deploy:
+      resources:
+        limits: {cpus: "2", memory: 768m}
+
+  # Remplaçant léger de Grafana : seul compte ici le nom d'hôte `grafana` que nginx résout.
+  grafana:
+    image: python:3.12-slim
+    restart: unless-stopped
+    command: ["python", "-m", "http.server", "3000"]
+    networks: [lab]
+
+  # Frontend de production (docker/nginx.conf) : proxy /api et /ws vers le backend.
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      # configuration d'origine (avant) ou corrigée (après), comme le code backend
+      - ${AMM_NGINX_CONF:-../docker/nginx.conf}:/etc/nginx/conf.d/default.conf:ro
+      - ./html:/usr/share/nginx/html:ro
+    ports:
+      - "19080:80"
+    depends_on:
+      - backend
+      - grafana
+    networks: [lab]
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  lab:
+    driver: bridge

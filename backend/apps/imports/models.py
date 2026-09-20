@@ -105,6 +105,9 @@ class DossierImport(models.Model):
     preview_token = models.CharField(max_length=64, blank=True)
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Début de l'analyse en cours : au-delà de sa durée maximale, une analyse RUNNING est
+    # orpheline (worker tué, s12b) et recover_pending_work la rend relançable.
+    started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

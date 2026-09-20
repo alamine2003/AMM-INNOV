@@ -82,7 +82,7 @@ def evaluate_rules(
     """
     from django.conf import settings
 
-    from apps.notifications.services import dispatch as dispatch_alert
+    from apps.notifications import services as notification_services
 
     today = today or reference_today()
     if max_age_days is None:
@@ -93,31 +93,34 @@ def evaluate_rules(
     for amm in queryset.iterator(chunk_size=500):
         evaluated += 1
         renewals = list(amm.renewals.all())
-        fresh: list[Alert] = []
-        stale: list[Alert] = []
-        for rule in applicable_rules(rules, amm.country_id):
-            due = due_date_for(rule, amm, renewals, today)
-            if due is None:
-                continue
-            with transaction.atomic():
+        # Alertes et notifications d'une AMM dans une seule transaction : un crash entre les deux
+        # laissait une alerte sans notification, que la passe suivante trouvait déjà créée et ne
+        # notifiait jamais (H11). Les e-mails partent après le commit (enqueue).
+        with transaction.atomic():
+            fresh: list[Alert] = []
+            stale: list[Alert] = []
+            for rule in applicable_rules(rules, amm.country_id):
+                due = due_date_for(rule, amm, renewals, today)
+                if due is None:
+                    continue
                 alert, was_created = Alert.objects.get_or_create(amm=amm, rule=rule, due_date=due)
-            if not was_created:
+                if not was_created:
+                    continue
+                created += 1
+                if (today - due).days <= max_age_days:
+                    fresh.append(alert)
+                else:
+                    stale.append(alert)
+            if not dispatch:
+                silenced += len(fresh) + len(stale)
                 continue
-            created += 1
-            if (today - due).days <= max_age_days:
-                fresh.append(alert)
-            else:
-                stale.append(alert)
-        if not dispatch:
-            silenced += len(fresh) + len(stale)
-            continue
-        to_send = list(fresh)
-        if not fresh and stale and amm.status != MarketingAuthorization.Status.EXPIRE:
-            to_send.append(max(stale, key=lambda a: a.due_date))
-        for alert in to_send:
-            dispatch_alert(alert)
-        notified += len(to_send)
-        silenced += len(fresh) + len(stale) - len(to_send)
+            to_send = list(fresh)
+            if not fresh and stale and amm.status != MarketingAuthorization.Status.EXPIRE:
+                to_send.append(max(stale, key=lambda a: a.due_date))
+            for alert in to_send:
+                notification_services.dispatch(alert)
+            notified += len(to_send)
+            silenced += len(fresh) + len(stale) - len(to_send)
     return {"created": created, "evaluated": evaluated, "notified": notified, "silenced": silenced}
 
 

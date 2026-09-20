@@ -16,23 +16,31 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.core.resilience import ResilientCache
+
 from .models import User
 from .permissions import GLOBAL_ROLES, RolePermission
 from .serializers import HealthSerializer, LoginSerializer, LogoutSerializer, UserSerializer
 
 logger = logging.getLogger(__name__)
 
+# Cache Redis avec repli en mémoire locale : Redis indisponible ne doit plus empêcher toute
+# connexion (campagne de chaos s03a : 13/13 connexions en 500).
+THROTTLE_CACHE = ResilientCache()
+
 
 class LoginThrottle(AnonRateThrottle):
     """Par adresse IP cliente (X-Forwarded-For quand NUM_PROXIES est défini)."""
 
     scope = "login"
+    cache = THROTTLE_CACHE
 
 
 class LoginEmailThrottle(SimpleRateThrottle):
     """Par compte visé, quelle que soit l'IP : freine une attaque distribuée sur un email."""
 
     scope = "login_email"
+    cache = THROTTLE_CACHE
 
     def get_cache_key(self, request, view):
         email = str(request.data.get("email", "")).strip().lower() if request.data else ""
@@ -204,18 +212,39 @@ def _check_redis_bounded() -> bool:
         return False
 
 
+def database_reachable(timeout: int = 2) -> bool:
+    """Base joignable en `timeout` secondes, par une connexion directe hors pool.
+
+    Par le pool, la sonde attendait DB_POOL_TIMEOUT (10 s) quand la base était coupée et
+    dépassait son propre délai au lieu de répondre 503 (campagne de chaos s02a).
+    """
+    try:
+        if connection.vendor != "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            return True
+        import psycopg
+
+        # mêmes paramètres que Django (sslmode, certificats, service…), délais de la sonde
+        params = connection.get_connection_params()
+        params["connect_timeout"] = timeout
+        params["options"] = f"{params.get('options', '')} -c statement_timeout={timeout * 1000}"
+        with psycopg.connect(**params) as conn:
+            conn.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
 class HealthView(APIView):
+    """Disponibilité : 503 si la base est injoignable ; Redis est signalé sans être exigé."""
+
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
     @extend_schema(responses={200: HealthSerializer, 503: HealthSerializer})
     def get(self, request):
-        database = True
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-        except Exception:  # pragma: no cover - only on outage
-            database = False
+        database = database_reachable()
         redis_ok = _check_redis_bounded()
         code = status.HTTP_200_OK if database else status.HTTP_503_SERVICE_UNAVAILABLE
         return Response(
@@ -227,6 +256,19 @@ class HealthView(APIView):
             },
             status=code,
         )
+
+
+class LivenessView(APIView):
+    """Vivacité : le processus répond, sans interroger aucune dépendance."""
+
+    # Une panne de la base ne doit pas faire redémarrer en boucle des serveurs web sains.
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        return Response({"status": "alive"})
 
 
 class UserViewSet(viewsets.ModelViewSet):
