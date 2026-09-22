@@ -20,6 +20,7 @@ from apps.documents.services.ingest import convert_image_to_pdf
 from apps.imports.models import DossierChange, DossierImport
 
 from .preview import build_preview
+from .summary import record_and_notify, snapshot
 
 AMM_FIELDS = {"original_number", "original_start_date", "original_end_date", "holder"}
 RENEWAL_FIELDS = {"number", "start_date", "end_date", "decision_date", "workflow_status"}
@@ -162,8 +163,10 @@ def apply_dossier(batch_id, *, user, token, accepted_changes):
                 lock_key = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], signed=True)
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT pg_advisory_xact_lock(%s)", [lock_key])
+            before = None
             if identity.get("id"):
                 amm = MarketingAuthorization.objects.select_for_update().get(pk=identity["id"])
+                before = snapshot(amm)
                 list(
                     Renewal.objects.select_for_update().filter(amm=amm).values_list("pk", flat=True)
                 )
@@ -295,6 +298,8 @@ def apply_dossier(batch_id, *, user, token, accepted_changes):
             batch.error = ""
             batch.save(update_fields=["amm", "country", "status", "finished_at", "error"])
             transaction.on_commit(lambda: _reconcile_after_commit(amm.pk))
+            # Après le recalcul : bilan réel (avant/après) et notification des personnes concernées.
+            transaction.on_commit(lambda: record_and_notify(batch.pk, before))
             return batch
     except Exception:
         for storage, name in created_blobs:

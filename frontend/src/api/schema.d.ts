@@ -1665,6 +1665,7 @@ export interface components {
             readonly amm_id: string | null;
             readonly files: components["schemas"]["DossierFile"][];
             readonly audit: components["schemas"]["DossierChange"][];
+            readonly summary: unknown;
         };
         /**
          * @description * `PENDING` - En attente

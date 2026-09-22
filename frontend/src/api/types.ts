@@ -456,6 +456,33 @@ export interface DossierImportBatch {
   amm_id: string | null;
   files: DossierImportFile[];
   audit: DossierImportAudit[];
+  /** Bilan réel après validation ; objet vide tant que l'import n'est pas validé. */
+  summary?: DossierImportSummary | Record<string, never>;
+}
+
+export const hasSummary = (summary: DossierImportBatch['summary']): summary is DossierImportSummary =>
+  !!summary && 'amm_id' in summary;
+
+export interface DossierImportState {
+  status: string;
+  dossier_state: string;
+  effective_end_date: string | null;
+}
+
+export interface DossierImportSummary {
+  amm_id: string;
+  product: string;
+  country: string;
+  country_iso2: string;
+  number: string;
+  created: boolean;
+  before: DossierImportState | null;
+  after: DossierImportState;
+  renewals_created: { number: string; start_date: string | null; end_date: string | null }[];
+  fields_changed: { target: 'amm' | 'renewal'; field: string; label: string; old: unknown; new: unknown }[];
+  documents: { title: string; kind: string; period: 'original' | 'renewal' }[];
+  missing_scan: string | null;
+  lines: string[];
 }
 
 export type RealtimeEventType =
