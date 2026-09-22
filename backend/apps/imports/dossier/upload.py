@@ -87,7 +87,11 @@ def validate_relative_path(path: str, root_name: str) -> str:
 def _validate_pdf(content: bytes) -> None:
     """Inspect reachable objects without decoding document streams or executing actions."""
     try:
-        reader = PdfReader(io.BytesIO(content), strict=True)
+        # Lecture tolérante : les scanners produisent des PDF légèrement non conformes (clé
+        # /Info en double dans le trailer, sur 20 des 44 décisions du Cameroun) que le mode
+        # strict refusait. La sécurité ne repose pas sur ce mode mais sur le parcours ci-dessous,
+        # qui refuse toute action active ou fichier incorporé.
+        reader = PdfReader(io.BytesIO(content), strict=False)
         if reader.is_encrypted:
             _reject("Les PDF chiffrés ne sont pas acceptés.")
         stack = [(reader.trailer, 0)]

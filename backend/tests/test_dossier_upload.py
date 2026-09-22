@@ -347,3 +347,22 @@ def test_scanner_timeout_rejects_upload(users, settings, monkeypatch):
         stage_dossier(
             uploads=[uploaded()], paths=["Dossier/1.pdf"], root_name="Dossier", user=users["hq"],
         )
+
+
+def test_scanner_pdf_with_duplicate_info_key_is_accepted():
+    """Décisions du Cameroun : le logiciel du scanner écrit deux fois /Info dans le trailer."""
+    from apps.imports.dossier.upload import _validate_pdf
+
+    content = pdf_bytes()
+    marker = b"trailer\n<<"
+    assert marker in content
+    patched = content.replace(marker, marker + b"\n/Info 999 0 R", 1)
+    _validate_pdf(patched)  # ne lève pas
+
+
+def test_tolerant_reading_still_rejects_active_content():
+    from apps.imports.dossier.upload import _validate_pdf
+
+    for active in ("javascript", "attachment", "launch", "nested"):
+        with pytest.raises(ValidationError):
+            _validate_pdf(pdf_bytes(active=active))
