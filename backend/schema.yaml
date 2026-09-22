@@ -4246,6 +4246,8 @@ components:
           items:
             $ref: '#/components/schemas/DossierChange'
           readOnly: true
+        summary:
+          readOnly: true
       required:
       - amm_id
       - audit
@@ -4258,6 +4260,7 @@ components:
       - preview_token
       - root_name
       - status
+      - summary
     DossierImportStatusEnum:
       enum:
       - PENDING

@@ -103,6 +103,9 @@ class DossierImport(models.Model):
     )
     preview = models.JSONField(default=dict, blank=True)
     preview_token = models.CharField(max_length=64, blank=True)
+    # Bilan de ce que la validation a réellement changé (état avant/après de l'AMM,
+    # renouvellements créés, documents rattachés, champs modifiés). Rempli après commit.
+    summary = models.JSONField(default=dict, blank=True)
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     # Début de l'analyse en cours : au-delà de sa durée maximale, une analyse RUNNING est

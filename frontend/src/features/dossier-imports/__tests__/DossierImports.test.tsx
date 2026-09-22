@@ -132,7 +132,25 @@ describe('import intelligent de dossiers AMM', () => {
         payloads.push(await request.json());
         // Le lot devient appliqué côté serveur : la relecture déclenchée par la confirmation
         // doit renvoyer le même état, sinon l'écran repasserait en « à valider ».
-        Object.assign(batch, { status: 'APPLIED', amm_id: 'amm-1' });
+        Object.assign(batch, {
+          status: 'APPLIED',
+          amm_id: 'amm-1',
+          summary: {
+            amm_id: 'amm-1',
+            product: 'PRODUIT X',
+            country: 'Sénégal',
+            country_iso2: 'SN',
+            number: '9601',
+            created: false,
+            before: { status: 'EXPIRE', dossier_state: 'INCOMPLET', effective_end_date: '2026-09-15' },
+            after: { status: 'VALIDE', dossier_state: 'COMPLET', effective_end_date: '2031-08-20' },
+            renewals_created: [{ number: '9601/R1', start_date: '2026-08-20', end_date: '2031-08-20' }],
+            fields_changed: [],
+            documents: [{ title: 'decision.pdf', kind: 'AMM', period: 'renewal' }],
+            missing_scan: null,
+            lines: ['Statut : Expirée → Valide'],
+          },
+        });
         return HttpResponse.json(batch);
       }),
     );
@@ -142,7 +160,13 @@ describe('import intelligent de dossiers AMM', () => {
     expect(within(screen.getByTestId('change-completion-1')).queryByRole('checkbox')).toBeNull();
     expect(screen.getByText('Créer un renouvellement')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Valider l’import' }));
-    await screen.findByText(/Import validé\. Les rattachements/);
+    await screen.findByText(/Import validé\. Les personnes concernées/);
+    // Bilan : AMM touchée, statut et dossier avant → après, renouvellement ajouté.
+    expect(screen.getByText('Ce que l’import a changé')).toBeVisible();
+    expect(screen.getByText('Expirée')).toBeVisible();
+    expect(screen.getByText('Valide')).toBeVisible();
+    expect(screen.getByText('Complet')).toBeVisible();
+    expect(screen.getByText(/N° 9601\/R1/)).toBeVisible();
     expect(payloads).toEqual([{ preview_token: 'preview-v1', accepted_changes: [] }]);
   });
 

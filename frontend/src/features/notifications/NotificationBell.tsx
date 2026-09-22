@@ -71,7 +71,13 @@ export function NotificationBell() {
               onClick={() => {
                 if (!n.read_at) markRead.mutate(n.id);
                 setAnchor(null);
-                if (n.link) navigate(n.link);
+                if (n.link) {
+                  // Les liens des notifications sont absolus (e-mails) : même origine -> navigation interne.
+                  const { origin } = window.location;
+                  if (n.link.startsWith(origin)) navigate(n.link.slice(origin.length) || '/');
+                  else if (/^https?:/.test(n.link)) window.location.assign(n.link);
+                  else navigate(n.link);
+                }
               }}
               sx={{ bgcolor: n.read_at ? undefined : 'action.selected', alignItems: 'flex-start' }}
             >
@@ -79,7 +85,14 @@ export function NotificationBell() {
                 primary={n.title}
                 secondary={
                   <>
-                    {n.body}
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      display="block"
+                      sx={{ whiteSpace: 'pre-line' }}
+                    >
+                      {n.body}
+                    </Typography>
                     <Typography component="span" variant="caption" display="block" color="text.secondary">
                       {formatDateTime(n.sent_at)}
                     </Typography>

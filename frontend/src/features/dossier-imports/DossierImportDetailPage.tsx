@@ -26,12 +26,13 @@ import { extractErrorMessage } from '@/api/client';
 import { useAnalyzeDossier, useConfirmDossier, useDossierImport } from '@/api/hooks/useDossierImports';
 import { useCountries } from '@/api/hooks/useCatalog';
 import { useAuthStore } from '@/features/auth/authStore';
-import type { DossierImportBatch, DossierImportFile } from '@/api/types';
+import { hasSummary, type DossierImportBatch, type DossierImportFile } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { DossierFileViewer } from './DossierFileViewer';
 import { dossierStatusLabels } from './DossierImportsPage';
+import { DossierImportSummaryCard } from './DossierImportSummaryCard';
 
 export const showDossierValue = (value: unknown) =>
   value === null || value === undefined || value === ''
@@ -114,10 +115,10 @@ function PreviewContent({ batch }: { batch: DossierImportBatch }) {
             )
           }
         >
-          Import validé. Les rattachements et les modifications enregistrées sont détaillés dans l’historique
-          ci-dessous.
+          Import validé. Les personnes concernées (siège et réglementaire du pays) ont été notifiées.
         </Alert>
       )}
+      {applied && hasSummary(batch.summary) && <DossierImportSummaryCard summary={batch.summary} />}
       {batch.status === 'FAILED' && (
         <Alert severity="error">
           {batch.error || 'L’analyse a échoué. Relancez-la pour réutiliser les documents déjà envoyés.'}

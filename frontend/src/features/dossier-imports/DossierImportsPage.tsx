@@ -23,6 +23,7 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { Link, useNavigate } from 'react-router';
 import { extractErrorMessage } from '@/api/client';
 import { useDossierImports, useUploadDossier } from '@/api/hooks/useDossierImports';
+import { hasSummary } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
@@ -196,6 +197,7 @@ export default function DossierImportsPage() {
                   <TableRow>
                     <TableCell>Dossier</TableCell>
                     <TableCell>Date</TableCell>
+                    <TableCell>AMM touchée et changements</TableCell>
                     <TableCell>État</TableCell>
                   </TableRow>
                 </TableHead>
@@ -208,6 +210,29 @@ export default function DossierImportsPage() {
                         </MuiLink>
                       </TableCell>
                       <TableCell>{formatDateTime(batch.created_at)}</TableCell>
+                      <TableCell>
+                        {hasSummary(batch.summary) ? (
+                          <>
+                            <MuiLink component={Link} to={`/amms/${batch.summary.amm_id}`}>
+                              {batch.summary.product} ({batch.summary.country_iso2})
+                            </MuiLink>
+                            {batch.summary.lines
+                              .filter((line) => /^(Statut|Dossier|Échéance|AMM créée)/.test(line))
+                              .map((line) => (
+                                <Typography
+                                  key={line}
+                                  variant="caption"
+                                  display="block"
+                                  color="text.secondary"
+                                >
+                                  {line}
+                                </Typography>
+                              ))}
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           size="small"
