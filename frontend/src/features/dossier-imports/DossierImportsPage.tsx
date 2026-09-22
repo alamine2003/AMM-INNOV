@@ -28,7 +28,14 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { formatBytes } from '@/lib/download';
-import { filesFromDrop, filesFromPicker, validateFolder, type FolderFile } from './folderUpload';
+import {
+  filesFromDrop,
+  filesFromPicker,
+  splitByProduct,
+  validateFolder,
+  type FolderFile,
+  type ProductGroup,
+} from './folderUpload';
 
 export const dossierStatusLabels = {
   PENDING: 'En attente',
@@ -49,12 +56,39 @@ export default function DossierImportsPage() {
   const [page, setPage] = useState(1);
   const batches = useDossierImports(page);
   const upload = useUploadDossier();
-  const busy = reading || upload.isPending;
+  const [groups, setGroups] = useState<ProductGroup[]>([]);
+  const [batchRun, setBatchRun] = useState<{ done: number; created: number; failed: string[] } | null>(null);
+  const running = batchRun !== null && batchRun.done < groups.length;
+  const busy = reading || upload.isPending || running;
   const select = (next: FolderFile[]) => {
     upload.reset();
+    setBatchRun(null);
+    const split = splitByProduct(next);
+    setGroups(split);
     setFiles(next);
-    setErrors(validateFolder(next));
+    // Dossier pays : chaque produit est un import distinct, les limites s'appliquent par produit.
+    setErrors(
+      split.length
+        ? split.flatMap((group) => validateFolder(group.files).map((error) => `${group.name} : ${error}`))
+        : validateFolder(next),
+    );
     setProgress(0);
+  };
+  const analyzeAll = async () => {
+    const run = { done: 0, created: 0, failed: [] as string[] };
+    setBatchRun({ ...run });
+    for (const group of groups) {
+      try {
+        await upload.mutateAsync({ files: group.files, onProgress: setProgress });
+        run.created += 1;
+      } catch (error) {
+        run.failed.push(`${group.name} : ${extractErrorMessage(error)}`);
+      }
+      run.done += 1;
+      setBatchRun({ ...run });
+    }
+    setFiles([]);
+    setGroups([]);
   };
 
   return (
@@ -155,7 +189,29 @@ export default function DossierImportsPage() {
                 </Box>
               </Alert>
             )}
-            {upload.isError && <Alert severity="error">{extractErrorMessage(upload.error)}</Alert>}
+            {groups.length > 0 && (
+              <Alert severity="info">
+                Ce dossier regroupe {groups.length} produits : chacun sera analysé comme un import séparé.
+                Vous vérifierez et validerez ensuite chaque produit dans l’historique ci-dessous.
+              </Alert>
+            )}
+            {batchRun && (
+              <Alert severity={batchRun.failed.length ? 'warning' : 'success'}>
+                {running
+                  ? `Envoi des produits : ${batchRun.done + 1} / ${groups.length}…`
+                  : `${batchRun.created} import(s) créé(s). Ouvrez chacun dans l’historique pour vérifier et valider.`}
+                {batchRun.failed.length > 0 && (
+                  <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                    {batchRun.failed.map((failure) => (
+                      <li key={failure}>{failure}</li>
+                    ))}
+                  </Box>
+                )}
+              </Alert>
+            )}
+            {upload.isError && !groups.length && !batchRun && (
+              <Alert severity="error">{extractErrorMessage(upload.error)}</Alert>
+            )}
             {upload.isPending && (
               <Box>
                 <LinearProgress variant="determinate" value={progress} />
@@ -167,13 +223,15 @@ export default function DossierImportsPage() {
                 variant="contained"
                 disabled={!files.length || errors.length > 0 || busy}
                 onClick={() =>
-                  upload.mutate(
-                    { files, onProgress: setProgress },
-                    { onSuccess: (batch) => navigate(`/dossier-imports/${batch.id}`) },
-                  )
+                  groups.length
+                    ? void analyzeAll()
+                    : upload.mutate(
+                        { files, onProgress: setProgress },
+                        { onSuccess: (batch) => navigate(`/dossier-imports/${batch.id}`) },
+                      )
                 }
               >
-                Analyser le dossier
+                {groups.length ? `Analyser les ${groups.length} produits` : 'Analyser le dossier'}
               </Button>
             </Box>
           </Stack>

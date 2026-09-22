@@ -87,3 +87,35 @@ export async function filesFromDrop(items: DataTransferItemList): Promise<Folder
   await visit(entries[0]);
   return files;
 }
+
+/** Sous-dossiers qui décrivent une période d'un même produit, pas un autre produit. */
+const PERIOD_FOLDER = /^(amm[\s_-]*)?(origine|original|initial|renouv|renouvellement|renewal)/i;
+
+export interface ProductGroup {
+  name: string;
+  files: FolderFile[];
+}
+
+/**
+ * Un dossier pays (« CAMEROUN/OMEPRAL…/…pdf », « CAMEROUN/FLUGEN…/…pdf ») regroupe plusieurs
+ * produits : l'import intelligent traite une AMM à la fois, on crée donc un import par
+ * sous-dossier produit. Le nom du dossier pays est gardé dans la racine (« CAMEROUN - OMEPRAL… »)
+ * pour que le pays reste reconnu par le chemin. Renvoie [] si le dossier est un dossier produit.
+ */
+export function splitByProduct(files: FolderFile[]): ProductGroup[] {
+  if (!files.length) return [];
+  const root = files[0].path.split('/')[0];
+  const groups = new Map<string, FolderFile[]>();
+  for (const entry of files) {
+    const parts = entry.path.split('/');
+    if (parts[0] !== root || parts.length < 3) return [];
+    const sub = parts[1];
+    if (PERIOD_FOLDER.test(sub)) return [];
+    const name = `${root} - ${sub}`.slice(0, 255).trimEnd();
+    const list = groups.get(name) ?? [];
+    list.push({ file: entry.file, path: [name, ...parts.slice(2)].join('/') });
+    groups.set(name, list);
+  }
+  if (groups.size < 2) return [];
+  return [...groups].map(([name, list]) => ({ name, files: list }));
+}

@@ -36,6 +36,12 @@ _MIME_EXTENSIONS = {
 _GENERIC_MIMES = {"", "application/octet-stream", "binary/octet-stream"}
 _WINDOWS_RESERVED = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)", re.I)
 _ENCODED_PATH = re.compile(r"%(?:2e|2f|5c|00|25)", re.I)
+# Le Finder de macOS enregistre « / » sous la forme « : » (« FLUGEN 50MG/5ML » devient
+# « FLUGEN 50MG:5ML ») : on accepte « : » au milieu d'un nom, sauf lettre de lecteur Windows
+# (« C: ») et flux NTFS alternatif (« decision.pdf:script.exe »). Les fichiers sont de toute
+# façon stockés sous un nom aléatoire : le chemin n'est qu'une métadonnée.
+_DRIVE_LETTER = re.compile(r"^[A-Za-z]:")
+_ALTERNATE_STREAM = re.compile(r"\.[A-Za-z0-9]{1,5}:")
 _FORBIDDEN_PDF_KEYS = {
     "/A", "/AA", "/OpenAction", "/JS", "/JavaScript", "/EmbeddedFiles",
     "/RichMediaContent", "/RichMediaSettings", "/XFA", "/EF",
@@ -52,7 +58,9 @@ def _validate_segment(segment: str) -> None:
         not segment
         or len(segment) > 255
         or segment in {".", ".."}
-        or any(character in segment for character in ("/", "\\", ":"))
+        or any(character in segment for character in ("/", "\\"))
+        or _DRIVE_LETTER.match(segment)
+        or _ALTERNATE_STREAM.search(segment)
         or any(unicodedata.category(character).startswith("C") for character in segment)
         or segment.endswith((".", " "))
         or _WINDOWS_RESERVED.match(segment)

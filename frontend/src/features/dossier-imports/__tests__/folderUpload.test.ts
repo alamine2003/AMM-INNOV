@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createFolderFormData, filesFromDrop, filesFromPicker, validateFolder } from '../folderUpload';
+import {
+  createFolderFormData,
+  filesFromDrop,
+  filesFromPicker,
+  splitByProduct,
+  validateFolder,
+} from '../folderUpload';
 
 function fileAt(path: string, content = '%PDF-1.7 proof') {
   const file = new File([content], path.split('/').at(-1)!, { type: 'application/pdf' });
@@ -71,5 +77,36 @@ describe('upload de dossiers', () => {
       'AMM/ORIGINE/b.pdf',
       'AMM/c.pdf',
     ]);
+  });
+
+  it('découpe un dossier pays en un import par produit, en gardant le pays dans la racine', () => {
+    const groups = splitByProduct(
+      filesFromPicker([
+        fileAt('CAMEROUN/OMEPRAL 20MG GEL B28/AMM OMEPRAL.pdf'),
+        fileAt('CAMEROUN/OMEPRAL 20MG GEL B28/OMEPRAL.pdf'),
+        fileAt('CAMEROUN/FLUGEN 50MG :5ML PDRE SUSP BUV F60ML/AMM renouvellée FLUGEN SYROP.pdf'),
+      ]),
+    );
+    expect(groups.map((g) => g.name)).toEqual([
+      'CAMEROUN - OMEPRAL 20MG GEL B28',
+      'CAMEROUN - FLUGEN 50MG :5ML PDRE SUSP BUV F60ML',
+    ]);
+    expect(groups[0].files.map((f) => f.path)).toEqual([
+      'CAMEROUN - OMEPRAL 20MG GEL B28/AMM OMEPRAL.pdf',
+      'CAMEROUN - OMEPRAL 20MG GEL B28/OMEPRAL.pdf',
+    ]);
+    expect(groups.every((g) => validateFolder(g.files).length === 0)).toBe(true);
+  });
+
+  it('ne découpe pas un dossier produit organisé par périodes', () => {
+    expect(
+      splitByProduct(
+        filesFromPicker([
+          fileAt('AMM Produit/AMM_ORIGINE/décision.pdf'),
+          fileAt('AMM Produit/RENOUVELLEMENT_2026/décision.pdf'),
+        ]),
+      ),
+    ).toEqual([]);
+    expect(splitByProduct(filesFromPicker([fileAt('AMM Produit/décision.pdf')]))).toEqual([]);
   });
 });
