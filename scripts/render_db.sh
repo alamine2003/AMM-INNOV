@@ -130,11 +130,21 @@ backup() { # écrit le fichier et affiche son chemin
   echo "${BACKUP_DIR}/${file}"
 }
 
-restore_into() { # restore_into FICHIER DB_ID
-  local file=$1 id=$2
+restore_into() { # restore_into FICHIER DB_ID : remplace tout le contenu de la base cible
+  local file=$1 id=$2 url
+  url=$(external_url "$id")
+  # --clean ne suffit pas : les migrations déjà appliquées par l'API (vues analytics, tables
+  # plus récentes) bloquent les DROP. On repart d'une base vide ; la sauvegarde source est gardée.
+  log "remise à zéro de ${DB_NAME} avant restauration"
+  pg psql -v ON_ERROR_STOP=1 -q "$url" -c "DO \$\$ DECLARE s text; BEGIN
+    FOR s IN SELECT nspname FROM pg_namespace
+      WHERE nspname NOT LIKE 'pg\\_%' AND nspname <> 'information_schema' LOOP
+      EXECUTE format('DROP SCHEMA %I CASCADE', s);
+    END LOOP;
+    CREATE SCHEMA public;
+  END \$\$;"
   log "pg_restore ${file} -> ${DB_NAME}"
-  pg pg_restore --no-owner --no-acl --clean --if-exists --single-transaction \
-    -d "$(external_url "$id")" < "$file"
+  pg pg_restore --no-owner --no-acl --single-transaction -d "$url" < "$file"
 }
 
 cmd=${1:-status}; shift || true
