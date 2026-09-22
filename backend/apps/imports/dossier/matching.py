@@ -1,5 +1,6 @@
 """Country-scoped, multiple-criterion matching; an AMM number alone never identifies a record."""
 
+import re
 from difflib import SequenceMatcher
 
 from apps.amm.models import MarketingAuthorization, Renewal
@@ -112,3 +113,123 @@ def resolve_renewal(amm, values: dict, exclude=()):
     if len(open_undated) == 1 and (start or decision):
         return open_undated[0], False
     return None, False
+
+
+# Abréviations interchangeables des libellés du catalogue (« FL/100ML » = « F100ML »).
+_SYNONYMS = {"fl": "f", "pdr": "pdre", "cp": "cpr", "comp": "cpr", "sachet": "sach", "coll": "col"}
+_UNITS = {"mg", "g", "mcg", "ml", "ui", "iu"}
+
+
+def _amount(value: float) -> str:
+    return f"{value:.4f}".rstrip("0").rstrip(".")
+
+
+def _parts(name: str) -> tuple[list[str], list[str]]:
+    """Mots et nombres d'un libellé ; « 1G » devient 1000 (mg) pour comparer les dosages."""
+    text = normalize(re.sub(r"(\d)[.,](\d)", r"\1p\2", name))
+    words, numbers = [], []
+    for value, unit in re.findall(r"(\d+(?:p\d+)?)\s*([a-z]*)", text):
+        amount = float(value.replace("p", "."))
+        if unit == "g":
+            amount *= 1000
+        numbers.append(_amount(amount))
+    for word in re.findall(r"[a-z]+", re.sub(r"\d+(?:p\d+)?", " ", text)):
+        words.append(_SYNONYMS.get(word, word))
+    return words, numbers
+
+
+def _numbers_distance(first: list[str], second: list[str]) -> int:
+    from .recognition import _edit_distance
+
+    joined = "|".join(first), "|".join(second)
+    ordered = "|".join(sorted(first)), "|".join(sorted(second))
+    return min(_edit_distance(*joined), _edit_distance(*ordered))
+
+
+def folder_product(labels: list[str], products, preferred_ids=()) -> tuple[object, str]:
+    """Produit du catalogue désigné par un nom de dossier, avec tolérance aux fautes de frappe.
+
+    Les dosages doivent concorder (au plus une faute de frappe : « 159MG » pour « 15MG »,
+    « B3:0 » pour « B/30 ») et le reste du libellé être très proche. Les produits ayant une AMM
+    dans le pays (`preferred_ids`) sont examinés d'abord. Renvoie (produit, "") ou
+    (None, motif) quand le nom est absent, trop éloigné ou ambigu.
+    """
+    preferred = {str(pk) for pk in preferred_ids}
+    scored = []
+    for label in labels:
+        label_words, label_numbers = _parts(label.replace(":", "/"))
+        if not label_words:
+            continue
+        for product in products:
+            words, numbers = _parts(product.name)
+            if (
+                not words
+                or words[0] != label_words[0]
+                and SequenceMatcher(None, words[0], label_words[0]).ratio() < 0.85
+            ):
+                continue
+            distance = _numbers_distance(label_numbers, numbers)
+            if distance > 1:
+                continue
+            ratio = SequenceMatcher(None, "".join(label_words), "".join(words)).ratio()
+            ordered = SequenceMatcher(
+                None, "".join(sorted(label_words)), "".join(sorted(words))
+            ).ratio()
+            ratio = max(ratio, ordered)
+            if ratio >= 0.85:
+                scored.append((distance, -ratio, str(product.pk) not in preferred, product))
+    if not scored:
+        return None, "Aucun produit du catalogue ne correspond au nom du dossier."
+    for in_country in (True, False):
+        pool = [row for row in scored if row[2] != in_country]
+        if not pool:
+            continue
+        pool.sort(key=lambda row: (row[0], row[1], str(row[3].pk)))
+        best = pool[0]
+        rivals = {
+            str(row[3].pk) for row in pool if row[0] == best[0] and -row[1] >= -best[1] - 0.02
+        }
+        if len(rivals) > 1:
+            return None, "Plusieurs produits du catalogue correspondent au nom du dossier."
+        return best[3], ""
+    return None, "Aucun produit du catalogue ne correspond au nom du dossier."
+
+
+def name_compatible(explicit: str, product, products) -> bool:
+    """La dénomination imprimée (« GENSET 10MG », « ARTRIM-GH ») désigne-t-elle ce produit ?
+
+    Même marque, dosages imprimés présents dans le libellé du catalogue, et aucun mot
+    distinctif d'une autre présentation de la marque (« DOLEX SR » n'est pas « DOLEX 50MG »).
+    """
+    words, numbers = _parts(explicit)
+    target_words, target_numbers = _parts(product.name)
+    if not words or not target_words:
+        return False
+    if words[0] != target_words[0] and (
+        SequenceMatcher(None, words[0], target_words[0]).ratio() < 0.8 or len(words[0]) < 4
+    ):
+        return False
+    folded = re.sub(r"(\d)[.,](\d)", r"\1p\2", explicit.lower())
+    strengths = []
+    for match in re.finditer(r"(\d+(?:p\d+)?)\s*(mcg|mg|g|%)?", folded):
+        value, unit = match.groups()
+        following = folded[match.end() : match.end() + 1]
+        if unit and following.isalpha() and following not in "x":
+            unit = None if unit != "mg" or not following.isdigit() else unit
+        if not unit and (following.isalpha() or strengths):
+            break
+        amount = float(value.replace("p", ".")) * (1000 if unit == "g" else 1)
+        strengths.append(_amount(amount))
+        if not unit:
+            break
+    if any(value not in target_numbers for value in strengths):
+        return False
+    siblings = set()
+    for other in products:
+        other_words, _ = _parts(other.name)
+        if other.pk != product.pk and other_words and other_words[0] == target_words[0]:
+            siblings.update(other_words)
+    distinctive = {word for word in words[1:] if len(word) >= 2 and word not in _UNITS} - set(
+        target_words
+    )
+    return not (distinctive & siblings)

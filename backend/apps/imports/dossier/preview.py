@@ -9,7 +9,7 @@ from apps.catalog.models import Country, Product
 from apps.documents.models import Document
 
 from .extraction import extract_file
-from .matching import match_authorizations, resolve_renewal
+from .matching import folder_product, match_authorizations, name_compatible, resolve_renewal
 from .recognition import normalize, recognize_file
 
 
@@ -46,6 +46,56 @@ def _change(target, field, old, new, proof, confidence):
     }
 
 
+def _identify_by_folder(batch, files, rows, products, country, blockers, warnings):
+    """Produit désigné par le nom du dossier (nommé d'après le catalogue), confirmé par les pièces.
+
+    Une décision dont la dénomination imprimée (« GENSET 10MG ») est compatible avec ce produit,
+    ou qui cite sa marque, le confirme : confiance moyenne (75 au plus), jamais celle d'un libellé
+    complet. Une dénomination incompatible n'est pas rattachée : le contrôle de contradiction
+    qui suit bloque alors l'import.
+    """
+    in_country = set(
+        MarketingAuthorization.objects.filter(country=country).values_list("product_id", flat=True)
+    )
+    labels = [part for part in batch.root_name.split(" - ") if part.strip()]
+    for upload in files:
+        labels.extend(upload.relative_path.split("/")[1:-1])
+    product, reason = folder_product(labels, products, in_country)
+    if not product:
+        if reason and not any(row["product_ids"] for row in rows):
+            warnings.append(reason)
+        return
+    if product.pk not in in_country:
+        blockers.append(
+            f"Aucune AMM {country.name} n'existe dans le catalogue pour « {product.name} », "
+            "reconnu par le nom du dossier : créez ou rattachez l'AMM avant d'importer."
+        )
+    brand = normalize(product.name).split(" ")[0]
+    # Les autres présentations commercialisées dans ce pays sont celles avec lesquelles une
+    # dénomination imprimée pourrait être confondue.
+    marketed = [item for item in products if item.pk in in_country] or products
+    for upload, row in zip(files, rows, strict=True):
+        explicit = row["explicit_product_name"]
+        if explicit:
+            confirmed = name_compatible(explicit, product, marketed)
+        else:
+            confirmed = f" {brand} " in f" {normalize(upload.extraction.get('text', ''))} "
+        if explicit and not confirmed:
+            row["product_ids"] = [pk for pk in row["product_ids"] if pk != str(product.pk)]
+            if row["official"]:
+                blockers.append(
+                    f"{row['path']} : la décision nomme « {explicit} », qui ne correspond pas à "
+                    f"« {product.name} » désigné par le nom du dossier."
+                )
+            continue
+        row["product_ids"] = [str(product.pk)]
+        row["product_name"] = product.name
+        row["product_source"] = "folder"
+        row["product_confidence"] = (
+            min(row["confidence"], 75) if confirmed and row["official"] else 60
+        )
+
+
 def build_preview(batch) -> dict:
     files = list(batch.files.all().order_by("relative_path", "pk"))
     countries = list(Country.objects.all())
@@ -66,10 +116,7 @@ def build_preview(batch) -> dict:
     if not files:
         blockers.append("Le dossier ne contient aucun document.")
 
-    product_ids = {pk for row in rows for pk in row["product_ids"]}
     country_ids = {pk for row in rows for pk in row["country_ids"]}
-    if len(product_ids) > 1:
-        blockers.append("Le dossier contient plusieurs produits ou présentations : séparez-les.")
     if len(country_ids) > 1:
         blockers.append("Le dossier contient plusieurs pays : séparez-les.")
     country = next((item for item in countries if str(item.pk) in country_ids), None)
@@ -82,6 +129,19 @@ def build_preview(batch) -> dict:
     elif not batch.created_by or not batch.created_by.can_access_country(country):
         blockers.append("Le pays reconnu est hors de votre périmètre.")
 
+    if country and not any(row["product_source"] == "text" for row in rows):
+        _identify_by_folder(batch, files, rows, products, country, blockers, warnings)
+    for row in rows:
+        if row.get("number_variants"):
+            warnings.append(
+                f"{row['path']} : lectures divergentes du numéro d'AMM "
+                f"({row['number'] or 'aucune retenue'} ; autres lectures : "
+                + ", ".join(row["number_variants"][:3])
+                + ")."
+            )
+    product_ids = {pk for row in rows for pk in row["product_ids"]}
+    if len(product_ids) > 1:
+        blockers.append("Le dossier contient plusieurs produits ou présentations : séparez-les.")
     product = next((item for item in products if str(item.pk) in product_ids), None)
     named = [row for row in rows if row["official"] and row["explicit_product_name"]]
     explicit_names = {normalize(row["explicit_product_name"]) for row in named}
@@ -112,6 +172,11 @@ def build_preview(batch) -> dict:
             )
         if not batch.created_by or not batch.created_by.is_global:
             blockers.append("La création d'un produit nécessite un utilisateur du siège.")
+        if not any(row["explicit_product_labeled"] for row in named):
+            blockers.append(
+                f"Produit absent du catalogue : la dénomination lue (« {product_name} ») ne "
+                "suffit pas pour créer un produit. Créez-le dans le catalogue avant l'import."
+            )
 
     candidates = match_authorizations(batch.created_by, product, country, rows)
     amm = None
@@ -242,6 +307,19 @@ def build_preview(batch) -> dict:
         existing, ambiguous = resolve_renewal(
             amm, values, exclude=[pk for pk in renewal_targets.values() if pk]
         )
+        if (
+            not existing
+            and not ambiguous
+            and amm
+            and amm.original_start_date
+            and values.get("start_date") == amm.original_start_date.isoformat()
+        ):
+            # La fiche date l'AMM d'origine du jour de ce renouvellement : l'importer créerait
+            # deux périodes identiques. La fiche doit d'abord être corrigée.
+            blockers.append(
+                f"{key} : ce renouvellement commence le même jour que l'AMM d'origine enregistrée "
+                f"({amm.original_start_date:%d/%m/%Y}) ; corrigez la date d'origine de la fiche."
+            )
         if ambiguous:
             blockers.append(f"{key} : plusieurs renouvellements existants correspondent.")
         if existing and str(existing.pk) in renewal_targets.values():
