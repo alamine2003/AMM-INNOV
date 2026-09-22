@@ -17,7 +17,8 @@
 #
 # Variables : RENDER_API_KEY (obligatoire), RENDER_SERVICE (amm-innov-api), RENDER_DB_NAME
 # (amm-innov-db), RENDER_REGION (frankfurt), ROTATE_AFTER_DAYS (25), BACKUP_DIR (./backups).
-# Outils : curl, jq, date GNU (Linux, CI) et pg_dump/pg_restore 16+ (ou docker, à défaut).
+# Outils : curl, jq, date GNU (Linux, CI) et pg_dump/pg_restore de version PG_VERSION (18)
+# (ou docker, à défaut).
 set -euo pipefail
 
 API="${RENDER_API_URL:-https://api.render.com/v1}"
@@ -26,6 +27,7 @@ SERVICE_NAME="${RENDER_SERVICE:-amm-innov-api}"
 DB_NAME="${RENDER_DB_NAME:-amm-innov-db}"
 REGION="${RENDER_REGION:-frankfurt}"
 ROTATE_AFTER_DAYS="${ROTATE_AFTER_DAYS:-25}"
+PG_VERSION="${PG_VERSION:-18}"   # même version majeure que la base Railway d'origine
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 
 log() { echo "[render-db] $*" >&2; }
@@ -41,10 +43,10 @@ api() { # api METHODE CHEMIN [JSON]
 
 pg() { # pg OUTIL ARGS... : binaire local 16+ sinon image docker postgres:16
   local tool=$1; shift
-  if command -v "$tool" >/dev/null && "$tool" --version | grep -qE ' (1[6-9]|[2-9][0-9])\.'; then
+  if command -v "$tool" >/dev/null && "$tool" --version | grep -qE " (${PG_VERSION}|[2-9][0-9])\."; then
     "$tool" "$@"
   else
-    docker run --rm -i --network host postgres:16 "$tool" "$@"
+    docker run --rm -i --network host "postgres:${PG_VERSION}" "$tool" "$@"
   fi
 }
 
@@ -79,9 +81,9 @@ wait_available() {
 create_db() {
   local owner
   owner=$(api GET "/owners?limit=1" | jq -r '.[0].owner.id')
-  log "création de ${DB_NAME} (gratuit, Postgres 16, ${REGION})"
-  api POST "/postgres" "$(jq -nc --arg n "$DB_NAME" --arg o "$owner" --arg r "$REGION" \
-    '{name:$n, ownerId:$o, plan:"free", version:"16", region:$r, databaseName:"amm", databaseUser:"amm"}')" \
+  log "création de ${DB_NAME} (gratuit, Postgres ${PG_VERSION}, ${REGION})"
+  api POST "/postgres" "$(jq -nc --arg n "$DB_NAME" --arg o "$owner" --arg r "$REGION" --arg v "$PG_VERSION" \
+    '{name:$n, ownerId:$o, plan:"free", version:$v, region:$r, databaseName:"amm", databaseUser:"amm"}')" \
     | jq -r .id
 }
 
