@@ -13,7 +13,12 @@ MAX_PAGES = 30
 MAX_TEXT = 160_000
 MAX_FILE_BYTES = 30 * 1024 * 1024
 MAX_PIXELS = 20_000_000
-OCR_TIMEOUT = 25
+# Délai par page. Render gratuit n'alloue qu'une fraction de CPU (0,1) : une page scannée y
+# prend plus d'une minute, là où 25 s suffisaient sur un poste. Réglable par DOSSIER_OCR_TIMEOUT.
+OCR_TIMEOUT = int(os.environ.get("DOSSIER_OCR_TIMEOUT", "180"))
+# Résolution de rendu des pages pour l'OCR (~200 dpi pour un A4) : lisible par Tesseract, deux
+# fois moins de pixels que 2200 px.
+OCR_RENDER_PX = int(os.environ.get("DOSSIER_OCR_RENDER_PX", "1700"))
 MIN_PAGE_TEXT = 35
 
 
@@ -33,6 +38,16 @@ def _ocr_image(path: Path, workspace: Path, page: int) -> str:
     )
     with target.with_suffix(".txt").open(encoding="utf-8", errors="replace") as output:
         return output.read(MAX_TEXT + 1)
+
+
+def needs_retry(extraction: dict | None) -> bool:
+    """Une extraction interrompue (délai OCR, OCR absent) est refaite à la relance de l'analyse."""
+    if not extraction:
+        return True
+    return any(
+        error.startswith(("Délai OCR dépassé", "Échec OCR", "OCR indisponible"))
+        for error in extraction.get("errors", [])
+    )
 
 
 def extract_file(upload) -> dict:
@@ -108,7 +123,7 @@ def extract_file(upload) -> dict:
                                         str(index + 1),
                                         "-singlefile",
                                         "-scale-to",
-                                        "2200",
+                                        str(OCR_RENDER_PX),
                                         "-png",
                                         str(source),
                                         str(prefix),

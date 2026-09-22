@@ -45,6 +45,14 @@ def analyze_dossier(batch_id: str) -> dict:
     try:
         if not batch.created_by or not batch.created_by.is_active:
             raise ValueError("Utilisateur indisponible")
+        # Relance après un délai OCR dépassé : on refait l'extraction des seuls fichiers
+        # interrompus (jamais pendant la validation, qui relit l'extraction enregistrée).
+        from .dossier.extraction import extract_file, needs_retry
+
+        for upload in batch.files.all():
+            if upload.extraction and needs_retry(upload.extraction):
+                upload.extraction = extract_file(upload)
+                upload.save(update_fields=["extraction"])
         preview = build_preview(batch)
         # Un pays reconnu hors du périmètre de l'auteur n'est pas enregistré sur le lot :
         # sinon le lot disparaît de sa liste (404) et il ne voit jamais le blocage expliqué.
