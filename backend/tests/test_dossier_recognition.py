@@ -228,7 +228,9 @@ def test_ocr_subprocess_timeout_is_bounded_and_reported():
         ) as run,
     ):
         result = extract_file(blank_pdf())
-    assert run.call_args.kwargs["timeout"] == 25
+    from apps.imports.dossier.extraction import OCR_TIMEOUT
+
+    assert run.call_args.kwargs["timeout"] == OCR_TIMEOUT == 180
     assert any("Délai OCR dépassé" in error for error in result["errors"])
 
 
@@ -243,3 +245,28 @@ def test_ocr_subprocess_timeout_is_bounded_and_reported():
 )
 def test_regulatory_dates(value, expected):
     assert parse_date(value) == expected
+
+
+def test_interrupted_ocr_is_retried_on_reanalysis(users, monkeypatch):
+    """Un délai OCR dépassé (Render gratuit, CPU réduit) ne fige pas l'extraction."""
+    from apps.imports import tasks
+    from apps.imports.dossier import extraction
+    from apps.imports.models import DossierImport
+
+    assert extraction.needs_retry({"errors": ["Délai OCR dépassé à la page 1."]})
+    assert not extraction.needs_retry({"errors": ["Aucun texte exploitable dans le document."]})
+    batch = DossierImport.objects.create(root_name="D", created_by=users["hq"])
+    upload = staged(batch, "D/decision.pdf", "")
+    upload.extraction = {"text": "", "errors": ["Délai OCR dépassé à la page 1."], "warnings": []}
+    upload.save()
+    calls = []
+
+    def fake_extract(record):
+        calls.append(record.pk)
+        return {"text": "ok", "source": "ocr", "confidence": 80, "errors": [], "warnings": []}
+
+    monkeypatch.setattr(extraction, "extract_file", fake_extract)
+    monkeypatch.setattr("apps.imports.dossier.preview.extract_file", fake_extract)
+    tasks.analyze_dossier(str(batch.pk))
+    upload.refresh_from_db()
+    assert calls == [upload.pk] and upload.extraction["text"] == "ok"
