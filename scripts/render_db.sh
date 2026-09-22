@@ -60,7 +60,27 @@ db_json() { # objet JSON de la base, vide si absente
     | jq -c --arg n "$DB_NAME" '[.[].postgres | select(.name == $n)][0] // empty'
 }
 
-external_url() { api GET "/postgres/$1/connection-info" | jq -r .externalConnectionString; }
+# Une base créée par l'API refuse toute connexion externe (liste d'IP vide). pg_dump et pg_restore
+# passent par l'URL externe : on n'ouvre que l'IP de la machine qui exécute le script (/32), le
+# temps de l'opération, et on referme en sortant (trap), même en cas d'échec.
+OPENED_FILE="$(mktemp)"
+open_external() {
+  grep -qx "$1" "$OPENED_FILE" 2>/dev/null && return 0
+  local ip; ip=${RUNNER_IP:-$(curl -fsS https://api.ipify.org)} || die "IP publique introuvable"
+  api PATCH "/postgres/$1" "$(jq -nc --arg c "${ip}/32" \
+    '{ipAllowList:[{cidrBlock:$c, description:"render_db.sh (temporaire)"}]}')" >/dev/null
+  echo "$1" >> "$OPENED_FILE"; log "accès externe ouvert à ${ip} pour $1 (temporaire)"; sleep 10
+}
+close_external() {
+  local id
+  while read -r id; do
+    [ -n "$id" ] && api PATCH "/postgres/${id}" '{"ipAllowList":[]}' >/dev/null 2>&1 \
+      && log "accès externe refermé pour ${id}"
+  done < "$OPENED_FILE"
+  rm -f "$OPENED_FILE"
+}
+trap close_external EXIT
+external_url() { open_external "$1"; api GET "/postgres/$1/connection-info" | jq -r .externalConnectionString; }
 internal_url() { api GET "/postgres/$1/connection-info" | jq -r .internalConnectionString; }
 
 age_days() { # jours depuis createdAt
