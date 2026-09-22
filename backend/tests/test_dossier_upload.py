@@ -83,6 +83,17 @@ def test_unsafe_relative_paths_rejected(path):
         validate_relative_path(path, "Dossier")
 
 
+@pytest.mark.parametrize("path", [
+    # Noms réels du dossier Cameroun : le Finder de macOS écrit « / » sous la forme « : ».
+    "CAMEROUN/FLUGEN 50MG :5ML PDRE SUSP BUV F60ML/AMM renouvellée FLUGEN SYROP.pdf",
+    "CAMEROUN/GENSET 10MG CPR B3:0/AMM GENSET CP B30_EXP.2028.pdf",
+    "CAMEROUN/LITACOLD NUIT 500MG:25MG CPR B16/AMM LITACOLD NUIT_2028.pdf",
+    "CAMEROUN/PANTOPRAL D 40MG30MG CPR B30/AMM PANTOPRAL D _2028.pdf",
+])
+def test_macos_colons_in_names_are_accepted(path):
+    assert validate_relative_path(path, "CAMEROUN") == path
+
+
 @pytest.mark.parametrize("root", ["", ".", "..", "../Dossier", "a/b", "C:\\Dossier", "x" * 256])
 def test_unsafe_roots_rejected(root):
     with pytest.raises(ValidationError):
