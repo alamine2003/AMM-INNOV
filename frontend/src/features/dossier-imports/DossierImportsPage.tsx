@@ -28,6 +28,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { formatBytes } from '@/lib/download';
+import { batchState } from './dossierReview';
 import {
   filesFromDrop,
   filesFromPicker,
@@ -36,14 +37,6 @@ import {
   type FolderFile,
   type ProductGroup,
 } from './folderUpload';
-
-export const dossierStatusLabels = {
-  PENDING: 'En attente',
-  RUNNING: 'Analyse en cours',
-  READY: 'À vérifier',
-  APPLIED: 'Import validé',
-  FAILED: 'Échec de l’analyse',
-};
 
 export default function DossierImportsPage() {
   const navigate = useNavigate();
@@ -95,7 +88,7 @@ export default function DossierImportsPage() {
     <Box>
       <PageHeader
         title="Import intelligent de dossiers AMM"
-        subtitle="Sélectionnez un dossier complet. Vérifiez les documents, les rattachements et les corrections proposées avant de valider."
+        subtitle="Déposez le dossier reçu (décision d’origine, renouvellements, courriers). Si la lecture est sûre et ne change aucune donnée enregistrée, l’import est validé automatiquement ; sinon il vous reste quelques points à vérifier."
       />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
@@ -294,14 +287,9 @@ export default function DossierImportsPage() {
                       <TableCell>
                         <Chip
                           size="small"
-                          label={dossierStatusLabels[batch.status]}
-                          color={
-                            batch.status === 'APPLIED'
-                              ? 'success'
-                              : batch.status === 'FAILED'
-                                ? 'error'
-                                : 'default'
-                          }
+                          label={batchState(batch).label}
+                          color={batchState(batch).tone}
+                          variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
                         />
                       </TableCell>
                     </TableRow>

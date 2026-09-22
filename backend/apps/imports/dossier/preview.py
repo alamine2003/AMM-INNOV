@@ -10,6 +10,7 @@ from apps.documents.models import Document
 
 from .extraction import extract_file
 from .matching import folder_product, match_authorizations, name_compatible, resolve_renewal
+from .projection import build_projection
 from .recognition import normalize, recognize_file
 
 
@@ -101,6 +102,9 @@ def build_preview(batch) -> dict:
     countries = list(Country.objects.all())
     products = list(Product.objects.prefetch_related("aliases").all())
     blockers, warnings, rows = [], [], []
+    # Avertissements sur le numéro d'AMM (lectures divergentes, numéro déjà attribué) : ils
+    # interdisent la validation automatique, le réglementaire doit trancher sur le scan.
+    number_warnings = []
     for upload in files:
         if not upload.extraction:
             upload.extraction = extract_file(upload)
@@ -133,7 +137,7 @@ def build_preview(batch) -> dict:
         _identify_by_folder(batch, files, rows, products, country, blockers, warnings)
     for row in rows:
         if row.get("number_variants"):
-            warnings.append(
+            number_warnings.append(
                 f"{row['path']} : lectures divergentes du numéro d'AMM "
                 f"({row['number'] or 'aucune retenue'} ; autres lectures : "
                 + ", ".join(row["number_variants"][:3])
@@ -260,7 +264,7 @@ def build_preview(batch) -> dict:
             if normalize(other.original_number or "") == proposed_number
         ]
         if clashes:
-            warnings.append(
+            number_warnings.append(
                 f"Le numéro {original['original_number']} est déjà attribué dans ce pays à : "
                 + ", ".join(sorted(clashes)[:5])
                 + "."
@@ -423,6 +427,7 @@ def build_preview(batch) -> dict:
         )
     if confidence < 65:
         blockers.append("Confiance faible : aucune modification automatique n'est autorisée.")
+    warnings.extend(number_warnings)
     return {
         "version": 1,
         "confidence": confidence,
@@ -444,4 +449,15 @@ def build_preview(batch) -> dict:
         "documents": documents,
         "renewals": renewals,
         "changes": changes,
+        "number_warnings": sorted(set(number_warnings)),
+        # Indicatif, hors jeton d'aperçu (voir `preview_token`) : dépend de la date du jour.
+        "projection": build_projection(
+            amm=amm,
+            product=product,
+            country=country,
+            original=original,
+            renewals=renewals,
+            changes=changes,
+            documents=documents,
+        ),
     }

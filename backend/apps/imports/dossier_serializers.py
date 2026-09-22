@@ -72,6 +72,7 @@ class DossierImportSerializer(serializers.ModelSerializer):
             "files",
             "audit",
             "summary",
+            "auto_applied",
         ]
         read_only_fields = fields
 

@@ -456,6 +456,9 @@ DOSSIER_MAX_IMAGE_PIXELS = int(env("DOSSIER_MAX_IMAGE_PIXELS", "40000000"))
 DOSSIER_CLAMAV_COMMAND = env("DOSSIER_CLAMAV_COMMAND", "")
 DOSSIER_REQUIRE_ANTIVIRUS = env_bool("DOSSIER_REQUIRE_ANTIVIRUS", False)
 DOSSIER_CLAMAV_TIMEOUT = int(env("DOSSIER_CLAMAV_TIMEOUT", "60"))
+# Validation automatique d'un dossier sûr (lecture ≥ 90 %, aucun blocage, aucune valeur
+# enregistrée remplacée, aucun doute sur le numéro) : le réglementaire n'a rien à trancher.
+DOSSIER_AUTO_APPLY = env_bool("DOSSIER_AUTO_APPLY", True)
 # Multipart file bodies stream to temporary files; only metadata counts toward memory limit.
 DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
 DOCUMENT_RETENTION_YEARS = 5

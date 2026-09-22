@@ -32,6 +32,9 @@ class StalePreview(APIException):
 
 
 def preview_token(preview):
+    # La projection (échéance et statut prévus) dépend de la date du jour : elle ne doit pas
+    # rendre un aperçu « périmé » au passage de minuit. Elle est recalculée à chaque analyse.
+    preview = {key: value for key, value in preview.items() if key != "projection"}
     return hashlib.sha256(
         json.dumps(preview, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
     ).hexdigest()
@@ -136,8 +139,11 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
     return document
 
 
-def apply_dossier(batch_id, *, user, token, accepted_changes):
-    """Idempotent confirmation; a changed preview is never applied by surprise."""
+def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
+    """Idempotent confirmation; a changed preview is never applied by surprise.
+
+    `auto` : validation automatique par l'analyse, au nom de l'auteur de l'import.
+    """
     created_blobs = []
     try:
         with transaction.atomic():
@@ -296,7 +302,10 @@ def apply_dossier(batch_id, *, user, token, accepted_changes):
             batch.status = DossierImport.Status.APPLIED
             batch.finished_at = timezone.now()
             batch.error = ""
-            batch.save(update_fields=["amm", "country", "status", "finished_at", "error"])
+            batch.auto_applied = auto
+            batch.save(
+                update_fields=["amm", "country", "status", "finished_at", "error", "auto_applied"]
+            )
             transaction.on_commit(lambda: _reconcile_after_commit(amm.pk))
             # Après le recalcul : bilan réel (avant/après) et notification des personnes concernées.
             transaction.on_commit(lambda: record_and_notify(batch.pk, before))
