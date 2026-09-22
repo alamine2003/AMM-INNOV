@@ -1,0 +1,80 @@
+# ---------------------------------------------------------------------------
+# Render — backend AMM INNOV, offre gratuite (remplace Railway, septembre 2026).
+# Guide : docs/deploiement-render.md
+#
+#  - amm-innov-api   : API + WebSocket + Celery (AMM_ROLE=all), un seul conteneur Docker.
+#  - amm-innov-redis : Key Value gratuit (broker Celery, channel layer, cache).
+#  - La base Postgres gratuite n'est PAS décrite ici : Render la supprime après 30 jours.
+#    Elle est créée, sauvegardée et renouvelée tous les 25 jours par le workflow
+#    .github/workflows/render-db.yml (scripts/render_db.sh), qui renseigne DATABASE_URL.
+# ---------------------------------------------------------------------------
+services:
+  - type: web
+    name: amm-innov-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL          # posé par scripts/render_db.sh (base renouvelée tous les 25 j)
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: amm-innov-redis
+          property: connectionString
+      - key: AMM_ROLE              # web + Celery (beat intégré) dans le même conteneur
+        value: all
+      - key: CELERY_CONCURRENCY
+        value: "1"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: DB_POOL_MAX_SIZE
+        value: "8"
+      - key: NUM_PROXIES
+        value: "1"
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://amm-innov.netlify.app
+      - key: FRONTEND_URL
+        value: https://amm-innov.netlify.app
+      - key: AUTH_REFRESH_COOKIE_SAMESITE
+        value: None
+      - key: TIME_ZONE
+        value: Africa/Dakar
+      # Offre gratuite : disque éphémère. Scans PDF à brancher sur un stockage S3 (R2 gratuit)
+      # via DOCUMENT_STORAGE=s3 et S3_* ; voir docs/deploiement-render.md, section 4.
+      - key: DOCUMENT_STORAGE
+        value: local
+      - key: DOCUMENT_MAX_MB
+        value: "25"
+      - key: WAIT_TIMEOUT
+        value: "120"
+      - key: EMAIL_URL
+        sync: false
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
+  - type: keyvalue
+    name: amm-innov-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: noeviction   # broker Celery : ne jamais évincer une tâche en file
+    ipAllowList: []               # accès interne uniquement

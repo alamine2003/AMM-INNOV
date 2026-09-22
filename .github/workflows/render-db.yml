@@ -1,0 +1,63 @@
+name: Base Render
+
+# Base Postgres gratuite de Render (supprimée par Render après 30 jours) :
+#  - chaque jour : sauvegarde (artefact téléchargeable 90 jours) et renouvellement dès 25 jours ;
+#  - à la demande : status, backup, ensure (première création), rotate --force,
+#    import depuis Railway (secret SOURCE_DATABASE_URL).
+# Secrets : RENDER_API_KEY (obligatoire), SOURCE_DATABASE_URL (pour l'import seulement).
+# Guide : docs/deploiement-render.md
+
+on:
+  schedule:
+    - cron: "30 2 * * *"   # 02:30 UTC = 02:30 à Dakar
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action"
+        type: choice
+        options: [rotate, backup, status, ensure, rotate-force, import-railway]
+        default: rotate
+
+concurrency:
+  group: render-db
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  db:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      BACKUP_DIR: backups
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Secret RENDER_API_KEY absent"
+        if: env.RENDER_API_KEY == ''
+        run: |
+          echo "::error::Ajouter le secret RENDER_API_KEY (Settings, Secrets and variables, Actions)."
+          exit 1
+      - name: Client PostgreSQL 16
+        run: pg_dump --version
+      - name: Base Render
+        env:
+          ACTION: ${{ inputs.action || 'rotate' }}
+          SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
+        run: |
+          case "$ACTION" in
+            rotate)         scripts/render_db.sh backup; scripts/render_db.sh rotate ;;
+            rotate-force)   scripts/render_db.sh rotate --force ;;
+            import-railway) scripts/render_db.sh import "$SOURCE_DATABASE_URL" ;;
+            *)              scripts/render_db.sh "$ACTION" ;;
+          esac
+          scripts/render_db.sh status
+      - name: Sauvegardes (artefact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amm-db-${{ github.run_number }}
+          path: backups/*.dump
+          if-no-files-found: ignore
+          retention-days: 90

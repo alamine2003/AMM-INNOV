@@ -84,9 +84,9 @@ lint-frontend: ## eslint + prettier + tsc
 
 lint: lint-backend lint-frontend ## Tous les linters
 
-deploy-backend: ## Redéploie web et worker sur Railway depuis la branche main (railway link préalable)
-	railway redeploy -s amm-innov-backend -y --from-source
-	railway redeploy -s amm-innov-worker -y --from-source
+deploy-backend: ## Render redéploie l'API à chaque push sur main (render.yaml) ; base : workflow « Base Render »
+	@echo "Render déploie automatiquement main (render.yaml, autoDeploy)."
+	@echo "Base Postgres : GitHub, Actions, « Base Render » (sauvegarde + renouvellement tous les 25 jours)."
 
 deploy-frontend: ## Publie le frontend sur Netlify — dépannage : la CI s'en charge sur un push vers main
 	@test -z "$$(git status --porcelain)" || (echo "Dépôt non propre : cette commande publie votre dossier de travail, pas le dernier commit. Committez d'abord, ou forcez avec FORCE=1." && test -n "$(FORCE)")
