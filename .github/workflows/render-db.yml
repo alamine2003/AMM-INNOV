@@ -39,8 +39,11 @@ jobs:
         run: |
           echo "::error::Ajouter le secret RENDER_API_KEY (Settings, Secrets and variables, Actions)."
           exit 1
-      - name: Client PostgreSQL 16
-        run: pg_dump --version
+      - name: Client PostgreSQL 18 (version de la base Railway d'origine)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-18 >/dev/null
+          echo /usr/lib/postgresql/18/bin >> "$GITHUB_PATH"
+          /usr/lib/postgresql/18/bin/pg_dump --version
       - name: Base Render
         env:
           ACTION: ${{ inputs.action || 'rotate' }}
