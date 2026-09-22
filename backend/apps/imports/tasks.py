@@ -59,14 +59,16 @@ def analyze_dossier(batch_id: str) -> dict:
         country_id = preview.get("amm", {}).get("country_id")
         if country_id and not batch.created_by.can_access_country(country_id):
             country_id = batch.country_id
-        DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.RUNNING).update(
+        token = preview_token(preview)
+        saved = DossierImport.objects.filter(
+            pk=batch_id, status=DossierImport.Status.RUNNING
+        ).update(
             status=DossierImport.Status.READY,
             preview=preview,
-            preview_token=preview_token(preview),
+            preview_token=token,
             country_id=country_id,
             finished_at=timezone.now(),
         )
-        return {"status": "ready", "confidence": preview["confidence"]}
     except Exception:
         logger.exception("Échec de l'analyse du dossier %s", batch_id)
         DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.RUNNING).update(
@@ -75,3 +77,40 @@ def analyze_dossier(batch_id: str) -> dict:
             error="L'analyse a échoué. Vérifiez les documents puis relancez l'analyse.",
         )
         return {"status": "failed"}
+    if saved and can_auto_apply(preview) and _auto_apply(batch, token):
+        return {"status": "applied", "confidence": preview["confidence"], "auto": True}
+    return {"status": "ready", "confidence": preview["confidence"]}
+
+
+def can_auto_apply(preview: dict) -> bool:
+    """Le dossier peut être validé sans intervention : rien à trancher pour le réglementaire.
+
+    Lecture sûre (niveau HIGH, ≥ 90 %), aucun blocage, aucune correction qui remplacerait une
+    valeur déjà enregistrée, aucun doute sur le numéro d'AMM, et aucun produit à créer dans le
+    catalogue. Les compléments de champs vides restent appliqués, comme à la validation manuelle.
+    """
+    from django.conf import settings
+
+    return bool(
+        getattr(settings, "DOSSIER_AUTO_APPLY", False)
+        and preview.get("can_apply")
+        and not preview.get("blockers")
+        and preview.get("level") == "HIGH"
+        and preview.get("confidence", 0) >= 90
+        and not any(change.get("requires_confirmation") for change in preview.get("changes", []))
+        and not preview.get("number_warnings")
+        and (preview.get("amm") or {}).get("product_id")
+    )
+
+
+def _auto_apply(batch, token: str) -> bool:
+    """Validation au nom de l'auteur ; en cas d'échec le lot reste « À vérifier » (READY)."""
+    from .dossier.application import apply_dossier
+
+    try:
+        apply_dossier(batch.pk, user=batch.created_by, token=token, accepted_changes=[], auto=True)
+    except Exception:
+        logger.exception("Validation automatique du dossier %s impossible", batch.pk)
+        return False
+    logger.info("Dossier %s validé automatiquement", batch.pk)
+    return True

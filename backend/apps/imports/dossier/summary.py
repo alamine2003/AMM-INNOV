@@ -16,6 +16,8 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.notifications.models import Notification
 from apps.realtime.publisher import publish_user_event
 
+from .projection import missing_scan_label
+
 logger = logging.getLogger(__name__)
 
 STATUS_LABELS = dict(MarketingAuthorization.Status.choices)
@@ -57,16 +59,7 @@ def _fr(value):
 
 def _missing_scan(amm) -> str:
     """Pourquoi le dossier reste incomplet : la décision en vigueur n'a pas son scan."""
-    obtained = [
-        r
-        for r in Renewal.objects.filter(amm=amm, workflow_status=Renewal.WorkflowStatus.OBTENU)
-        if r.end_date
-    ]
-    if obtained:
-        last = max(obtained, key=lambda r: r.sequence)
-        number = last.number or "?"
-        return f"scan de la décision de renouvellement n° {number} ({_fr(last.start_date)})"
-    return "scan de la décision d'AMM d'origine"
+    return missing_scan_label(Renewal.objects.filter(amm=amm))
 
 
 def build_summary(batch, before: dict | None) -> dict:
@@ -175,9 +168,15 @@ def notify(batch, summary: dict) -> list[Notification]:
         title = f"{title} — {headline}"[:255]
     who = batch.created_by
     author = (f"{who.first_name} {who.last_name}".strip() or who.email) if who else ""
+    if batch.auto_applied:
+        how = "validé automatiquement (lecture sûre, aucune donnée existante remplacée)"
+        if author:
+            how += f", import de {author}"
+    else:
+        how = f"validé{f' par {author}' if author else ''}"
     body = "\n".join(
         [
-            f"Dossier « {batch.root_name} » validé{f' par {author}' if author else ''}.",
+            f"Dossier « {batch.root_name} » {how}.",
             *summary["lines"],
         ]
     )

@@ -4248,9 +4248,13 @@ components:
           readOnly: true
         summary:
           readOnly: true
+        auto_applied:
+          type: boolean
+          readOnly: true
       required:
       - amm_id
       - audit
+      - auto_applied
       - created_at
       - error
       - files

@@ -416,6 +416,8 @@ export interface DossierImportPreview {
     period: string;
     document_date: string | null;
     duplicate_id: string | null;
+    official?: boolean;
+    confidence?: number;
   }[];
   renewals: {
     key: string;
@@ -428,6 +430,29 @@ export interface DossierImportPreview {
     proof_file_id: string | null;
   }[];
   changes: DossierImportChange[];
+  /** Avertissements sur le numéro d'AMM (sous-ensemble de `warnings`). */
+  number_warnings?: string[];
+  /** Ce que sera l'AMM après validation, hors corrections choisies (absent des anciens aperçus). */
+  projection?: DossierImportProjection | null;
+}
+
+export interface DossierImportTimelineStep {
+  /** `original`, clé de période du dossier, ou null pour un renouvellement déjà enregistré hors dossier. */
+  key: string | null;
+  existing_id: string | null;
+  number: string;
+  start_date: string | null;
+  end_date: string | null;
+  in_force: boolean;
+}
+
+export interface DossierImportProjection {
+  effective_end_date: string | null;
+  status: string;
+  dossier_state: DossierState;
+  missing_scan: string | null;
+  includes_corrections: boolean;
+  timeline: DossierImportTimelineStep[];
 }
 
 export interface DossierImportAudit {
@@ -458,6 +483,8 @@ export interface DossierImportBatch {
   audit: DossierImportAudit[];
   /** Bilan réel après validation ; objet vide tant que l'import n'est pas validé. */
   summary?: DossierImportSummary | Record<string, never>;
+  /** Validé sans intervention : lecture sûre, aucune valeur enregistrée remplacée. */
+  auto_applied?: boolean;
 }
 
 export const hasSummary = (summary: DossierImportBatch['summary']): summary is DossierImportSummary =>

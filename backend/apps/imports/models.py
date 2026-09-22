@@ -106,6 +106,9 @@ class DossierImport(models.Model):
     # Bilan de ce que la validation a réellement changé (état avant/après de l'AMM,
     # renouvellements créés, documents rattachés, champs modifiés). Rempli après commit.
     summary = models.JSONField(default=dict, blank=True)
+    # Validé sans intervention humaine : lecture sûre, aucune valeur enregistrée remplacée
+    # (voir `apps.imports.tasks.analyze_dossier`). L'auteur de l'import reste le validateur.
+    auto_applied = models.BooleanField(default=False)
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     # Début de l'analyse en cours : au-delà de sa durée maximale, une analyse RUNNING est
