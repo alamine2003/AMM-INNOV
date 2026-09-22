@@ -167,6 +167,8 @@ def _projection(amm, product, country, original, renewals, changes, documents):
         )
     return {
         "effective_end_date": _iso(state.effective_end_date),
+        "ideal_filing_date": _iso(state.ideal_filing_date),
+        "agency_filing_deadline": _iso(state.agency_filing_deadline),
         "status": state.status,
         "dossier_state": state.dossier_state,
         "missing_scan": (

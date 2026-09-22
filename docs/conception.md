@@ -161,13 +161,13 @@ flowchart LR
 - Acteur : réglementaire pays.
 - Précondition : AMM dans son périmètre ; renouvellement en `PLANIFIE` ou `EN_PREPARATION` (créé automatiquement à l'alerte J-365 ou manuellement).
 - Scénario nominal : ouvrir la fiche AMM → onglet Renouvellements → « Déposer » → saisir la date de dépôt, joindre le récépissé PDF → valider.
-- Postconditions : renouvellement en `DEPOSE` ; alertes J-180/J-90/J-30 ouvertes résolues en `AUTO_FILED` ; statut AMM `IN_PROCESS` si l'AMM d'origine est expirée, sinon inchangé ; urgence `EN_INSTRUCTION` ; événement temps réel diffusé au pays et au siège ; entrée d'audit.
+- Postconditions : renouvellement en `DEPOSE` ; alertes J-180/J-90/J-30 ouvertes résolues en `AUTO_FILED` ; statut et urgence de l'AMM **inchangés** (un dépôt n'est pas un statut d'AMM, voir `docs/workflow-amm.md`) ; événement temps réel diffusé au pays et au siège ; entrée d'audit.
 - Exceptions : date de dépôt manquante → refus ; transition invalide → refus avec message.
 
 **UC4 — Enregistrer la décision de l'autorité**
 - Précondition : renouvellement en `DEPOSE` ou `EN_INSTRUCTION`.
 - Nominal : « Obtenu » → saisir le nouveau numéro, la date de début (date de fin calculée +5 ans, modifiable), joindre le scan de l'AMM → valider.
-- Postconditions : renouvellement `OBTENU` ; date de fin effective mise à jour ; statut `VALIDE` ; alertes résolues `AUTO_RENEWED` ; le scan devient le premier élément de la chronologie documentaire avec le badge « En vigueur ».
+- Postconditions : renouvellement `OBTENU` ; date de fin effective mise à jour ; statut recalculé (`VALIDE`, ou `A_RENOUVELER` si la nouvelle fin est à moins de six mois) ; alertes résolues `AUTO_RENEWED` ; le scan devient le premier élément de la chronologie documentaire avec le badge « En vigueur ».
 - Alternative : « Rejeté » → date de décision et motif ; un nouveau renouvellement peut être planifié.
 
 **UC14 — Gérer les réglementaires pays**
@@ -210,7 +210,6 @@ classDiagram
         +str name
         +str authority
         +int validity_years = 5
-        +int filing_lead_months = 6
         +str timezone
     }
     class ProductRange {
@@ -242,7 +241,8 @@ classDiagram
         +AmmStatus status
         +Urgency urgency
         +date effective_end_date
-        +date filing_deadline
+        +date ideal_filing_date
+        +date agency_filing_deadline
         +DossierState dossier_state
         +str notes
         +recompute(today) void
@@ -252,8 +252,8 @@ classDiagram
     class AmmStatus {
         <<enumeration>>
         VALIDE
+        A_RENOUVELER
         EXPIRE
-        IN_PROCESS
         INDETERMINE
     }
     class Urgency {
@@ -263,7 +263,6 @@ classDiagram
         DEPOT_URGENT
         CRITIQUE
         EXPIRE
-        EN_INSTRUCTION
     }
     class DossierState {
         <<enumeration>>
@@ -455,7 +454,7 @@ classDiagram
 - Au plus un `Renewal` non terminal (`PLANIFIE`, `EN_PREPARATION`, `DEPOSE`, `EN_INSTRUCTION`) par AMM.
 - `Alert` unique par (AMM, règle, échéance).
 - `Document.is_current` est vrai pour au plus un document par chaîne de versions.
-- `status`, `urgency`, `effective_end_date` et `filing_deadline` ne sont jamais saisis : ils sont toujours produits par `StatusService`.
+- `status`, `urgency`, `effective_end_date`, `ideal_filing_date` et `agency_filing_deadline` ne sont jamais saisis : ils sont toujours produits par `StatusService` (voir `docs/workflow-amm.md`).
 
 ---
 
@@ -508,7 +507,7 @@ sequenceDiagram
     WF->>WF: vérifier la transition et les champs requis
     WF->>DB: UPDATE renewal (workflow_status, filing_date) + historique
     WF->>ST: apply_state(amm)
-    ST->>DB: UPDATE amm (status, urgency=EN_INSTRUCTION, dates)
+    ST->>DB: UPDATE amm (statut inchangé : le dépôt n'est pas un statut d'AMM)
     WF->>AE: reconcile(amm)
     AE->>DB: alertes OPEN J-180/J-90/J-30 → RESOLVED (AUTO_FILED)
     WF-->>API: renewal
@@ -648,7 +647,7 @@ flowchart TD
     G2 -- oui --> H
     G4 -- oui --> H
     G6 -- oui --> H
-    H[Renouvellement DEPOSE<br/>date de dépôt + récépissé PDF<br/>alertes résolues AUTO_FILED] --> I[EN_INSTRUCTION<br/>urgence EN_INSTRUCTION]
+    H[Renouvellement DEPOSE<br/>date de dépôt + récépissé PDF<br/>alertes résolues AUTO_FILED] --> I[EN_INSTRUCTION<br/>statut de l'AMM inchangé]
     I --> J{Décision de<br/>l'autorité}
     J -- délai dépassé --> K[Alerte DECISION<br/>relance de l'autorité]
     K --> I
@@ -665,7 +664,7 @@ flowchart TD
 flowchart TD
     S([00:05 — Celery beat]) --> A[Pour chaque AMM :<br/>compute_amm_state today]
     A --> B{État modifié ?}
-    B -- oui --> C[Écrire status, urgency,<br/>effective_end_date, filing_deadline]
+    B -- oui --> C[Écrire status, urgency,<br/>effective_end_date, ideal_filing_date, agency_filing_deadline]
     B -- non --> D
     C --> D[Publier dashboard.refresh]
     D --> E([00:15 — evaluate_alert_rules])
@@ -684,8 +683,17 @@ flowchart TD
     N --> G
     G -- terminé --> O([00:30 — refresh_analytics_views])
     O --> P[REFRESH MATERIALIZED VIEW<br/>mv_country_kpi, mv_expiry_pipeline]
-    P --> Q([Fin])
+    P --> R([07:30 — send_renewal_reminders])
+    R --> S[Pour chaque AMM « À renouveler » :<br/>rappel in-app + e-mail aux réglementaires<br/>siège et pays]
+    S --> T{Rappel du jour déjà créé<br/>pour ce destinataire ?}
+    T -- oui --> U([Fin])
+    T -- non --> V[Créer la notification :<br/>expire le …, Dépôt idéal : …,<br/>Limite agence : …]
+    V --> U
 ```
+
+Le rappel quotidien s'arrête de lui-même : dès qu'un renouvellement obtenu repousse la date de
+fin ou que l'AMM expire, elle n'est plus « À renouveler ». Détail des règles :
+[`docs/workflow-amm.md`](workflow-amm.md).
 
 ### 6.3 Coordination par le réglementaire siège
 

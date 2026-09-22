@@ -266,7 +266,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(*) AS \"EN_INSTRUCTION\" FROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) AND urgency='EN_INSTRUCTION'",
+          "rawSql": "SELECT count(*) AS \"A_RENOUVELER\" FROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) AND status='A_RENOUVELER'",
           "refId": "A"
         }
       ],
@@ -571,7 +571,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT country_iso2 AS \"Pays\",\n       count(*) FILTER (WHERE urgency='CRITIQUE')::int       AS \"CRITIQUE\",\n       count(*) FILTER (WHERE urgency='DEPOT_URGENT')::int   AS \"DEPOT_URGENT\",\n       count(*) FILTER (WHERE urgency='A_PLANIFIER')::int    AS \"A_PLANIFIER\",\n       count(*) FILTER (WHERE urgency='EN_INSTRUCTION')::int AS \"EN_INSTRUCTION\",\n       count(*) FILTER (WHERE urgency='EXPIRE')::int         AS \"EXPIRE\",\n       count(*) FILTER (WHERE urgency='OK')::int             AS \"OK\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT country_iso2 AS \"Pays\",\n       count(*) FILTER (WHERE urgency='CRITIQUE')::int       AS \"CRITIQUE\",\n       count(*) FILTER (WHERE urgency='DEPOT_URGENT')::int   AS \"DEPOT_URGENT\",\n       count(*) FILTER (WHERE urgency='A_PLANIFIER')::int    AS \"A_PLANIFIER\",\n       count(*) FILTER (WHERE status='A_RENOUVELER')::int    AS \"A_RENOUVELER\",\n       count(*) FILTER (WHERE urgency='EXPIRE')::int         AS \"EXPIRE\",\n       count(*) FILTER (WHERE urgency='OK')::int             AS \"OK\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
@@ -765,7 +765,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT country_iso2 AS \"Pays\", product_name AS \"Produit\", range_code AS \"Gamme\",\n       original_number AS \"N° AMM\", status AS \"Statut\", urgency AS \"Urgence\",\n       effective_end_date AS \"Date de fin\", filing_deadline AS \"Deadline dépôt\",\n       days_remaining AS \"Jours restants\", dossier_state AS \"Dossier\", has_current_scan AS \"Scan\" \nFROM analytics.v_amm_current\nWHERE country_iso2 IN (${country:sqlstring}) AND effective_end_date >= current_date\nORDER BY effective_end_date ASC\nLIMIT 50",
+          "rawSql": "SELECT country_iso2 AS \"Pays\", product_name AS \"Produit\", range_code AS \"Gamme\",\n       original_number AS \"N° AMM\", status AS \"Statut\", urgency AS \"Urgence\",\n       effective_end_date AS \"Date de fin\", agency_filing_deadline AS \"Deadline dépôt\",\n       days_remaining AS \"Jours restants\", dossier_state AS \"Dossier\", has_current_scan AS \"Scan\" \nFROM analytics.v_amm_current\nWHERE country_iso2 IN (${country:sqlstring}) AND effective_end_date >= current_date\nORDER BY effective_end_date ASC\nLIMIT 50",
           "refId": "A"
         }
       ],
@@ -819,10 +819,10 @@
                         "index": 1,
                         "text": "EXPIRE"
                       },
-                      "IN_PROCESS": {
+                      "A_RENOUVELER": {
                         "color": "purple",
                         "index": 2,
-                        "text": "IN_PROCESS"
+                        "text": "A_RENOUVELER"
                       },
                       "INDETERMINE": {
                         "color": "text",
@@ -1058,7 +1058,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT country_iso2 AS \"Pays\", product_name AS \"Produit\", range_code AS \"Gamme\",\n       original_number AS \"N° AMM\", status AS \"Statut\", urgency AS \"Urgence\",\n       effective_end_date AS \"Date de fin\", filing_deadline AS \"Deadline dépôt\",\n       days_remaining AS \"Jours restants\", dossier_state AS \"Dossier\", has_current_scan AS \"Scan\" \nFROM analytics.v_amm_current\nWHERE country_iso2 IN (${country:sqlstring}) AND urgency IN ('DEPOT_URGENT','CRITIQUE') AND NOT has_current_scan\nORDER BY effective_end_date ASC",
+          "rawSql": "SELECT country_iso2 AS \"Pays\", product_name AS \"Produit\", range_code AS \"Gamme\",\n       original_number AS \"N° AMM\", status AS \"Statut\", urgency AS \"Urgence\",\n       effective_end_date AS \"Date de fin\", agency_filing_deadline AS \"Deadline dépôt\",\n       days_remaining AS \"Jours restants\", dossier_state AS \"Dossier\", has_current_scan AS \"Scan\" \nFROM analytics.v_amm_current\nWHERE country_iso2 IN (${country:sqlstring}) AND urgency IN ('DEPOT_URGENT','CRITIQUE') AND NOT has_current_scan\nORDER BY effective_end_date ASC",
           "refId": "A"
         }
       ],
@@ -1112,10 +1112,10 @@
                         "index": 1,
                         "text": "EXPIRE"
                       },
-                      "IN_PROCESS": {
+                      "A_RENOUVELER": {
                         "color": "purple",
                         "index": 2,
-                        "text": "IN_PROCESS"
+                        "text": "A_RENOUVELER"
                       },
                       "INDETERMINE": {
                         "color": "text",

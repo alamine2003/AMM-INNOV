@@ -109,17 +109,16 @@
   },
   "status": {
     "VALIDE": "Valide",
+    "A_RENOUVELER": "À renouveler",
     "EXPIRE": "Expirée",
-    "IN_PROCESS": "En cours",
-    "INDETERMINE": "Indéterminée"
+    "INDETERMINE": "Échéance inconnue"
   },
   "urgency": {
     "OK": "OK",
     "A_PLANIFIER": "À planifier",
     "DEPOT_URGENT": "Dépôt urgent",
     "CRITIQUE": "Critique",
-    "EXPIRE": "Expirée",
-    "EN_INSTRUCTION": "En instruction"
+    "EXPIRE": "Expirée"
   },
   "dossier": {
     "COMPLET": "Dossier complet",
@@ -155,10 +154,10 @@
     "subtitle": "Vue consolidée des AMM par pays",
     "kpi": {
       "total": "AMM suivies",
-      "valid": "AMM valides",
+      "valid": "AMM en vigueur",
+      "toRenew": "À renouveler",
       "expired": "AMM expirées",
-      "inProcess": "En cours d'instruction",
-      "undetermined": "Indéterminées",
+      "undetermined": "Échéance inconnue",
       "expiring6m": "Expirant < 6 mois",
       "expiring12m": "Expirant < 12 mois",
       "pctComplete": "Dossiers complets"
@@ -168,10 +167,10 @@
       "country": "Pays",
       "total": "Total AMM",
       "valid": "Valides",
+      "toRenew": "À renouveler",
       "expired": "Expirées",
-      "inProcess": "En cours",
-      "undetermined": "Indéterminées",
-      "pctValid": "% valides",
+      "undetermined": "Échéance inconnue",
+      "pctValid": "% en vigueur",
       "expiring6m": "< 6 mois",
       "expiring12m": "< 12 mois",
       "pctComplete": "% dossiers complets"
@@ -221,7 +220,8 @@
       "dossier": "État dossier",
       "scan": "Scan",
       "effectiveEnd": "Fin effective",
-      "filingDeadline": "Deadline dépôt",
+      "idealFiling": "Dépôt idéal",
+      "agencyDeadline": "Limite agence",
       "remaining": "Restant"
     },
     "scanPresent": "Scan de l'AMM en vigueur présent",
@@ -238,7 +238,10 @@
       "status": "Statut",
       "urgency": "Urgence",
       "effectiveEnd": "Date de fin effective",
-      "filingDeadline": "Deadline de dépôt",
+      "idealFiling": "Dépôt idéal",
+      "idealFilingHelp": "Fin − 6 mois : objectif interne de dépôt",
+      "agencyDeadline": "Limite agence",
+      "agencyDeadlineHelp": "Fin − 3 mois : date limite de l'agence",
       "updatedAt": "Dernière modification",
       "hasScan": "Scan en vigueur",
       "dossierHelp": "Complet dès que le scan de la décision en vigueur est rattaché"
@@ -456,7 +459,6 @@
       "name": "Nom",
       "authority": "Autorité réglementaire",
       "validity": "Validité (ans)",
-      "lead": "Délai de dépôt (mois)",
       "timezone": "Fuseau horaire",
       "saved": "Pays enregistré"
     },

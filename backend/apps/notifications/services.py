@@ -30,10 +30,13 @@ def alert_title(alert: Alert) -> str:
     return f"[{label}] {alert.rule.code} — {amm.product.name} ({amm.country.iso2})"
 
 
+def _fr(value) -> str:
+    return value.strftime("%d/%m/%Y") if value else "inconnue"
+
+
 def alert_body(alert: Alert) -> str:
     amm = alert.amm
-    end = amm.effective_end_date.strftime("%d/%m/%Y") if amm.effective_end_date else "inconnue"
-    deadline = amm.filing_deadline.strftime("%d/%m/%Y") if amm.filing_deadline else "inconnue"
+    end = _fr(amm.effective_end_date)
     where = f"{amm.product.name} au {amm.country.name}"
     if alert.rule.code == "J0":
         return f"L'AMM {amm.original_number or ''} de {where} est expirée depuis le {end}."
@@ -46,7 +49,8 @@ def alert_body(alert: Alert) -> str:
         )
     return (
         f"L'AMM de {amm.product.name} au {amm.country.name} expire le {end} "
-        f"(deadline de dépôt : {deadline}). Aucun renouvellement déposé."
+        f"(Dépôt idéal : {_fr(amm.ideal_filing_date)} ; "
+        f"Limite agence : {_fr(amm.agency_filing_deadline)}). Aucun renouvellement déposé."
     )
 
 

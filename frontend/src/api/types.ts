@@ -38,7 +38,6 @@ export interface Country {
   name: string;
   authority: string;
   validity_years: number;
-  filing_lead_months: number;
   timezone: string;
 }
 
@@ -61,8 +60,9 @@ export interface Product {
   aliases: string[];
 }
 
-export type AmmStatus = 'VALIDE' | 'EXPIRE' | 'IN_PROCESS' | 'INDETERMINE';
-export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE' | 'EN_INSTRUCTION';
+/** Statut de validité de l'AMM actuelle ; INDETERMINE = aucune date de fin connue. */
+export type AmmStatus = 'VALIDE' | 'A_RENOUVELER' | 'EXPIRE' | 'INDETERMINE';
+export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE';
 export type DossierState = 'COMPLET' | 'INCOMPLET';
 export type WorkflowStatus =
   'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
@@ -92,7 +92,10 @@ export interface Amm {
   status: AmmStatus;
   urgency: Urgency;
   effective_end_date: string | null;
-  filing_deadline: string | null;
+  /** Dépôt idéal : fin − 6 mois (objectif interne). */
+  ideal_filing_date: string | null;
+  /** Limite agence : fin − 3 mois. */
+  agency_filing_deadline: string | null;
   dossier_state: DossierState;
   notes: string;
   owner: string | null;
@@ -289,8 +292,8 @@ export interface AfricaRow {
   country_name: string;
   total: number;
   valid: number;
+  to_renew: number;
   expired: number;
-  in_process: number;
   undetermined: number;
   pct_valid: number;
   expiring_6m: number;
@@ -448,7 +451,9 @@ export interface DossierImportTimelineStep {
 
 export interface DossierImportProjection {
   effective_end_date: string | null;
-  status: string;
+  ideal_filing_date: string | null;
+  agency_filing_deadline: string | null;
+  status: AmmStatus;
   dossier_state: DossierState;
   missing_scan: string | null;
   includes_corrections: boolean;

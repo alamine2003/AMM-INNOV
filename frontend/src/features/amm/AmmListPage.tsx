@@ -10,11 +10,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { exportAmms, useAmms, useUpdateAmm } from '@/api/hooks/useAmms';
-import type { Amm, AmmFilters as Filters, DossierState } from '@/api/types';
+import type { Amm, AmmFilters as Filters } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
-import { StatusChip, UrgencyChip } from '@/components/chips';
+import { DossierChip, StatusChip, UrgencyChip } from '@/components/chips';
+import { filingDateText } from '@/components/FilingDates';
 import { formatDate, parseDisplayDate } from '@/lib/dates';
-import { DOSSIER_STATES } from '@/lib/urgency';
 import { saveBlob } from '@/lib/download';
 import { extractErrorMessage } from '@/api/client';
 import { canEditCountry, useAuthStore } from '@/features/auth/authStore';
@@ -79,7 +79,6 @@ export default function AmmListPage() {
       patch.original_end_date = newRow.original_end_date;
       patch.original_end_date_manual = true;
     }
-    if (newRow.dossier_state !== oldRow.dossier_state) patch.dossier_state = newRow.dossier_state;
     if (Object.keys(patch).length === 0) return oldRow;
     try {
       const saved = await update.mutateAsync({ id: newRow.id, ...(patch as Partial<Amm>) });
@@ -151,7 +150,7 @@ export default function AmmListPage() {
     {
       field: 'status',
       headerName: t('amm.columns.status'),
-      width: 120,
+      width: 150,
       renderCell: (p) => <StatusChip value={p.row.status} />,
     },
     {
@@ -161,13 +160,23 @@ export default function AmmListPage() {
       renderCell: (p) => <UrgencyChip value={p.row.urgency} />,
     },
     {
+      field: 'ideal_filing_date',
+      headerName: t('amm.columns.idealFiling'),
+      width: 150,
+      valueFormatter: (value: string | null) => filingDateText(value, 'dépassé'),
+    },
+    {
+      field: 'agency_filing_deadline',
+      headerName: t('amm.columns.agencyDeadline'),
+      width: 150,
+      valueFormatter: (value: string | null) => filingDateText(value, 'dépassée'),
+    },
+    {
+      // Complétude : déduite du scan de la décision actuelle, jamais saisie (règles 5 et 6).
       field: 'dossier_state',
       headerName: t('amm.columns.dossier'),
       width: 160,
-      editable: true,
-      type: 'singleSelect',
-      valueOptions: DOSSIER_STATES.map((d) => ({ value: d, label: t(`dossier.${d}`) })),
-      valueFormatter: (value: DossierState) => t(`dossier.${value}`),
+      renderCell: (p) => <DossierChip value={p.row.dossier_state} />,
     },
     {
       field: 'has_current_scan',

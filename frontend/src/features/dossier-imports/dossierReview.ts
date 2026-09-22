@@ -260,7 +260,7 @@ export function stateSentence(preview: DossierImportPreview | null): string {
 
 export const ammStatusLabels: Record<string, string> = {
   VALIDE: 'Valide',
+  A_RENOUVELER: 'À renouveler',
   EXPIRE: 'Expirée',
-  IN_PROCESS: 'En cours de renouvellement',
-  INDETERMINE: 'Indéterminé',
+  INDETERMINE: 'Échéance inconnue',
 };

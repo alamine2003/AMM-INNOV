@@ -87,7 +87,8 @@ def test_import_service_creates_and_is_idempotent(workbook_path, ranges):
     pending = by_name["AMLO VH 10MG CPR B/30"]
     renewal = pending.renewals.get()
     assert renewal.workflow_status == "DEPOSE" and renewal.filing_date is None
-    assert pending.status == "IN_PROCESS" and pending.dossier_state == "INCOMPLET"
+    # Dépôt en cours mais date de fin dépassée : l'AMM est expirée (règle 3).
+    assert pending.status == "EXPIRE" and pending.dossier_state == "INCOMPLET"
     unreadable = by_name["GENSIL HUILE F60ML"]
     assert unreadable.status == "INDETERMINE" and unreadable.original_start_date is None
     assert by_name["KETOPROFEN GH 100MG CPR B30"].status == "EXPIRE"

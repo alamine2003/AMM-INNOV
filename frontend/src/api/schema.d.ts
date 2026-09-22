@@ -1275,10 +1275,15 @@ export interface components {
              */
             readonly effective_end_date: string | null;
             /**
-             * Deadline de dépôt
+             * Dépôt idéal
              * Format: date
              */
-            readonly filing_deadline: string | null;
+            readonly ideal_filing_date: string | null;
+            /**
+             * Limite agence
+             * Format: date
+             */
+            readonly agency_filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
             readonly dossier_state: components["schemas"]["DossierStateEnum"];
@@ -1378,10 +1383,15 @@ export interface components {
              */
             readonly effective_end_date: string | null;
             /**
-             * Deadline de dépôt
+             * Dépôt idéal
              * Format: date
              */
-            readonly filing_deadline: string | null;
+            readonly ideal_filing_date: string | null;
+            /**
+             * Limite agence
+             * Format: date
+             */
+            readonly agency_filing_deadline: string | null;
             readonly days_remaining: number | null;
             /** État du dossier */
             readonly dossier_state: components["schemas"]["DossierStateEnum"];
@@ -1437,12 +1447,12 @@ export interface components {
         };
         /**
          * @description * `VALIDE` - Valide
+         *     * `A_RENOUVELER` - À renouveler
          *     * `EXPIRE` - Expirée
-         *     * `IN_PROCESS` - En cours d'instruction
-         *     * `INDETERMINE` - Indéterminé
+         *     * `INDETERMINE` - Échéance inconnue
          * @enum {string}
          */
-        AmmStatusEnum: "VALIDE" | "EXPIRE" | "IN_PROCESS" | "INDETERMINE";
+        AmmStatusEnum: "VALIDE" | "A_RENOUVELER" | "EXPIRE" | "INDETERMINE";
         /**
          * @description * `IN_APP` - In-app
          *     * `EMAIL` - Email
@@ -1460,8 +1470,6 @@ export interface components {
             authority?: string;
             /** Durée de validité (années) */
             validity_years?: number;
-            /** Délai de dépôt (mois) */
-            filing_lead_months?: number;
             /** Fuseau horaire */
             timezone?: string;
         };
@@ -1474,8 +1482,6 @@ export interface components {
             authority?: string;
             /** Durée de validité (années) */
             validity_years?: number;
-            /** Délai de dépôt (mois) */
-            filing_lead_months?: number;
             /** Fuseau horaire */
             timezone?: string;
         };
@@ -1823,8 +1829,13 @@ export interface components {
             /** Format: uuid */
             readonly alert_id: string;
             /** Format: uuid */
-            readonly amm_id: string;
-            readonly severity: string;
+            readonly amm_id: string | null;
+            readonly severity: string | null;
+            /**
+             * Rappel du
+             * Format: date
+             */
+            readonly reminder_date: string | null;
             /** Canal */
             readonly channel: components["schemas"]["ChannelEnum"];
             /** Titre */
@@ -2120,8 +2131,6 @@ export interface components {
             authority?: string;
             /** Durée de validité (années) */
             validity_years?: number;
-            /** Délai de dépôt (mois) */
-            filing_lead_months?: number;
             /** Fuseau horaire */
             timezone?: string;
         };
@@ -2363,10 +2372,9 @@ export interface components {
          *     * `DEPOT_URGENT` - Dépôt urgent
          *     * `CRITIQUE` - Critique
          *     * `EXPIRE` - Expirée
-         *     * `EN_INSTRUCTION` - En instruction
          * @enum {string}
          */
-        UrgencyEnum: "OK" | "A_PLANIFIER" | "DEPOT_URGENT" | "CRITIQUE" | "EXPIRE" | "EN_INSTRUCTION";
+        UrgencyEnum: "OK" | "A_PLANIFIER" | "DEPOT_URGENT" | "CRITIQUE" | "EXPIRE";
         User: {
             /** Format: uuid */
             readonly id: string;
@@ -2752,9 +2760,9 @@ export interface operations {
                 /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                status?: ("A_RENOUVELER" | "EXPIRE" | "INDETERMINE" | "VALIDE")[];
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EXPIRE" | "OK")[];
             };
             header?: never;
             path?: never;
@@ -3003,9 +3011,9 @@ export interface operations {
                 /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                status?: ("A_RENOUVELER" | "EXPIRE" | "INDETERMINE" | "VALIDE")[];
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EXPIRE" | "OK")[];
             };
             header?: never;
             path: {
@@ -3047,9 +3055,9 @@ export interface operations {
                 /** @description Un terme de recherche. */
                 search?: string;
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                status?: ("EXPIRE" | "INDETERMINE" | "IN_PROCESS" | "VALIDE")[];
+                status?: ("A_RENOUVELER" | "EXPIRE" | "INDETERMINE" | "VALIDE")[];
                 /** @description Les valeurs multiples doivent être séparées par des virgules. */
-                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EN_INSTRUCTION" | "EXPIRE" | "OK")[];
+                urgency?: ("A_PLANIFIER" | "CRITIQUE" | "DEPOT_URGENT" | "EXPIRE" | "OK")[];
             };
             header?: never;
             path: {

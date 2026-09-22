@@ -42,13 +42,14 @@ import {
   type DossierImportFile,
 } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
+import { FilingDates } from '@/components/FilingDates';
+import { StatusChip } from '@/components/chips';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { DossierFileViewer } from './DossierFileViewer';
 import { DossierImportSummaryCard } from './DossierImportSummaryCard';
 import {
   actionLabels,
-  ammStatusLabels,
   batchState,
   blockingReasons,
   buildTimeline,
@@ -338,18 +339,14 @@ function PreviewContent({ batch }: { batch: DossierImportBatch }) {
                 </Typography>
                 <Stack direction="row" alignItems="center" gap={1}>
                   <Typography>Statut :</Typography>
-                  <Chip
-                    size="small"
-                    label={ammStatusLabels[projection.status] ?? projection.status}
-                    color={
-                      projection.status === 'VALIDE'
-                        ? 'success'
-                        : projection.status === 'EXPIRE'
-                          ? 'error'
-                          : 'default'
-                    }
-                  />
+                  <StatusChip value={projection.status} />
                 </Stack>
+                {projection.effective_end_date && (
+                  <FilingDates
+                    ideal={projection.ideal_filing_date}
+                    agency={projection.agency_filing_deadline}
+                  />
+                )}
                 <Typography>
                   {projection.dossier_state === 'COMPLET'
                     ? 'Dossier complet : la décision en vigueur a son scan.'

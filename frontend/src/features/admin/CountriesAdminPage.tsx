@@ -30,7 +30,6 @@ const schema = z.object({
   name: z.string().min(1),
   authority: z.string(),
   validity_years: z.coerce.number().int().min(1).max(20),
-  filing_lead_months: z.coerce.number().int().min(0).max(36),
   timezone: z.string().min(1),
 });
 type Values = z.infer<typeof schema>;
@@ -54,7 +53,6 @@ function CountryDialog({
       name: '',
       authority: '',
       validity_years: 5,
-      filing_lead_months: 6,
       timezone: 'Africa/Dakar',
     },
   });
@@ -89,22 +87,13 @@ function CountryDialog({
               <TextField label={t('admin.countries.name')} fullWidth {...register('name')} {...err('name')} />
             </Stack>
             <TextField label={t('admin.countries.authority')} {...register('authority')} />
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label={t('admin.countries.validity')}
-                type="number"
-                fullWidth
-                {...register('validity_years')}
-                {...err('validity_years')}
-              />
-              <TextField
-                label={t('admin.countries.lead')}
-                type="number"
-                fullWidth
-                {...register('filing_lead_months')}
-                {...err('filing_lead_months')}
-              />
-            </Stack>
+            <TextField
+              label={t('admin.countries.validity')}
+              type="number"
+              fullWidth
+              {...register('validity_years')}
+              {...err('validity_years')}
+            />
             <TextField label={t('admin.countries.timezone')} {...register('timezone')} {...err('timezone')} />
             {error && <Alert severity="error">{extractErrorMessage(error)}</Alert>}
           </Stack>
@@ -132,7 +121,6 @@ export default function CountriesAdminPage() {
     { field: 'name', headerName: t('admin.countries.name'), flex: 1, minWidth: 180 },
     { field: 'authority', headerName: t('admin.countries.authority'), flex: 1, minWidth: 160 },
     { field: 'validity_years', headerName: t('admin.countries.validity'), width: 130 },
-    { field: 'filing_lead_months', headerName: t('admin.countries.lead'), width: 170 },
     { field: 'timezone', headerName: t('admin.countries.timezone'), width: 160 },
     {
       field: 'actions',

@@ -75,9 +75,28 @@ def test_projection_announces_what_validation_will_produce(
     with django_capture_on_commit_callbacks(execute=True):
         apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
     after = DossierImport.objects.get(pk=batch.pk).summary["after"]
-    assert after == {
-        key: projection[key] for key in ("status", "dossier_state", "effective_end_date")
-    }
+    keys = (
+        "status",
+        "dossier_state",
+        "effective_end_date",
+        "ideal_filing_date",
+        "agency_filing_deadline",
+    )
+    assert after == {key: projection[key] for key in keys}
+
+
+def test_projection_uses_the_same_rules_to_renew_and_filing_dates(users, product, make_amm):
+    """Fin dans moins de six mois : la projection annonce « À renouveler » et ses deux dates."""
+    make_amm(product_obj=product, original_number="AMM/SN/2021/00152", start=date(2021, 11, 1))
+    batch = new_batch(users["hq"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product, start="01/11/2021"))
+    projection = ready(batch)["projection"]
+    assert projection["effective_end_date"] == "2026-11-01"
+    assert projection["status"] == "A_RENOUVELER"
+    assert projection["ideal_filing_date"] == "2026-05-01"
+    assert projection["agency_filing_deadline"] == "2026-08-01"
+    # Complétude indépendante de la validité : le scan de l'origine suffit.
+    assert projection["dossier_state"] == "COMPLET"
 
 
 def test_projection_names_the_missing_scan(users, product, make_amm, make_renewal):

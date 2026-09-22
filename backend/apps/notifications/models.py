@@ -20,6 +20,16 @@ class Notification(models.Model):
         blank=True,
         related_name="notifications",
     )
+    # Rappel quotidien « À renouveler » (règle 4) : l'AMM concernée et le jour du rappel. Les
+    # notifications d'alerte laissent ces champs vides (l'AMM se lit sur l'alerte).
+    amm = models.ForeignKey(
+        "amm.MarketingAuthorization",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reminders",
+    )
+    reminder_date = models.DateField("rappel du", null=True, blank=True)
     channel = models.CharField("canal", max_length=16, choices=Channel.choices)
     title = models.CharField("titre", max_length=255)
     body = models.TextField("contenu", blank=True)
@@ -37,6 +47,14 @@ class Notification(models.Model):
         verbose_name = "notification"
         verbose_name_plural = "notifications"
         ordering = ["-created_at"]
+        constraints = [
+            # Au plus un rappel par AMM, par destinataire, par canal et par jour.
+            models.UniqueConstraint(
+                fields=["user", "amm", "channel", "reminder_date"],
+                condition=models.Q(reminder_date__isnull=False),
+                name="notification_one_reminder_per_day",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.get_channel_display()} → {self.user}: {self.title}"

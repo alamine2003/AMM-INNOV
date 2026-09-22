@@ -16,7 +16,8 @@ import type {
   User,
   WorkflowStatus,
 } from '@/api/types';
-import { addDays, addMonths, addYears, differenceInCalendarMonths, format, parseISO } from 'date-fns';
+import { addDays, addYears, differenceInCalendarDays, format, parseISO } from 'date-fns';
+import { filingDates, statusFor } from '@/lib/urgency';
 
 export const MOCK_TODAY = '2026-09-04';
 const today = parseISO(MOCK_TODAY);
@@ -32,7 +33,6 @@ export const countries: Country[] = [
     name: 'Sénégal',
     authority: 'DPM / ARP',
     validity_years: 5,
-    filing_lead_months: 6,
     timezone: 'Africa/Dakar',
   },
   {
@@ -41,7 +41,6 @@ export const countries: Country[] = [
     name: "Côte d'Ivoire",
     authority: 'AIRP',
     validity_years: 5,
-    filing_lead_months: 6,
     timezone: 'Africa/Abidjan',
   },
   {
@@ -50,7 +49,6 @@ export const countries: Country[] = [
     name: 'Cameroun',
     authority: 'DPML',
     validity_years: 5,
-    filing_lead_months: 6,
     timezone: 'Africa/Douala',
   },
 ];
@@ -296,33 +294,29 @@ export interface MockDb {
   session: string | null;
 }
 
-function computeState(amm: Amm, renewals: Renewal[], country: Country) {
+function computeState(amm: Amm, renewals: Renewal[]) {
+  // Miroir de compute_amm_state : seul un renouvellement OBTENU et daté compte ; un dépôt en
+  // cours ne change ni le statut ni l'urgence.
   const last = [...renewals]
-    .filter((r) => r.workflow_status === 'OBTENU')
+    .filter((r) => r.workflow_status === 'OBTENU' && r.end_date)
     .sort((a, b) => b.sequence - a.sequence)[0];
-  const pending = renewals.some(
-    (r) => r.workflow_status === 'DEPOSE' || r.workflow_status === 'EN_INSTRUCTION',
-  );
-  let end: string | null = null;
-  if (last?.end_date) end = last.end_date;
-  else if (amm.original_end_date) end = amm.original_end_date;
-  let status: AmmStatus;
-  if (!end) status = pending ? 'IN_PROCESS' : 'INDETERMINE';
-  else if (end >= MOCK_TODAY) status = 'VALIDE';
-  else status = pending ? 'IN_PROCESS' : 'EXPIRE';
-  const deadline = end ? iso(addMonths(parseISO(end), -country.filing_lead_months)) : null;
+  const end: string | null = last?.end_date ?? amm.original_end_date ?? null;
+  const status: AmmStatus = statusFor(end, parseISO(MOCK_TODAY));
+  const dates = end ? filingDates(end) : null;
   let urgency: Urgency;
-  if (pending) urgency = 'EN_INSTRUCTION';
-  else if (!end) urgency = 'A_PLANIFIER';
-  else {
-    const months = differenceInCalendarMonths(parseISO(end), today);
-    if (end < MOCK_TODAY) urgency = 'EXPIRE';
-    else if (months <= 3) urgency = 'CRITIQUE';
-    else if (months <= 6) urgency = 'DEPOT_URGENT';
-    else if (months <= 12) urgency = 'A_PLANIFIER';
-    else urgency = 'OK';
-  }
-  return { status, urgency, effective_end_date: end, filing_deadline: deadline };
+  if (status === 'EXPIRE') urgency = 'EXPIRE';
+  else if (!end || !dates) urgency = 'A_PLANIFIER';
+  else if (MOCK_TODAY >= dates.agency) urgency = 'CRITIQUE';
+  else if (MOCK_TODAY >= dates.ideal) urgency = 'DEPOT_URGENT';
+  else if (differenceInCalendarDays(parseISO(end), today) <= 365) urgency = 'A_PLANIFIER';
+  else urgency = 'OK';
+  return {
+    status,
+    urgency,
+    effective_end_date: end,
+    ideal_filing_date: dates?.ideal ?? null,
+    agency_filing_deadline: dates?.agency ?? null,
+  };
 }
 
 export function recomputeAmm(db: MockDb, ammId: string) {
@@ -337,7 +331,7 @@ export function recomputeAmm(db: MockDb, ammId: string) {
     if (r.start_date && !r.end_date_manual)
       r.end_date = iso(addYears(parseISO(r.start_date), country.validity_years));
   }
-  const state = computeState(amm, renewals, country);
+  const state = computeState(amm, renewals);
   Object.assign(amm, state);
   const current = [...renewals].sort((a, b) => b.sequence - a.sequence)[0];
   amm.last_renewal = current
@@ -400,7 +394,8 @@ export function buildDb(): MockDb {
       status: 'INDETERMINE',
       urgency: 'A_PLANIFIER',
       effective_end_date: null,
-      filing_deadline: null,
+      ideal_filing_date: null,
+      agency_filing_deadline: null,
       dossier_state: 'INCOMPLET', // recalculé plus bas d'après le scan de la décision
       notes: seed.notes ?? '',
       owner: null,
@@ -606,7 +601,7 @@ export function buildDb(): MockDb {
       effective_end_date: amm.effective_end_date,
       rule_code: rule,
       severity,
-      due_date: amm.filing_deadline ?? MOCK_TODAY,
+      due_date: amm.agency_filing_deadline ?? MOCK_TODAY,
       status,
       assigned_to: null,
       assigned_to_email: null,

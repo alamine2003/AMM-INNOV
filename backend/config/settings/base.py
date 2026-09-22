@@ -223,6 +223,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.alerts.tasks.evaluate_alert_rules",
         "schedule": crontab(hour=0, minute=15),
     },
+    # Règle 4 : rappel quotidien de chaque AMM « À renouveler » (après le recalcul de 00:05).
+    "send-renewal-reminders": {
+        "task": "apps.notifications.tasks.send_renewal_reminders",
+        "schedule": crontab(hour=7, minute=30),
+    },
     "refresh-analytics-views": {
         "task": "apps.analytics.tasks.refresh_analytics_views",
         "schedule": crontab(hour=0, minute=30),
@@ -468,6 +473,9 @@ METRICS_TOKEN = env("METRICS_TOKEN", "")
 # délai est créée (tableaux de bord, liste des alertes) mais ne déclenche pas de notification,
 # sauf s'il s'agit de la plus récente d'une AMM encore actionnable (non expirée).
 ALERTS_DISPATCH_MAX_AGE_DAYS = int(env("ALERTS_DISPATCH_MAX_AGE_DAYS", "30"))
+# Rappel quotidien « À renouveler » : canaux utilisés (IN_APP, EMAIL), comme les canaux d'une
+# règle d'alerte. Mettre « IN_APP » seul pour couper l'e-mail quotidien.
+RENEWAL_REMINDER_CHANNELS = env_list("RENEWAL_REMINDER_CHANNELS", "IN_APP,EMAIL")
 DATA_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_MB * 1024 * 1024 + 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 

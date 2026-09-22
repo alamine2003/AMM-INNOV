@@ -43,6 +43,8 @@ def snapshot(amm) -> dict | None:
         "status": amm.status,
         "dossier_state": amm.dossier_state,
         "effective_end_date": _iso(amm.effective_end_date),
+        "ideal_filing_date": _iso(amm.ideal_filing_date),
+        "agency_filing_deadline": _iso(amm.agency_filing_deadline),
     }
 
 

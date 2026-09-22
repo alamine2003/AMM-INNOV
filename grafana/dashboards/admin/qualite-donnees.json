@@ -993,10 +993,10 @@
                         "index": 1,
                         "text": "EXPIRE"
                       },
-                      "IN_PROCESS": {
+                      "A_RENOUVELER": {
                         "color": "purple",
                         "index": 2,
-                        "text": "IN_PROCESS"
+                        "text": "A_RENOUVELER"
                       },
                       "INDETERMINE": {
                         "color": "text",
@@ -1242,10 +1242,10 @@
                         "index": 1,
                         "text": "EXPIRE"
                       },
-                      "IN_PROCESS": {
+                      "A_RENOUVELER": {
                         "color": "purple",
                         "index": 2,
-                        "text": "IN_PROCESS"
+                        "text": "A_RENOUVELER"
                       },
                       "INDETERMINE": {
                         "color": "text",
@@ -1491,10 +1491,10 @@
                         "index": 1,
                         "text": "EXPIRE"
                       },
-                      "IN_PROCESS": {
+                      "A_RENOUVELER": {
                         "color": "purple",
                         "index": 2,
-                        "text": "IN_PROCESS"
+                        "text": "A_RENOUVELER"
                       },
                       "INDETERMINE": {
                         "color": "text",

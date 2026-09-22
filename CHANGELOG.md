@@ -5,6 +5,26 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Workflow des AMM (règles du responsable, `docs/workflow-amm.md`)
+- **Trois statuts, plus un pour la donnée manquante** : **Valide** (vert), **À renouveler**
+  (orange, dans les six mois précédant la fin, toujours valide), **Expirée** (rouge, dès le
+  lendemain de la date de fin) et **Échéance inconnue** (gris, aucune date connue). « En cours
+  d'instruction » disparaît des statuts d'AMM : un dépôt en cours n'empêche plus l'expiration ;
+  l'avancement d'un renouvellement (Planifié / Déposé / En instruction) reste porté par le
+  renouvellement. Un renouvellement ne compte qu'une fois **obtenu**.
+- **Deux dates au lieu d'une** : « Dépôt idéal » (fin − 6 mois, objectif interne) et
+  « Limite agence » (fin − 3 mois), affichées dans la fiche, les listes, le tableau de bord,
+  l'export et les notifications. Le délai de dépôt par pays (`filing_lead_months`) disparaît.
+- **Rappel quotidien** de chaque AMM « À renouveler » aux réglementaires du siège et du pays :
+  notification dans l'application et e-mail (`RENEWAL_REMINDER_CHANNELS`), au plus un par AMM,
+  destinataire et jour ; il s'arrête dès qu'un renouvellement obtenu repousse l'échéance ou que
+  l'AMM expire. Les règles d'alerte existantes (J-365 … DOSSIER, DECISION) sont conservées.
+- **Fiche AMM** : frise « Origine → renouvellements obtenus » avec le **document actuel** mis en
+  évidence, état du dossier affiché séparément du statut (complet dès que le scan de la décision
+  actuelle est rattaché, quelle que soit la validité).
+- Migration : toutes les AMM sont recalculées ; les vues `analytics` suivent (`to_renew`,
+  `ideal_filing_date`, `agency_filing_deadline`).
+
 ### Surveillance
 - **Sentry**, actif seulement si `SENTRY_DSN` (web, worker) ou `VITE_SENTRY_DSN` (interface) est
   défini : erreurs et journaux ERROR remontés avec le `request_id` des journaux JSON, la version

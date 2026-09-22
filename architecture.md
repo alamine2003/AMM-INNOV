@@ -178,7 +178,6 @@ erDiagram
         string name
         string authority
         int validity_years "5"
-        int filing_lead_months "6"
         string timezone
     }
     ProductRange {
@@ -209,10 +208,11 @@ erDiagram
         date original_start_date
         date original_end_date
         bool original_end_date_manual
-        string status "VALIDE|EXPIRE|IN_PROCESS|INDETERMINE (calculé)"
-        string urgency "OK|A_PLANIFIER|DEPOT_URGENT|CRITIQUE|EXPIRE|EN_INSTRUCTION (calculé)"
+        string status "VALIDE|A_RENOUVELER|EXPIRE|INDETERMINE (calculé)"
+        string urgency "OK|A_PLANIFIER|DEPOT_URGENT|CRITIQUE|EXPIRE (calculé)"
         date effective_end_date "calculé"
-        date filing_deadline "calculé"
+        date ideal_filing_date "calculé : fin − 6 mois"
+        date agency_filing_deadline "calculé : fin − 3 mois"
         string dossier_state "COMPLET|INCOMPLET|INCONNU"
         text notes
         uuid owner_id FK
@@ -305,37 +305,33 @@ erDiagram
 - Toutes les tables métier sont suivies par `django-simple-history` (tables `*_history`).
 
 ### 4.3 Champs calculés
-Le service `compute_amm_state(amm)` retourne `effective_end_date`, `filing_deadline`, `status`, `urgency` et les écrit sur l'AMM. Il est appelé :
+Le service `compute_amm_state(amm)` retourne `effective_end_date`, `ideal_filing_date`, `agency_filing_deadline`, `status`, `urgency` et les écrit sur l'AMM (règles détaillées : `docs/workflow-amm.md`). Il est appelé :
 - dans `save()` de `MarketingAuthorization` et `Renewal` (via signaux `post_save`) ;
 - par la tâche quotidienne `recompute_all_statuses` (le statut dépend de la date du jour) ;
 - après chaque import.
 
 ```python
 def compute_amm_state(amm, today):
-    last = amm.renewals.filter(workflow_status="OBTENU").order_by("-sequence").first()
-    pending = amm.renewals.filter(workflow_status__in=["DEPOSE", "EN_INSTRUCTION"]).exists()
-
-    if last and last.end_date:
-        end = last.end_date
-    elif amm.original_end_date:
-        end = amm.original_end_date
-    else:
-        end = None
+    # Seul un renouvellement OBTENU et daté fait foi ; un dépôt en cours ne change rien.
+    last = amm.renewals.filter(workflow_status="OBTENU", end_date__isnull=False).order_by("-sequence").first()
+    end = last.end_date if last else amm.original_end_date
 
     if end is None:
-        status = "IN_PROCESS" if pending else "INDETERMINE"
-    elif end >= today:
-        status = "VALIDE"
+        status = "INDETERMINE"          # « Échéance inconnue » : donnée manquante
+    elif today > end:
+        status = "EXPIRE"               # automatique, même si un renouvellement est déposé
+    elif today >= end - relativedelta(months=6):
+        status = "A_RENOUVELER"         # toujours valide
     else:
-        status = "IN_PROCESS" if pending else "EXPIRE"
+        status = "VALIDE"
 
-    lead = relativedelta(months=amm.country.filing_lead_months)
-    deadline = end - lead if end else None
-    urgency = derive_urgency(end, pending, today)
-    return State(end, deadline, status, urgency)
+    ideal = end - relativedelta(months=6) if end else None     # dépôt idéal (objectif interne)
+    agency = end - relativedelta(months=3) if end else None    # limite de l'agence
+    urgency = derive_urgency(status, end, today)
+    return State(end, ideal, agency, status, urgency)
 ```
 
-La règle d'origine du classeur considère qu'un renouvellement marqué `IN PROCESS` rend le statut `IN PROCESS` même si la date de fin est passée ; la transcription ci-dessus conserve ce comportement.
+Le classeur d'origine mettait « IN PROCESS » comme statut quand un renouvellement était déposé ; le responsable a tranché : ce n'est plus un statut d'AMM, seulement l'avancement du renouvellement.
 
 ---
 
@@ -456,7 +452,8 @@ Digest hebdomadaire : tâche `send_weekly_digest` le lundi 08:00, un email par u
 
 | Tâche | Planification | Description |
 |---|---|---|
-| `recompute_all_statuses` | 00:05 quotidien | Recalcule `status`, `urgency`, `effective_end_date`, `filing_deadline` ; publie `dashboard.refresh` |
+| `recompute_all_statuses` | 00:05 quotidien | Recalcule `status`, `urgency`, `effective_end_date`, `ideal_filing_date`, `agency_filing_deadline` ; publie `dashboard.refresh` |
+| `send_renewal_reminders` | 07:30 quotidien | Rappel « À renouveler » (in-app + e-mail), au plus un par AMM, destinataire et jour |
 | `evaluate_alert_rules` | 00:15 quotidien | Voir 5.5 |
 | `send_alert_email` | à la demande | Envoi email avec retry |
 | `send_weekly_digest` | lundi 08:00 | Digest par utilisateur |

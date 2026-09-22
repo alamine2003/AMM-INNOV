@@ -514,9 +514,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -532,7 +532,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -908,9 +907,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -926,7 +925,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -1035,9 +1033,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -1053,7 +1051,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -3417,12 +3414,18 @@ components:
           readOnly: true
           nullable: true
           title: Date de fin effective
-        filing_deadline:
+        ideal_filing_date:
           type: string
           format: date
           readOnly: true
           nullable: true
-          title: Deadline de dépôt
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
         days_remaining:
           type: integer
           nullable: true
@@ -3470,6 +3473,7 @@ components:
           nullable: true
           readOnly: true
       required:
+      - agency_filing_deadline
       - country
       - country_iso2
       - country_name
@@ -3477,9 +3481,9 @@ components:
       - days_remaining
       - dossier_state
       - effective_end_date
-      - filing_deadline
       - has_current_scan
       - id
+      - ideal_filing_date
       - last_renewal
       - owner_email
       - pending_renewal_id
@@ -3600,12 +3604,18 @@ components:
           readOnly: true
           nullable: true
           title: Date de fin effective
-        filing_deadline:
+        ideal_filing_date:
           type: string
           format: date
           readOnly: true
           nullable: true
-          title: Deadline de dépôt
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
         days_remaining:
           type: integer
           nullable: true
@@ -3644,6 +3654,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - agency_filing_deadline
       - country
       - country_iso2
       - country_name
@@ -3651,9 +3662,9 @@ components:
       - days_remaining
       - dossier_state
       - effective_end_date
-      - filing_deadline
       - has_current_scan
       - id
+      - ideal_filing_date
       - last_renewal
       - owner_email
       - product
@@ -3708,15 +3719,15 @@ components:
     AmmStatusEnum:
       enum:
       - VALIDE
+      - A_RENOUVELER
       - EXPIRE
-      - IN_PROCESS
       - INDETERMINE
       type: string
       description: |-
         * `VALIDE` - Valide
+        * `A_RENOUVELER` - À renouveler
         * `EXPIRE` - Expirée
-        * `IN_PROCESS` - En cours d'instruction
-        * `INDETERMINE` - Indéterminé
+        * `INDETERMINE` - Échéance inconnue
     ChannelEnum:
       enum:
       - IN_APP
@@ -3749,11 +3760,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           title: Fuseau horaire
@@ -3784,11 +3790,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           minLength: 1
@@ -4602,10 +4603,18 @@ components:
         amm_id:
           type: string
           format: uuid
+          nullable: true
           readOnly: true
         severity:
           type: string
+          nullable: true
           readOnly: true
+        reminder_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Rappel du
         channel:
           allOf:
           - $ref: '#/components/schemas/ChannelEnum'
@@ -4652,6 +4661,7 @@ components:
       - is_read
       - link
       - read_at
+      - reminder_date
       - sent_at
       - severity
       - title
@@ -5076,11 +5086,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           minLength: 1
@@ -5514,7 +5519,6 @@ components:
       - DEPOT_URGENT
       - CRITIQUE
       - EXPIRE
-      - EN_INSTRUCTION
       type: string
       description: |-
         * `OK` - OK
@@ -5522,7 +5526,6 @@ components:
         * `DEPOT_URGENT` - Dépôt urgent
         * `CRITIQUE` - Critique
         * `EXPIRE` - Expirée
-        * `EN_INSTRUCTION` - En instruction
     User:
       type: object
       properties:

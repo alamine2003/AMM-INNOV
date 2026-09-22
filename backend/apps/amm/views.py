@@ -55,7 +55,8 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
     ]
     ordering_fields = [
         "effective_end_date",
-        "filing_deadline",
+        "ideal_filing_date",
+        "agency_filing_deadline",
         "status",
         "urgency",
         "product__name",

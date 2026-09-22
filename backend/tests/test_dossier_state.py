@@ -70,3 +70,27 @@ def test_uploading_the_scan_through_the_api_completes_the_dossier(country_client
     amm.refresh_from_db()
     assert amm.dossier_state == DS.COMPLET
     assert country_client.get(f"/api/v1/amms/{amm.pk}").json()["dossier_state"] == "COMPLET"
+
+
+@pytest.mark.parametrize(
+    ("start", "status"),
+    [
+        (date(2024, 1, 1), "VALIDE"),  # fin 2029
+        (date(2021, 12, 1), "A_RENOUVELER"),  # fin 01/12/2026, dans les six mois
+        (date(2015, 1, 1), "EXPIRE"),
+    ],
+)
+def test_completeness_is_independent_of_validity(make_amm, make_scan, start, status):
+    """Règle 5 : complet ssi le scan de la décision actuelle est rattaché, quel que soit le statut.
+    Une AMM expirée n'est jamais « incomplète » à cause de l'expiration."""
+    from apps.amm.services.status import compute_amm_state
+
+    amm = make_amm(start=start)
+    assert amm.status == status
+    assert amm.dossier_state == DS.INCOMPLET
+    make_scan(amm)
+    amm.refresh_from_db()
+    assert (amm.status, amm.dossier_state) == (status, DS.COMPLET)
+    # Le temps qui passe change la validité, jamais la complétude.
+    for today in (date(2000, 1, 1), date(2026, 11, 30), date(2040, 1, 1)):
+        assert compute_amm_state(amm, today=today).dossier_state == DS.COMPLET

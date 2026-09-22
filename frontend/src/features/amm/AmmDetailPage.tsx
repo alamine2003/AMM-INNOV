@@ -8,6 +8,7 @@ import { api } from '@/api/client';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { DossierChip, StatusChip, UrgencyChip } from '@/components/chips';
+import { FilingDates } from '@/components/FilingDates';
 import { formatDate, formatRemaining } from '@/lib/dates';
 import { canEditCountry, useAuthStore } from '@/features/auth/authStore';
 import { AmmDetailTab } from './AmmDetailTab';
@@ -68,6 +69,7 @@ export default function AmmDetailPage() {
               {t('amm.fields.effectiveEnd')} : {formatDate(data.effective_end_date)} (
               {formatRemaining(data.effective_end_date)})
             </Typography>
+            <FilingDates ideal={data.ideal_filing_date} agency={data.agency_filing_deadline} />
           </Stack>
         }
       />

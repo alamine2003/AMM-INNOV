@@ -115,6 +115,8 @@ const fixture = (): DossierImportBatch => ({
     ],
     projection: {
       effective_end_date: '2031-01-01',
+      ideal_filing_date: '2030-07-01',
+      agency_filing_deadline: '2030-10-01',
       status: 'VALIDE',
       dossier_state: 'COMPLET',
       missing_scan: null,
@@ -211,6 +213,8 @@ describe('import intelligent de dossiers AMM', () => {
     const after = screen.getByRole('region', { name: 'Après validation' });
     expect(within(after).getByText('01/01/2031')).toBeVisible();
     expect(within(after).getByText('Valide')).toBeVisible();
+    expect(within(after).getByText(/Dépôt idéal/)).toHaveTextContent('Dépôt idéal : 01/07/2030');
+    expect(within(after).getByText(/Limite agence/)).toHaveTextContent('Limite agence : 01/10/2030');
     expect(within(after).getByText(/Dossier complet/)).toBeVisible();
     // La notice n'est pas une preuve d'étape : elle est rangée dans « Autres documents ».
     expect(screen.getByText('Autres documents (1)')).toBeVisible();

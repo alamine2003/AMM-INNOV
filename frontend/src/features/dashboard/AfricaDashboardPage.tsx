@@ -32,8 +32,8 @@ function AfricaTable({ rows, total }: { rows: AfricaRow[]; total: AfricaRow }) {
   const cols: { key: keyof AfricaRow; label: string; fmt?: (v: number) => string }[] = [
     { key: 'total', label: t('dashboard.table.total') },
     { key: 'valid', label: t('dashboard.table.valid') },
+    { key: 'to_renew', label: t('dashboard.table.toRenew') },
     { key: 'expired', label: t('dashboard.table.expired') },
-    { key: 'in_process', label: t('dashboard.table.inProcess') },
     { key: 'undetermined', label: t('dashboard.table.undetermined') },
     { key: 'pct_valid', label: t('dashboard.table.pctValid'), fmt: pct },
     { key: 'expiring_6m', label: t('dashboard.table.expiring6m') },
@@ -102,8 +102,8 @@ export default function AfricaDashboardPage() {
   const chartData = rows.map((r) => ({
     name: r.country_iso2,
     [t('status.VALIDE')]: r.valid,
+    [t('status.A_RENOUVELER')]: r.to_renew,
     [t('status.EXPIRE')]: r.expired,
-    [t('status.IN_PROCESS')]: r.in_process,
     [t('status.INDETERMINE')]: r.undetermined,
   }));
 
@@ -122,12 +122,13 @@ export default function AfricaDashboardPage() {
         {[
           { label: t('dashboard.kpi.total'), value: total.total, color: '#0f5c8c' },
           {
+            // « À renouveler » reste valide (règle 3) : compté parmi les AMM en vigueur.
             label: t('dashboard.kpi.valid'),
-            value: `${total.valid} (${pct(total.pct_valid)})`,
+            value: `${total.valid + total.to_renew} (${pct(total.pct_valid)})`,
             color: STATUS_COLORS.VALIDE,
           },
+          { label: t('dashboard.kpi.toRenew'), value: total.to_renew, color: STATUS_COLORS.A_RENOUVELER },
           { label: t('dashboard.kpi.expired'), value: total.expired, color: STATUS_COLORS.EXPIRE },
-          { label: t('dashboard.kpi.inProcess'), value: total.in_process, color: STATUS_COLORS.IN_PROCESS },
           {
             label: t('dashboard.kpi.undetermined'),
             value: total.undetermined,
@@ -163,7 +164,7 @@ export default function AfricaDashboardPage() {
                   <Tooltip />
                   <Legend />
                   <Bar dataKey={t('status.VALIDE')} stackId="a" fill={STATUS_COLORS.VALIDE} />
-                  <Bar dataKey={t('status.IN_PROCESS')} stackId="a" fill={STATUS_COLORS.IN_PROCESS} />
+                  <Bar dataKey={t('status.A_RENOUVELER')} stackId="a" fill={STATUS_COLORS.A_RENOUVELER} />
                   <Bar dataKey={t('status.EXPIRE')} stackId="a" fill={STATUS_COLORS.EXPIRE} />
                   <Bar dataKey={t('status.INDETERMINE')} stackId="a" fill={STATUS_COLORS.INDETERMINE} />
                 </BarChart>

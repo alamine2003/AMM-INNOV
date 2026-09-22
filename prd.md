@@ -83,7 +83,7 @@ Héritage des droits : le CEO possède tous les droits du siège, qui possède t
 | **Durée de validité** | 5 ans par défaut (règle du classeur : date de fin = date de début + 5 ans). Paramétrable par pays. |
 | **Date de fin effective** | Date de fin du dernier renouvellement obtenu, sinon date de fin de l'AMM d'origine. |
 | **Deadline de dépôt** | Date de fin effective − délai de dépôt (6 mois par défaut, paramétrable par pays). |
-| **Statut AMM** | Valeur calculée : `VALIDE`, `EXPIRE`, `IN_PROCESS`, `INDETERMINE`. |
+| **Statut AMM** | Valeur calculée : `VALIDE`, `A_RENOUVELER`, `EXPIRE`, `INDETERMINE` (« Échéance inconnue »). Voir `docs/workflow-amm.md`. |
 | **État du dossier** | Complétude documentaire : `COMPLET` ou `INCOMPLET`. |
 | **Gamme** | Famille commerciale : Générale, Cardio, Bien-être. |
 | **Document AMM** | Fichier PDF scanné de l'autorisation délivrée par l'autorité (ou du récépissé de dépôt, du courrier de décision). Daté de la date figurant sur le document. |
@@ -121,13 +121,14 @@ Héritage des droits : le CEO possède tous les droits du siège, qui possède t
 ### 6.1 Calcul de la date de fin
 `date_fin = date_debut + durée_validité_pays` (5 ans par défaut). Modifiable manuellement si l'autorité a délivré une durée différente ; la valeur manuelle prime et est tracée.
 
-### 6.2 Calcul du statut (transcription de la formule Excel)
+### 6.2 Calcul du statut (règles du responsable, voir `docs/workflow-amm.md`)
 ```
-si aucune AMM d'origine et aucun renouvellement           → INDETERMINE
-si le dernier renouvellement a une date de fin valide     → VALIDE si date_fin ≥ aujourd'hui, sinon EXPIRE
-sinon si un renouvellement est marqué « déposé/en cours » → IN_PROCESS
-sinon si la date de fin d'origine est absente/illisible   → INDETERMINE
-sinon                                                     → VALIDE si date_fin_origine ≥ aujourd'hui, sinon EXPIRE
+fin = date de fin du dernier renouvellement OBTENU et daté, sinon date de fin d'origine
+si fin est inconnue                   → INDETERMINE (« Échéance inconnue »)
+sinon si aujourd'hui > fin            → EXPIRE (même si un renouvellement est déposé)
+sinon si aujourd'hui >= fin − 6 mois  → A_RENOUVELER (toujours valide)
+sinon                                 → VALIDE
+dépôt idéal = fin − 6 mois ; limite agence = fin − 3 mois
 ```
 Le statut est recalculé à chaque modification et par un traitement quotidien à 00:05 (heure Dakar), car il dépend de la date du jour.
 
@@ -137,10 +138,11 @@ Le statut est recalculé à chaque modification et par un traitement quotidien �
 |---|---|---|
 | `OK` | fin > 12 mois | vert |
 | `A_PLANIFIER` | 6 mois < fin ≤ 12 mois | bleu |
-| `DEPOT_URGENT` | fin ≤ 6 mois et aucun dépôt enregistré | orange |
-| `CRITIQUE` | fin ≤ 3 mois et aucun dépôt enregistré | rouge |
+| `DEPOT_URGENT` | dépôt idéal atteint (fin − 6 mois) | orange |
+| `CRITIQUE` | limite agence atteinte (fin − 3 mois) | rouge |
 | `EXPIRE` | fin < aujourd'hui | rouge foncé |
-| `EN_INSTRUCTION` | dépôt enregistré, décision attendue | violet |
+
+Un dépôt en cours ne change ni le statut ni l'urgence : il est suivi sur le renouvellement.
 
 ### 6.4 Règles d'alerte par défaut (paramétrables globalement et par pays)
 

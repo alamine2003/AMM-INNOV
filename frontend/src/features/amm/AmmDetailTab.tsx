@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Button, Grid2 as Grid, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Grid2 as Grid, Stack, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,9 @@ import { useSnackbar } from 'notistack';
 import { useUpdateAmm } from '@/api/hooks/useAmms';
 import type { Amm } from '@/api/types';
 import { DateField } from '@/components/DateField';
+import { DossierChip, StatusChip } from '@/components/chips';
+import { filingDateText } from '@/components/FilingDates';
+import { AmmTimeline } from './AmmTimeline';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
 
@@ -57,7 +60,9 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
-      <Typography variant="body1">{value}</Typography>
+      <Typography variant="body1" component="div">
+        {value}
+      </Typography>
     </Grid>
   );
 
@@ -65,12 +70,23 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
     <form onSubmit={handleSubmit(submit)} noValidate data-testid="amm-detail-form">
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {info('Titulaire / laboratoire', amm.holder || '—')}
-        {info(t('amm.fields.status'), t(`status.${amm.status}`))}
+        {info(t('amm.fields.status'), <StatusChip value={amm.status} />)}
         {info(t('amm.fields.urgency'), t(`urgency.${amm.urgency}`))}
         {info(t('amm.fields.effectiveEnd'), formatDate(amm.effective_end_date))}
-        {info(t('amm.fields.filingDeadline'), formatDate(amm.filing_deadline))}
+        {info(
+          t('amm.fields.idealFiling'),
+          <span title={t('amm.fields.idealFilingHelp')} data-testid="ideal-filing">
+            {filingDateText(amm.ideal_filing_date, 'dépassé')}
+          </span>,
+        )}
+        {info(
+          t('amm.fields.agencyDeadline'),
+          <span title={t('amm.fields.agencyDeadlineHelp')} data-testid="agency-deadline">
+            {filingDateText(amm.agency_filing_deadline, 'dépassée')}
+          </span>,
+        )}
         {info(t('amm.fields.hasScan'), amm.has_current_scan ? t('app.yes') : t('app.no'))}
-        {info(t('amm.fields.dossierState'), t(`dossier.${amm.dossier_state}`))}
+        {info(t('amm.fields.dossierState'), <DossierChip value={amm.dossier_state} />)}
         {info(t('amm.fields.updatedAt'), formatDateTime(amm.updated_at))}
         {amm.last_renewal &&
           info(
@@ -78,6 +94,9 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
             `${t(`workflow.${amm.last_renewal.workflow_status}`)}${amm.last_renewal.number ? ` — ${amm.last_renewal.number}` : ''}`,
           )}
       </Grid>
+      <Box sx={{ mb: 3 }}>
+        <AmmTimeline amm={amm} />
+      </Box>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 4 }}>
           <TextField
