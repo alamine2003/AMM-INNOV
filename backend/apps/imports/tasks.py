@@ -46,11 +46,16 @@ def analyze_dossier(batch_id: str) -> dict:
         if not batch.created_by or not batch.created_by.is_active:
             raise ValueError("Utilisateur indisponible")
         preview = build_preview(batch)
+        # Un pays reconnu hors du périmètre de l'auteur n'est pas enregistré sur le lot :
+        # sinon le lot disparaît de sa liste (404) et il ne voit jamais le blocage expliqué.
+        country_id = preview.get("amm", {}).get("country_id")
+        if country_id and not batch.created_by.can_access_country(country_id):
+            country_id = batch.country_id
         DossierImport.objects.filter(pk=batch_id, status=DossierImport.Status.RUNNING).update(
             status=DossierImport.Status.READY,
             preview=preview,
             preview_token=preview_token(preview),
-            country_id=preview.get("amm", {}).get("country_id"),
+            country_id=country_id,
             finished_at=timezone.now(),
         )
         return {"status": "ready", "confidence": preview["confidence"]}
