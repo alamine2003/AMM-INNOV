@@ -1,0 +1,22 @@
+name: Réveil API
+
+# L'offre gratuite de Render endort l'API après 15 minutes sans requête : Celery (beat intégré)
+# s'arrête avec elle et les alertes nocturnes ne partent plus. Un appel toutes les 10 minutes
+# la garde éveillée (un seul service : 720 h par mois, sous les 750 h gratuites).
+# Variable de dépôt : API_HEALTH_URL (défaut https://amm-innov-api.onrender.com/api/v1/health).
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: curl -fsS --retry 3 --retry-delay 20 --max-time 90 "${URL}"
+        env:
+          URL: ${{ vars.API_HEALTH_URL || 'https://amm-innov-api.onrender.com/api/v1/health' }}

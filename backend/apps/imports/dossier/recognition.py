@@ -258,5 +258,8 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         "start_date": start_date if official else None,
         "decision_date": decision_date if official else None,
         "end_date": end_date if official else None,
-        "document_date": decision_date or start_date or _labeled_date(plain, r"date"),
+        # Un récépissé porte la date de dépôt (« Déposé le 01/03/2026 »), pas une date « Date : ».
+        "document_date": decision_date
+        or start_date
+        or _labeled_date(plain, r"date|deposee?\s+le|recu\s+le|received\s+on"),
     }

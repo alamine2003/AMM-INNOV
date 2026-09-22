@@ -179,11 +179,34 @@ def build_preview(batch) -> dict:
                 if proposal:
                     changes.append(proposal)
 
+    # Un numéro d'AMM déjà porté par une autre AMM du même pays (ex. « 9601-BIS » proposé sur
+    # le 1000 mg alors que le 850 mg porte « 9601 BIS ») doit être signalé avant validation.
+    proposed_number = normalize(original["original_number"] or "")
+    if (
+        country
+        and proposed_number
+        and (not amm or normalize(amm.original_number or "") != proposed_number)
+    ):
+        clashes = [
+            other.product.name
+            for other in MarketingAuthorization.objects.filter(country=country)
+            .exclude(pk=amm.pk if amm else None)
+            .select_related("product")
+            if normalize(other.original_number or "") == proposed_number
+        ]
+        if clashes:
+            warnings.append(
+                f"Le numéro {original['original_number']} est déjà attribué dans ce pays à : "
+                + ", ".join(sorted(clashes)[:5])
+                + "."
+            )
+
     grouped = defaultdict(list)
     for row in rows:
         if row["period"] != "original":
             grouped[row["period"]].append(row)
     renewals, renewal_targets, identities = [], {}, {}
+
     # La période la plus récente est résolue en premier : c'est elle qui peut conclure un
     # renouvellement encore ouvert dans l'application.
     def _group_date(item):

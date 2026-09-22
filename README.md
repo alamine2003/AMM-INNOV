@@ -157,12 +157,16 @@ Processus web : `WEB_CONCURRENCY=1` lance Daphne (dev) ; `WEB_CONCURRENCY=N` lan
 (prod, ~80 req/s par worker mesurés, 167 req/s avec 3). Chaque worker a son pool PostgreSQL
 (`DB_POOL_MAX_SIZE`) : garder N × pool sous `max_connections`.
 
-### Option retenue : Netlify + Railway
+### Option retenue : Netlify + Render (offre gratuite)
 
-Frontend sur Netlify ([netlify.toml](netlify.toml)), backend, worker Celery, Redis et PostgreSQL sur
-Railway ([railway.json](railway.json), même image pour le web et le worker, rôle par `AMM_ROLE`),
-scans PDF sur un stockage S3 compatible, Grafana Cloud.
-Procédure complète : [docs/deploiement-netlify-railway.md](docs/deploiement-netlify-railway.md).
+Frontend sur Netlify ([netlify.toml](netlify.toml)) ; API, WebSocket et Celery dans un seul service
+Docker gratuit sur Render, avec Redis (Key Value) gratuit ([render.yaml](render.yaml)).
+La base Postgres gratuite de Render est supprimée au bout de 30 jours : le workflow **Base Render**
+la sauvegarde chaque nuit et la renouvelle tous les 25 jours sans perte
+([scripts/render_db.sh](scripts/render_db.sh)).
+Procédure complète : [docs/deploiement-render.md](docs/deploiement-render.md)
+(l'ancienne configuration Railway reste décrite dans
+[docs/deploiement-netlify-railway.md](docs/deploiement-netlify-railway.md)).
 
 ### Option auto-hébergée : Docker Compose
 

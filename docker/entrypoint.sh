@@ -66,10 +66,18 @@ fi
 # pendant GRACEFUL_TIMEOUT secondes puis se termine.
 # PORT est imposé par la plateforme (Railway, Render) ; BIND_HOST=:: pour le réseau privé IPv6 de Railway.
 if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "worker" ]; then
-  # Railway : même image et même railway.json pour le web et le worker, rôle par variable.
+  # Worker séparé (compose, plateforme payante) : même image, rôle par variable.
   echo "[entrypoint] worker Celery (beat intégré), concurrence ${CELERY_CONCURRENCY:-2}"
   exec celery -A config worker -l info --concurrency "${CELERY_CONCURRENCY:-2}" \
     -B --scheduler django_celery_beat.schedulers:DatabaseScheduler
+fi
+
+# Render gratuit : pas d'offre gratuite pour un worker séparé. AMM_ROLE=all lance Celery (beat
+# intégré, une seule concurrence) en arrière-plan dans le même conteneur que le serveur web.
+if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "all" ]; then
+  echo "[entrypoint] worker Celery en arrière-plan (beat intégré), concurrence ${CELERY_CONCURRENCY:-1}"
+  celery -A config worker -l info --concurrency "${CELERY_CONCURRENCY:-1}" \
+    -B --scheduler django_celery_beat.schedulers:DatabaseScheduler &
 fi
 
 if [ "${1:-}" = "serve" ]; then
