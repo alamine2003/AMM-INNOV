@@ -11,6 +11,7 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { Amm } from '@/api/types';
 import { StatusChip, UrgencyChip } from '@/components/chips';
+import { filingDateText } from '@/components/FilingDates';
 import { formatDate, formatRemaining } from '@/lib/dates';
 
 export function PrioritiesTable({ amms, showCountry = false }: { amms: Amm[]; showCountry?: boolean }) {
@@ -26,6 +27,8 @@ export function PrioritiesTable({ amms, showCountry = false }: { amms: Amm[]; sh
             <TableCell>{t('amm.columns.urgency')}</TableCell>
             <TableCell>{t('amm.columns.effectiveEnd')}</TableCell>
             <TableCell>{t('amm.columns.remaining')}</TableCell>
+            <TableCell>{t('amm.columns.idealFiling')}</TableCell>
+            <TableCell>{t('amm.columns.agencyDeadline')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -45,6 +48,8 @@ export function PrioritiesTable({ amms, showCountry = false }: { amms: Amm[]; sh
               </TableCell>
               <TableCell>{formatDate(a.effective_end_date)}</TableCell>
               <TableCell>{formatRemaining(a.effective_end_date)}</TableCell>
+              <TableCell>{filingDateText(a.ideal_filing_date, 'dépassé')}</TableCell>
+              <TableCell>{filingDateText(a.agency_filing_deadline, 'dépassée')}</TableCell>
             </TableRow>
           ))}
         </TableBody>

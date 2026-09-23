@@ -1,4 +1,4 @@
-import { addYears, parseISO } from 'date-fns';
+import { addYears, parseISO, subMonths } from 'date-fns';
 import type { AlertStatus, AmmStatus, DossierState, Severity, Urgency, WorkflowStatus } from '@/api/types';
 import { toApiDate } from '@/lib/dates';
 
@@ -8,13 +8,13 @@ export const URGENCY_COLORS: Record<Urgency, string> = {
   DEPOT_URGENT: '#ef6c00',
   CRITIQUE: '#d32f2f',
   EXPIRE: '#8e0000',
-  EN_INSTRUCTION: '#6a1b9a',
 };
 
+/** Valide (vert), À renouveler (orange), Expirée (rouge), Échéance inconnue (gris). */
 export const STATUS_COLORS: Record<AmmStatus, string> = {
   VALIDE: '#2e7d32',
+  A_RENOUVELER: '#ef6c00',
   EXPIRE: '#c62828',
-  IN_PROCESS: '#6a1b9a',
   INDETERMINE: '#757575',
 };
 
@@ -45,25 +45,11 @@ export const DOSSIER_COLORS: Record<DossierState, string> = {
   INCOMPLET: '#ef6c00',
 };
 
-export const URGENCY_ORDER: Urgency[] = [
-  'EXPIRE',
-  'CRITIQUE',
-  'DEPOT_URGENT',
-  'EN_INSTRUCTION',
-  'A_PLANIFIER',
-  'OK',
-];
+export const URGENCY_ORDER: Urgency[] = ['EXPIRE', 'CRITIQUE', 'DEPOT_URGENT', 'A_PLANIFIER', 'OK'];
 /** Urgences encore actionnables, dans l'ordre de traitement (listes de priorités). */
 export const PRIORITY_URGENCIES: Urgency[] = ['CRITIQUE', 'DEPOT_URGENT', 'A_PLANIFIER'];
-export const AMM_STATUSES: AmmStatus[] = ['VALIDE', 'EXPIRE', 'IN_PROCESS', 'INDETERMINE'];
-export const URGENCIES: Urgency[] = [
-  'OK',
-  'A_PLANIFIER',
-  'DEPOT_URGENT',
-  'CRITIQUE',
-  'EXPIRE',
-  'EN_INSTRUCTION',
-];
+export const AMM_STATUSES: AmmStatus[] = ['VALIDE', 'A_RENOUVELER', 'EXPIRE', 'INDETERMINE'];
+export const URGENCIES: Urgency[] = ['OK', 'A_PLANIFIER', 'DEPOT_URGENT', 'CRITIQUE', 'EXPIRE'];
 export const DOSSIER_STATES: DossierState[] = ['COMPLET', 'INCOMPLET'];
 export const WORKFLOW_STATUSES: WorkflowStatus[] = [
   'PLANIFIE',
@@ -101,7 +87,24 @@ export function projectObtainedRenewal(
 ): { end: string | null; status: AmmStatus | null } {
   const end = manualEnd || (startDate ? toApiDate(addYears(parseISO(startDate), validityYears)) : null);
   if (!end) return { end: null, status: null };
-  return { end, status: parseISO(end) >= parseISO(toApiDate(today)) ? 'VALIDE' : 'EXPIRE' };
+  return { end, status: statusFor(end, today) };
+}
+
+/**
+ * Miroir de `derive_status` (backend) pour l'affichage : expirée quand aujourd'hui > fin,
+ * « À renouveler » dès fin − 6 mois (jour J compris), sinon valide.
+ */
+export function statusFor(end: string | null | undefined, today = new Date()): AmmStatus {
+  if (!end) return 'INDETERMINE';
+  const day = toApiDate(today);
+  if (day > end) return 'EXPIRE';
+  return day >= filingDates(end).ideal ? 'A_RENOUVELER' : 'VALIDE';
+}
+
+/** Dépôt idéal = fin − 6 mois ; limite agence = fin − 3 mois (mêmes règles que le serveur). */
+export function filingDates(end: string): { ideal: string; agency: string } {
+  const date = parseISO(end);
+  return { ideal: toApiDate(subMonths(date, 6)), agency: toApiDate(subMonths(date, 3)) };
 }
 
 /** Champs obligatoires pour une transition donnée. */

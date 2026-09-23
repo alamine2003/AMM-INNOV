@@ -26,7 +26,7 @@ export function StatusChip({ value, ...rest }: Base & { value: AmmStatus }) {
     <Chip
       label={t(`status.${value}`)}
       data-testid={`status-chip-${value}`}
-      {...colored(STATUS_COLORS[value], rest)}
+      {...colored(STATUS_COLORS[value] ?? STATUS_COLORS.INDETERMINE, rest)}
     />
   );
 }
@@ -37,7 +37,7 @@ export function UrgencyChip({ value, ...rest }: Base & { value: Urgency }) {
     <Chip
       label={t(`urgency.${value}`)}
       data-testid={`urgency-chip-${value}`}
-      {...colored(URGENCY_COLORS[value], rest)}
+      {...colored(URGENCY_COLORS[value] ?? '#757575', rest)}
     />
   );
 }

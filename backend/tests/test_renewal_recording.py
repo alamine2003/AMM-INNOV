@@ -36,7 +36,8 @@ def test_recording_an_obtained_renewal_turns_an_expired_amm_valid(hq_client, use
     assert amm.status == MarketingAuthorization.Status.VALIDE
     assert amm.urgency == MarketingAuthorization.Urgency.OK
     assert amm.effective_end_date == date(2031, 8, 1)
-    assert amm.filing_deadline == date(2031, 2, 1)  # 6 mois avant l'échéance
+    assert amm.ideal_filing_date == date(2031, 2, 1)  # 6 mois avant l'échéance
+    assert amm.agency_filing_deadline == date(2031, 5, 1)  # 3 mois avant l'échéance
     # La date d'origine reste la mémoire de l'AMM initiale.
     assert amm.original_start_date == EXPIRED_START and amm.original_end_date == date(2024, 1, 1)
 

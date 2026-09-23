@@ -16,6 +16,7 @@ import type {
   Amm,
   AmmDocument,
   Country,
+  DossierReviewPoint,
   Health,
   HistoryEntry,
   ImportBatch,
@@ -57,6 +58,7 @@ export type _User = Assert<Assignable<Schemas['User'], User>>;
 export type _ImportBatch = Assert<Assignable<Schemas['ImportBatch'], ImportBatch>>;
 export type _ImportRow = Assert<Assignable<Schemas['ImportRow'], ImportRow>>;
 export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEntry>>;
+export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API
 type Sends<Payload, Request> = Payload extends Request ? true : false;

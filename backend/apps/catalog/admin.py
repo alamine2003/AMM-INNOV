@@ -6,7 +6,7 @@ from .models import Country, Product, ProductAlias, ProductRange
 
 @admin.register(Country)
 class CountryAdmin(SimpleHistoryAdmin):
-    list_display = ("iso2", "name", "authority", "validity_years", "filing_lead_months")
+    list_display = ("iso2", "name", "authority", "validity_years")
     search_fields = ("iso2", "name")
 
 

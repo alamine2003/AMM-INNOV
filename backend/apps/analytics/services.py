@@ -11,22 +11,22 @@ from apps.core.dates import today as reference_today
 
 S = MarketingAuthorization.Status
 U = MarketingAuthorization.Urgency
+IN_FORCE = (S.VALIDE, S.A_RENOUVELER)
 # Ordre de traitement d'une liste de priorités : d'abord ce qui est encore actionnable
-# (dépôt critique ou urgent, à planifier), puis les dossiers en instruction, puis les expirées.
+# (limite agence atteinte, dépôt idéal atteint, à planifier), puis les expirées.
 URGENCY_PRIORITY = Case(
     When(urgency=U.CRITIQUE, then=Value(0)),
     When(urgency=U.DEPOT_URGENT, then=Value(1)),
     When(urgency=U.A_PLANIFIER, then=Value(2)),
-    When(urgency=U.EN_INSTRUCTION, then=Value(3)),
-    When(urgency=U.EXPIRE, then=Value(4)),
-    default=Value(5),
+    When(urgency=U.EXPIRE, then=Value(3)),
+    default=Value(4),
     output_field=IntegerField(),
 )
 KPI_KEYS = (
     "total",
     "valid",
     "expired",
-    "in_process",
+    "to_renew",
     "undetermined",
     "expiring_6m",
     "expiring_12m",
@@ -56,16 +56,16 @@ def _kpi_annotations(today: date) -> dict:
     return {
         "total": Count("id"),
         "valid": Count("id", filter=Q(status=S.VALIDE)),
+        "to_renew": Count("id", filter=Q(status=S.A_RENOUVELER)),
         "expired": Count("id", filter=Q(status=S.EXPIRE)),
-        "in_process": Count("id", filter=Q(status=S.IN_PROCESS)),
         "undetermined": Count("id", filter=Q(status=S.INDETERMINE)),
         "expiring_6m": Count(
             "id",
-            filter=Q(status=S.VALIDE, effective_end_date__lte=today + relativedelta(months=6)),
+            filter=Q(status__in=IN_FORCE, effective_end_date__lte=today + relativedelta(months=6)),
         ),
         "expiring_12m": Count(
             "id",
-            filter=Q(status=S.VALIDE, effective_end_date__lte=today + relativedelta(months=12)),
+            filter=Q(status__in=IN_FORCE, effective_end_date__lte=today + relativedelta(months=12)),
         ),
         "complete": Count(
             "id", filter=Q(dossier_state=MarketingAuthorization.DossierState.COMPLET)
@@ -78,7 +78,8 @@ def _row(iso2: str, name: str, values: dict) -> dict:
     row = {"country_iso2": iso2, "country_name": name}
     for key in KPI_KEYS:
         row[key] = values.get(key, 0)
-    row["pct_valid"] = _pct(row["valid"], total)
+    # « À renouveler » reste valide (règle 3) : le taux de validité compte les deux.
+    row["pct_valid"] = _pct(row["valid"] + row["to_renew"], total)
     row["pct_complete"] = _pct(row["complete"], total)
     return row
 
@@ -135,7 +136,8 @@ def country_dashboard(country: Country, today: date | None = None) -> dict:
             "status": amm.status,
             "urgency": amm.urgency,
             "effective_end_date": amm.effective_end_date,
-            "filing_deadline": amm.filing_deadline,
+            "ideal_filing_date": amm.ideal_filing_date,
+            "agency_filing_deadline": amm.agency_filing_deadline,
             "dossier_state": amm.dossier_state,
             "days_remaining": (amm.effective_end_date - today).days
             if amm.effective_end_date
@@ -197,7 +199,8 @@ EXPORT_COLUMNS = [
     "STATUT",
     "ETAT DOSSIER",
     "URGENCE",
-    "DEADLINE DEPOT",
+    "DEPOT IDEAL",
+    "LIMITE AGENCE",
 ]
 
 
@@ -227,7 +230,8 @@ def export_rows(queryset) -> list[list]:
                 amm.status,
                 amm.get_dossier_state_display(),
                 amm.urgency,
-                amm.filing_deadline,
+                amm.ideal_filing_date,
+                amm.agency_filing_deadline,
             ]
         )
     return rows

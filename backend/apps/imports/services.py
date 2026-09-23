@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.amm.models import MarketingAuthorization, Renewal
-from apps.amm.services.status import compute_amm_state
+from apps.amm.services.status import IN_FORCE_STATUSES, compute_amm_state
 from apps.catalog.models import Country, Product, ProductAlias, ProductRange
 from apps.catalog.normalize import product_key
 from apps.core.dates import override_today
@@ -18,6 +18,18 @@ from .excel_parser import ParsedRow, ParsedSheet, parse_workbook
 from .models import ImportBatch, ImportRow
 
 logger = logging.getLogger(__name__)
+
+
+def _status_contradicts(excel_status: str | None, computed: str) -> bool:
+    """Le classeur ne connaît ni « À renouveler » ni la règle « dépôt en cours ≠ expirée » :
+    VALIDE et À renouveler sont deux états valides, et « IN PROCESS » décrit le renouvellement,
+    pas l'AMM. Seule une contradiction réelle de validité est signalée."""
+    if not excel_status or excel_status == "IN_PROCESS":
+        return False
+    if excel_status in IN_FORCE_STATUSES and computed in IN_FORCE_STATUSES:
+        return False
+    return excel_status != computed
+
 
 def _range_for(code: str | None, cache: dict) -> ProductRange | None:
     if code is None:
@@ -164,7 +176,7 @@ def _apply_row(
             amm._skip_signals = True
             amm.save()
 
-    if row.excel_status and row.excel_status != amm.status:
+    if _status_contradicts(row.excel_status, amm.status):
         row.warnings.append(
             f"statut Excel « {row.excel_status} » ≠ statut calculé « {amm.status} »"
         )
@@ -280,9 +292,7 @@ def import_workbook(
             parsed = parse_workbook(source)
             summary["ignored_sheets"] = parsed.ignored
             for sheet in parsed.sheets:
-                summary["sheets"][sheet.name.strip()] = _import_sheet(
-                    sheet, batch, today, dry_run
-                )
+                summary["sheets"][sheet.name.strip()] = _import_sheet(sheet, batch, today, dry_run)
         totals: dict[str, int] = {}
         for stats in summary["sheets"].values():
             for key, value in stats.items():

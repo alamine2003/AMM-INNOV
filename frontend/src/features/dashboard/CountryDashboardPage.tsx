@@ -34,7 +34,7 @@ export default function CountryDashboardPage() {
         title={t('dashboard.countryTitle', { name: country?.name ?? iso2 })}
         subtitle={
           country
-            ? `${country.authority} — ${t('admin.countries.validity')} : ${country.validity_years}, ${t('admin.countries.lead')} : ${country.filing_lead_months}`
+            ? `${country.authority} — ${t('admin.countries.validity')} : ${country.validity_years}`
             : undefined
         }
         actions={

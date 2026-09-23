@@ -33,12 +33,12 @@ DEMO_PRODUCTS = [
 DEMO_AMMS = [
     (0, "SN", -365 * 2, "COMPLET", None),  # valide, OK
     (1, "SN", -365 * 5 + 300, "COMPLET", None),  # A_PLANIFIER
-    (2, "SN", -365 * 5 + 150, "INCOMPLET", None),  # DEPOT_URGENT + DOSSIER
-    (3, "SN", -365 * 5 + 60, "COMPLET", None),  # CRITIQUE
+    (2, "SN", -365 * 5 + 150, "INCOMPLET", None),  # A_RENOUVELER, DEPOT_URGENT + DOSSIER
+    (3, "SN", -365 * 5 + 60, "COMPLET", None),  # A_RENOUVELER, CRITIQUE
     (4, "SN", -365 * 6, "COMPLET", None),  # EXPIRE
-    (5, "SN", -365 * 6, "COMPLET", ("DEPOSE", -40)),  # IN_PROCESS
+    (5, "SN", -365 * 6, "COMPLET", ("DEPOSE", -40)),  # EXPIRE malgré le dépôt en cours
     (6, "SN", -365 * 7, "COMPLET", ("OBTENU", -365 * 2)),  # renouvelée, valide
-    (7, "SN", None, "INCOMPLET", None),  # INDETERMINE
+    (7, "SN", None, "INCOMPLET", None),  # INDETERMINE (échéance inconnue)
     (0, "ML", -365 * 3, "COMPLET", None),
     (1, "ML", -365 * 5 + 120, "INCOMPLET", None),
     (2, "ML", -365 * 5 + 20, "COMPLET", None),

@@ -223,6 +223,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.alerts.tasks.evaluate_alert_rules",
         "schedule": crontab(hour=0, minute=15),
     },
+    # Règle 4 : rappel quotidien de chaque AMM « À renouveler » (après le recalcul de 00:05).
+    "send-renewal-reminders": {
+        "task": "apps.notifications.tasks.send_renewal_reminders",
+        "schedule": crontab(hour=7, minute=30),
+    },
     "refresh-analytics-views": {
         "task": "apps.analytics.tasks.refresh_analytics_views",
         "schedule": crontab(hour=0, minute=30),
@@ -456,8 +461,8 @@ DOSSIER_MAX_IMAGE_PIXELS = int(env("DOSSIER_MAX_IMAGE_PIXELS", "40000000"))
 DOSSIER_CLAMAV_COMMAND = env("DOSSIER_CLAMAV_COMMAND", "")
 DOSSIER_REQUIRE_ANTIVIRUS = env_bool("DOSSIER_REQUIRE_ANTIVIRUS", False)
 DOSSIER_CLAMAV_TIMEOUT = int(env("DOSSIER_CLAMAV_TIMEOUT", "60"))
-# Validation automatique d'un dossier sûr (lecture ≥ 90 %, aucun blocage, aucune valeur
-# enregistrée remplacée, aucun doute sur le numéro) : le réglementaire n'a rien à trancher.
+# Rangement automatique d'un dossier dès que son AMM (produit + pays) est identifiée : aucune
+# valeur enregistrée n'est remplacée, les écarts deviennent des « points à vérifier plus tard ».
 DOSSIER_AUTO_APPLY = env_bool("DOSSIER_AUTO_APPLY", True)
 # Multipart file bodies stream to temporary files; only metadata counts toward memory limit.
 DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
@@ -468,6 +473,9 @@ METRICS_TOKEN = env("METRICS_TOKEN", "")
 # délai est créée (tableaux de bord, liste des alertes) mais ne déclenche pas de notification,
 # sauf s'il s'agit de la plus récente d'une AMM encore actionnable (non expirée).
 ALERTS_DISPATCH_MAX_AGE_DAYS = int(env("ALERTS_DISPATCH_MAX_AGE_DAYS", "30"))
+# Rappel quotidien « À renouveler » : canaux utilisés (IN_APP, EMAIL), comme les canaux d'une
+# règle d'alerte. Mettre « IN_APP » seul pour couper l'e-mail quotidien.
+RENEWAL_REMINDER_CHANNELS = env_list("RENEWAL_REMINDER_CHANNELS", "IN_APP,EMAIL")
 DATA_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_MB * 1024 * 1024 + 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 

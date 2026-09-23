@@ -28,7 +28,8 @@ class AmmAdmin(SimpleHistoryAdmin):
         "status",
         "urgency",
         "effective_end_date",
-        "filing_deadline",
+        "ideal_filing_date",
+        "agency_filing_deadline",
         "dossier_state",
     )
     inlines = [RenewalInline]

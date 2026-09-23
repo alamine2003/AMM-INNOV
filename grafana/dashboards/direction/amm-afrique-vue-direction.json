@@ -616,7 +616,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT country_name AS \"Pays\",\n       country_iso2 AS \"ISO\",\n       total        AS \"Total AMM\",\n       valid        AS \"Valides\",\n       expired      AS \"Expirées\",\n       in_process   AS \"En cours\",\n       undetermined AS \"Indéterminées\",\n       pct_valid    AS \"% valides\",\n       expiring_6m  AS \"Expirant < 6 mois\",\n       expiring_12m AS \"Expirant < 12 mois\",\n       pct_complete AS \"% dossiers complets\"\nFROM analytics.mv_country_kpi\nWHERE country_iso2 IN (${country:sqlstring})\nUNION ALL\nSELECT 'TOTAL', '', sum(total), sum(valid), sum(expired), sum(in_process), sum(undetermined),\n       round(100.0*sum(valid)/nullif(sum(total),0),1),\n       sum(expiring_6m), sum(expiring_12m),\n       round(sum(pct_complete*total)/nullif(sum(total),0),1)\nFROM analytics.mv_country_kpi\nWHERE country_iso2 IN (${country:sqlstring})\nORDER BY (\"Pays\" = 'TOTAL'), \"Pays\"",
+          "rawSql": "SELECT country_name AS \"Pays\",\n       country_iso2 AS \"ISO\",\n       total        AS \"Total AMM\",\n       valid        AS \"Valides\",\n       expired      AS \"Expirées\",\n       to_renew   AS \"En cours\",\n       undetermined AS \"Indéterminées\",\n       pct_valid    AS \"% valides\",\n       expiring_6m  AS \"Expirant < 6 mois\",\n       expiring_12m AS \"Expirant < 12 mois\",\n       pct_complete AS \"% dossiers complets\"\nFROM analytics.mv_country_kpi\nWHERE country_iso2 IN (${country:sqlstring})\nUNION ALL\nSELECT 'TOTAL', '', sum(total), sum(valid), sum(expired), sum(in_process), sum(undetermined),\n       round(100.0*sum(valid)/nullif(sum(total),0),1),\n       sum(expiring_6m), sum(expiring_12m),\n       round(sum(pct_complete*total)/nullif(sum(total),0),1)\nFROM analytics.mv_country_kpi\nWHERE country_iso2 IN (${country:sqlstring})\nORDER BY (\"Pays\" = 'TOTAL'), \"Pays\"",
           "refId": "A"
         }
       ],
@@ -1018,7 +1018,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "IN_PROCESS"
+              "options": "A_RENOUVELER"
             },
             "properties": [
               {
@@ -1260,7 +1260,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT coalesce(range_code,'(sans gamme)') AS \"Gamme\",\n       count(*) FILTER (WHERE status='VALIDE')::int      AS \"VALIDE\",\n       count(*) FILTER (WHERE status='EXPIRE')::int      AS \"EXPIRE\",\n       count(*) FILTER (WHERE status='IN_PROCESS')::int  AS \"IN_PROCESS\",\n       count(*) FILTER (WHERE status='INDETERMINE')::int AS \"INDETERMINE\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT coalesce(range_code,'(sans gamme)') AS \"Gamme\",\n       count(*) FILTER (WHERE status='VALIDE')::int      AS \"VALIDE\",\n       count(*) FILTER (WHERE status='EXPIRE')::int      AS \"EXPIRE\",\n       count(*) FILTER (WHERE status='A_RENOUVELER')::int  AS \"A_RENOUVELER\",\n       count(*) FILTER (WHERE status='INDETERMINE')::int AS \"INDETERMINE\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
@@ -1336,7 +1336,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "IN_PROCESS"
+              "options": "A_RENOUVELER"
             },
             "properties": [
               {
@@ -1411,7 +1411,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT country_iso2 AS \"Pays\",\n       count(*) FILTER (WHERE status='VALIDE')::int      AS \"VALIDE\",\n       count(*) FILTER (WHERE status='EXPIRE')::int      AS \"EXPIRE\",\n       count(*) FILTER (WHERE status='IN_PROCESS')::int  AS \"IN_PROCESS\",\n       count(*) FILTER (WHERE status='INDETERMINE')::int AS \"INDETERMINE\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT country_iso2 AS \"Pays\",\n       count(*) FILTER (WHERE status='VALIDE')::int      AS \"VALIDE\",\n       count(*) FILTER (WHERE status='EXPIRE')::int      AS \"EXPIRE\",\n       count(*) FILTER (WHERE status='A_RENOUVELER')::int  AS \"A_RENOUVELER\",\n       count(*) FILTER (WHERE status='INDETERMINE')::int AS \"INDETERMINE\"\nFROM analytics.v_amm_current WHERE country_iso2 IN (${country:sqlstring}) GROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
@@ -1487,7 +1487,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "IN_PROCESS"
+              "options": "A_RENOUVELER"
             },
             "properties": [
               {

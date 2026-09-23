@@ -114,9 +114,11 @@ function africaRows(user: User): { rows: AfricaRow[]; total: AfricaRow } {
       total,
       valid,
       expired: list.filter((a) => a.status === 'EXPIRE').length,
-      in_process: list.filter((a) => a.status === 'IN_PROCESS').length,
+      to_renew: list.filter((a) => a.status === 'A_RENOUVELER').length,
       undetermined: list.filter((a) => a.status === 'INDETERMINE').length,
-      pct_valid: total ? Math.round((valid / total) * 100) : 0,
+      pct_valid: total
+        ? Math.round(((valid + list.filter((a) => a.status === 'A_RENOUVELER').length) / total) * 100)
+        : 0,
       expiring_6m: exp(in6),
       expiring_12m: exp(in12),
       pct_complete: total ? Math.round((complete / total) * 100) : 0,
@@ -191,7 +193,6 @@ export const handlers = [
         name: '',
         authority: '',
         validity_years: 5,
-        filing_lead_months: 6,
         timezone: 'Africa/Dakar',
         ...body,
       };
@@ -419,6 +420,11 @@ export const handlers = [
       return HttpResponse.json(paginate(list, request));
     }),
   ),
+  // Points à vérifier plus tard (import de dossiers) : aucun dans les données de démonstration.
+  http.get(
+    url('/dossier-review-points'),
+    withAuth(() => HttpResponse.json([])),
+  ),
   http.get(
     url('/amms/:id'),
     withAuth((user, { params }) => {
@@ -458,7 +464,8 @@ export const handlers = [
         status: 'INDETERMINE',
         urgency: 'A_PLANIFIER',
         effective_end_date: null,
-        filing_deadline: null,
+        ideal_filing_date: null,
+        agency_filing_deadline: null,
         dossier_state: 'INCOMPLET', // calculé par recomputeAmm d'après le scan de la décision
         notes: (body.notes as string) ?? '',
         owner: null,
@@ -920,7 +927,7 @@ export const handlers = [
         ).length;
         return { month, count };
       });
-      const order = ['EXPIRE', 'CRITIQUE', 'DEPOT_URGENT', 'EN_INSTRUCTION', 'A_PLANIFIER', 'OK'];
+      const order = ['EXPIRE', 'CRITIQUE', 'DEPOT_URGENT', 'A_PLANIFIER', 'OK'];
       const priorities = [...amms]
         .sort(
           (a, b) =>

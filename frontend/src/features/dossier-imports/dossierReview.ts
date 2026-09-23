@@ -1,13 +1,8 @@
 /**
- * Lecture « métier » d'un aperçu d'import de dossier : étapes de la chronologie d'une AMM
- * (origine puis renouvellements), état du lot en français simple, messages sans clé technique.
+ * Lecture « métier » d'un import de dossier : état du lot en une phrase, frise de l'AMM
+ * (origine puis renouvellements) avec les scans rangés, sans clé technique ni arbitrage.
  */
-import type {
-  DossierImportBatch,
-  DossierImportChange,
-  DossierImportPreview,
-  DossierImportTimelineStep,
-} from '@/api/types';
+import type { DossierImportBatch, DossierImportPreview, DossierImportTimelineStep } from '@/api/types';
 import { formatDate } from '@/lib/dates';
 
 export const fieldLabels: Record<string, string> = {
@@ -64,28 +59,14 @@ export function renewalTitle(
 
 export function periodTitle(period: string, preview: DossierImportPreview): string {
   if (period === 'original') return 'AMM d’origine';
+  if (period === 'unplaced') return 'Période non déterminée';
   return renewalTitle(preview.renewals.find((renewal) => renewal.key === period) ?? null, period);
 }
 
-/** Traduit un blocage ou un avertissement du serveur : périodes et champs nommés en clair. */
+/** Retire les clés internes (« renewal-2026-01-01 ») d'un message du serveur. */
 export function humanize(message: string, preview: DossierImportPreview): string {
-  return message
-    .replace(/renewal-[\w-]*\w/g, (key) => periodTitle(key, preview))
-    .replace(
-      /(contradictoires pour .+?) : (\w+)\./,
-      (_, head: string, field: string) => `${head} : ${(fieldLabels[field] ?? field).toLowerCase()}.`,
-    )
-    .replace('Preuves officielles contradictoires pour', 'Les décisions se contredisent pour');
+  return message.replace(/renewal-[\w-]*\w/g, (key) => periodTitle(key, preview));
 }
-
-export type StepAction = 'recorded' | 'added' | 'completed' | 'review';
-
-export const actionLabels: Record<StepAction, string> = {
-  recorded: 'Déjà enregistré',
-  added: 'Sera ajouté',
-  completed: 'Sera complété',
-  review: 'À vérifier',
-};
 
 export interface TimelineStep {
   id: string;
@@ -95,24 +76,14 @@ export interface TimelineStep {
   start: string | null;
   end: string | null;
   inForce: boolean;
+  /** Étape créée par ce dossier (renouvellement obtenu lu sur une décision). */
+  isNew: boolean;
   inDossier: boolean;
-  action: StepAction;
-  confidence: number | null;
-  /** Écarts avec la base : le réglementaire choisit de garder ou de remplacer. */
-  choices: DossierImportChange[];
-  /** Champs vides complétés d'office. */
-  completions: DossierImportChange[];
   scans: DossierDocument[];
 }
 
 const byStart = (a: { start: string | null }, b: { start: string | null }) =>
   (a.start ?? '9999').localeCompare(b.start ?? '9999');
-
-function actionFor(isNew: boolean, choices: unknown[], completions: unknown[], confidence: number | null) {
-  if (choices.length || (confidence !== null && confidence < 90)) return 'review';
-  if (isNew) return 'added';
-  return completions.length ? 'completed' : 'recorded';
-}
 
 /** Étape 1 : l'AMM d'origine ; puis un renouvellement par étape, dans l'ordre des dates. */
 export function buildTimeline(preview: DossierImportPreview): {
@@ -121,13 +92,9 @@ export function buildTimeline(preview: DossierImportPreview): {
 } {
   const timeline: DossierImportTimelineStep[] = preview.projection?.timeline ?? [];
   const projected = (key: string) => timeline.find((step) => step.key === key);
-  const changesOf = (target: string) => preview.changes.filter((change) => change.target === target);
   const scansOf = (period: string) =>
     preview.documents.filter((doc) => doc.period === period && doc.kind === 'AMM');
   const original = preview.original as Record<string, string | null | undefined>;
-  const originChanges = changesOf('amm');
-  const originChoices = originChanges.filter((change) => change.requires_confirmation);
-  const originCompletions = originChanges.filter((change) => !change.requires_confirmation);
   const originProjected = projected('original');
   const origin: TimelineStep = {
     id: 'original',
@@ -137,17 +104,11 @@ export function buildTimeline(preview: DossierImportPreview): {
     start: originProjected?.start_date ?? original.original_start_date ?? null,
     end: originProjected?.end_date ?? original.original_end_date ?? null,
     inForce: originProjected?.in_force ?? false,
+    isNew: !preview.amm.id,
     inDossier: preview.documents.some((doc) => doc.period === 'original'),
-    action: actionFor(!preview.amm.id, originChoices, originCompletions, null),
-    confidence: null,
-    choices: originChoices,
-    completions: originCompletions,
     scans: scansOf('original'),
   };
   const renewals: TimelineStep[] = preview.renewals.map((renewal) => {
-    const changes = changesOf(renewal.key);
-    const choices = changes.filter((change) => change.requires_confirmation);
-    const completions = changes.filter((change) => !change.requires_confirmation);
     const step = projected(renewal.key);
     return {
       id: renewal.key,
@@ -157,11 +118,8 @@ export function buildTimeline(preview: DossierImportPreview): {
       start: step?.start_date ?? renewal.start_date ?? renewal.decision_date,
       end: step?.end_date ?? renewal.end_date,
       inForce: step?.in_force ?? false,
+      isNew: !renewal.existing_id,
       inDossier: true,
-      action: actionFor(!renewal.existing_id, choices, completions, renewal.confidence),
-      confidence: renewal.confidence,
-      choices,
-      completions,
       scans: scansOf(renewal.key),
     };
   });
@@ -176,11 +134,8 @@ export function buildTimeline(preview: DossierImportPreview): {
       start: step.start_date,
       end: step.end_date,
       inForce: step.in_force,
+      isNew: false,
       inDossier: false,
-      action: 'recorded',
-      confidence: null,
-      choices: [],
-      completions: [],
       scans: [],
     }));
   const steps = [origin, ...[...renewals, ...recorded].sort(byStart)];
@@ -191,76 +146,45 @@ export function buildTimeline(preview: DossierImportPreview): {
   return { steps, otherDocuments };
 }
 
-export function isBlocked(preview: DossierImportPreview | null): boolean {
-  return !preview || !preview.can_apply || preview.level === 'LOW' || preview.blockers.length > 0;
-}
-
-/** Phrases des blocages, sans clé technique. */
-export function blockingReasons(preview: DossierImportPreview | null): string[] {
-  if (!preview) return ['L’analyse n’a produit aucun aperçu : relancez-la.'];
-  const reasons = preview.blockers.map((message) => humanize(message, preview));
-  if (preview.level === 'LOW')
-    reasons.push(
-      `Lecture trop incertaine (${preview.confidence} %) : aucune donnée ne peut être modifiée. Vérifiez les documents puis relancez l’analyse.`,
-    );
-  if (!reasons.length && !preview.can_apply) reasons.push('Validation impossible : relancez l’analyse.');
-  return reasons;
-}
-
-/** Ce que le réglementaire doit regarder avant de valider. */
-export function reviewPoints(preview: DossierImportPreview): string[] {
-  const points = preview.changes
-    .filter((change) => change.requires_confirmation)
-    .map(
-      (change) =>
-        `${fieldLabels[change.field] ?? change.field} (${
-          change.target === 'amm' ? 'AMM d’origine' : periodTitle(change.target, preview)
-        }) : le scan ne dit pas la même chose que la fiche, choisissez la valeur à garder.`,
-    );
-  points.push(...preview.warnings.map((message) => humanize(message, preview)));
-  if (preview.level === 'MEDIUM')
-    points.push(
-      `Lecture moyennement sûre (${preview.confidence} %) : vérifiez les dates et le numéro sur les scans.`,
-    );
-  return points;
-}
-
-const plural = (count: number) => `${count} point${count > 1 ? 's' : ''}`;
-
 export type BatchTone = 'default' | 'success' | 'warning' | 'error' | 'info';
 
-/** État du lot tel que le réglementaire le comprend (historique et en-tête). */
+/** Résultat du lot tel que le réglementaire le comprend (historique et en-tête). */
 export function batchState(batch: DossierImportBatch): { label: string; tone: BatchTone } {
   switch (batch.status) {
     case 'PENDING':
     case 'RUNNING':
       return { label: 'Analyse en cours', tone: 'info' };
     case 'FAILED':
-      return { label: 'Échec de l’analyse', tone: 'error' };
+      return { label: 'Échec', tone: 'error' };
     case 'APPLIED':
-      return batch.auto_applied
-        ? { label: 'Validé automatiquement', tone: 'success' }
-        : { label: 'Validé', tone: 'success' };
-    default: {
-      if (isBlocked(batch.preview)) return { label: 'Bloqué', tone: 'error' };
-      const count = reviewPoints(batch.preview!).length;
-      return count
-        ? { label: `À vérifier (${plural(count)})`, tone: 'warning' }
-        : { label: 'Prêt à valider', tone: 'default' };
-    }
+      return { label: 'Rangé', tone: 'success' };
+    case 'QUESTION':
+      return { label: 'Question', tone: 'warning' };
+    default:
+      return { label: 'À ranger', tone: 'default' };
   }
 }
 
-/** Phrase d'état de l'en-tête : « Prêt à valider », « À vérifier : 2 points », « Bloqué : … ». */
-export function stateSentence(preview: DossierImportPreview | null): string {
-  if (isBlocked(preview)) return `Bloqué : ${blockingReasons(preview)[0]}`;
-  const count = reviewPoints(preview!).length;
-  return count ? `À vérifier : ${plural(count)}` : 'Prêt à valider';
+/** L'état en une phrase : « Rangé automatiquement », « Question : c'est quelle AMM ? »… */
+export function stateSentence(batch: DossierImportBatch): string {
+  switch (batch.status) {
+    case 'PENDING':
+    case 'RUNNING':
+      return 'Analyse en cours…';
+    case 'FAILED':
+      return 'Échec de l’analyse';
+    case 'APPLIED':
+      return batch.auto_applied ? 'Rangé automatiquement' : 'Rangé';
+    case 'QUESTION':
+      return 'Question : c’est quelle AMM ?';
+    default:
+      return 'Prêt à ranger';
+  }
 }
 
 export const ammStatusLabels: Record<string, string> = {
   VALIDE: 'Valide',
+  A_RENOUVELER: 'À renouveler',
   EXPIRE: 'Expirée',
-  IN_PROCESS: 'En cours de renouvellement',
-  INDETERMINE: 'Indéterminé',
+  INDETERMINE: 'Échéance inconnue',
 };

@@ -126,6 +126,8 @@ class AmmListSerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source="country.name", read_only=True)
     owner_email = serializers.EmailField(source="owner.email", read_only=True, default=None)
     has_current_scan = serializers.BooleanField(read_only=True, default=False)
+    # Points à vérifier plus tard (import de dossiers) encore ouverts sur cette AMM.
+    open_review_points = serializers.IntegerField(read_only=True, default=0)
     days_remaining = serializers.SerializerMethodField()
     last_renewal = serializers.SerializerMethodField()
 
@@ -148,13 +150,15 @@ class AmmListSerializer(serializers.ModelSerializer):
             "status",
             "urgency",
             "effective_end_date",
-            "filing_deadline",
+            "ideal_filing_date",
+            "agency_filing_deadline",
             "days_remaining",
             "dossier_state",
             "notes",
             "owner",
             "owner_email",
             "has_current_scan",
+            "open_review_points",
             "last_renewal",
             "created_at",
             "updated_at",
@@ -165,7 +169,8 @@ class AmmListSerializer(serializers.ModelSerializer):
             "status",
             "urgency",
             "effective_end_date",
-            "filing_deadline",
+            "ideal_filing_date",
+            "agency_filing_deadline",
             "dossier_state",
             "created_at",
             "updated_at",

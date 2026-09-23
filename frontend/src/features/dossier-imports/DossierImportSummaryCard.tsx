@@ -2,13 +2,8 @@ import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/materia
 import { Link } from 'react-router';
 
 import type { DossierImportSummary } from '@/api/types';
+import { ammStatusLabels as statusLabels } from './dossierReview';
 
-const statusLabels: Record<string, string> = {
-  VALIDE: 'Valide',
-  EXPIRE: 'Expirée',
-  IN_PROCESS: 'En cours',
-  INDETERMINE: 'Indéterminé',
-};
 const dossierLabels: Record<string, string> = { COMPLET: 'Complet', INCOMPLET: 'Incomplet' };
 
 const fr = (value: string | null | undefined) =>

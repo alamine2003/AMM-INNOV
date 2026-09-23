@@ -4,7 +4,11 @@ import os
 
 from django.db import migrations
 
-from apps.analytics.sql import BACKWARD_STATEMENTS, FORWARD_STATEMENTS, grafana_role_sql
+from apps.analytics.migrations._sql_0001 import (
+    BACKWARD_STATEMENTS,
+    FORWARD_STATEMENTS,
+    grafana_role_sql,
+)
 
 
 def forwards(apps, schema_editor):

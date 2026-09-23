@@ -1,4 +1,8 @@
-"""SQL of the `analytics` schema (PostgreSQL only): views for Grafana and the read-only role."""
+"""SQL of the `analytics` schema (PostgreSQL only): views for Grafana and the read-only role.
+
+Version courante (migration 0003 : statut « À renouveler », dépôt idéal et limite agence). La
+version d'origine, rejouée par la migration 0001, est figée dans `migrations/_sql_0001.py`.
+"""
 
 CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS analytics;"
 
@@ -13,7 +17,8 @@ SELECT a.id AS amm_id,
        a.status,
        a.urgency,
        a.effective_end_date,
-       a.filing_deadline,
+       a.ideal_filing_date,
+       a.agency_filing_deadline,
        a.dossier_state,
        (a.effective_end_date - CURRENT_DATE) AS days_remaining,
        EXISTS (
@@ -32,18 +37,21 @@ SELECT c.iso2 AS country_iso2,
        c.name AS country_name,
        COUNT(a.id) AS total,
        COUNT(a.id) FILTER (WHERE a.status = 'VALIDE') AS valid,
+       COUNT(a.id) FILTER (WHERE a.status = 'A_RENOUVELER') AS to_renew,
        COUNT(a.id) FILTER (WHERE a.status = 'EXPIRE') AS expired,
-       COUNT(a.id) FILTER (WHERE a.status = 'IN_PROCESS') AS in_process,
        COUNT(a.id) FILTER (WHERE a.status = 'INDETERMINE') AS undetermined,
        CASE WHEN COUNT(a.id) = 0 THEN 0
-            ELSE ROUND(100.0 * COUNT(a.id) FILTER (WHERE a.status = 'VALIDE') / COUNT(a.id), 1)
+            ELSE ROUND(
+                100.0 * COUNT(a.id) FILTER (WHERE a.status IN ('VALIDE', 'A_RENOUVELER'))
+                / COUNT(a.id), 1
+            )
        END AS pct_valid,
        COUNT(a.id) FILTER (
-           WHERE a.status = 'VALIDE'
+           WHERE a.status IN ('VALIDE', 'A_RENOUVELER')
              AND a.effective_end_date <= CURRENT_DATE + INTERVAL '6 months'
        ) AS expiring_6m,
        COUNT(a.id) FILTER (
-           WHERE a.status = 'VALIDE'
+           WHERE a.status IN ('VALIDE', 'A_RENOUVELER')
              AND a.effective_end_date <= CURRENT_DATE + INTERVAL '12 months'
        ) AS expiring_12m,
        CASE WHEN COUNT(a.id) = 0 THEN 0
@@ -115,7 +123,7 @@ SELECT c.iso2 AS country_iso2,
        COUNT(a.id) FILTER (WHERE a.status = 'INDETERMINE') AS undetermined,
        COUNT(a.id) FILTER (WHERE a.dossier_state = 'INCOMPLET') AS incomplete,
        COUNT(a.id) FILTER (
-           WHERE a.status = 'VALIDE' AND NOT EXISTS (
+           WHERE a.status IN ('VALIDE', 'A_RENOUVELER') AND NOT EXISTS (
                SELECT 1 FROM documents_document d
                WHERE d.amm_id = a.id AND d.kind = 'AMM' AND d.is_current AND d.archived_at IS NULL
            )

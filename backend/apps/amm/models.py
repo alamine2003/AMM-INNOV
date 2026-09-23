@@ -11,9 +11,10 @@ from simple_history.models import HistoricalRecords
 class MarketingAuthorization(models.Model):
     class Status(models.TextChoices):
         VALIDE = "VALIDE", "Valide"
+        A_RENOUVELER = "A_RENOUVELER", "À renouveler"
         EXPIRE = "EXPIRE", "Expirée"
-        IN_PROCESS = "IN_PROCESS", "En cours d'instruction"
-        INDETERMINE = "INDETERMINE", "Indéterminé"
+        # Donnée manquante (aucune date de fin connue), pas une règle métier.
+        INDETERMINE = "INDETERMINE", "Échéance inconnue"
 
     class Urgency(models.TextChoices):
         OK = "OK", "OK"
@@ -21,7 +22,6 @@ class MarketingAuthorization(models.Model):
         DEPOT_URGENT = "DEPOT_URGENT", "Dépôt urgent"
         CRITIQUE = "CRITIQUE", "Critique"
         EXPIRE = "EXPIRE", "Expirée"
-        EN_INSTRUCTION = "EN_INSTRUCTION", "En instruction"
 
     class DossierState(models.TextChoices):
         COMPLET = "COMPLET", "Dossier complet"
@@ -52,7 +52,9 @@ class MarketingAuthorization(models.Model):
     effective_end_date = models.DateField(
         "date de fin effective", null=True, blank=True, db_index=True
     )
-    filing_deadline = models.DateField("deadline de dépôt", null=True, blank=True)
+    # Calculées depuis la date de fin effective : voir services.status.
+    ideal_filing_date = models.DateField("dépôt idéal", null=True, blank=True)
+    agency_filing_deadline = models.DateField("limite agence", null=True, blank=True)
     # Calculé : la décision en vigueur porte son scan, ou non. Voir services.status.
     dossier_state = models.CharField(
         "état du dossier",
@@ -77,7 +79,8 @@ class MarketingAuthorization(models.Model):
         "status",
         "urgency",
         "effective_end_date",
-        "filing_deadline",
+        "ideal_filing_date",
+        "agency_filing_deadline",
         "dossier_state",
     )
 

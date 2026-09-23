@@ -4,10 +4,13 @@ import { Box, Chip, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAmm } from '@/api/hooks/useAmms';
+import { useReviewPoints } from '@/api/hooks/useDossierImports';
+import { ReviewPointsList } from '@/features/dossier-imports/ReviewPointsList';
 import { api } from '@/api/client';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { DossierChip, StatusChip, UrgencyChip } from '@/components/chips';
+import { FilingDates } from '@/components/FilingDates';
 import { formatDate, formatRemaining } from '@/lib/dates';
 import { canEditCountry, useAuthStore } from '@/features/auth/authStore';
 import { AmmDetailTab } from './AmmDetailTab';
@@ -38,6 +41,8 @@ export default function AmmDetailPage() {
   }, [renewalQuery.data, navigate]);
 
   const amm = useAmm(resolvedId);
+  // Points à vérifier plus tard laissés par l'import de dossiers (écarts scan ≠ fiche).
+  const points = useReviewPoints({ amm: resolvedId, status: 'OPEN' }, !!resolvedId);
   const user = useAuthStore((s) => s.user);
   const tabParam = searchParams.get('tab') as TabKey | null;
   const tab: TabKey = tabParam && TABS.includes(tabParam) ? tabParam : 'detail';
@@ -68,6 +73,7 @@ export default function AmmDetailPage() {
               {t('amm.fields.effectiveEnd')} : {formatDate(data.effective_end_date)} (
               {formatRemaining(data.effective_end_date)})
             </Typography>
+            <FilingDates ideal={data.ideal_filing_date} agency={data.agency_filing_deadline} />
           </Stack>
         }
       />
@@ -75,6 +81,11 @@ export default function AmmDetailPage() {
         <Typography variant="body2" color="warning.main" sx={{ mb: 1 }}>
           {t('amm.readOnly')}
         </Typography>
+      )}
+      {!!points.data?.length && (
+        <Box sx={{ mb: 2 }}>
+          <ReviewPointsList points={points.data} editable={editable} showBatch />
+        </Box>
       )}
       <Paper variant="outlined">
         <Tabs

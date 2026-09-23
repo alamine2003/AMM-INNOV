@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/features/auth/authStore';
+import i18n from '@/lib/i18n';
 
 export const API_BASE = `${import.meta.env.VITE_API_BASE ?? ''}/api/v1`;
 
@@ -67,6 +68,8 @@ export function extractErrorMessage(error: unknown, fallback = 'Une erreur est s
     // Messages DRF par défaut en anglais (« No X matches the given query. », « Not found. ») :
     // on parle français à l'utilisateur, et un 404 sur un objet hors périmètre reste un 404.
     if (status === 404) return 'Élément introuvable ou hors de votre périmètre.';
+    // Fichier absent du stockage (lots déposés avant le stockage permanent) : pas une panne.
+    if (status === 410) return i18n.t('errors.fileLost');
     if (status !== undefined && status >= 500) return `Erreur serveur (${status}) — réessayez plus tard.`;
     if (!error.response && error.request) return 'Serveur injoignable — vérifiez votre connexion.';
     const data = error.response?.data as Record<string, unknown> | string | undefined;

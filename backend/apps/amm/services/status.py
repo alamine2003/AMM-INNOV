@@ -1,14 +1,17 @@
 """Single source of truth for the computed state of an AMM (status, urgency, dates, dossier).
 
-Transcription of the workbook formula:
-- end = end_date of the most recent OBTENU renewal with an end date, else original_end_date;
-- pending = a renewal is DEPOSE or EN_INSTRUCTION;
-- end None -> IN_PROCESS if pending else INDETERMINE;
-- end >= today -> VALIDE; else IN_PROCESS if pending else EXPIRE.
+Règles métier (voir docs/workflow-amm.md) :
+- fin = date de fin du dernier renouvellement OBTENU et daté, sinon date de fin d'origine ;
+  un renouvellement non obtenu (planifié, déposé, en instruction, rejeté…) est ignoré ;
+- pas de date de fin -> INDETERMINE (« Échéance inconnue » : donnée manquante) ;
+- aujourd'hui > fin -> EXPIRE, même si un dépôt est en cours ;
+- aujourd'hui >= fin - 6 mois -> A_RENOUVELER (toujours valide) ;
+- sinon VALIDE.
+- dépôt idéal = fin - 6 mois (objectif interne) ; limite agence = fin - 3 mois.
 
-The dossier state follows the proof, not a declaration: the decision in force is the renewal
-that carries `end` (or the original AMM when no renewal does), and the dossier is complete when
-that decision has its scan attached.
+The dossier state follows the proof, not a declaration nor the validity: the decision in force
+is the renewal that carries `end` (or the original AMM when no renewal does), and the dossier is
+complete when that decision has its scan attached.
 """
 
 from dataclasses import dataclass
@@ -19,27 +22,35 @@ from dateutil.relativedelta import relativedelta
 from apps.core.dates import today as reference_today
 
 STATUS_VALIDE = "VALIDE"
+STATUS_A_RENOUVELER = "A_RENOUVELER"
 STATUS_EXPIRE = "EXPIRE"
-STATUS_IN_PROCESS = "IN_PROCESS"
 STATUS_INDETERMINE = "INDETERMINE"
+# Statuts d'une AMM en vigueur (non expirée) : « À renouveler » reste valide.
+IN_FORCE_STATUSES = (STATUS_VALIDE, STATUS_A_RENOUVELER)
 
 URGENCY_OK = "OK"
 URGENCY_A_PLANIFIER = "A_PLANIFIER"
 URGENCY_DEPOT_URGENT = "DEPOT_URGENT"
 URGENCY_CRITIQUE = "CRITIQUE"
 URGENCY_EXPIRE = "EXPIRE"
-URGENCY_EN_INSTRUCTION = "EN_INSTRUCTION"
 
 DOSSIER_COMPLET = "COMPLET"
 DOSSIER_INCOMPLET = "INCOMPLET"
 
 PENDING = ("DEPOSE", "EN_INSTRUCTION")
 
+# Règle 3 et 4 du responsable.
+RENEWAL_WINDOW_MONTHS = 6  # « À renouveler » dans les six mois précédant l'expiration
+IDEAL_FILING_MONTHS = 6  # dépôt idéal (objectif interne)
+AGENCY_FILING_MONTHS = 3  # limite de l'agence
+PLANNING_HORIZON_DAYS = 365  # urgence « À planifier » (règle d'alerte J-365 conservée)
+
 
 @dataclass(frozen=True)
 class AmmState:
     effective_end_date: date | None
-    filing_deadline: date | None
+    ideal_filing_date: date | None
+    agency_filing_deadline: date | None
     status: str
     urgency: str
     dossier_state: str = DOSSIER_INCOMPLET
@@ -47,7 +58,8 @@ class AmmState:
 
     def apply_to(self, amm) -> None:
         amm.effective_end_date = self.effective_end_date
-        amm.filing_deadline = self.filing_deadline
+        amm.ideal_filing_date = self.ideal_filing_date
+        amm.agency_filing_deadline = self.agency_filing_deadline
         amm.status = self.status
         amm.urgency = self.urgency
         amm.dossier_state = self.dossier_state
@@ -55,26 +67,47 @@ class AmmState:
     def differs_from(self, amm) -> bool:
         return (
             amm.effective_end_date != self.effective_end_date
-            or amm.filing_deadline != self.filing_deadline
+            or amm.ideal_filing_date != self.ideal_filing_date
+            or amm.agency_filing_deadline != self.agency_filing_deadline
             or amm.status != self.status
             or amm.urgency != self.urgency
             or amm.dossier_state != self.dossier_state
         )
 
 
-def derive_urgency(status: str, end: date | None, pending: bool, today: date) -> str:
+def ideal_filing_date(end: date | None) -> date | None:
+    return end - relativedelta(months=IDEAL_FILING_MONTHS) if end else None
+
+
+def agency_filing_deadline(end: date | None) -> date | None:
+    return end - relativedelta(months=AGENCY_FILING_MONTHS) if end else None
+
+
+def derive_status(end: date | None, today: date) -> str:
+    """Statut de validité, fonction de la seule date de fin de l'AMM actuelle."""
+    if end is None:
+        return STATUS_INDETERMINE
+    if today > end:
+        return STATUS_EXPIRE
+    if today >= end - relativedelta(months=RENEWAL_WINDOW_MONTHS):
+        return STATUS_A_RENOUVELER
+    return STATUS_VALIDE
+
+
+def derive_urgency(status: str, end: date | None, today: date) -> str:
+    """Urgence de dépôt, alignée sur les dates du responsable (aucune règle en plus) :
+    limite agence atteinte -> CRITIQUE ; dépôt idéal atteint -> DEPOT_URGENT ;
+    échéance sous un an -> A_PLANIFIER ; expirée -> EXPIRE. Un dépôt en cours ne la masque plus.
+    """
     if status == STATUS_EXPIRE:
         return URGENCY_EXPIRE
-    if pending:
-        return URGENCY_EN_INSTRUCTION
     if end is None:
         return URGENCY_A_PLANIFIER
-    remaining = (end - today).days
-    if remaining <= 90:
+    if today >= agency_filing_deadline(end):
         return URGENCY_CRITIQUE
-    if remaining <= 180:
+    if today >= ideal_filing_date(end):
         return URGENCY_DEPOT_URGENT
-    if remaining <= 365:
+    if (end - today).days <= PLANNING_HORIZON_DAYS:
         return URGENCY_A_PLANIFIER
     return URGENCY_OK
 
@@ -99,6 +132,7 @@ def derive_dossier_state(amm, decision, documents=None) -> str:
 
     `decision` is the renewal that sets the effective end date, or None for the original AMM.
     `documents` may be passed by callers that already hold an up-to-date list.
+    Never depends on the validity: an expired AMM whose decision is scanned stays COMPLET.
     """
     from apps.documents.models import Document
 
@@ -113,6 +147,12 @@ def derive_dossier_state(amm, decision, documents=None) -> str:
     return DOSSIER_COMPLET if proven else DOSSIER_INCOMPLET
 
 
+def current_decision(renewals):
+    """Le dernier renouvellement OBTENU et daté (document actuel), ou None pour l'origine."""
+    obtained = [r for r in renewals if r.workflow_status == "OBTENU" and r.end_date]
+    return max(obtained, key=lambda r: r.sequence) if obtained else None
+
+
 def compute_amm_state(amm, today: date | None = None, renewals=None, documents=None) -> AmmState:
     """Computes the state without writing it. `renewals`/`documents` avoid queries."""
     today = today or reference_today()
@@ -123,29 +163,20 @@ def compute_amm_state(amm, today: date | None = None, renewals=None, documents=N
         from apps.amm.models import Renewal
 
         renewals = list(Renewal.objects.filter(amm_id=amm.pk)) if amm.pk else []
-    obtained = [r for r in renewals if r.workflow_status == "OBTENU" and r.end_date]
-    last = max(obtained, key=lambda r: r.sequence) if obtained else None
+    last = current_decision(renewals)
     pending = any(r.workflow_status in PENDING for r in renewals)
+    end = last.end_date if last is not None else amm.original_end_date
 
-    if last is not None:
-        end = last.end_date
-    elif amm.original_end_date:
-        end = amm.original_end_date
-    else:
-        end = None
-
-    if end is None:
-        status = STATUS_IN_PROCESS if pending else STATUS_INDETERMINE
-    elif end >= today:
-        status = STATUS_VALIDE
-    else:
-        status = STATUS_IN_PROCESS if pending else STATUS_EXPIRE
-
-    lead_months = amm.country.filing_lead_months if amm.country_id else 6
-    deadline = end - relativedelta(months=lead_months) if end else None
-    urgency = derive_urgency(status, end, pending, today)
-    dossier = derive_dossier_state(amm, last, documents)
-    return AmmState(end, deadline, status, urgency, dossier, pending)
+    status = derive_status(end, today)
+    return AmmState(
+        effective_end_date=end,
+        ideal_filing_date=ideal_filing_date(end),
+        agency_filing_deadline=agency_filing_deadline(end),
+        status=status,
+        urgency=derive_urgency(status, end, today),
+        dossier_state=derive_dossier_state(amm, last, documents),
+        pending=pending,
+    )
 
 
 def apply_state(amm, today: date | None = None, save: bool = True) -> AmmState:
@@ -169,7 +200,8 @@ def recompute_quietly(amm, today: date | None = None, renewals=None, documents=N
         status=state.status,
         urgency=state.urgency,
         effective_end_date=state.effective_end_date,
-        filing_deadline=state.filing_deadline,
+        ideal_filing_date=state.ideal_filing_date,
+        agency_filing_deadline=state.agency_filing_deadline,
         dossier_state=state.dossier_state,
     )
     return True

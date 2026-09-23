@@ -12,7 +12,6 @@ class CountrySerializer(serializers.ModelSerializer):
             "name",
             "authority",
             "validity_years",
-            "filing_lead_months",
             "timezone",
         ]
 

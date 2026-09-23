@@ -15,7 +15,6 @@ class Country(models.Model):
     name = models.CharField("nom", max_length=100)
     authority = models.CharField("autorité réglementaire", max_length=200, blank=True)
     validity_years = models.PositiveSmallIntegerField("durée de validité (années)", default=5)
-    filing_lead_months = models.PositiveSmallIntegerField("délai de dépôt (mois)", default=6)
     timezone = models.CharField("fuseau horaire", max_length=64, default="Africa/Dakar")
     history = HistoricalRecords()
 

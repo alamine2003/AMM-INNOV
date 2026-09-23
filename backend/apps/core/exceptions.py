@@ -25,6 +25,20 @@ class StorageUnavailable(APIException):
     default_code = "storage_unavailable"
 
 
+class StoredFileLost(APIException):
+    """Fichier absent du stockage : lot déposé avant le stockage permanent (disque éphémère).
+
+    410 et code explicite, plutôt qu'un 503 « réessayez » qui ne réussira jamais.
+    """
+
+    status_code = status.HTTP_410_GONE
+    default_detail = (
+        "Fichier perdu (stocké avant la mise en place du stockage permanent) : "
+        "réimportez ce dossier."
+    )
+    default_code = "file_lost"
+
+
 def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None and isinstance(exc, OperationalError | InterfaceError):

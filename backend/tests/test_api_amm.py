@@ -62,7 +62,10 @@ def test_create_amm_renewal_and_transition_resolves_alert(
     )
     assert created.status_code == 201, created.json()
     amm = created.json()
-    assert amm["status"] == "VALIDE" and amm["urgency"] == "DEPOT_URGENT"
+    # ~170 jours : dans la fenêtre des six mois, l'AMM est « À renouveler » (toujours valide),
+    # dépôt idéal dépassé, limite agence pas encore atteinte.
+    assert amm["status"] == "A_RENOUVELER" and amm["urgency"] == "DEPOT_URGENT"
+    assert amm["ideal_filing_date"] < TODAY.isoformat() < amm["agency_filing_deadline"]
     assert (
         amm["original_end_date"] == (start + timedelta(days=365 * 5 + 1)).isoformat()
         or amm["original_end_date"]
@@ -104,7 +107,9 @@ def test_create_amm_renewal_and_transition_resolves_alert(
     alert = Alert.objects.get(amm_id=amm["id"], rule__code="J-180")
     assert alert.status == "RESOLVED" and alert.resolution == "AUTO_FILED"
     detail = country_client.get(f"/api/v1/amms/{amm['id']}").json()
-    assert detail["urgency"] == "EN_INSTRUCTION" and detail["pending_renewal_id"] == renewal_id
+    # Le dépôt est une information sur le renouvellement : l'AMM reste « À renouveler ».
+    assert detail["status"] == "A_RENOUVELER" and detail["urgency"] == "DEPOT_URGENT"
+    assert detail["pending_renewal_id"] == renewal_id
 
     obtained = country_client.post(
         f"/api/v1/renewals/{renewal_id}/transition",

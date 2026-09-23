@@ -77,6 +77,12 @@ def test_official_wrong_number_matches_product_country_and_proposes_traceable_co
     assert correction["new"] == "AMM/SN/2025/00152"
     assert correction["requires_confirmation"]
     assert correction["proof_file_id"] == str(proof.pk)
+    # L'écart n'est pas appliqué : il devient un point à vérifier plus tard, sans blocage.
+    point = next(p for p in preview["review_points"] if p["code"] == "value_mismatch")
+    assert (point["target"], point["field"]) == ("amm", "original_number")
+    assert (point["recorded"], point["scan"]) == ("AMM/SN/2025/00125", "AMM/SN/2025/00152")
+    assert "la fiche indique « AMM/SN/2025/00125 »" in point["message"]
+    assert preview["question"] is None
     amm.refresh_from_db()
     assert amm.original_number == "AMM/SN/2025/00125"
     assert preview == build_preview(batch)
@@ -96,13 +102,18 @@ def test_notice_does_not_override_official_decision(batch, product, make_amm):
     )
 
 
-def test_conflicting_official_decisions_block(batch, product, make_amm):
+def test_conflicting_official_decisions_are_a_point_not_a_blocker(batch, product, make_amm):
     make_amm(product_obj=product)
     staged(batch, "AMM_ORIGINE/decision.pdf", decision(product))
     staged(batch, "AMM_ORIGINE/autre.pdf", decision(product, number="AMM/SN/2025/00222"))
     preview = build_preview(batch)
-    assert not preview["can_apply"]
-    assert any("contradictoires" in item for item in preview["blockers"])
+    assert preview["can_apply"] and preview["question"] is None
+    # Aucune des deux lectures n'est reprise ; le doute est noté.
+    assert preview["original"]["original_number"] == ""
+    assert any(
+        p["code"] == "contradiction" and "se contredisent" in p["message"]
+        for p in preview["review_points"]
+    )
 
 
 def test_multiple_renewals_keep_original_and_existing_renewal_separate(
@@ -144,7 +155,7 @@ def test_country_user_never_sees_out_of_scope_candidate(batch, product, make_amm
     staged(batch, "AMM_ORIGINE/decision.pdf", decision(product, country="Côte d'Ivoire"))
     preview = build_preview(batch)
     assert not preview["can_apply"] and preview["candidates"] == []
-    assert any("périmètre" in item for item in preview["blockers"])
+    assert any("périmètre" in item for item in preview["question"]["reasons"])
 
 
 def test_mixed_products_or_countries_block(batch, product):
@@ -153,8 +164,8 @@ def test_mixed_products_or_countries_block(batch, product):
     staged(batch, "AMM_ORIGINE/autre.pdf", decision(second, country="Mali"))
     preview = build_preview(batch)
     assert not preview["can_apply"]
-    assert any("plusieurs produits" in item for item in preview["blockers"])
-    assert any("plusieurs pays" in item for item in preview["blockers"])
+    assert any("plusieurs produits" in item for item in preview["question"]["reasons"])
+    assert any("plusieurs pays" in item for item in preview["question"]["reasons"])
 
 
 def test_same_amm_number_with_different_product_never_matches(batch, product, make_amm):
@@ -162,32 +173,50 @@ def test_same_amm_number_with_different_product_never_matches(batch, product, ma
     make_amm(product_obj=other, original_number="AMM/SN/2025/00152")
     staged(batch, "AMM_ORIGINE/decision.pdf", decision(product))
     preview = build_preview(batch)
-    assert preview["amm"]["id"] is None and preview["can_apply"]
+    # Produit sans AMM dans le pays : question « quelle AMM ? », jamais de création d'office ;
+    # le siège peut la créer depuis le dossier (décision d'origine lisible).
+    assert preview["amm"]["id"] is None and not preview["can_apply"]
+    assert preview["question"]["codes"] == ["no_amm"]
+    assert preview["question"]["can_create"]
 
 
-def test_ocr_reliability_requires_review(batch, product, make_amm):
+def test_ocr_reading_no_longer_blocks_nor_overwrites(batch, product, make_amm):
     make_amm(product_obj=product)
     staged(batch, "AMM_ORIGINE/decision.pdf", decision(product), source="ocr", confidence=80)
     preview = build_preview(batch)
     assert preview["can_apply"] and preview["level"] == "MEDIUM"
-    assert all(row["requires_confirmation"] for row in preview["changes"])
+    # Champ vide : complété quelle que soit la fiabilité ; valeur renseignée : point à vérifier.
+    by_field = {row["field"]: row for row in preview["changes"]}
+    assert not by_field["holder"]["requires_confirmation"]
+    assert by_field["original_number"]["requires_confirmation"]
+    assert {p["field"] for p in preview["review_points"] if p["code"] == "value_mismatch"} == {
+        "original_number",
+        "original_start_date",
+    }
 
 
-def test_filename_only_cannot_create_or_modify(batch, product, make_amm):
+def test_filename_only_ranges_the_scan_but_modifies_nothing(batch, product, make_amm):
     make_amm(product_obj=product)
     staged(batch, f"SN/{product.name}/AMM_ORIGINE/decision.pdf", "", confidence=0)
     preview = build_preview(batch)
-    assert not preview["can_apply"] and preview["level"] == "LOW"
+    # AMM identifiée par le chemin (produit + pays) : le scan est rangé, rien n'est modifié.
+    assert preview["can_apply"] and preview["level"] == "LOW"
     assert preview["changes"] == []
+    assert preview["documents"][0]["kind"] == "AUTRE"
+    messages = [p["message"] for p in preview["review_points"]]
+    assert any("Aucune décision officielle lisible" in message for message in messages)
 
 
-def test_renewal_without_dated_decision_is_blocked(batch, product, make_amm):
+def test_renewal_without_dated_decision_is_a_point(batch, product, make_amm):
     make_amm(product_obj=product)
     staged(batch, "AMM_ORIGINE/decision.pdf", decision(product))
     staged(batch, "RENOUVELLEMENT_2030/notice.pdf", "Notice du médicament")
     preview = build_preview(batch)
-    assert not preview["can_apply"]
-    assert any("décision officielle datée" in item for item in preview["blockers"])
+    assert preview["can_apply"] and preview["renewals"] == []
+    notice = next(doc for doc in preview["documents"] if doc["path"].endswith("notice.pdf"))
+    assert notice["period"] == "unplaced"
+    point = next(p for p in preview["review_points"] if p["code"] == "unplaced")
+    assert "Renouvellement de 2030 : aucune décision datée lisible" in point["message"]
 
 
 def test_same_file_in_different_periods_is_blocked(batch, product, make_amm):
@@ -200,8 +229,8 @@ def test_same_file_in_different_periods_is_blocked(batch, product, make_amm):
         digest="a" * 64,
     )
     preview = build_preview(batch)
-    assert not preview["can_apply"]
-    assert any("fichier apparaît" in item for item in preview["blockers"])
+    assert preview["can_apply"]
+    assert any("figure dans deux périodes" in p["message"] for p in preview["review_points"])
 
 
 def blank_pdf():

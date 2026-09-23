@@ -38,7 +38,6 @@ export interface Country {
   name: string;
   authority: string;
   validity_years: number;
-  filing_lead_months: number;
   timezone: string;
 }
 
@@ -61,8 +60,9 @@ export interface Product {
   aliases: string[];
 }
 
-export type AmmStatus = 'VALIDE' | 'EXPIRE' | 'IN_PROCESS' | 'INDETERMINE';
-export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE' | 'EN_INSTRUCTION';
+/** Statut de validité de l'AMM actuelle ; INDETERMINE = aucune date de fin connue. */
+export type AmmStatus = 'VALIDE' | 'A_RENOUVELER' | 'EXPIRE' | 'INDETERMINE';
+export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPIRE';
 export type DossierState = 'COMPLET' | 'INCOMPLET';
 export type WorkflowStatus =
   'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
@@ -92,11 +92,16 @@ export interface Amm {
   status: AmmStatus;
   urgency: Urgency;
   effective_end_date: string | null;
-  filing_deadline: string | null;
+  /** Dépôt idéal : fin − 6 mois (objectif interne). */
+  ideal_filing_date: string | null;
+  /** Limite agence : fin − 3 mois. */
+  agency_filing_deadline: string | null;
   dossier_state: DossierState;
   notes: string;
   owner: string | null;
   has_current_scan: boolean;
+  /** Points à vérifier plus tard (import de dossiers) encore ouverts. */
+  open_review_points?: number;
   last_renewal: LastRenewal | null;
   updated_at: string;
 }
@@ -289,8 +294,8 @@ export interface AfricaRow {
   country_name: string;
   total: number;
   valid: number;
+  to_renew: number;
   expired: number;
-  in_process: number;
   undetermined: number;
   pct_valid: number;
   expiring_6m: number;
@@ -386,12 +391,37 @@ export interface DossierImportChange {
   requires_confirmation: boolean;
 }
 
+/** Point à vérifier plus tard prévu par l'analyse (écart scan ≠ fiche, doute de lecture…). */
+export interface DossierImportPlannedPoint {
+  code: string;
+  message: string;
+  target: string | null;
+  field: string;
+  recorded: unknown;
+  scan: unknown;
+  proof_file_id: string | null;
+  confidence: number;
+}
+
+/** Seul cas bloquant : l'AMM cible n'est pas identifiable. */
+export interface DossierImportQuestion {
+  reasons: string[];
+  codes: string[];
+  /** Le siège peut créer l'AMM absente depuis le dossier (décision d'origine lisible). */
+  can_create: boolean;
+}
+
 export interface DossierImportPreview {
-  version: 1;
+  version: number;
+  /** Fiabilité de la lecture : information de détail, sans effet sur le rangement. */
   confidence: number;
   level: 'HIGH' | 'MEDIUM' | 'LOW';
   can_apply: boolean;
   blockers: string[];
+  question?: DossierImportQuestion | null;
+  review_points?: DossierImportPlannedPoint[];
+  /** AMM choisie à la main en réponse à la question. */
+  forced?: boolean;
   warnings: string[];
   amm: {
     id: string | null;
@@ -413,6 +443,7 @@ export interface DossierImportPreview {
     file_id: string;
     path: string;
     kind: string;
+    /** `original`, clé de renouvellement, ou `unplaced` (période non déterminée). */
     period: string;
     document_date: string | null;
     duplicate_id: string | null;
@@ -430,9 +461,7 @@ export interface DossierImportPreview {
     proof_file_id: string | null;
   }[];
   changes: DossierImportChange[];
-  /** Avertissements sur le numéro d'AMM (sous-ensemble de `warnings`). */
-  number_warnings?: string[];
-  /** Ce que sera l'AMM après validation, hors corrections choisies (absent des anciens aperçus). */
+  /** Ce que sera l'AMM une fois rangée (absent des anciens aperçus). */
   projection?: DossierImportProjection | null;
 }
 
@@ -448,7 +477,9 @@ export interface DossierImportTimelineStep {
 
 export interface DossierImportProjection {
   effective_end_date: string | null;
-  status: string;
+  ideal_filing_date: string | null;
+  agency_filing_deadline: string | null;
+  status: AmmStatus;
   dossier_state: DossierState;
   missing_scan: string | null;
   includes_corrections: boolean;
@@ -469,10 +500,35 @@ export interface DossierImportAudit {
   reason: string;
 }
 
+export type DossierImportStatus = 'PENDING' | 'RUNNING' | 'READY' | 'QUESTION' | 'APPLIED' | 'FAILED';
+
+/** Point à vérifier plus tard, enregistré sur la fiche AMM : appliquer la valeur du scan ou ignorer. */
+export interface DossierReviewPoint {
+  id: string;
+  batch_id: string;
+  batch_name: string;
+  amm_id: string;
+  renewal_id: string | null;
+  code: string;
+  field: string;
+  message: string;
+  recorded_value: unknown;
+  scan_value: unknown;
+  proof_file_id: string | null;
+  proof_name: string | null;
+  proof_content_type: string | null;
+  confidence: number;
+  applicable: boolean;
+  status: 'OPEN' | 'APPLIED' | 'IGNORED';
+  resolved_by_email: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
 export interface DossierImportBatch {
   id: string;
   root_name: string;
-  status: 'PENDING' | 'RUNNING' | 'READY' | 'APPLIED' | 'FAILED';
+  status: DossierImportStatus;
   preview: DossierImportPreview | null;
   preview_token: string;
   created_at: string;
@@ -483,8 +539,10 @@ export interface DossierImportBatch {
   audit: DossierImportAudit[];
   /** Bilan réel après validation ; objet vide tant que l'import n'est pas validé. */
   summary?: DossierImportSummary | Record<string, never>;
-  /** Validé sans intervention : lecture sûre, aucune valeur enregistrée remplacée. */
+  /** Rangé sans intervention dès l'AMM identifiée ; aucune valeur enregistrée remplacée. */
   auto_applied?: boolean;
+  review_points?: DossierReviewPoint[];
+  open_points_count?: number;
 }
 
 export const hasSummary = (summary: DossierImportBatch['summary']): summary is DossierImportSummary =>
@@ -509,6 +567,8 @@ export interface DossierImportSummary {
   fields_changed: { target: 'amm' | 'renewal'; field: string; label: string; old: unknown; new: unknown }[];
   documents: { title: string; kind: string; period: 'original' | 'renewal' }[];
   missing_scan: string | null;
+  /** Nombre de points à vérifier plus tard notés au rangement. */
+  review_points?: number;
   lines: string[];
 }
 

@@ -70,6 +70,11 @@ STATUS_MAP = {
     "EXPIREE": "EXPIRE",
     "EXPIRÉ": "EXPIRE",
     "EXPIRÉE": "EXPIRE",
+    "A RENOUVELER": "A_RENOUVELER",
+    "À RENOUVELER": "A_RENOUVELER",
+    "A_RENOUVELER": "A_RENOUVELER",
+    # Colonne « statut » du classeur : « IN PROCESS » y décrit un renouvellement en cours ; ce
+    # n'est plus un statut d'AMM (gardé tel quel, ignoré à la comparaison, voir services).
     "IN PROCESS": "IN_PROCESS",
     "IN_PROCESS": "IN_PROCESS",
     "EN COURS": "IN_PROCESS",

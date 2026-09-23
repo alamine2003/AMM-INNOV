@@ -37,7 +37,7 @@ flowchart LR
 
 ## Règles clés
 - `date_fin = date_debut + 5 ans` (paramétrable par pays, surcharge manuelle tracée).
-- Statut, transcription de la formule Excel : dernier renouvellement obtenu → sa date de fin ; sinon date de fin d'origine ; `VALIDE` si ≥ aujourd'hui, `EXPIRE` sinon ; `IN_PROCESS` si un dépôt est en cours ; `INDETERMINE` si aucune date exploitable.
+- Statut (voir `docs/workflow-amm.md`) : dernier renouvellement **obtenu** → sa date de fin ; sinon date de fin d'origine ; `EXPIRE` si aujourd'hui dépasse cette date (même si un dépôt est en cours), `A_RENOUVELER` dans les six mois qui la précèdent, `VALIDE` avant, `INDETERMINE` si aucune date connue. Dépôt idéal = fin − 6 mois, limite agence = fin − 3 mois.
 - Urgence : OK (> 12 mois), A_PLANIFIER (6–12), DEPOT_URGENT (≤ 6 sans dépôt), CRITIQUE (≤ 3 sans dépôt), EXPIRE, EN_INSTRUCTION.
 - Alertes par défaut : J-365, **J-180 (deadline de dépôt)**, J-90, J-30, J0, décision en retard, dossier incomplet. Résolution automatique dès qu'un dépôt ou une obtention est enregistré.
 

@@ -514,9 +514,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -532,7 +532,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -908,9 +907,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -926,7 +925,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -1035,9 +1033,9 @@ paths:
             type: string
             title: Statut
             enum:
+            - A_RENOUVELER
             - EXPIRE
             - INDETERMINE
-            - IN_PROCESS
             - VALIDE
         description: Les valeurs multiples doivent être séparées par des virgules.
         explode: false
@@ -1053,7 +1051,6 @@ paths:
             - A_PLANIFIER
             - CRITIQUE
             - DEPOT_URGENT
-            - EN_INSTRUCTION
             - EXPIRE
             - OK
         description: Les valeurs multiples doivent être séparées par des virgules.
@@ -1794,6 +1791,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/DossierImport'
           description: ''
+  /api/v1/dossier-imports/{id}/choose-amm/:
+    post:
+      operationId: v1_dossier_imports_choose_amm_create
+      description: '« Ranger les documents ici » : l''AMM choisie, le dossier est
+        relu puis rangé.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier import.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DossierChooseAmmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DossierChooseAmmRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierChooseAmmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierImport'
+          description: ''
   /api/v1/dossier-imports/{id}/confirm/:
     post:
       operationId: v1_dossier_imports_confirm_create
@@ -1856,6 +1889,137 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
+        '410':
+          description: No response body
+  /api/v1/dossier-review-points/:
+    get:
+      operationId: v1_dossier_review_points_list
+      description: Points à vérifier plus tard, par AMM ou par lot, dans le périmètre
+        de l'utilisateur.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DossierReviewPoint'
+          description: ''
+  /api/v1/dossier-review-points/{id}/:
+    get:
+      operationId: v1_dossier_review_points_retrieve
+      description: Points à vérifier plus tard, par AMM ou par lot, dans le périmètre
+        de l'utilisateur.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier review point.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierReviewPoint'
+          description: ''
+  /api/v1/dossier-review-points/{id}/apply/:
+    post:
+      operationId: v1_dossier_review_points_apply_create
+      description: '« Appliquer la valeur du scan » : remplace la valeur de la fiche
+        (audit, recalcul).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier review point.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierReviewPoint'
+          description: ''
+  /api/v1/dossier-review-points/{id}/file/:
+    get:
+      operationId: v1_dossier_review_points_file_retrieve
+      description: Le scan de preuve du point (réglementaires du pays compris, sans
+        accès au lot).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier review point.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '410':
+          description: No response body
+  /api/v1/dossier-review-points/{id}/ignore/:
+    post:
+      operationId: v1_dossier_review_points_ignore_create
+      description: '« Ignorer » : la fiche reste telle quelle, le point est fermé.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) dossier review point.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierReviewPoint'
           description: ''
   /api/v1/health/:
     get:
@@ -3417,12 +3581,18 @@ components:
           readOnly: true
           nullable: true
           title: Date de fin effective
-        filing_deadline:
+        ideal_filing_date:
           type: string
           format: date
           readOnly: true
           nullable: true
-          title: Deadline de dépôt
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
         days_remaining:
           type: integer
           nullable: true
@@ -3447,6 +3617,10 @@ components:
           type: boolean
           readOnly: true
           default: false
+        open_review_points:
+          type: integer
+          readOnly: true
+          default: 0
         last_renewal:
           allOf:
           - $ref: '#/components/schemas/LastRenewal'
@@ -3470,6 +3644,7 @@ components:
           nullable: true
           readOnly: true
       required:
+      - agency_filing_deadline
       - country
       - country_iso2
       - country_name
@@ -3477,10 +3652,11 @@ components:
       - days_remaining
       - dossier_state
       - effective_end_date
-      - filing_deadline
       - has_current_scan
       - id
+      - ideal_filing_date
       - last_renewal
+      - open_review_points
       - owner_email
       - pending_renewal_id
       - product
@@ -3600,12 +3776,18 @@ components:
           readOnly: true
           nullable: true
           title: Date de fin effective
-        filing_deadline:
+        ideal_filing_date:
           type: string
           format: date
           readOnly: true
           nullable: true
-          title: Deadline de dépôt
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
         days_remaining:
           type: integer
           nullable: true
@@ -3630,6 +3812,10 @@ components:
           type: boolean
           readOnly: true
           default: false
+        open_review_points:
+          type: integer
+          readOnly: true
+          default: 0
         last_renewal:
           allOf:
           - $ref: '#/components/schemas/LastRenewal'
@@ -3644,6 +3830,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - agency_filing_deadline
       - country
       - country_iso2
       - country_name
@@ -3651,10 +3838,11 @@ components:
       - days_remaining
       - dossier_state
       - effective_end_date
-      - filing_deadline
       - has_current_scan
       - id
+      - ideal_filing_date
       - last_renewal
+      - open_review_points
       - owner_email
       - product
       - product_name
@@ -3708,15 +3896,15 @@ components:
     AmmStatusEnum:
       enum:
       - VALIDE
+      - A_RENOUVELER
       - EXPIRE
-      - IN_PROCESS
       - INDETERMINE
       type: string
       description: |-
         * `VALIDE` - Valide
+        * `A_RENOUVELER` - À renouveler
         * `EXPIRE` - Expirée
-        * `IN_PROCESS` - En cours d'instruction
-        * `INDETERMINE` - Indéterminé
+        * `INDETERMINE` - Échéance inconnue
     ChannelEnum:
       enum:
       - IN_APP
@@ -3749,11 +3937,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           title: Fuseau horaire
@@ -3784,11 +3967,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           minLength: 1
@@ -4150,20 +4328,27 @@ components:
       - source
       - target
       - user_email
+    DossierChooseAmmRequest:
+      type: object
+      description: Réponse à la question « c'est quelle AMM ? ».
+      properties:
+        amm_id:
+          type: string
+          format: uuid
+      required:
+      - amm_id
     DossierConfirmRequest:
       type: object
+      description: « Ranger les documents » (lot prêt), ou création de l'AMM absente
+        par le siège.
       properties:
         preview_token:
           type: string
           minLength: 64
           maxLength: 64
-        accepted_changes:
-          type: array
-          items:
-            type: string
-            minLength: 1
-            maxLength: 200
-          maxItems: 1000
+        create_amm:
+          type: boolean
+          default: false
       required:
       - preview_token
     DossierFile:
@@ -4251,6 +4436,14 @@ components:
         auto_applied:
           type: boolean
           readOnly: true
+        review_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReviewPoint'
+          readOnly: true
+        open_points_count:
+          type: integer
+          readOnly: true
       required:
       - amm_id
       - audit
@@ -4260,8 +4453,10 @@ components:
       - files
       - finished_at
       - id
+      - open_points_count
       - preview
       - preview_token
+      - review_points
       - root_name
       - status
       - summary
@@ -4270,15 +4465,124 @@ components:
       - PENDING
       - RUNNING
       - READY
+      - QUESTION
       - APPLIED
       - FAILED
       type: string
       description: |-
         * `PENDING` - En attente
         * `RUNNING` - Analyse en cours
-        * `READY` - À valider
-        * `APPLIED` - Enregistré
+        * `READY` - Prêt à ranger
+        * `QUESTION` - Question : quelle AMM ?
+        * `APPLIED` - Rangé
         * `FAILED` - Analyse échouée
+    DossierReviewPoint:
+      type: object
+      description: 'Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée)
+        ou doute de lecture.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        batch_id:
+          type: string
+          format: uuid
+          readOnly: true
+        batch_name:
+          type: string
+          readOnly: true
+        amm_id:
+          type: string
+          format: uuid
+          readOnly: true
+        renewal_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        code:
+          type: string
+          readOnly: true
+        field:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        recorded_value:
+          readOnly: true
+          nullable: true
+        scan_value:
+          readOnly: true
+          nullable: true
+        proof_file_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        proof_name:
+          type: string
+          nullable: true
+          readOnly: true
+        proof_content_type:
+          type: string
+          readOnly: true
+          nullable: true
+        confidence:
+          type: integer
+          readOnly: true
+        applicable:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DossierReviewPointStatusEnum'
+          readOnly: true
+        resolved_by_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amm_id
+      - applicable
+      - batch_id
+      - batch_name
+      - code
+      - confidence
+      - created_at
+      - field
+      - id
+      - message
+      - proof_content_type
+      - proof_file_id
+      - proof_name
+      - recorded_value
+      - renewal_id
+      - resolved_at
+      - resolved_by_email
+      - scan_value
+      - status
+    DossierReviewPointStatusEnum:
+      enum:
+      - OPEN
+      - APPLIED
+      - IGNORED
+      type: string
+      description: |-
+        * `OPEN` - À vérifier
+        * `APPLIED` - Valeur du scan appliquée
+        * `IGNORED` - Ignoré
     DossierStateEnum:
       enum:
       - COMPLET
@@ -4602,10 +4906,18 @@ components:
         amm_id:
           type: string
           format: uuid
+          nullable: true
           readOnly: true
         severity:
           type: string
+          nullable: true
           readOnly: true
+        reminder_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Rappel du
         channel:
           allOf:
           - $ref: '#/components/schemas/ChannelEnum'
@@ -4652,6 +4964,7 @@ components:
       - is_read
       - link
       - read_at
+      - reminder_date
       - sent_at
       - severity
       - title
@@ -5076,11 +5389,6 @@ components:
           maximum: 32767
           minimum: 0
           title: Durée de validité (années)
-        filing_lead_months:
-          type: integer
-          maximum: 32767
-          minimum: 0
-          title: Délai de dépôt (mois)
         timezone:
           type: string
           minLength: 1
@@ -5514,7 +5822,6 @@ components:
       - DEPOT_URGENT
       - CRITIQUE
       - EXPIRE
-      - EN_INSTRUCTION
       type: string
       description: |-
         * `OK` - OK
@@ -5522,7 +5829,6 @@ components:
         * `DEPOT_URGENT` - Dépôt urgent
         * `CRITIQUE` - Critique
         * `EXPIRE` - Expirée
-        * `EN_INSTRUCTION` - En instruction
     User:
       type: object
       properties:

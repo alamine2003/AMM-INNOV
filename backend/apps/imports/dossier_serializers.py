@@ -1,8 +1,8 @@
-"""Read-only dossier plans and explicit confirmation requests."""
+"""Lots de dossiers importés, points à vérifier plus tard, et demandes (question, rangement)."""
 
 from rest_framework import serializers
 
-from .models import DossierChange, DossierFile, DossierImport
+from .models import DossierChange, DossierFile, DossierImport, DossierReviewPoint
 
 
 class DossierFileSerializer(serializers.ModelSerializer):
@@ -52,10 +52,63 @@ class DossierChangeSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class DossierReviewPointSerializer(serializers.ModelSerializer):
+    """Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée) ou doute de lecture."""
+
+    batch_id = serializers.UUIDField(read_only=True)
+    batch_name = serializers.CharField(source="batch.root_name", read_only=True)
+    amm_id = serializers.UUIDField(read_only=True)
+    renewal_id = serializers.UUIDField(read_only=True, allow_null=True)
+    proof_file_id = serializers.UUIDField(read_only=True, allow_null=True)
+    proof_name = serializers.SerializerMethodField()
+    proof_content_type = serializers.CharField(
+        source="proof_file.content_type", read_only=True, allow_null=True, default=None
+    )
+    applicable = serializers.BooleanField(read_only=True)
+    resolved_by_email = serializers.EmailField(
+        source="resolved_by.email", read_only=True, allow_null=True, default=None
+    )
+
+    def get_proof_name(self, obj) -> str | None:
+        return obj.proof_file.relative_path.rsplit("/", 1)[-1] if obj.proof_file_id else None
+
+    class Meta:
+        model = DossierReviewPoint
+        fields = [
+            "id",
+            "batch_id",
+            "batch_name",
+            "amm_id",
+            "renewal_id",
+            "code",
+            "field",
+            "message",
+            "recorded_value",
+            "scan_value",
+            "proof_file_id",
+            "proof_name",
+            "proof_content_type",
+            "confidence",
+            "applicable",
+            "status",
+            "resolved_by_email",
+            "resolved_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class DossierImportSerializer(serializers.ModelSerializer):
     files = DossierFileSerializer(many=True, read_only=True)
     audit = DossierChangeSerializer(many=True, read_only=True)
+    review_points = DossierReviewPointSerializer(many=True, read_only=True)
+    open_points_count = serializers.SerializerMethodField()
     amm_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    def get_open_points_count(self, obj) -> int:
+        return sum(
+            1 for point in obj.review_points.all() if point.status == DossierReviewPoint.Status.OPEN
+        )
 
     class Meta:
         model = DossierImport
@@ -73,6 +126,8 @@ class DossierImportSerializer(serializers.ModelSerializer):
             "audit",
             "summary",
             "auto_applied",
+            "review_points",
+            "open_points_count",
         ]
         read_only_fields = fields
 
@@ -90,12 +145,16 @@ class DossierAnalyzeSerializer(serializers.Serializer):
 
 
 class DossierConfirmSerializer(serializers.Serializer):
+    """« Ranger les documents » (lot prêt), ou création de l'AMM absente par le siège."""
+
     preview_token = serializers.CharField(min_length=64, max_length=64)
-    accepted_changes = serializers.ListField(
-        child=serializers.CharField(max_length=200),
-        default=list,
-        max_length=1000,
-    )
+    create_amm = serializers.BooleanField(default=False)
+
+
+class DossierChooseAmmSerializer(serializers.Serializer):
+    """Réponse à la question « c'est quelle AMM ? »."""
+
+    amm_id = serializers.UUIDField()
 
 
 class DossierFileRequestSerializer(serializers.Serializer):

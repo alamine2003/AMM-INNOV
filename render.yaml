@@ -49,10 +49,23 @@ services:
         value: None
       - key: TIME_ZONE
         value: Africa/Dakar
-      # Offre gratuite : disque éphémère. Scans PDF à brancher sur un stockage S3 (R2 gratuit)
-      # via DOCUMENT_STORAGE=s3 et S3_* ; voir docs/deploiement-render.md, section 4.
-      - key: DOCUMENT_STORAGE
-        value: local
+      # Disque éphémère sur Render gratuit : les scans vivent dans Cloudflare R2 (S3 compatible).
+      # Valeurs saisies dans le tableau de bord Render (sync: false) : la synchronisation du
+      # blueprint ne les écrase pas. Voir docs/deploiement-render.md, section 4.
+      - key: DOCUMENT_STORAGE        # s3
+        sync: false
+      - key: S3_ENDPOINT_URL         # https://<account-id>.r2.cloudflarestorage.com
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_ADDRESSING_STYLE
+        value: path
       - key: DOCUMENT_MAX_MB
         value: "25"
       - key: WAIT_TIMEOUT

@@ -5,7 +5,6 @@ from datetime import timedelta
 from email.utils import parseaddr
 
 from celery import shared_task
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 from django.db.models import F
@@ -95,10 +94,9 @@ def digest_for_user(user: User, today=None) -> dict | None:
     pending_ids = Renewal.objects.filter(workflow_status__in=Renewal.PENDING_STATUSES).values(
         "amm_id"
     )
-    to_file = amms.filter(
-        status=MarketingAuthorization.Status.VALIDE,
-        effective_end_date__lte=today + relativedelta(months=6),
-    ).exclude(pk__in=pending_ids)
+    to_file = amms.filter(status=MarketingAuthorization.Status.A_RENOUVELER).exclude(
+        pk__in=pending_ids
+    )
     incomplete = amms.filter(dossier_state=MarketingAuthorization.DossierState.INCOMPLET).exclude(
         status=MarketingAuthorization.Status.EXPIRE
     )
@@ -158,6 +156,16 @@ def send_weekly_digest(today: str | None = None) -> dict:
         )
         sent += 1
     return {"sent": sent, "failed": failed}
+
+
+@shared_task(name="apps.notifications.tasks.send_renewal_reminders")
+def send_renewal_reminders(today: str | None = None) -> dict:
+    """Rappel quotidien des AMM « À renouveler » (idempotent sur la journée)."""
+    from datetime import date
+
+    from .reminders import send_renewal_reminders as run
+
+    return run(today=date.fromisoformat(today) if today else None)
 
 
 @shared_task(name="apps.notifications.tasks.cleanup_notifications")

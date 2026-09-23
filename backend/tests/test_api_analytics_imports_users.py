@@ -19,14 +19,15 @@ def test_analytics_africa(hq_client, country_client, make_amm, make_scan):
     make_amm(country="CI")
     body = hq_client.get("/api/v1/analytics/africa").json()
     rows = {row["country_iso2"]: row for row in body["rows"]}
-    assert rows["SN"]["total"] == 4 and rows["SN"]["valid"] == 2 and rows["SN"]["expired"] == 1
+    assert rows["SN"]["total"] == 4 and rows["SN"]["valid"] == 1 and rows["SN"]["expired"] == 1
+    assert rows["SN"]["to_renew"] == 1  # < 6 mois : « À renouveler », toujours valide
     assert (
         rows["SN"]["undetermined"] == 1
         and rows["SN"]["expiring_6m"] == 1
         and rows["SN"]["expiring_12m"] == 1
     )
     assert rows["SN"]["pct_valid"] == 50.0 and rows["SN"]["pct_complete"] == 75.0
-    assert body["total"]["total"] == 5 and body["total"]["valid"] == 3
+    assert body["total"]["total"] == 5 and body["total"]["valid"] == 2
     assert rows["ML"]["total"] == 0
     scoped = country_client.get("/api/v1/analytics/africa").json()
     assert {r["country_iso2"] for r in scoped["rows"]} == {"SN", "ML"}
@@ -40,13 +41,15 @@ def test_analytics_country_and_coverage(hq_client, country_client, make_amm, pro
     assert body["country"]["iso2"] == "SN"
     assert len(body["pipeline"]) == 24 and body["pipeline"][0]["month"] == TODAY.strftime("%Y-%m")
     assert sum(p["count"] for p in body["pipeline"]) == 1
-    assert body["by_range_status"] == [{"range": "GENERALE", "status": "VALIDE", "count": 1}]
+    assert body["by_range_status"] == [{"range": "GENERALE", "status": "A_RENOUVELER", "count": 1}]
     assert body["priorities"][0]["urgency"] == "CRITIQUE"
+    first = body["priorities"][0]
+    assert first["ideal_filing_date"] and first["agency_filing_deadline"]
     assert country_client.get("/api/v1/analytics/country/CI").status_code == 403
 
     coverage = hq_client.get(f"/api/v1/analytics/product/{product.pk}/coverage").json()
     by_country = {c["country_iso2"]: c for c in coverage}
-    assert by_country["SN"]["status"] == "VALIDE" and by_country["CI"]["status"] == "EXPIRE"
+    assert by_country["SN"]["status"] == "A_RENOUVELER" and by_country["CI"]["status"] == "EXPIRE"
     assert by_country["ML"]["status"] is None and len(coverage) == 4
 
 
@@ -71,7 +74,8 @@ def test_export_xlsx_and_csv(hq_client, make_amm, make_renewal):
         "STATUT",
         "ETAT DOSSIER",
         "URGENCE",
-        "DEADLINE DEPOT",
+        "DEPOT IDEAL",
+        "LIMITE AGENCE",
     )
     assert (
         len(rows) == 2

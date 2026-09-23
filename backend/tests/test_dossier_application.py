@@ -1,4 +1,4 @@
-"""Application d'un dossier validé : rattachements, créations, corrections, audit, idempotence."""
+"""Rangement d'un dossier : scans, renouvellements, points à vérifier, audit, idempotence."""
 
 import hashlib
 from datetime import date
@@ -6,13 +6,15 @@ from datetime import date
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from rest_framework.exceptions import PermissionDenied
 
 from apps.amm.history import amm_history
 from apps.amm.models import MarketingAuthorization
 from apps.documents.models import Document
 from apps.imports.dossier.application import StalePreview, apply_dossier, preview_token
 from apps.imports.dossier.preview import build_preview
-from apps.imports.models import DossierChange, DossierFile, DossierImport
+from apps.imports.dossier.review_points import apply_point, ignore_point
+from apps.imports.models import DossierChange, DossierFile, DossierImport, DossierReviewPoint
 
 from .test_dossier_recognition import decision
 
@@ -43,11 +45,13 @@ def stored(batch, path, text):
 
 
 def ready(batch):
-    """Ce que fait la tâche Celery `analyze_dossier`."""
+    """Ce que fait la tâche Celery `analyze_dossier` (sans le rangement automatique)."""
     preview = build_preview(batch)
     batch.preview = preview
     batch.preview_token = preview_token(preview)
-    batch.status = DossierImport.Status.READY
+    batch.status = (
+        DossierImport.Status.QUESTION if preview["question"] else DossierImport.Status.READY
+    )
     batch.country_id = preview["amm"]["country_id"]
     batch.save()
     return preview
@@ -57,7 +61,9 @@ def new_batch(user, root="AMM_PRODUIT"):
     return DossierImport.objects.create(root_name=root, created_by=user)
 
 
-def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, product, make_amm):
+def test_discrepancy_keeps_the_record_notes_a_point_and_reimport_is_idempotent(
+    users, product, make_amm
+):
     amm = make_amm(
         product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
     )
@@ -65,17 +71,13 @@ def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, produ
     proof = stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/notice.pdf", "Notice\n" + decision(product, number="X"))
     preview = ready(batch)
-    assert preview["can_apply"], preview["blockers"]
-    correction = next(c for c in preview["changes"] if c["field"] == "original_number")
-    holder = next(c for c in preview["changes"] if c["field"] == "holder")
-    assert correction["requires_confirmation"] and not holder["requires_confirmation"]
+    assert preview["can_apply"] and preview["question"] is None
 
-    applied = apply_dossier(
-        batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[correction["id"]]
-    )
+    applied = apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
     assert applied.status == DossierImport.Status.APPLIED and applied.amm_id == amm.pk
     amm.refresh_from_db()
-    assert amm.original_number == "AMM/SN/2025/00152"
+    # Valeur renseignée : gardée. Champ vide : complété.
+    assert amm.original_number == "AMM/SN/2025/00125"
     assert amm.holder == "Laboratoire Exemple"
     documents = Document.objects.filter(amm=amm).order_by("kind")
     assert [d.kind for d in documents] == ["AMM", "AUTRE"]
@@ -83,53 +85,147 @@ def test_apply_attaches_documents_corrects_number_and_is_idempotent(users, produ
     assert set(DossierFile.objects.filter(batch=batch).values_list("document_id", flat=True)) == {
         d.pk for d in documents
     }
-    change = DossierChange.objects.get(amm=amm, field="original_number")
-    assert (change.old_value, change.new_value) == ("AMM/SN/2025/00125", "AMM/SN/2025/00152")
-    assert change.proof_file == proof and change.user == users["hq"] and change.confidence >= 90
-    # Champ vide complété : journalisé aussi, l'ancienne valeur étant la chaîne vide.
+    assert not DossierChange.objects.filter(amm=amm, field="original_number").exists()
     completion = DossierChange.objects.get(amm=amm, field="holder")
     assert not completion.old_value and completion.new_value == "Laboratoire Exemple"
-    entries = amm_history(amm)
-    entry = next(
-        e
-        for e in entries
-        if e.get("source") == "DOSSIER_IMPORT" and e["changes"][0]["field"] == "original_number"
-    )
-    assert entry["type"] == "documentary_correction"
-    # Le titulaire était vide : renseigné, pas corrigé.
+    point = DossierReviewPoint.objects.get(amm=amm)
+    assert point.status == "OPEN" and point.field == "original_number" and point.applicable
+    assert (point.recorded_value, point.scan_value) == ("AMM/SN/2025/00125", "AMM/SN/2025/00152")
+    assert point.proof_file == proof and point.batch == batch
     completed = next(
         e
-        for e in entries
+        for e in amm_history(amm)
         if e.get("source") == "DOSSIER_IMPORT" and e["changes"][0]["field"] == "holder"
     )
     assert completed["type"] == "documentary_creation"
-    # `apply_dossier` a rattaché le document sur sa propre instance : relire la nôtre.
-    proof.refresh_from_db()
-    assert entry["document_id"] == str(proof.document_id)
     # Un document créé par l'import ne partage pas son fichier avec la preuve du dossier.
+    proof.refresh_from_db()
     assert proof.document.file.name != proof.file.name
 
     # Seconde confirmation du même lot : aucun effet.
-    again = apply_dossier(
-        batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[correction["id"]]
-    )
+    again = apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
     assert again.pk == batch.pk and Document.objects.filter(amm=amm).count() == 2
 
-    # Même dossier importé une seconde fois : doublons reconnus, rien n'est recréé.
+    # Même dossier importé une seconde fois : rien n'est recréé, pas même le point.
     second = new_batch(users["hq"])
     stored(second, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     stored(second, "AMM_PRODUIT/AMM_ORIGINE/notice.pdf", "Notice\n" + decision(product, number="X"))
     preview2 = ready(second)
-    assert preview2["can_apply"], preview2["blockers"]
     assert all(row["duplicate_id"] for row in preview2["documents"])
-    assert preview2["changes"] == []
-    apply_dossier(second.pk, user=users["hq"], token=second.preview_token, accepted_changes=[])
+    apply_dossier(second.pk, user=users["hq"], token=second.preview_token)
     assert Document.objects.filter(amm=amm).count() == 2
     assert MarketingAuthorization.objects.filter(product=product).count() == 1
-    assert DossierChange.objects.filter(amm=amm).count() == 2
+    assert DossierChange.objects.filter(amm=amm).count() == 1
+    assert DossierReviewPoint.objects.filter(amm=amm).count() == 1
 
 
-def test_apply_creates_amm_then_renewal_with_provenance(users, product, countries):
+def test_applying_a_point_later_replaces_the_value_with_audit(
+    users, product, make_amm, django_capture_on_commit_callbacks
+):
+    amm = make_amm(
+        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
+    )
+    batch = new_batch(users["hq"])
+    proof = stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    ready(batch)
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
+    point = DossierReviewPoint.objects.get(amm=amm, field="original_number")
+
+    with django_capture_on_commit_callbacks(execute=True):
+        apply_point(point.pk, user=users["country"])
+    amm.refresh_from_db()
+    assert amm.original_number == "AMM/SN/2025/00152"
+    point.refresh_from_db()
+    assert point.status == "APPLIED" and point.resolved_by == users["country"]
+    change = DossierChange.objects.get(amm=amm, field="original_number")
+    assert (change.old_value, change.new_value) == ("AMM/SN/2025/00125", "AMM/SN/2025/00152")
+    assert change.proof_file == proof and change.user == users["country"]
+    assert change.reason == "Valeur du scan appliquée depuis les points à vérifier"
+    entry = next(
+        e
+        for e in amm_history(amm)
+        if e.get("source") == "DOSSIER_IMPORT" and e["changes"][0]["field"] == "original_number"
+    )
+    assert entry["type"] == "documentary_correction"
+    proof.refresh_from_db()
+    assert entry["document_id"] == str(proof.document_id)
+    with pytest.raises(ValidationError, match="déjà été traité"):
+        apply_point(point.pk, user=users["hq"])
+
+    # Réimport après correction : plus d'écart, plus de point.
+    second = new_batch(users["hq"])
+    stored(second, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    assert not [p for p in ready(second)["review_points"] if p["code"] == "value_mismatch"]
+
+
+def test_ignoring_a_point_keeps_the_record_and_is_not_asked_again(users, product, make_amm):
+    amm = make_amm(
+        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
+    )
+    batch = new_batch(users["hq"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    ready(batch)
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
+    point = DossierReviewPoint.objects.get(amm=amm)
+    ignore_point(point.pk, user=users["hq"])
+    point.refresh_from_db()
+    amm.refresh_from_db()
+    assert point.status == "IGNORED" and amm.original_number == "AMM/SN/2025/00125"
+    assert not DossierChange.objects.filter(field="original_number").exists()
+    # Le même dossier réimporté ne repose pas la question.
+    second = new_batch(users["hq"])
+    stored(second, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    ready(second)
+    apply_dossier(second.pk, user=users["hq"], token=second.preview_token)
+    assert DossierReviewPoint.objects.filter(amm=amm).count() == 1
+
+
+def test_point_outside_the_user_scope_is_refused(users, product, make_amm, countries):
+    amm = make_amm(
+        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
+    )
+    batch = new_batch(users["hq"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    ready(batch)
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
+    users["country"].countries.set([countries["ML"]])
+    point = DossierReviewPoint.objects.get(amm=amm)
+    with pytest.raises(PermissionDenied):
+        apply_point(point.pk, user=users["country"])
+    amm.refresh_from_db()
+    assert amm.original_number == "AMM/SN/2025/00125"
+
+
+def test_renewal_conflict_keeps_the_existing_renewal_and_notes_the_point(
+    users, product, make_amm, make_renewal
+):
+    amm = make_amm(product_obj=product, start=date(2020, 4, 28))
+    existing = make_renewal(amm, "OBTENU", start_date=date(2025, 4, 28), number="R-OLD")
+    batch = new_batch(users["hq"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision.pdf", decision(product, start="28/04/2020"))
+    scan = stored(
+        batch,
+        "AMM_PRODUIT/RENOUVELLEMENT_2025/decision.pdf",
+        decision(product, start="28/04/2025", number="R-CORRECTED", renewal=True),
+    )
+    ready(batch)
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
+    existing.refresh_from_db()
+    assert existing.number == "R-OLD" and amm.renewals.count() == 1
+    point = DossierReviewPoint.objects.get(amm=amm, field="number")
+    assert point.renewal == existing and point.scan_value == "R-CORRECTED"
+    assert "Renouvellement du 28/04/2025" in point.message
+    # Le scan est rangé quand même, sur le renouvellement existant.
+    scan.refresh_from_db()
+    assert scan.document.renewal_id == existing.pk
+
+    apply_point(point.pk, user=users["hq"])
+    existing.refresh_from_db()
+    assert existing.number == "R-CORRECTED"
+    assert DossierChange.objects.get(renewal=existing, field="number").old_value == "R-OLD"
+
+
+def test_creation_of_a_missing_amm_is_an_explicit_headquarters_choice(users, product, countries):
     batch = new_batch(users["hq"])
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product, start="28/04/2019"))
     stored(
@@ -138,10 +234,17 @@ def test_apply_creates_amm_then_renewal_with_provenance(users, product, countrie
         decision(product, start="28/04/2024", number="AMM/SN/2024/R1", renewal=True),
     )
     preview = ready(batch)
-    assert preview["can_apply"], preview["blockers"]
-    assert preview["amm"]["id"] is None and preview["renewals"][0]["existing_id"] is None
+    # Jamais de création automatique : la question est posée, la création proposée au siège.
+    assert batch.status == DossierImport.Status.QUESTION
+    assert preview["amm"]["id"] is None and preview["question"]["can_create"]
+    with pytest.raises(ValidationError, match="AMM non identifiée"):
+        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
+    batch.created_by = users["country"]
+    batch.save()
+    with pytest.raises(PermissionDenied):
+        apply_dossier(batch.pk, user=users["country"], token=batch.preview_token, create=True)
 
-    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, create=True)
     amm = MarketingAuthorization.objects.get(product=product, country=countries["SN"])
     assert amm.original_number == "AMM/SN/2025/00152"
     assert amm.original_start_date == date(2019, 4, 28)
@@ -158,7 +261,7 @@ def test_apply_creates_amm_then_renewal_with_provenance(users, product, countrie
     assert DossierChange.objects.filter(amm=amm, renewal=renewal, field="number").exists()
 
 
-def test_pending_renewal_is_completed_instead_of_duplicated(users, product, make_amm, make_renewal):
+def test_pending_renewal_is_concluded_instead_of_duplicated(users, product, make_amm, make_renewal):
     amm = make_amm(product_obj=product, start=date(2021, 4, 28))
     pending = make_renewal(amm, "DEPOSE", filing_date=date(2026, 3, 1))
     batch = new_batch(users["hq"])
@@ -169,18 +272,14 @@ def test_pending_renewal_is_completed_instead_of_duplicated(users, product, make
         decision(product, start="20/08/2026", number="AMM/SN/2026/R1", renewal=True),
     )
     preview = ready(batch)
-    assert preview["can_apply"], preview["blockers"]
+    assert preview["can_apply"], preview["question"]
     assert preview["renewals"][0]["existing_id"] == str(pending.pk)
     status_change = next(c for c in preview["changes"] if c["field"] == "workflow_status")
     assert (status_change["old"], status_change["new"]) == ("DEPOSE", "OBTENU")
-    assert status_change["requires_confirmation"]
+    # La décision conclut le dépôt en cours : pas une valeur à arbitrer.
+    assert not status_change["requires_confirmation"]
 
-    apply_dossier(
-        batch.pk,
-        user=users["hq"],
-        token=batch.preview_token,
-        accepted_changes=[status_change["id"]],
-    )
+    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
     assert amm.renewals.count() == 1
     pending.refresh_from_db()
     assert pending.workflow_status == "OBTENU"
@@ -191,24 +290,17 @@ def test_pending_renewal_is_completed_instead_of_duplicated(users, product, make
     assert DossierChange.objects.filter(renewal=pending, field="workflow_status").exists()
 
 
-def test_unaccepted_correction_is_kept_and_stale_token_refused(users, product, make_amm):
-    amm = make_amm(
-        product_obj=product, original_number="AMM/SN/2025/00125", start=date(2025, 4, 28)
-    )
+def test_stale_token_is_refused(users, product, make_amm):
+    make_amm(product_obj=product, original_number="AMM/SN/2025/00152", start=date(2025, 4, 28))
     batch = new_batch(users["hq"])
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     ready(batch)
     with pytest.raises(StalePreview):
-        apply_dossier(batch.pk, user=users["hq"], token="0" * 64, accepted_changes=[])
-    apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
-    amm.refresh_from_db()
-    assert amm.original_number == "AMM/SN/2025/00125"
-    assert amm.holder == "Laboratoire Exemple"
-    assert not DossierChange.objects.filter(amm=amm, field="original_number").exists()
-    assert Document.objects.filter(amm=amm).count() == 1
+        apply_dossier(batch.pk, user=users["hq"], token="0" * 64)
+    assert not Document.objects.exists()
 
 
-def test_low_confidence_or_blocked_preview_cannot_be_applied(users, product, make_amm):
+def test_only_an_unidentifiable_amm_blocks(users, product, make_amm):
     make_amm(product_obj=product)
     batch = new_batch(users["hq"])
     only_filename = DossierFile.objects.create(
@@ -227,8 +319,11 @@ def test_low_confidence_or_blocked_preview_cannot_be_applied(users, product, mak
         },
     )
     preview = ready(batch)
-    assert not preview["can_apply"] and preview["level"] == "LOW"
+    # Ni produit ni pays lisibles : la seule question est « c'est quelle AMM ? ».
+    assert not preview["can_apply"] and batch.status == DossierImport.Status.QUESTION
+    assert {"country", "product"} <= set(preview["question"]["codes"])
+    assert not preview["question"]["can_create"]
     with pytest.raises(ValidationError):
-        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
+        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
     assert only_filename.document_id is None
     assert not Document.objects.exists() and not DossierChange.objects.exists()

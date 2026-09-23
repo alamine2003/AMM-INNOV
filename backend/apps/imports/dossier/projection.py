@@ -1,9 +1,9 @@
-"""Ce que sera l'AMM après validation : échéance en vigueur, statut, état du dossier.
+"""Ce que sera l'AMM une fois le dossier rangé : échéance en vigueur, statut, état du dossier.
 
 Calcul en mémoire, sans aucune écriture : on part de l'état actuel en base, on ajoute les
 renouvellements que le dossier créerait, on applique les seules informations complétées
-d'office (champs vides) — jamais les corrections qui remplacent une valeur, puisqu'elles ne sont
-appliquées que si le réglementaire les choisit — et on rattache les scans du dossier. Les règles
+d'office (champs vides) — jamais les écarts avec une valeur enregistrée, qui deviennent des
+points à vérifier plus tard — et on rattache les scans du dossier. Les règles
 sont celles de `apps.amm.services.status.compute_amm_state` (source unique), si bien que la
 projection et le bilan réel après validation coïncident.
 """
@@ -167,13 +167,15 @@ def _projection(amm, product, country, original, renewals, changes, documents):
         )
     return {
         "effective_end_date": _iso(state.effective_end_date),
+        "ideal_filing_date": _iso(state.ideal_filing_date),
+        "agency_filing_deadline": _iso(state.agency_filing_deadline),
         "status": state.status,
         "dossier_state": state.dossier_state,
         "missing_scan": (
             missing_scan_label(current) if state.dossier_state == "INCOMPLET" else None
         ),
-        # Les corrections qui remplacent une valeur enregistrée ne sont pas comptées : elles ne
-        # s'appliquent que si le réglementaire choisit « Remplacer ».
+        # Les écarts avec une valeur enregistrée ne sont pas comptés : ils restent des points à
+        # vérifier, appliqués seulement sur action du réglementaire.
         "includes_corrections": False,
         "timeline": timeline,
     }

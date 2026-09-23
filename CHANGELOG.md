@@ -5,6 +5,41 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Import de dossiers : on dépose, c'est rangé (`docs/workflow-amm.md`, section 8)
+- **Rangement automatique dès que l'AMM (produit + pays) est identifiée**, sans seuil de
+  fiabilité : chaque scan va à sa période (origine ou renouvellement n), les renouvellements
+  obtenus lus sont créés, les champs vides complétés, statut / échéance / complétude recalculés,
+  bilan et notification. Plus de « Garder / Remplacer », de « Valider » ni de % en avant.
+- **Points à vérifier plus tard** (`DossierReviewPoint`) : un écart scan ≠ fiche sur une valeur
+  renseignée, un renouvellement en conflit, une décision sans période… ne bloquent plus ; la
+  fiche est gardée, le scan rangé, le point listé sur la fiche AMM (badge dans la liste) et sur
+  le lot, avec « Appliquer la valeur du scan » (audit `DossierChange`) ou « Ignorer ».
+- **Une seule question**, seulement si l'AMM n'est pas identifiable : « c'est quelle AMM ? »
+  (sélecteur limité au pays et au périmètre, `POST /dossier-imports/{id}/choose-amm`). Création
+  d'AMM uniquement par le siège, sur confirmation.
+- **« Voir le scan »** : fichier absent du stockage → 410 « Fichier perdu … réimportez ce
+  dossier » au lieu d'un 503 ; la copie déjà rangée dans la fiche est montrée si elle existe.
+
+### Workflow des AMM (règles du responsable, `docs/workflow-amm.md`)
+- **Trois statuts, plus un pour la donnée manquante** : **Valide** (vert), **À renouveler**
+  (orange, dans les six mois précédant la fin, toujours valide), **Expirée** (rouge, dès le
+  lendemain de la date de fin) et **Échéance inconnue** (gris, aucune date connue). « En cours
+  d'instruction » disparaît des statuts d'AMM : un dépôt en cours n'empêche plus l'expiration ;
+  l'avancement d'un renouvellement (Planifié / Déposé / En instruction) reste porté par le
+  renouvellement. Un renouvellement ne compte qu'une fois **obtenu**.
+- **Deux dates au lieu d'une** : « Dépôt idéal » (fin − 6 mois, objectif interne) et
+  « Limite agence » (fin − 3 mois), affichées dans la fiche, les listes, le tableau de bord,
+  l'export et les notifications. Le délai de dépôt par pays (`filing_lead_months`) disparaît.
+- **Rappel quotidien** de chaque AMM « À renouveler » aux réglementaires du siège et du pays :
+  notification dans l'application et e-mail (`RENEWAL_REMINDER_CHANNELS`), au plus un par AMM,
+  destinataire et jour ; il s'arrête dès qu'un renouvellement obtenu repousse l'échéance ou que
+  l'AMM expire. Les règles d'alerte existantes (J-365 … DOSSIER, DECISION) sont conservées.
+- **Fiche AMM** : frise « Origine → renouvellements obtenus » avec le **document actuel** mis en
+  évidence, état du dossier affiché séparément du statut (complet dès que le scan de la décision
+  actuelle est rattaché, quelle que soit la validité).
+- Migration : toutes les AMM sont recalculées ; les vues `analytics` suivent (`to_renew`,
+  `ideal_filing_date`, `agency_filing_deadline`).
+
 ### Surveillance
 - **Sentry**, actif seulement si `SENTRY_DSN` (web, worker) ou `VITE_SENTRY_DSN` (interface) est
   défini : erreurs et journaux ERROR remontés avec le `request_id` des journaux JSON, la version

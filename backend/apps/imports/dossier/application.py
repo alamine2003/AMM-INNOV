@@ -1,4 +1,10 @@
-"""Apply a reviewed server-side plan under locks, with field-level documentary provenance."""
+"""Rangement d'un dossier sous verrous, avec la provenance documentaire de chaque champ.
+
+Automatique dès que l'AMM est identifiée (voir `apps.imports.tasks`) : chaque scan va à sa
+période, les renouvellements obtenus lus sont créés, les champs vides sont complétés. Une valeur
+déjà renseignée n'est jamais remplacée : l'écart devient un « point à vérifier plus tard »
+(`DossierReviewPoint`), que le réglementaire applique ou ignore ensuite (`review_points`).
+"""
 
 import hashlib
 import json
@@ -17,7 +23,7 @@ from apps.catalog.normalize import normalize_product_name, product_key
 from apps.core.dates import today
 from apps.documents.models import Document
 from apps.documents.services.ingest import convert_image_to_pdf
-from apps.imports.models import DossierChange, DossierImport
+from apps.imports.models import DossierChange, DossierImport, DossierReviewPoint
 
 from .preview import build_preview
 from .summary import record_and_notify, snapshot
@@ -28,7 +34,7 @@ RENEWAL_FIELDS = {"number", "start_date", "end_date", "decision_date", "workflow
 
 class StalePreview(APIException):
     status_code = 409
-    default_detail = "Les données ont changé. Relancez l'analyse avant de valider."
+    default_detail = "Les données ont changé. Relancez l'analyse du dossier."
 
 
 def preview_token(preview):
@@ -65,9 +71,9 @@ def _audit(batch, amm, target, field, old, new, proof, confidence, user, reason=
     )
 
 
-def _save_with_actor(obj, user):
+def _save_with_actor(obj, user, reason="Dossier réglementaire importé et rangé"):
     obj._history_user = user
-    obj._change_reason = "Dossier réglementaire importé et validé"
+    obj._change_reason = reason
     # Domain events must describe committed state. Reconcile once after the transaction.
     obj._skip_signals = True
     obj.save()
@@ -112,8 +118,8 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
             amm=amm, sha256=digest, archived_at__isnull=True
         ).first()
     if duplicate:
-        if duplicate.renewal_id != (renewal.pk if renewal else None):
-            raise ValidationError("Un fichier identique appartient déjà à une autre période.")
+        # Déjà rangé (ce dossier réimporté, ou le même fichier à deux endroits) : il reste à sa
+        # place, jamais re-rangé ; l'aperçu en a fait un point à vérifier s'il y a lieu.
         return duplicate
     document = Document(
         amm=amm,
@@ -139,10 +145,88 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
     return document
 
 
-def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
-    """Idempotent confirmation; a changed preview is never applied by surprise.
+def _fingerprint(amm, renewal, point) -> str:
+    identity = [
+        str(amm.pk),
+        str(renewal.pk) if renewal else "",
+        point["code"],
+        point.get("field") or "",
+        json.dumps(point.get("scan"), sort_keys=True, ensure_ascii=False),
+        "" if point.get("field") else point["message"],
+    ]
+    return hashlib.sha256("|".join(identity).encode()).hexdigest()
 
-    `auto` : validation automatique par l'analyse, au nom de l'auteur de l'import.
+
+def record_points(batch, amm, plan, targets, files) -> int:
+    """Enregistre les points à vérifier du plan ; un point déjà connu n'est pas recréé."""
+    created = 0
+    for point in plan.get("review_points", []):
+        target = targets.get(point.get("target") or "")
+        renewal = target if isinstance(target, Renewal) else None
+        fingerprint = _fingerprint(amm, renewal, point)
+        if DossierReviewPoint.objects.filter(amm=amm, fingerprint=fingerprint).exists():
+            continue
+        proof = files.get(str(point.get("proof_file_id")))
+        DossierReviewPoint.objects.create(
+            batch=batch,
+            amm=amm,
+            renewal=renewal,
+            code=point["code"],
+            field=point.get("field") or "",
+            recorded_value=point.get("recorded"),
+            scan_value=point.get("scan"),
+            proof_file=proof,
+            confidence=max(0, min(100, int(point.get("confidence") or 0))),
+            message=point["message"],
+            fingerprint=fingerprint,
+        )
+        created += 1
+    return created
+
+
+def _create_amm(batch, plan, identity, country, files, user):
+    """Création explicite par le siège (jamais automatique), depuis la décision d'origine."""
+    if identity.get("product_id"):
+        product = Product.objects.select_for_update().get(pk=identity["product_id"])
+    else:
+        name = normalize_product_name(identity["product_name"])
+        if Product.objects.filter(key=product_key(name)).exists():
+            raise StalePreview()
+        product = Product(name=name)
+        product._history_user = user
+        product.save()
+    if MarketingAuthorization.objects.filter(product=product, country=country).exists():
+        raise StalePreview()
+    amm = MarketingAuthorization(product=product, country=country)
+    for field, value in plan["original"].items():
+        if field in AMM_FIELDS and value not in (None, ""):
+            _proof(files, plan["original_proofs"].get(field))
+            setattr(amm, field, typed_value(field, value))
+    if plan["original"].get("original_end_date"):
+        amm.original_end_date_manual = True
+    _save_with_actor(amm, user)
+    for field, value in plan["original"].items():
+        if field in AMM_FIELDS and value not in (None, ""):
+            _audit(
+                batch,
+                amm,
+                amm,
+                field,
+                None,
+                value,
+                _proof(files, plan["original_proofs"].get(field)),
+                plan["confidence"],
+                user,
+                "Création depuis le dossier réglementaire",
+            )
+    return amm
+
+
+def apply_dossier(batch_id, *, user, token, auto=False, create=False):
+    """Range le dossier : idempotent, et un aperçu qui a changé n'est jamais appliqué.
+
+    `auto` : rangement automatique à la fin de l'analyse, au nom de l'auteur de l'import.
+    `create` : le siège crée l'AMM absente depuis le dossier (confirmation explicite).
     """
     created_blobs = []
     try:
@@ -155,16 +239,27 @@ def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
             ensure_country_in_scope(user, batch.country)
             if batch.status == DossierImport.Status.APPLIED:
                 return batch
-            if batch.status != DossierImport.Status.READY or token != batch.preview_token:
+            allowed = {DossierImport.Status.READY, DossierImport.Status.QUESTION}
+            if batch.status not in allowed or token != batch.preview_token:
                 raise StalePreview()
             plan = batch.preview
-            if not plan.get("can_apply") or plan.get("confidence", 0) < 65:
-                raise ValidationError("Confiance insuffisante : aucune modification autorisée.")
             identity = plan["amm"]
+            question = plan.get("question")
+            if question or not identity.get("id"):
+                if not create:
+                    raise ValidationError(
+                        "AMM non identifiée : indiquez d'abord à quelle AMM ranger ce dossier."
+                    )
+                if not user.is_global:
+                    raise PermissionDenied("La création d'une AMM est réservée au siège.")
+                if not question or not question.get("can_create"):
+                    raise ValidationError("Ce dossier ne permet pas de créer l'AMM.")
+            elif create:
+                raise ValidationError("L'AMM de ce dossier existe déjà.")
             country = Country.objects.select_for_update().get(pk=identity["country_id"])
             ensure_country_in_scope(user, country)
             # Serialize catalog creation across countries as product keys are shared globally.
-            if connection.vendor == "postgresql":
+            if create and connection.vendor == "postgresql":
                 key = product_key(identity["product_name"])
                 lock_key = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], signed=True)
                 with connection.cursor() as cursor:
@@ -180,44 +275,9 @@ def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
             fresh = build_preview(batch)
             if preview_token(fresh) != token:
                 raise StalePreview()
-            if identity.get("product_id"):
-                product = Product.objects.select_for_update().get(pk=identity["product_id"])
-            else:
-                if not user.is_global:
-                    raise PermissionDenied("La création d'un produit nécessite le siège.")
-                name = normalize_product_name(identity["product_name"])
-                if Product.objects.filter(key=product_key(name)).exists():
-                    raise StalePreview()
-                product = Product(name=name)
-                product._history_user = user
-                product.save()
             files = {str(f.pk): f for f in batch.files.select_related("document")}
-            created_amm = not identity.get("id")
-            if created_amm:
-                if MarketingAuthorization.objects.filter(product=product, country=country).exists():
-                    raise StalePreview()
-                amm = MarketingAuthorization(product=product, country=country)
-                for field, value in plan["original"].items():
-                    if field in AMM_FIELDS and value not in (None, ""):
-                        _proof(files, plan["original_proofs"].get(field))
-                        setattr(amm, field, typed_value(field, value))
-                if plan["original"].get("original_end_date"):
-                    amm.original_end_date_manual = True
-                _save_with_actor(amm, user)
-                for field, value in plan["original"].items():
-                    if field in AMM_FIELDS and value not in (None, ""):
-                        _audit(
-                            batch,
-                            amm,
-                            amm,
-                            field,
-                            None,
-                            value,
-                            _proof(files, plan["original_proofs"].get(field)),
-                            plan["confidence"],
-                            user,
-                            "Création depuis le dossier réglementaire",
-                        )
+            if not identity.get("id"):
+                amm = _create_amm(batch, plan, identity, country, files, user)
             targets = {"amm": amm}
             for proposal in sorted(
                 plan["renewals"], key=lambda r: (r.get("start_date") or "", r["key"])
@@ -229,8 +289,6 @@ def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
                         raise ValidationError(
                             "Un renouvellement obtenu exige un numéro et une date."
                         )
-                    if proposal["confidence"] < 65:
-                        raise ValidationError("Renouvellement insuffisamment identifié.")
                     proof = _proof(files, proposal["proof_file_id"])
                     if Renewal.objects.filter(
                         amm=amm,
@@ -259,18 +317,17 @@ def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
                                 "Création d'un renouvellement depuis le dossier réglementaire",
                             )
                 targets[proposal["key"]] = renewal
-            ids = {change["id"] for change in plan["changes"] if change["requires_confirmation"]}
-            if set(accepted_changes) - ids:
-                raise ValidationError("Une correction sélectionnée ne figure pas dans l'aperçu.")
             dirty = set()
+            # Seuls les champs vides sont complétés (et un renouvellement en cours conclu par sa
+            # décision passe « obtenu ») ; les écarts sont devenus des points à vérifier.
             for change in plan["changes"]:
-                if change["requires_confirmation"] and change["id"] not in accepted_changes:
+                if change["requires_confirmation"]:
                     continue
                 obj = targets[change["target"]]
                 field = change["field"]
                 allowed = AMM_FIELDS if isinstance(obj, MarketingAuthorization) else RENEWAL_FIELDS
-                if field not in allowed or change["confidence"] < 65:
-                    raise ValidationError("Modification non autorisée ou insuffisamment étayée.")
+                if field not in allowed:
+                    raise ValidationError("Modification non autorisée.")
                 old = value_json(getattr(obj, field))
                 if old != change["old"]:
                     raise StalePreview()
@@ -291,10 +348,12 @@ def apply_dossier(batch_id, *, user, token, accepted_changes, auto=False):
                 _save_with_actor(obj, user)
             for proposal in plan["documents"]:
                 source = _proof(files, proposal["file_id"])
-                renewal = None if proposal["period"] == "original" else targets[proposal["period"]]
+                renewal = targets.get(proposal["period"])
+                renewal = renewal if isinstance(renewal, Renewal) else None
                 document = _document(batch, source, amm, renewal, proposal, user, created_blobs)
                 source.document = document
                 source.save(update_fields=["document"])
+            record_points(batch, amm, plan, targets, files)
             # Recompute once after all renewals, then publish only on successful commit.
             _save_with_actor(amm, user)
             batch.amm = amm
