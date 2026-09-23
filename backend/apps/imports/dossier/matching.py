@@ -235,20 +235,50 @@ def name_compatible(explicit: str, product, products) -> bool:
     return not (distinctive & siblings)
 
 
+def _label_similarity(label: str, product) -> float:
+    """Ressemblance d'une ligne de tableau avec un produit : marque, dosages, puis libellé."""
+    words, numbers = _parts(label.replace(":", "/"))
+    target, target_numbers = _parts(product.name)
+    if not words or not target:
+        return 0.0
+    if words[0] != target[0] and SequenceMatcher(None, words[0], target[0]).ratio() < 0.8:
+        return 0.0
+    # Les dosages du produit doivent tous figurer sur la ligne (une faute de frappe tolérée).
+    missing = [value for value in target_numbers if value not in numbers]
+    if len(missing) > 1:
+        return 0.0
+    ratio = max(
+        SequenceMatcher(None, " ".join(words), " ".join(target)).ratio(),
+        SequenceMatcher(None, " ".join(sorted(words)), " ".join(sorted(target))).ratio(),
+    )
+    return ratio - 0.2 * len(missing)
+
+
 def pick_table_row(rows: list[dict], product, products) -> dict | None:
-    """Ligne d'une décision groupée qui désigne `product` ; None si absente ou ambiguë."""
+    """Ligne d'une décision groupée qui désigne `product` ; None si absente ou ambiguë.
+
+    Une ligne n'est retenue que si `product` est, parmi les produits du pays, celui qui lui
+    ressemble le plus : la ligne « AMLODIPINE-GH 5MG » n'est jamais attribuée au 10MG.
+    """
+    others = [item for item in products if item.pk != product.pk]
     matches = []
     for row in rows:
+        score = _label_similarity(row["label"], product)
         if name_compatible(row["label"], product, products):
-            words, _ = _parts(row["label"])
-            target, _ = _parts(product.name)
-            ratio = SequenceMatcher(None, " ".join(words), " ".join(target)).ratio()
-            matches.append((ratio, row))
+            # Dénomination imprimée compatible (marque, dosages, pas d'autre présentation).
+            matches.append((max(score, 0.5) + 1, row))
+            continue
+        if score < 0.5:
+            continue
+        if any(_label_similarity(row["label"], other) > score for other in others):
+            continue
+        matches.append((score, row))
     if not matches:
         return None
     matches.sort(key=lambda item: -item[0])
-    if len(matches) > 1 and matches[0][0] - matches[1][0] < 0.05:
-        # Même dénomination répétée (colonnes relues deux fois) : même numéro = pas d'ambiguïté.
-        if normalize(matches[0][1]["number"]) != normalize(matches[1][1]["number"]):
-            return None
-    return matches[0][1]
+    best = matches[0]
+    rivals = [row for score, row in matches[1:] if best[0] - score < 0.03]
+    # Même dénomination relue deux fois (colonnes) : même numéro = pas d'ambiguïté.
+    if any(normalize(row["number"]) != normalize(best[1]["number"]) for row in rivals):
+        return None
+    return best[1]

@@ -1,8 +1,8 @@
 """Décisions des autres pays (Sénégal, Mali, Gambie, Togo, Bénin, Congo, Côte d'Ivoire, Guinée,
 Tchad, Mauritanie) : extraits OCR courts reprenant la mise en page réelle, noms anonymisés.
 
-Mesuré sur 750 scans réels : le numéro d'AMM est retrouvé pour 57 % des dossiers produits
-(contre 13 % avant), dont 90 % égaux au fichier Excel de référence.
+Mesuré sur les 2 350 scans réels (1 216 dossiers produits présents dans l'Excel de référence) :
+le numéro d'AMM est retrouvé pour 75 % d'entre eux, dont 90 % égaux à l'Excel.
 """
 
 from datetime import date
@@ -220,3 +220,31 @@ def test_grouped_decision_without_the_product_is_kept_as_annex(users, make_amm):
     preview = build_preview(batch)
     assert any("décision groupée" in point["message"] for point in preview["review_points"])
     assert preview["original"].get("original_number") in (None, "")
+
+
+def test_guinea_single_certificate_table():
+    text = (
+        "REPUBLIQUE DE GUINEE\nCERTIFIE\nArticle premier : L'Autorisation de Mise sur le Marché "
+        "(AMM) est accordée au produit pharmaceutique\n"
+        "Désignation EXEMPLO 10MG+10MG COMPRIME B/100\n"
+        "PGHT N° E-AMM Début de validité Fin de validité\n"
+        "22 EURO 5264 21/05/2024 21/05/2029\n"
+    )
+    batch = DossierImport.objects.create(root_name="GUINEE - EXEMPLO")
+    row = read(batch, text)
+    assert row["number"] == "5264"
+    assert (row["start_date"], row["end_date"]) == ("2024-05-21", "2029-05-21")
+
+
+def test_row_of_a_sibling_presentation_is_never_taken():
+    products = [
+        Product.objects.create(name="EXEMPLO GH 5MG CPR B/28"),
+        Product.objects.create(name="EXEMPLO GH 10MG CPR B/28"),
+    ]
+    rows = [
+        {"label": "EXEMPLO-GH 5MG COMPRIME B/28", "number": "5125", "date": None},
+        {"label": "EXEMPLO-GH 10MG COMPRIME B/28", "number": "5126", "date": None},
+        {"label": "AUTRE 20MG COMPRIME B/30", "number": "5127", "date": None},
+    ]
+    assert pick_table_row(rows, products[1], products)["number"] == "5126"
+    assert pick_table_row(rows, products[0], products)["number"] == "5125"
