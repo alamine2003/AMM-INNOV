@@ -22,7 +22,13 @@ from apps.documents.models import Document
 
 from .extraction import extract_file
 from .labels import FIELD_LABELS, fr_date, period_label, show
-from .matching import folder_product, match_authorizations, name_compatible, resolve_renewal
+from .matching import (
+    folder_product,
+    match_authorizations,
+    name_compatible,
+    pick_table_row,
+    resolve_renewal,
+)
 from .projection import build_projection
 from .recognition import normalize, recognize_file
 
@@ -146,6 +152,48 @@ def _identify_by_folder(batch, files, rows, products, country, issues, warnings)
         )
 
 
+def _read_grouped_rows(rows, product, products, country, points):
+    """Décision groupée : numéro et date pris sur la ligne du tableau qui nomme le produit.
+
+    Une décision groupée qui ne cite pas le produit du dossier n'est pas une preuve pour lui :
+    elle reste rangée comme pièce annexe et un point à vérifier le signale.
+    """
+    in_country = (
+        set(
+            MarketingAuthorization.objects.filter(country=country).values_list(
+                "product_id", flat=True
+            )
+        )
+        if country
+        else set()
+    )
+    marketed = [item for item in products if item.pk in in_country] or products
+    for row in rows:
+        if not row.get("table_rows"):
+            continue
+        line = pick_table_row(row["table_rows"], product, marketed)
+        if line:
+            row["number"] = line["number"] if row["official"] else ""
+            if line["date"] and row["official"]:
+                row["start_date"] = line["date"]
+                row["period"] = (
+                    row["period"] if row["period"] == "original" else ("renewal-" + line["date"])
+                )
+            row["product_ids"] = [str(product.pk)]
+            row["product_name"] = product.name
+            row["product_source"] = "table"
+            continue
+        row["official"] = False
+        row["kind"] = "AUTRE"
+        _point(
+            points,
+            "identity",
+            f"{_name(row['path'])} : décision groupée où « {product.name} » n'a pas été trouvé ; "
+            "elle est rangée comme pièce annexe.",
+            proof=row["file_id"],
+        )
+
+
 def _name(path: str) -> str:
     return PurePosixPath(path).name
 
@@ -227,6 +275,8 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         if len(product_ids) > 1:
             issues.append(("products", "Le dossier mélange plusieurs produits ou présentations."))
         product = next((item for item in products if str(item.pk) in product_ids), None)
+    if product:
+        _read_grouped_rows(rows, product, products, country, points)
     named = [row for row in rows if row["official"] and row["explicit_product_name"]]
     explicit_names = {normalize(row["explicit_product_name"]) for row in named}
     unknown_names = {

@@ -3,6 +3,7 @@ import {
   createFolderFormData,
   filesFromDrop,
   filesFromPicker,
+  setAside,
   splitByProduct,
   validateFolder,
 } from '../folderUpload';
@@ -108,5 +109,60 @@ describe('upload de dossiers', () => {
       ),
     ).toEqual([]);
     expect(splitByProduct(filesFromPicker([fileAt('AMM Produit/décision.pdf')]))).toEqual([]);
+  });
+
+  it('découpe par présentation sous un dossier marque et joint les décisions groupées', () => {
+    const groups = splitByProduct(
+      filesFromPicker([
+        fileAt('GUINEE/AMM Guinée 39 PRODUITS 2022.pdf'),
+        fileAt('GUINEE/BONCIPRO/BONCIPRO 500MG CPR B20/AMM.pdf'),
+        fileAt('GUINEE/BONCIPRO/BONCIPRO 750MG CPR B20/AMM.pdf'),
+        fileAt('GUINEE/BONCIPRO/BONCIPRO 750MG CPR B20/RENOUVELLEMENT 2024/AMM.pdf'),
+        fileAt('GUINEE/FLUGEN 100MG CPR B10/AMM FLUGEN.pdf'),
+      ]),
+    );
+    expect(groups.map((g) => g.name)).toEqual([
+      'GUINEE - BONCIPRO - BONCIPRO 500MG CPR B20',
+      'GUINEE - BONCIPRO - BONCIPRO 750MG CPR B20',
+      'GUINEE - FLUGEN 100MG CPR B10',
+    ]);
+    expect(groups[1].files.map((f) => f.path)).toEqual([
+      'GUINEE - BONCIPRO - BONCIPRO 750MG CPR B20/AMM.pdf',
+      'GUINEE - BONCIPRO - BONCIPRO 750MG CPR B20/RENOUVELLEMENT 2024/AMM.pdf',
+      'GUINEE - BONCIPRO - BONCIPRO 750MG CPR B20/Documents communs/AMM Guinée 39 PRODUITS 2022.pdf',
+    ]);
+    expect(groups.every((g) => validateFolder(g.files).length === 0)).toBe(true);
+  });
+
+  it('découpe un dossier gamme (gamme / pays / produit)', () => {
+    const groups = splitByProduct(
+      filesFromPicker([
+        fileAt('CARDIO AFRIQUE/BENIN/LOLIP 10MG CPR B30/LOLIP.pdf'),
+        fileAt('CARDIO AFRIQUE/TOGO/LOLIP 10 MG CPR/AMM.pdf'),
+      ]),
+    );
+    expect(groups.map((g) => g.name)).toEqual([
+      'CARDIO AFRIQUE - BENIN - LOLIP 10MG CPR B30',
+      'CARDIO AFRIQUE - TOGO - LOLIP 10 MG CPR',
+    ]);
+  });
+
+  it('met de côté les formats non lus et les fichiers trop lourds sans bloquer le reste', () => {
+    const big = fileAt('PAYS/B/scan.pdf');
+    Object.defineProperty(big, 'size', { value: 26 * 1024 ** 2 });
+    const { kept, ignored } = setAside(
+      filesFromPicker([
+        fileAt('PAYS/A/AMM.pdf'),
+        fileAt('PAYS/A/liste.xls'),
+        fileAt('PAYS/A/Archive.zip'),
+        big,
+      ]),
+    );
+    expect(kept.map((f) => f.path)).toEqual(['PAYS/A/AMM.pdf']);
+    expect(ignored).toEqual([
+      'PAYS/A/liste.xls (format non lu)',
+      'PAYS/A/Archive.zip (format non lu)',
+      'PAYS/B/scan.pdf (plus de 25 Mo)',
+    ]);
   });
 });

@@ -51,9 +51,24 @@ MONTHS = {
     "decembre": 12,
     "december": 12,
 }
+# Abréviations imprimées sur les décisions (« 16 AVR 2019 », « 09 Déc. 2019 », « 24 SEP 2020 »).
+MONTH_ABBREVIATIONS = {
+    "janv": 1, "jan": 1, "fevr": 2, "fev": 2, "feb": 2, "avr": 4, "apr": 4, "juil": 7,
+    "jul": 7, "jun": 6, "aou": 8, "aug": 8, "sept": 9, "sep": 9, "oct": 10, "nov": 11,
+    "dec": 12,
+}  # fmt: skip
+ALL_MONTHS = {**MONTHS, **MONTH_ABBREVIATIONS}
+_MONTH_NAMES = "|".join(sorted(ALL_MONTHS, key=len, reverse=True))
+# « 1er juin 2020 », « 22nd July 2019 », « 22" July 2019 » (ordinal lu comme un guillemet).
+_TEXT_DATE = (
+    rf"(\d{{1,2}})(?:er|st|nd|rd|th|[\"'°º]{{1,2}}(?:nd|st|rd|th)?)?\.?\s*"
+    rf"({_MONTH_NAMES})\b\.?,?\s+(\d{{4}})"
+)
 DATE_PATTERN = (
     r"(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4}"
-    r"|\d{1,2}\s+(?:" + "|".join(MONTHS) + r")\s+\d{4})"
+    r"|\d{1,2}(?:er|st|nd|rd|th|[\"'°º]{1,2}(?:nd|st|rd|th)?)?\.?\s*(?:"
+    + _MONTH_NAMES
+    + r")\b\.?,?\s+\d{4})"
 )
 
 
@@ -62,10 +77,11 @@ def parse_date(value: str) -> str | None:
     match = re.search(DATE_PATTERN, plain)
     if not match:
         return None
+    textual = re.fullmatch(_TEXT_DATE, match.group())
     parts = re.split(r"[-/.\s]+", match.group())
     try:
-        if parts[1] in MONTHS:
-            day, month, year = int(parts[0]), MONTHS[parts[1]], int(parts[2])
+        if textual:
+            day, month, year = int(textual[1]), ALL_MONTHS[textual[2]], int(textual[3])
         elif len(parts[0]) == 4:
             year, month, day = map(int, parts)
         else:
@@ -100,7 +116,14 @@ _TOLERANT_DATE = r"([0-9oil|]{1,2}\s?[-/.]\s?[0-9oil|]{1,2}\s?[-/.]\s?[0-9]{4})(
 def _tolerant_dates(text: str, labels: str) -> list[str]:
     """Toutes les dates lisibles qui suivent l'un des libellés, dans l'ordre du texte."""
     found = []
-    for match in re.finditer(rf"(?:{labels})[ \t:]*" + _TOLERANT_DATE, text, re.I):
+    for match in re.finditer(
+        rf"(?:{labels})[ \t:]*(?:{_TOLERANT_DATE}|({DATE_PATTERN}))", text, re.I
+    ):
+        if match.group(2):  # date en toutes lettres (« à compter du 1er juin 2020 »)
+            value = parse_date(match.group(2))
+            if value:
+                found.append(value)
+            continue
         raw = match.group(1).translate(_OCR_DIGITS).replace(" ", "")
         if sum(character.isdigit() for character in match.group(1)) < 6:
             continue
@@ -134,11 +157,18 @@ _NUMBER_WORDS = {
 }
 
 
+# Capitales où les décisions sont signées (« COTONOU, le … »).
+_SIGNATURE_PLACES = (
+    "cotonou|porto novo|ouagadougou|yaounde|brazzaville|abidjan|djibouti|libreville|banjul"
+    "|conakry|bamako|nouakchott|niamey|dakar|n\\W?djamena|lome|antananarivo"
+)
+
+
 def _validity_months(plain: str) -> int | None:
     """Durée de validité imprimée (« cinq (5) ans », « eighteen (18) months »), en mois."""
     durations = set()
     for match in re.finditer(
-        r"(?:validite|valid|valable)[^\n]{0,90}?(?:\((\d{1,2})\s*[)a-z]?\s*"
+        r"(?:validite|valid|valable|periode)[^\n]{0,90}?(?:\((\d{1,2})\s*[)a-z]?\s*"
         r"|\b(" + "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True)) + r")\b[^\n(]{0,4}"
         r"(?:\(\s*[^\s)]{0,3}\s*\)?\s*)?)(ans|annees|years|mois|months)",
         plain,
@@ -215,15 +245,23 @@ def _edit_distance(first: str, second: str) -> int:
     return previous[-1]
 
 
-_NUMBER_TOKEN = r"([0-9a-z][0-9a-z/_.-]{2,40})"
+# Un numéro peut contenir des espaces suivis de chiffres (« MCA/Med 025/03/19 », « 245 041 »,
+# « SP.TG 5223 ») ; il s'arrête au premier mot (« 0003/CN/06/2019 du 09 Déc. 2019 »).
+_NUMBER_TOKEN = r"([0-9a-z][0-9a-z/_.-]{0,40}(?:[ ](?=[0-9])[0-9a-z/_.-]{1,20}){0,2})"
 # Chaque famille de mention est une lecture indépendante du même numéro : « Registration number »,
 # la mention « AMM N° » française, sa traduction « Marketing Authorization No. », et la ligne
 # « Décision N° » (qui, selon les pays, porte le numéro d'AMM ou un numéro d'acte distinct).
 _NUMBER_SOURCES = {
-    "registration": r"registration\s+number\s*[:.]?\s*"
-    r"|enregistre\w*\s+sous\s+le\s+n\S{0,2}\s*(?!/?\s*registration)",
-    "fr": r"(?:numero|n[°ºo.]*)\s*(?:d['’ ]*)?amm\s*[:=]?\s*"
-    r"|(?:amm|autorisation de mise sur le marche)\s*(?:n[°ºo.*]*\s*|numero\s+)",
+    "registration": r"registration\s+(?:number|no\.?)\s*[:.]?\s*"
+    r"|enregistre\w*\s+sous\s+le\s+n\S{0,2}\s*(?:amm[\s_:]*)?(?!/?\s*registration)",
+    # « … est renouvelée sous le numéro 0374R/09/2020 », « Sous le numéro : 7897 » : le numéro
+    # attribué par la décision, prioritaire sur l'ancien numéro qu'elle rappelle.
+    "granted": r"sous\s+le\s+(?:numero|n[°º])\s*[:.]?\s*(?:amm[\s_:]*)?",
+    "fr": r"(?:numero|n[°ºo.]*)\s*(?:d['’ ]*)?amm[\s_]*[:=]?[\s_]*"
+    r"|(?:amm|autorisation de mise sur le marche)\s*(?:n[°ºo.*]*\s*|numero\s+)"
+    r"|(?:n[°ºo.]*|numero)\s*(?:de\s+|du\s+)?visa\s*[:.]?\s*|visa\s+n[°ºo.]*\s*"
+    # Togo : « SP.TG 5223 » est le numéro d'AMM lui-même.
+    r"|(?=sp\.?\s?tg\s?\d)",
     "en": r"marketing\s+authori[sz]ation\s+(?:no|n[°º])\.?\s*",
     "decision": r"decision\s+n\s*[°º'’*]?\s*|(?:^|\n)\s*n\s*[°º'’*]\s*(?=\d)",
 }
@@ -247,7 +285,9 @@ def _number_readings(plain: str, text: str) -> dict[str, list[str]]:
     return readings
 
 
-def _authorization_number(plain: str, text: str, labeled: str = "") -> tuple[str, list[str]]:
+def _authorization_number(
+    plain: str, text: str, labeled: str = "", decision_is_amm: bool = False
+) -> tuple[str, list[str]]:
     """Numéro d'AMM confronté entre ses mentions ; une égalité entre lectures proches reste vide.
 
     `labeled` est la valeur d'un champ « Numéro AMM : … » en début de ligne, prioritaire.
@@ -272,7 +312,7 @@ def _authorization_number(plain: str, text: str, labeled: str = "") -> tuple[str
                 break
         else:
             clusters.append([key])
-    priority = ("label", "registration", "fr", "en", "decision_amm", "decision")
+    priority = ("label", "granted", "registration", "fr", "en", "decision_amm", "decision")
 
     def rank(cluster):
         best = min(priority.index(source) for key in cluster for source in sources[key])
@@ -280,7 +320,11 @@ def _authorization_number(plain: str, text: str, labeled: str = "") -> tuple[str
 
     for cluster in sorted(clusters, key=rank):
         # Un numéro d'acte (« Décision N° … ») sans autre mention n'est pas un numéro d'AMM.
+        # Sauf là où la décision d'homologation porte elle-même le numéro (Congo : « DECISION N°
+        # CV/04C-07G/09 … visa d'homologation »), et seulement faute de toute autre mention.
         if all(sources[key] == {"decision"} for key in cluster):
+            if decision_is_amm and len(clusters) == 1:
+                return originals[cluster[0]], []
             continue
         support = sorted(cluster, key=lambda key: -len(sources[key]))
         if len(support) > 1 and len(sources[support[0]]) == len(sources[support[1]]):
@@ -364,6 +408,87 @@ def _product_line(text: str) -> str:
     return ""
 
 
+# Décisions groupées : un tableau « Dénomination | N° AMM | Date » pour des dizaines de produits.
+_CODED_NUMBER = r"\b((?:E|MD)\s?[-/]\s?\d{4,6}\s?[-/]\s?\d{3,5})\b"  # E-2015-1669, MD/201924/0459
+_TRAILING_NUMBER = r"(?<![\d,.'/])(\d{3} \d{3}|\d{4,6})\s*\|?\s*$"  # « … B/30 12,0€ 5879 »
+_DATED_NUMBER = (
+    r"(?<![\d,.'/])(\d{4,6})\s+(?=\d{1,2}/\d{1,2}/\d{4}(?:\s+\d{1,2}/\d{1,2}/\d{4})?\s*\|?\s*$)"
+)
+_ROW_DATE = r"(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?!\d)"
+_PRESENTATION = re.compile(
+    r"\d\s*(?:mg|g|ml|%|mcg|ui)\b|\bb\s*/\s*\d|\b(?:comprim|cpr|gel|g[ée]lule|sirop|susp|inj|sol"
+    r"|pdre|poudre|sach|tablet|capsule|syrup|cr[eè]me|pommade|collyre|ovule|suppo|fl\b)",
+    re.I,
+)
+
+
+def _row_date(value: str) -> str | None:
+    match = re.search(_ROW_DATE, value)
+    if not match:
+        return None
+    day, month, year = int(match[1]), int(match[2]), int(match[3])
+    if year < 100:
+        year += 2000 if year < 70 else 1900
+    try:
+        return date(year, month, day).isoformat() if 1950 <= year <= 2150 else None
+    except ValueError:
+        return None
+
+
+def _clean_label(value: str) -> str:
+    value = re.sub(r"^\s*[\[(]?\d{1,3}\s*[\]).:_|-]*\s+", "", value)  # numéro de ligne
+    value = re.sub(r"\d+(?:[.,]\d+)*\s*(?:€|eur|euros|fcfa|f cfa)", " ", value, flags=re.I)
+    return re.sub(r"\s+", " ", re.sub(r"[|_]+", " ", value)).strip(" .;:-|")
+
+
+def table_rows(text: str) -> list[dict]:
+    """Lignes « produit → n° d'AMM (→ date) » d'une décision groupée ; [] s'il n'y a pas de tableau.
+
+    L'OCR restitue un tableau soit ligne par ligne, soit colonne par colonne (dénomination, puis
+    numéro, puis date sur des lignes successives) : la dénomination est alors la ligne précédente.
+    """
+    lines = text.splitlines()
+    rows = []
+    for index, line in enumerate(lines):
+        coded = re.search(_CODED_NUMBER, line)
+        # Guinée : « … 5 EURO 6261 10/09/2025 10/09/2030 » (numéro, début, fin en fin de ligne).
+        trailing = (
+            None if coded else (re.search(_TRAILING_NUMBER, line) or re.search(_DATED_NUMBER, line))
+        )
+        found = coded or trailing
+        if not found or re.match(r"\s*[-•]?\s*vu\b", fold(line)):
+            continue
+        number = found.group(1)
+        label = _clean_label(line[: found.start()])
+        if trailing and (
+            not _PRESENTATION.search(label)
+            or re.search(r"(?:" + _MONTH_NAMES + r")\.?\s*$", fold(label))
+        ):
+            continue
+        if sum(character.isalpha() for character in label) < 4:
+            for previous in reversed(lines[max(0, index - 3) : index]):
+                candidate = _clean_label(previous)
+                if (
+                    sum(character.isalpha() for character in candidate) >= 4
+                    and not re.search(_CODED_NUMBER, previous)
+                    and not re.search(r"denomination|designation|n.\s*de\s+visa", fold(previous))
+                ):
+                    label = candidate
+                    break
+            else:
+                continue
+        after = line[found.end() :] + "\n" + "\n".join(lines[index + 1 : index + 3])
+        rows.append(
+            {
+                "label": label[:160],
+                "number": number,
+                # La date suit le numéro, sur la ligne ou juste après, avant le numéro suivant.
+                "date": _row_date(re.split(_CODED_NUMBER, after)[0]),
+            }
+        )
+    return rows if len(rows) >= 3 else []
+
+
 def _mentions(text: str, names) -> list:
     padded = f" {normalize(text)} "
     matches = []
@@ -400,18 +525,34 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         re.search(r"\b(recepisse|accuse de reception|receipt)\b", header + " " + basename)
     )
     letter = bool(re.search(r"\b(courrier|lettre|letter)\b", basename))
+    # Autorisation temporaire d'importation (Mauritanie) : document annexe, jamais une AMM.
+    temporary = bool(
+        re.search(r"autorisation temporaire d importation", header) or re.match(r"ati\b", basename)
+    )
     decision = bool(
         re.search(
-            r"\b(decision|arrete|autorisation de mise sur le marche|marketing authori[sz]ation)\b",
+            r"\b(decision|arrete|autorisation de mise sur le marche|marketing authori[sz]ation"
+            r"|visa (?:de commercialisation|d homologation|d enregistrement)|homologation"
+            r"|approval for the registration|numero amm)\b",
             header,
         )
+        # Décisions dont l'en-tête est illisible mais qui portent « Numéro AMM : … ».
+        or re.search(r"(?:^|\n)\s*numero\s+(?:d['’ ]?)?amm\s*:", plain)
         # Titres de scans aux espaces perdus (« MISE SUR LEMARCHE ») ou en anglais seul.
         or re.search(
             r"autorisationdemisesurlemarche|authori[sz]ationtomarket|marketingauthori[sz]ation",
             header.replace(" ", ""),
         )
     )
-    official = decision and not ancillary and not receipt and not letter and reliability >= 65
+    official = (
+        decision
+        and not ancillary
+        and not receipt
+        and not letter
+        and not temporary
+        and reliability >= 65
+    )
+    # Une ATI est rangée comme pièce annexe (« Autre ») : elle ne prouve pas l'AMM.
     kind = "RECEPISSE" if receipt else "COURRIER" if letter else "AMM" if official else "AUTRE"
 
     product_names = [
@@ -429,6 +570,12 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     explicit_product = explicit_product or product_line
     matched_text = _mentions(explicit_product or text, product_names)
     matched_path = _mentions(path_text, product_names)
+    # Décision groupée (tableau, ou liste de plusieurs produits du catalogue) : elle ne désigne
+    # pas un produit à elle seule ; la ligne du produit du dossier est choisie plus tard.
+    rows = table_rows(text)
+    grouped = bool(rows) or (not explicit_product and len(matched_text) >= 3)
+    if grouped:
+        matched_text = []
     matched_products = matched_text or matched_path
     product_confidence = reliability if matched_text else 60 if matched_path else reliability
 
@@ -458,7 +605,10 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     cut = re.search(r"\s+(?:du|date|delivre|valable|pour)\b", fold(labeled_number))
     if cut:
         labeled_number = labeled_number[: cut.start()]
-    number, number_variants = _authorization_number(plain, text, labeled_number.upper()[:100])
+    decision_is_amm = bool(re.search(r"visa d.?homologation|portant homologation", plain))
+    number, number_variants = _authorization_number(
+        plain, text, labeled_number.upper()[:100], decision_is_amm
+    )
     holder = (
         _label_value(
             plain,
@@ -472,7 +622,8 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         plain,
         r"date\s+(?:de\s+)?(?:debut|delivrance|de\s+delivrance|prise d['’ ]effet)"
         r"|delivree?\s+le|debut\s+de\s+validite|valable\s+(?:a compter du|du)"
-        r"|date\s+d['’ ]effet|start\s+date",
+        r"|date\s+d['’ ]effet|start\s+date|registration\s+date|date\s+of\s+registration"
+        r"|date\s+d['’ ]enregistrement|date\s+du\s+visa",
     )
     decision_date = _labeled_date(
         plain,
@@ -481,8 +632,34 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     end_date = _labeled_date(
         plain,
         r"date\s+(?:de\s+)?fin|date\s+d['’ ]expiration|expire\s+le|valable\s+jusqu['’ ]au"
-        r"|fin\s+de\s+validite|end\s+date|expiration\s+date",
+        r"|fin\s+de\s+validite|end\s+date|expiration\s+date|expiry\s+date",
     )
+    # « Numéro AMM : 0003/CN/06/2019 du 09 Déc. 2019 au 08 Déc. 2024 »
+    # « … renouvelée pour une durée de cinq (5) ans allant du 27 avril 2025 au 27 avril 2030 »
+    period_range = re.search(
+        rf"(?:amm|visa|numero|n[°º]|allant|valable|validite)[^\n]{{0,60}}?\bdu\s+"
+        rf"({DATE_PATTERN})\s+au\s+({DATE_PATTERN})",
+        plain,
+    )
+    if period_range and not start_date:
+        start_date = parse_date(period_range.group(1))
+        end_date = end_date or parse_date(period_range.group(2))
+    if not decision_date:
+        # Lieu et date de signature en tête ou en pied (« COTONOU, le 16 AVR 2019 »,
+        # « Bamako, le 24 SEP 2020 », « Djibouti le 27/02/2024 »).
+        signed = re.search(
+            rf"(?:^|\n)[^\n]{{0,60}}?\b(?:{_SIGNATURE_PLACES}|fait\s+a\s+[a-z' -]{{3,25}})"
+            rf"\s*,?\s*(?:le|lc|te)\s*[.:,]?\s*({DATE_PATTERN})",
+            plain,
+        )
+        decision_date = parse_date(signed.group(1)) if signed else None
+    if not decision_date:
+        # Niger : la décision reprend la date de l'avis de la commission d'homologation.
+        opinion = re.search(
+            rf"(?:commission\s+nationale\s+d.?homologation|\bcnh\w*)[^\n]{{0,120}}?en\s+date\s+du\s*({DATE_PATTERN})",
+            plain,
+        )
+        decision_date = parse_date(opinion.group(1)) if opinion else None
     if not end_date and start_date:
         interval = re.search(rf"valable\s+du\s+{DATE_PATTERN}\s+au\s+({DATE_PATTERN})", plain)
         end_date = parse_date(interval.group(1)) if interval else None
@@ -549,10 +726,14 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         "explicit_product_labeled": bool(explicit_product) and not product_line,
         "product_source": "text" if matched_text else "path" if matched_path else "",
         "product_confidence": product_confidence,
+        "grouped": grouped,
+        "temporary_import": temporary,
+        "table_rows": rows,
         "country_ids": [str(country.pk) for country in matched_countries],
         "country_confidence": country_confidence,
-        "number": number if official else "",
-        "number_variants": number_variants if official else [],
+        # Le numéro d'une décision groupée est celui de la ligne du produit, pas celui de l'acte.
+        "number": number if official and not grouped else "",
+        "number_variants": number_variants if official and not grouped else [],
         "holder": holder if official else "",
         "start_date": start_date if official else None,
         "decision_date": decision_date if official else None,

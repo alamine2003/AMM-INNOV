@@ -32,6 +32,7 @@ import { batchState } from './dossierReview';
 import {
   filesFromDrop,
   filesFromPicker,
+  setAside,
   splitByProduct,
   validateFolder,
   type FolderFile,
@@ -53,9 +54,12 @@ export default function DossierImportsPage() {
   const [batchRun, setBatchRun] = useState<{ done: number; created: number; failed: string[] } | null>(null);
   const running = batchRun !== null && batchRun.done < groups.length;
   const busy = reading || upload.isPending || running;
-  const select = (next: FolderFile[]) => {
+  const [ignored, setIgnored] = useState<string[]>([]);
+  const select = (selection: FolderFile[]) => {
     upload.reset();
     setBatchRun(null);
+    const { kept: next, ignored: aside } = setAside(selection);
+    setIgnored(aside);
     const split = splitByProduct(next);
     setGroups(split);
     setFiles(next);
@@ -125,7 +129,7 @@ export default function DossierImportsPage() {
               <CreateNewFolderIcon color="primary" sx={{ fontSize: 36, mb: 1 }} />
               <Typography variant="h6">Déposez votre dossier AMM ici</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>
-                Sous-dossiers conservés · PDF, JPEG et PNG · 200 fichiers maximum
+                Dossier produit, pays ou gamme · PDF, JPEG et PNG · 200 fichiers maximum par produit
               </Typography>
               <Button variant="outlined" disabled={busy} onClick={() => picker.current?.click()}>
                 Choisir un dossier
@@ -179,6 +183,18 @@ export default function DossierImportsPage() {
                     <li key={index}>{error}</li>
                   ))}
                   {errors.length > 12 && <li>{errors.length - 12} autres fichiers à vérifier.</li>}
+                </Box>
+              </Alert>
+            )}
+            {ignored.length > 0 && (
+              <Alert severity="warning">
+                {ignored.length} fichier{ignored.length > 1 ? 's' : ''} mis de côté (seuls les PDF, JPEG et
+                PNG de 25 Mo au plus sont lus) ; le reste du dossier est envoyé :
+                <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                  {ignored.slice(0, 8).map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                  {ignored.length > 8 && <li>… et {ignored.length - 8} autres.</li>}
                 </Box>
               </Alert>
             )}
