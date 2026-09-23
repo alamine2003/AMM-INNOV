@@ -602,6 +602,15 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         text,
     )
     # Coupe « 00152 du 28/04/2025 » : recherche sur la forme repliée, découpe sur l'original.
+    # Certificat guinéen : « PGHT N° E-AMM Début de validité Fin de validité » puis, ligne
+    # suivante, « 22 EURO 5264 21/05/2024 21/05/2029 ».
+    certificate = re.search(
+        r"n\S{0,2}\s*e?\W?amm[^\n]*debut\s+de\s+validite[^\n]*\n[^\n]*?(?<![\d,.])(\d{4,6})\s+"
+        r"(\d{1,2}/\d{1,2}/\d{4})\s+(\d{1,2}/\d{1,2}/\d{4})",
+        plain,
+    )
+    if certificate and not labeled_number:
+        labeled_number = certificate.group(1)
     cut = re.search(r"\s+(?:du|date|delivre|valable|pour)\b", fold(labeled_number))
     if cut:
         labeled_number = labeled_number[: cut.start()]
@@ -641,6 +650,9 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         rf"({DATE_PATTERN})\s+au\s+({DATE_PATTERN})",
         plain,
     )
+    if certificate and not start_date:
+        start_date = parse_date(certificate.group(2))
+        end_date = end_date or parse_date(certificate.group(3))
     if period_range and not start_date:
         start_date = parse_date(period_range.group(1))
         end_date = end_date or parse_date(period_range.group(2))

@@ -139,6 +139,44 @@ place peut avoir perdu ses fichiers : l'écran affiche alors « Fichier perdu (s
 place du stockage permanent) : réimportez ce dossier. » Si le scan avait déjà été rangé dans la
 fiche, c'est la copie rangée qui est montrée.
 
+### Dossier pays ou gamme entier
+
+On peut déposer un dossier produit, un dossier pays (« CAMEROUN ») ou un dossier gamme
+(« CARDIO AFRIQUE », qui contient les pays). L'application crée un import par **dossier de
+présentation**, c'est-à-dire le dossier qui contient les documents. Ses sous-dossiers de période
+(« ORIGINE », « RENOUVELLEMENT 2020 ») restent avec lui.
+
+- Un document posé au-dessus des dossiers produits, par exemple une décision groupée à la racine
+  du pays, est joint à chaque produit en dessous, dans « Documents communs ».
+- Les fichiers que l'import ne lit pas (xls, zip, docx, alias macOS) et ceux de plus de 25 Mo
+  sont mis de côté et listés. Le reste du dossier part quand même.
+
+### Décisions des différents pays
+
+| Pays | Ce qui est lu |
+|---|---|
+| Cameroun, Gabon | « Décision N° … », « Registration number », « à partir du … » |
+| Sénégal | « Sous le numéro : 7897 », « Numéro AMM : … du … au … » |
+| Mali | « renouvelée sous le numéro 0374R/09/2020 … à compter du 1er juin 2020 » (le nouveau numéro, pas l'ancien) |
+| Gambie | « Registration number / Registration date / Registration expiry date » |
+| Togo | « SP.TG 5223 » |
+| Bénin | « visa de commercialisation », « N° AMM_2019_4848_EG », « COTONOU, le 16 AVR 2019 » |
+| Congo | « DECISION N° CV/04C-07G/09 portant homologation » (le numéro de décision est le numéro d'AMM) |
+| Niger | date de l'avis de la commission nationale d'homologation |
+| Côte d'Ivoire, Guinée, Tchad | décisions groupées en tableau (voir ci-dessous) |
+| Mauritanie | ATI (autorisation temporaire d'importation) : pièce annexe, jamais une preuve d'AMM |
+
+La date de signature (« Bamako, le 24 SEP 2020 », « Fait à Dakar, le … ») sert de date de décision.
+Les mois abrégés (« AVR », « Déc. ») et les ordinaux (« 1er », « 22nd ») sont reconnus.
+
+### Décisions groupées
+
+Une décision peut accorder ou renouveler des dizaines de produits d'un coup (tableau
+« Dénomination | N° AMM | Date »). L'import lit le tableau, que l'OCR le restitue ligne par ligne
+ou colonne par colonne. Il ne retient que **la ligne du produit du dossier**, pour son numéro et
+sa date. Si le produit n'y figure pas, la décision est rangée comme pièce annexe et un point à
+vérifier le signale.
+
 ## 9. Où c'est écrit dans le code
 
 | Quoi | Où |
