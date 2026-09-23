@@ -233,3 +233,22 @@ def name_compatible(explicit: str, product, products) -> bool:
         target_words
     )
     return not (distinctive & siblings)
+
+
+def pick_table_row(rows: list[dict], product, products) -> dict | None:
+    """Ligne d'une décision groupée qui désigne `product` ; None si absente ou ambiguë."""
+    matches = []
+    for row in rows:
+        if name_compatible(row["label"], product, products):
+            words, _ = _parts(row["label"])
+            target, _ = _parts(product.name)
+            ratio = SequenceMatcher(None, " ".join(words), " ".join(target)).ratio()
+            matches.append((ratio, row))
+    if not matches:
+        return None
+    matches.sort(key=lambda item: -item[0])
+    if len(matches) > 1 and matches[0][0] - matches[1][0] < 0.05:
+        # Même dénomination répétée (colonnes relues deux fois) : même numéro = pas d'ambiguïté.
+        if normalize(matches[0][1]["number"]) != normalize(matches[1][1]["number"]):
+            return None
+    return matches[0][1]
