@@ -17,7 +17,15 @@ import type { DossierImportFile } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { saveBlob } from '@/lib/download';
 
-function ViewerContent({ batchId, file }: { batchId: string; file: DossierImportFile }) {
+/** Un scan à afficher : son nom, son type et comment le charger (lot ou point à vérifier). */
+export interface ScanToView {
+  id: string;
+  name: string;
+  contentType: string;
+  load: () => Promise<Blob>;
+}
+
+function ViewerContent({ file }: { file: ScanToView }) {
   const [loaded, setLoaded] = useState<{ blob: Blob; url: string } | null>(null);
   const [error, setError] = useState<unknown>();
   const [page, setPage] = useState(1);
@@ -25,7 +33,8 @@ function ViewerContent({ batchId, file }: { batchId: string; file: DossierImport
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | undefined;
-    fetchDossierFile(batchId, file.id)
+    file
+      .load()
       .then((blob) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
@@ -38,7 +47,9 @@ function ViewerContent({ batchId, file }: { batchId: string; file: DossierImport
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [batchId, file.id]);
+    // Un scan se charge une fois par ouverture (clé de rendu = identifiant du scan).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file.id]);
   return (
     <>
       <DialogContent dividers>
@@ -46,11 +57,11 @@ function ViewerContent({ batchId, file }: { batchId: string; file: DossierImport
         {!error && !loaded && <LoadingBlock />}
         {loaded && (
           <Box sx={{ textAlign: 'center', overflow: 'auto' }}>
-            {file.content_type.startsWith('image/') ? (
+            {file.contentType.startsWith('image/') ? (
               <Box
                 component="img"
                 src={loaded.url}
-                alt={file.relative_path}
+                alt={file.name}
                 sx={{ maxWidth: '100%', height: 'auto' }}
               />
             ) : (
@@ -85,7 +96,7 @@ function ViewerContent({ batchId, file }: { batchId: string; file: DossierImport
       <DialogActions>
         <Button
           disabled={!loaded}
-          onClick={() => loaded && saveBlob(loaded.blob, file.relative_path.split('/').at(-1) || 'document')}
+          onClick={() => loaded && saveBlob(loaded.blob, file.name.split('/').at(-1) || 'document')}
         >
           Télécharger le document
         </Button>
@@ -94,6 +105,21 @@ function ViewerContent({ batchId, file }: { batchId: string; file: DossierImport
   );
 }
 
+export function ScanViewer({ scan, onClose }: { scan: ScanToView | null; onClose: () => void }) {
+  return (
+    <Dialog open={!!scan} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography component="span" sx={{ flex: 1, overflowWrap: 'anywhere' }}>
+          {scan?.name}
+        </Typography>
+        <Button onClick={onClose}>Fermer</Button>
+      </DialogTitle>
+      {scan && <ViewerContent key={scan.id} file={scan} />}
+    </Dialog>
+  );
+}
+
+/** Scan déposé dans un lot, diffusé depuis le stockage (message clair si le fichier est perdu). */
 export function DossierFileViewer({
   batchId,
   file,
@@ -104,14 +130,16 @@ export function DossierFileViewer({
   onClose: () => void;
 }) {
   return (
-    <Dialog open={!!file} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography component="span" sx={{ flex: 1, overflowWrap: 'anywhere' }}>
-          {file?.relative_path}
-        </Typography>
-        <Button onClick={onClose}>Fermer</Button>
-      </DialogTitle>
-      {file && <ViewerContent key={file.id} batchId={batchId} file={file} />}
-    </Dialog>
+    <ScanViewer
+      scan={
+        file && {
+          id: file.id,
+          name: file.relative_path,
+          contentType: file.content_type,
+          load: () => fetchDossierFile(batchId, file.id),
+        }
+      }
+      onClose={onClose}
+    />
   );
 }

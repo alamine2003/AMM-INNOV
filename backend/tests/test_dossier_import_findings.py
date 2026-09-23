@@ -20,10 +20,11 @@ def test_out_of_scope_country_user_still_sees_his_own_blocked_dossier(users, pro
     staged(batch, "Dossier/AMM_ORIGINE/decision.pdf", decision(product, country="Côte d'Ivoire"))
     analyze_dossier(str(batch.pk))
     batch.refresh_from_db()
-    assert batch.status == DossierImport.Status.READY
+    assert batch.status == DossierImport.Status.QUESTION
     response = client_for(users["country"]).get(f"/api/v1/dossier-imports/{batch.pk}/")
     assert response.status_code == 200
-    assert any("périmètre" in item for item in response.json()["preview"]["blockers"])
+    question = response.json()["preview"]["question"]
+    assert any("périmètre" in item for item in question["reasons"])
 
 
 def test_receipt_document_date_is_the_filing_date(users, product):
@@ -47,4 +48,7 @@ def test_number_already_used_by_another_amm_of_the_country_is_flagged(
     batch = DossierImport.objects.create(root_name="Dossier", created_by=users["hq"])
     staged(batch, "Dossier/AMM_ORIGINE/decision.pdf", decision(product))
     preview = build_preview(batch)
-    assert any("déjà attribué" in item and other.name in item for item in preview["warnings"])
+    assert any(
+        "déjà attribué" in point["message"] and other.name in point["message"]
+        for point in preview["review_points"]
+    )

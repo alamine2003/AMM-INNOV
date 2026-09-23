@@ -604,6 +604,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dossier-imports/{id}/choose-amm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description « Ranger les documents ici » : l'AMM choisie, le dossier est relu puis rangé. */
+        post: operations["v1_dossier_imports_choose_amm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dossier-imports/{id}/confirm/": {
         parameters: {
             query?: never;
@@ -630,6 +647,91 @@ export interface paths {
         get: operations["v1_dossier_imports_file_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-review-points/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Points à vérifier plus tard, par AMM ou par lot, dans le périmètre de l'utilisateur. */
+        get: operations["v1_dossier_review_points_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-review-points/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Points à vérifier plus tard, par AMM ou par lot, dans le périmètre de l'utilisateur. */
+        get: operations["v1_dossier_review_points_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-review-points/{id}/apply/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description « Appliquer la valeur du scan » : remplace la valeur de la fiche (audit, recalcul). */
+        post: operations["v1_dossier_review_points_apply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-review-points/{id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Le scan de preuve du point (réglementaires du pays compris, sans accès au lot). */
+        get: operations["v1_dossier_review_points_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dossier-review-points/{id}/ignore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description « Ignorer » : la fiche reste telle quelle, le point est fermé. */
+        post: operations["v1_dossier_review_points_ignore_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1297,6 +1399,8 @@ export interface components {
             readonly owner_email: string;
             /** @default false */
             readonly has_current_scan: boolean;
+            /** @default 0 */
+            readonly open_review_points: number;
             readonly last_renewal: components["schemas"]["LastRenewal"] | null;
             /** Format: date-time */
             readonly created_at: string;
@@ -1405,6 +1509,8 @@ export interface components {
             readonly owner_email: string;
             /** @default false */
             readonly has_current_scan: boolean;
+            /** @default 0 */
+            readonly open_review_points: number;
             readonly last_renewal: components["schemas"]["LastRenewal"] | null;
             /** Format: date-time */
             readonly created_at: string;
@@ -1640,9 +1746,16 @@ export interface components {
             readonly source: string;
             readonly target: string;
         };
+        /** @description Réponse à la question « c'est quelle AMM ? ». */
+        DossierChooseAmmRequest: {
+            /** Format: uuid */
+            amm_id: string;
+        };
+        /** @description « Ranger les documents » (lot prêt), ou création de l'AMM absente par le siège. */
         DossierConfirmRequest: {
             preview_token: string;
-            accepted_changes?: string[];
+            /** @default false */
+            create_amm: boolean;
         };
         DossierFile: {
             /** Format: uuid */
@@ -1673,16 +1786,56 @@ export interface components {
             readonly audit: components["schemas"]["DossierChange"][];
             readonly summary: unknown;
             readonly auto_applied: boolean;
+            readonly review_points: components["schemas"]["DossierReviewPoint"][];
+            readonly open_points_count: number;
         };
         /**
          * @description * `PENDING` - En attente
          *     * `RUNNING` - Analyse en cours
-         *     * `READY` - À valider
-         *     * `APPLIED` - Enregistré
+         *     * `READY` - Prêt à ranger
+         *     * `QUESTION` - Question : quelle AMM ?
+         *     * `APPLIED` - Rangé
          *     * `FAILED` - Analyse échouée
          * @enum {string}
          */
-        DossierImportStatusEnum: "PENDING" | "RUNNING" | "READY" | "APPLIED" | "FAILED";
+        DossierImportStatusEnum: "PENDING" | "RUNNING" | "READY" | "QUESTION" | "APPLIED" | "FAILED";
+        /** @description Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée) ou doute de lecture. */
+        DossierReviewPoint: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly batch_id: string;
+            readonly batch_name: string;
+            /** Format: uuid */
+            readonly amm_id: string;
+            /** Format: uuid */
+            readonly renewal_id: string | null;
+            readonly code: string;
+            readonly field: string;
+            readonly message: string;
+            readonly recorded_value: unknown;
+            readonly scan_value: unknown;
+            /** Format: uuid */
+            readonly proof_file_id: string | null;
+            readonly proof_name: string | null;
+            readonly proof_content_type: string | null;
+            readonly confidence: number;
+            readonly applicable: boolean;
+            readonly status: components["schemas"]["DossierReviewPointStatusEnum"];
+            /** Format: email */
+            readonly resolved_by_email: string | null;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `OPEN` - À vérifier
+         *     * `APPLIED` - Valeur du scan appliquée
+         *     * `IGNORED` - Ignoré
+         * @enum {string}
+         */
+        DossierReviewPointStatusEnum: "OPEN" | "APPLIED" | "IGNORED";
         /**
          * @description * `COMPLET` - Dossier complet
          *     * `INCOMPLET` - Dossier incomplet
@@ -3693,6 +3846,34 @@ export interface operations {
             };
         };
     };
+    v1_dossier_imports_choose_amm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier import. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DossierChooseAmmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DossierChooseAmmRequest"];
+                "application/json": components["schemas"]["DossierChooseAmmRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierImport"];
+                };
+            };
+        };
+    };
     v1_dossier_imports_confirm_create: {
         parameters: {
             query?: never;
@@ -3741,6 +3922,132 @@ export interface operations {
                 };
                 content: {
                     "application/pdf": string;
+                };
+            };
+            /** @description No response body */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_dossier_review_points_list: {
+        parameters: {
+            query?: {
+                /** @description Quel champ utiliser pour classer les résultats. */
+                ordering?: string;
+                /** @description Un terme de recherche. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierReviewPoint"][];
+                };
+            };
+        };
+    };
+    v1_dossier_review_points_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier review point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierReviewPoint"];
+                };
+            };
+        };
+    };
+    v1_dossier_review_points_apply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier review point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierReviewPoint"];
+                };
+            };
+        };
+    };
+    v1_dossier_review_points_file_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier review point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description No response body */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_dossier_review_points_ignore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) dossier review point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierReviewPoint"];
                 };
             };
         };

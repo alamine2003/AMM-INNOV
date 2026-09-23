@@ -88,7 +88,7 @@ export default function DossierImportsPage() {
     <Box>
       <PageHeader
         title="Import intelligent de dossiers AMM"
-        subtitle="Déposez le dossier reçu (décision d’origine, renouvellements, courriers). Si la lecture est sûre et ne change aucune donnée enregistrée, l’import est validé automatiquement ; sinon il vous reste quelques points à vérifier."
+        subtitle="Déposez le dossier reçu (décision d’origine, renouvellements, courriers) : l’application trouve l’AMM, range chaque scan à sa période et met à jour dates, statut et complétude. Elle ne vous pose une question que si elle ne sait pas de quelle AMM il s’agit."
       />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
@@ -184,15 +184,15 @@ export default function DossierImportsPage() {
             )}
             {groups.length > 0 && (
               <Alert severity="info">
-                Ce dossier regroupe {groups.length} produits : chacun sera analysé comme un import séparé.
-                Vous vérifierez et validerez ensuite chaque produit dans l’historique ci-dessous.
+                Ce dossier regroupe {groups.length} produits : chacun est analysé et rangé comme un import
+                séparé. Suivez le résultat de chaque produit dans l’historique ci-dessous.
               </Alert>
             )}
             {batchRun && (
               <Alert severity={batchRun.failed.length ? 'warning' : 'success'}>
                 {running
                   ? `Envoi des produits : ${batchRun.done + 1} / ${groups.length}…`
-                  : `${batchRun.created} import(s) créé(s). Ouvrez chacun dans l’historique pour vérifier et valider.`}
+                  : `${batchRun.created} import(s) créé(s). Leur résultat s’affiche dans l’historique ci-dessous.`}
                 {batchRun.failed.length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2 }}>
                     {batchRun.failed.map((failure) => (
@@ -247,53 +247,67 @@ export default function DossierImportsPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>Dossier</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>AMM touchée et changements</TableCell>
-                    <TableCell>État</TableCell>
+                    <TableCell>AMM</TableCell>
+                    <TableCell>Résultat</TableCell>
+                    <TableCell align="right">Points à vérifier</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {batches.data.results.map((batch) => (
-                    <TableRow key={batch.id}>
-                      <TableCell>
-                        <MuiLink component={Link} to={`/dossier-imports/${batch.id}`}>
-                          {batch.root_name}
-                        </MuiLink>
-                      </TableCell>
-                      <TableCell>{formatDateTime(batch.created_at)}</TableCell>
-                      <TableCell>
-                        {hasSummary(batch.summary) ? (
-                          <>
-                            <MuiLink component={Link} to={`/amms/${batch.summary.amm_id}`}>
-                              {batch.summary.product} ({batch.summary.country_iso2})
+                  {batches.data.results.map((batch) => {
+                    const state = batchState(batch);
+                    const ammId = hasSummary(batch.summary) ? batch.summary.amm_id : batch.amm_id;
+                    const ammLabel = hasSummary(batch.summary)
+                      ? `${batch.summary.product} (${batch.summary.country_iso2})`
+                      : batch.preview?.amm.product_name
+                        ? `${batch.preview.amm.product_name}${batch.preview.amm.country_iso2 ? ` (${batch.preview.amm.country_iso2})` : ''}`
+                        : '—';
+                    return (
+                      <TableRow key={batch.id}>
+                        <TableCell>
+                          <MuiLink component={Link} to={`/dossier-imports/${batch.id}`}>
+                            {batch.root_name}
+                          </MuiLink>
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {formatDateTime(batch.created_at)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {ammId && batch.status === 'APPLIED' ? (
+                            <MuiLink component={Link} to={`/amms/${ammId}`}>
+                              {ammLabel}
                             </MuiLink>
-                            {batch.summary.lines
-                              .filter((line) => /^(Statut|Dossier|Échéance|AMM créée)/.test(line))
-                              .map((line) => (
-                                <Typography
-                                  key={line}
-                                  variant="caption"
-                                  display="block"
-                                  color="text.secondary"
-                                >
-                                  {line}
-                                </Typography>
-                              ))}
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={batchState(batch).label}
-                          color={batchState(batch).tone}
-                          variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          ) : batch.status === 'QUESTION' ? (
+                            <Typography variant="body2" color="text.secondary">
+                              À préciser
+                            </Typography>
+                          ) : (
+                            ammLabel
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={state.label}
+                            color={state.tone}
+                            variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          {batch.open_points_count ? (
+                            <Chip
+                              size="small"
+                              color="warning"
+                              variant="outlined"
+                              label={batch.open_points_count}
+                              aria-label={`${batch.open_points_count} point(s) à vérifier`}
+                            />
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

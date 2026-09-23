@@ -85,7 +85,61 @@ de la validité : une AMM expirée dont la décision est scannée reste « Dossi
 Les réglementaires téléversent les décisions et enregistrent les renouvellements. Tout le reste
 — statut, urgence, dates de dépôt, état du dossier, alertes, rappels — est calculé.
 
-## 8. Où c'est écrit dans le code
+## 8. Import d'un dossier : on dépose, c'est rangé
+
+Menu « Import de dossiers » : le réglementaire dépose le dossier reçu (décision d'origine,
+décisions de renouvellement, courriers), et c'est fini. L'application :
+
+1. **trouve l'AMM** (produit + pays) à partir des décisions et du nom du dossier ;
+2. **range chaque scan à sa période** : AMM d'origine, ou renouvellement n ;
+3. **crée les renouvellements obtenus** lus sur les décisions (numéro et date de début lisibles ;
+   date de fin lue, sinon déduite comme d'habitude : début + durée de validité du pays) ;
+4. **complète les champs vides** de la fiche (titulaire, n°, dates…) ;
+5. **recalcule** statut, échéance et complétude (règles des sections 2 à 6) ;
+6. **prévient** l'auteur, le siège et les réglementaires du pays (notification avec le bilan).
+
+Rien à valider, pas de pourcentage de confiance à interpréter : si l'AMM est identifiée, le dossier
+est rangé automatiquement (« Rangé automatiquement »).
+
+### Points à vérifier plus tard
+
+Quand un scan ne dit pas la même chose que la fiche sur une valeur **déjà renseignée**, l'import
+**garde la valeur de la fiche**, range quand même le scan et note un **point à vérifier plus
+tard**. Jamais bloquant, jamais d'écrasement automatique. Même chose pour :
+
+- un renouvellement lu qui entre en conflit avec un renouvellement déjà enregistré (même période) :
+  la fiche est gardée ;
+- une décision sans date ni numéro lisibles, ou dont on ne sait pas la période : le scan est rangé
+  comme « autre document » de la fiche ;
+- deux décisions du dossier qui se contredisent, un n° d'AMM mal lisible ou déjà attribué, un
+  document lu en partie.
+
+Les points apparaissent sur la **fiche AMM** (encadré « Points à vérifier plus tard », au-dessus
+des onglets ; un badge dans la liste des AMM en donne le nombre) et sur la page du lot. Pour chacun :
+**Voir le scan**, puis **Appliquer la valeur du scan** (la fiche est corrigée, tracée dans
+l'historique avec le scan en preuve) ou **Ignorer**. Réimporter le même dossier ne recrée ni
+document, ni renouvellement, ni point déjà traité.
+
+### Le seul cas où l'import pose une question
+
+Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu ou absent du
+catalogue, produit sans AMM dans le pays, plusieurs AMM possibles, pays inconnu ou hors de votre
+périmètre. Le lot affiche alors **« Question : c'est quelle AMM ? »** : choisissez l'AMM (recherche
+par produit, limitée au pays du dossier et à votre périmètre) puis **« Ranger les documents
+ici »** ; le dossier est relu et rangé automatiquement sur cette AMM.
+
+L'import ne crée jamais d'AMM ni de produit tout seul. Quand l'AMM n'existe pas encore et que la
+décision d'origine est lisible, le siège peut la créer depuis le lot (bouton secondaire, avec
+confirmation).
+
+### « Voir le scan »
+
+Les scans sont servis depuis le stockage permanent (Cloudflare R2). Un lot déposé avant sa mise en
+place peut avoir perdu ses fichiers : l'écran affiche alors « Fichier perdu (stocké avant la mise en
+place du stockage permanent) : réimportez ce dossier. » Si le scan avait déjà été rangé dans la
+fiche, c'est la copie rangée qui est montrée.
+
+## 9. Où c'est écrit dans le code
 
 | Quoi | Où |
 | --- | --- |
@@ -94,10 +148,13 @@ Les réglementaires téléversent les décisions et enregistrent les renouvellem
 | Recalcul nocturne | `apps.amm.tasks.recompute_all_statuses` |
 | Rappel quotidien « À renouveler » | `backend/apps/notifications/reminders.py` |
 | Règles d'alerte | `backend/apps/alerts/` |
-| Projection « Après validation » de l'import de dossier | `backend/apps/imports/dossier/projection.py` |
+| Import de dossier : plan de rangement, question « quelle AMM ? », points à vérifier | `backend/apps/imports/dossier/preview.py` |
+| Rangement automatique (après l'analyse) | `backend/apps/imports/tasks.py`, `backend/apps/imports/dossier/application.py` |
+| Points à vérifier : appliquer la valeur du scan / ignorer | `backend/apps/imports/dossier/review_points.py` |
+| Résultat prévu d'un lot (statut, échéance, complétude) | `backend/apps/imports/dossier/projection.py` |
 | Miroir côté interface (libellés, couleurs, `statusFor`, `filingDates`) | `frontend/src/lib/urgency.ts` |
 
-## 9. Algorithme, en une page
+## 10. Algorithme, en une page
 
 ```
 renouvellements_obtenus = renouvellements où statut = OBTENU et date de fin renseignée

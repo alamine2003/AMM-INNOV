@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import DossierChange, DossierFile, DossierImport, ImportBatch, ImportRow
+from .models import (
+    DossierChange,
+    DossierFile,
+    DossierImport,
+    DossierReviewPoint,
+    ImportBatch,
+    ImportRow,
+)
 
 
 class ImportRowInline(admin.TabularInline):
@@ -59,3 +66,11 @@ class DossierChangeAdmin(ReadOnlyDossierAdmin):
     list_filter = ("field", "source")
     search_fields = ("amm__original_number", "amm__product__name", "proof_file__relative_path")
     list_select_related = ("amm__product", "amm__country", "user")
+
+
+@admin.register(DossierReviewPoint)
+class DossierReviewPointAdmin(ReadOnlyDossierAdmin):
+    list_display = ("amm", "code", "field", "status", "created_at")
+    list_filter = ("status", "code")
+    search_fields = ("message", "amm__product__name")
+    list_select_related = ("amm__product", "amm__country")

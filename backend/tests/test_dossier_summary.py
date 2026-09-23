@@ -39,7 +39,7 @@ def test_summary_and_notifications_after_a_renewal(
     preview = ready(batch)
     assert preview["can_apply"], preview["blockers"]
     with django_capture_on_commit_callbacks(execute=True):
-        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
+        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
 
     batch.refresh_from_db()
     s = batch.summary
@@ -78,7 +78,7 @@ def test_scan_of_an_outdated_decision_says_what_is_missing(
     preview = ready(batch)
     assert preview["can_apply"], preview["blockers"]
     with django_capture_on_commit_callbacks(execute=True):
-        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[])
+        apply_dossier(batch.pk, user=users["hq"], token=batch.preview_token)
 
     s = DossierImport.objects.get(pk=batch.pk).summary
     assert s["after"]["dossier_state"] == "INCOMPLET"
@@ -100,7 +100,7 @@ def test_summary_failure_never_breaks_the_import(
     monkeypatch.setattr("apps.imports.dossier.summary.build_summary", boom)
     with django_capture_on_commit_callbacks(execute=True):
         applied = apply_dossier(
-            batch.pk, user=users["hq"], token=batch.preview_token, accepted_changes=[]
+            batch.pk, user=users["hq"], token=batch.preview_token
         )
     assert applied.status == DossierImport.Status.APPLIED
     assert DossierImport.objects.get(pk=batch.pk).summary == {}

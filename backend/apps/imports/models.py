@@ -80,8 +80,11 @@ class DossierImport(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "En attente"
         RUNNING = "RUNNING", "Analyse en cours"
-        READY = "READY", "À valider"
-        APPLIED = "APPLIED", "Enregistré"
+        # Lu, AMM identifiée, pas encore rangé (rangement automatique désactivé ou en échec).
+        READY = "READY", "Prêt à ranger"
+        # L'AMM cible n'est pas identifiable : une seule question, « c'est quelle AMM ? ».
+        QUESTION = "QUESTION", "Question : quelle AMM ?"
+        APPLIED = "APPLIED", "Rangé"
         FAILED = "FAILED", "Analyse échouée"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -106,8 +109,8 @@ class DossierImport(models.Model):
     # Bilan de ce que la validation a réellement changé (état avant/après de l'AMM,
     # renouvellements créés, documents rattachés, champs modifiés). Rempli après commit.
     summary = models.JSONField(default=dict, blank=True)
-    # Validé sans intervention humaine : lecture sûre, aucune valeur enregistrée remplacée
-    # (voir `apps.imports.tasks.analyze_dossier`). L'auteur de l'import reste le validateur.
+    # Rangé sans intervention humaine dès l'AMM identifiée (voir `apps.imports.tasks`) ; aucune
+    # valeur enregistrée n'est remplacée. L'auteur de l'import reste le validateur tracé.
     auto_applied = models.BooleanField(default=False)
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -182,3 +185,55 @@ class DossierChange(models.Model):
 
     def __str__(self):
         return f"{self.amm_id} / {self.field}"
+
+
+class DossierReviewPoint(models.Model):
+    """« Point à vérifier plus tard » : écart ou doute relevé par un import, jamais bloquant.
+
+    L'import garde la valeur de la fiche et range quand même le scan. Le réglementaire décide
+    plus tard, depuis la fiche AMM ou le lot : « Appliquer la valeur du scan » (tracé comme une
+    `DossierChange`) ou « Ignorer ».
+    """
+
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "À vérifier"
+        APPLIED = "APPLIED", "Valeur du scan appliquée"
+        IGNORED = "IGNORED", "Ignoré"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    batch = models.ForeignKey(DossierImport, on_delete=models.CASCADE, related_name="review_points")
+    amm = models.ForeignKey(
+        "amm.MarketingAuthorization", on_delete=models.CASCADE, related_name="review_points"
+    )
+    renewal = models.ForeignKey(
+        "amm.Renewal", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    code = models.CharField(max_length=32)
+    # Champ concerné (vide pour un simple doute sans valeur à appliquer).
+    field = models.CharField(max_length=100, blank=True)
+    recorded_value = models.JSONField(null=True, blank=True)
+    scan_value = models.JSONField(null=True, blank=True)
+    proof_file = models.ForeignKey(
+        DossierFile, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    confidence = models.PositiveSmallIntegerField(default=0)
+    message = models.TextField()
+    # Empreinte de l'écart : un même dossier réimporté ne recrée pas le point.
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["amm", "status"], name="review_point_amm_status")]
+
+    def __str__(self):
+        return self.message[:80]
+
+    @property
+    def applicable(self) -> bool:
+        return bool(self.field) and self.scan_value not in (None, "")

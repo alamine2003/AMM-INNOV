@@ -25,7 +25,7 @@ from apps.accounts.permissions import (
 )
 from apps.amm.models import Renewal
 from apps.amm.serializers import django_to_drf_validation_error
-from apps.core.exceptions import StorageUnavailable
+from apps.core.exceptions import StorageUnavailable, StoredFileLost
 
 from .models import Document
 from .serializers import (
@@ -53,8 +53,34 @@ def open_stored_file(field_file) -> None:
         field_file.open("rb")
         field_file.read(0)  # S3 : le téléchargement a lieu ici ; une panne donne un 503 propre
     except Exception as exc:
+        if file_is_missing(field_file, exc):
+            # Fichier absent du stockage (anciens lots sur disque éphémère) : 410 explicite.
+            logger.warning("Fichier absent du stockage : %s", field_file.name)
+            raise StoredFileLost() from exc
         logger.warning("Stockage indisponible pour %s : %s", field_file.name, exc)
         raise StorageUnavailable() from exc
+
+
+def file_is_missing(field_file, exc=None) -> bool:
+    """Le fichier n'existe plus dans le stockage par défaut (disque local ou S3/R2).
+
+    Distingue un objet absent (404 S3, FileNotFoundError) d'un stockage injoignable : dans le
+    doute (le stockage ne répond pas non plus à `exists`), ce n'est pas « perdu ».
+    """
+    if not field_file.name:
+        return True
+    if isinstance(exc, FileNotFoundError):
+        return True
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict):
+        code = str(response.get("Error", {}).get("Code", ""))
+        http = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        if http == 404 or code in {"404", "NoSuchKey", "NotFound"}:
+            return True
+    try:
+        return not field_file.storage.exists(field_file.name)
+    except Exception:  # noqa: BLE001 — stockage injoignable : ce n'est pas un fichier perdu
+        return False
 
 
 def _apply_common_filters(queryset, request):

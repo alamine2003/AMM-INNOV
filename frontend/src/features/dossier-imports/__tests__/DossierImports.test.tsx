@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import type { DossierImportBatch } from '@/api/types';
+import type { Amm, DossierImportBatch, DossierReviewPoint } from '@/api/types';
+import { db } from '@/mocks/handlers';
 import { server } from '@/mocks/server';
 import { loginAs, renderApp } from '@/test/utils';
 
 const endpoint = '/api/v1/dossier-imports';
+const pointsEndpoint = '/api/v1/dossier-review-points';
 const file = (id: string, path: string) => ({
   id,
   relative_path: path,
@@ -16,28 +18,84 @@ const file = (id: string, path: string) => ({
   extraction: {},
   document_id: null,
 });
+
+const point = (overrides: Partial<DossierReviewPoint> = {}): DossierReviewPoint => ({
+  id: 'point-1',
+  batch_id: 'batch-1',
+  batch_name: 'AMM Produit X',
+  amm_id: 'amm-1',
+  renewal_id: null,
+  code: 'value_mismatch',
+  field: 'original_number',
+  message: 'N° d’AMM (AMM d’origine) : la fiche indique « 11380113 », le scan indique « 12380213 ».',
+  recorded_value: '11380113',
+  scan_value: '12380213',
+  proof_file_id: 'file-1',
+  proof_name: 'decision.pdf',
+  proof_content_type: 'application/pdf',
+  confidence: 80,
+  applicable: true,
+  status: 'OPEN',
+  resolved_by_email: null,
+  resolved_at: null,
+  created_at: '2026-09-10T09:01:00Z',
+  ...overrides,
+});
+
+const summary = {
+  amm_id: 'amm-1',
+  product: 'Produit X',
+  country: 'Sénégal',
+  country_iso2: 'SN',
+  number: '11380113',
+  created: false,
+  before: { status: 'EXPIRE', dossier_state: 'INCOMPLET', effective_end_date: '2026-01-01' },
+  after: { status: 'VALIDE', dossier_state: 'COMPLET', effective_end_date: '2031-01-01' },
+  renewals_created: [{ number: 'REN/2026', start_date: '2026-01-01', end_date: '2031-01-01' }],
+  fields_changed: [],
+  documents: [{ title: 'decision.pdf', kind: 'AMM', period: 'renewal' as const }],
+  missing_scan: null,
+  review_points: 1,
+  lines: ['Statut : Expirée → Valide'],
+};
+
+/** Lot rangé automatiquement : origine + renouvellement créé, un écart gardé en point. */
 const fixture = (): DossierImportBatch => ({
   id: 'batch-1',
   root_name: 'AMM Produit X',
-  status: 'READY',
+  status: 'APPLIED',
+  auto_applied: true,
   preview_token: 'preview-v1',
   created_at: '2026-09-10T09:00:00Z',
   finished_at: '2026-09-10T09:01:00Z',
   error: '',
-  amm_id: null,
-  auto_applied: false,
+  amm_id: 'amm-1',
   files: [
     file('file-1', 'AMM Produit X/ORIGINE/decision.pdf'),
     file('file-2', 'AMM Produit X/RENOUVELLEMENT_2026/decision_renouvellement.pdf'),
     file('file-3', 'AMM Produit X/ORIGINE/notice.pdf'),
   ],
   audit: [],
+  summary,
+  review_points: [
+    point(),
+    point({
+      id: 'point-2',
+      code: 'reading',
+      field: '',
+      applicable: false,
+      message: 'notice.pdf : document trop long, lu en partie ; vérifiez ses informations sur le scan.',
+    }),
+  ],
+  open_points_count: 2,
   preview: {
-    version: 1,
-    confidence: 97,
-    level: 'HIGH',
+    version: 2,
+    confidence: 83,
+    level: 'MEDIUM',
     can_apply: true,
     blockers: [],
+    question: null,
+    review_points: [],
     warnings: [],
     amm: {
       id: 'amm-1',
@@ -48,7 +106,7 @@ const fixture = (): DossierImportBatch => ({
       holder: 'Laboratoire X',
     },
     original: {
-      original_number: 'AMM/SN/2025/00152',
+      original_number: '12380213',
       original_start_date: '2021-01-01',
       original_end_date: '2026-01-01',
     },
@@ -87,7 +145,7 @@ const fixture = (): DossierImportBatch => ({
         start_date: '2026-01-01',
         decision_date: '2026-01-01',
         end_date: '2031-01-01',
-        confidence: 97,
+        confidence: 83,
         proof_file_id: 'file-2',
       },
     ],
@@ -101,16 +159,6 @@ const fixture = (): DossierImportBatch => ({
         confidence: 80,
         proof_file_id: 'file-1',
         requires_confirmation: true,
-      },
-      {
-        id: 'completion-1',
-        target: 'amm',
-        field: 'holder',
-        old: '',
-        new: 'Laboratoire X',
-        confidence: 97,
-        proof_file_id: 'file-1',
-        requires_confirmation: false,
       },
     ],
     projection: {
@@ -143,32 +191,40 @@ const fixture = (): DossierImportBatch => ({
   },
 });
 
-const appliedSummary = {
-  amm_id: 'amm-1',
-  product: 'PRODUIT X',
-  country: 'Sénégal',
-  country_iso2: 'SN',
-  number: '9601',
-  created: false,
-  before: { status: 'EXPIRE', dossier_state: 'INCOMPLET', effective_end_date: '2026-09-15' },
-  after: { status: 'VALIDE', dossier_state: 'COMPLET', effective_end_date: '2031-08-20' },
-  renewals_created: [{ number: '9601/R1', start_date: '2026-08-20', end_date: '2031-08-20' }],
-  fields_changed: [],
-  documents: [{ title: 'decision.pdf', kind: 'AMM' as const, period: 'renewal' as const }],
-  missing_scan: null,
-  lines: ['Statut : Expirée → Valide'],
+/** Lot dont l'AMM n'est pas identifiable : la seule question posée. */
+const questionFixture = (): DossierImportBatch => {
+  const batch = fixture();
+  return {
+    ...batch,
+    id: 'batch-q',
+    root_name: 'DOSSIER RECU',
+    status: 'QUESTION',
+    auto_applied: false,
+    amm_id: null,
+    summary: {},
+    review_points: [],
+    open_points_count: 0,
+    preview: {
+      ...batch.preview!,
+      can_apply: false,
+      blockers: ['Produit « PRODUIT INCONNU 5MG » absent du catalogue.'],
+      question: {
+        reasons: ['Produit « PRODUIT INCONNU 5MG » absent du catalogue.'],
+        codes: ['product_absent'],
+        can_create: false,
+      },
+      amm: { ...batch.preview!.amm, id: null, product_id: null, product_name: 'PRODUIT INCONNU 5MG' },
+    },
+  };
 };
 
-const keep = () => screen.getByRole('button', { name: /^Garder : 11380113/ });
-const replace = () => screen.getByRole('button', { name: /^Remplacer par : 12380213/ });
-
 function detail(batch = fixture()) {
-  server.use(http.get(`${endpoint}/batch-1`, () => HttpResponse.json(batch)));
+  server.use(http.get(`${endpoint}/${batch.id}`, () => HttpResponse.json(batch)));
   loginAs('u-sn');
-  return renderApp('/dossier-imports/batch-1');
+  return renderApp(`/dossier-imports/${batch.id}`);
 }
 
-describe('import intelligent de dossiers AMM', () => {
+describe('import automatique de dossiers AMM', () => {
   it('reste accessible au réglementaire pays et envoie les chemins du dossier sélectionné', async () => {
     const requests: FormData[] = [];
     server.use(
@@ -183,184 +239,140 @@ describe('import intelligent de dossiers AMM', () => {
     renderApp('/dossier-imports');
     const picker = await screen.findByLabelText('Dossier AMM');
     expect(picker).toHaveAttribute('webkitdirectory');
-    const file = new File(['%PDF-1.7'], 'decision.pdf', { type: 'application/pdf' });
-    Object.defineProperty(file, 'webkitRelativePath', { value: 'AMM/ORIGINE/decision.pdf' });
-    fireEvent.change(picker, { target: { files: [file] } });
+    const upload = new File(['%PDF-1.7'], 'decision.pdf', { type: 'application/pdf' });
+    Object.defineProperty(upload, 'webkitRelativePath', { value: 'AMM/ORIGINE/decision.pdf' });
+    fireEvent.change(picker, { target: { files: [upload] } });
     await userEvent.click(screen.getByRole('button', { name: 'Analyser le dossier' }));
-    await screen.findByText(/Analyse des documents en cours/);
+    expect(await screen.findByText('Analyse en cours…')).toBeVisible();
     expect(requests).toHaveLength(1);
     expect(requests[0].get('root_name')).toBe('AMM');
     expect(JSON.parse(requests[0].get('paths') as string)).toEqual(['AMM/ORIGINE/decision.pdf']);
     expect(requests[0].getAll('files')).toHaveLength(1);
   });
 
-  it('montre la chronologie origine puis renouvellement, sans clé technique', async () => {
+  it('affiche « Rangé automatiquement », la frise et le résultat, sans rien à arbitrer', async () => {
     detail();
-    const origin = await screen.findByTestId('step-1');
+    expect(await screen.findByTestId('batch-state')).toHaveTextContent('Rangé automatiquement');
+    const origin = screen.getByTestId('step-1');
     expect(within(origin).getByText('AMM d’origine')).toBeVisible();
     expect(within(origin).getByText('01/01/2021 → 01/01/2026')).toBeVisible();
-    expect(within(origin).getByText('À vérifier')).toBeVisible();
-    expect(within(origin).getByText(/Sera complété : Titulaire → Laboratoire X/)).toBeVisible();
+    expect(within(origin).getByRole('button', { name: 'Voir le scan' })).toBeVisible();
     const renewal = screen.getByTestId('step-2');
     expect(within(renewal).getByText('Renouvellement du 01/01/2026')).toBeVisible();
-    expect(within(renewal).getByText('01/01/2026 → 01/01/2031')).toBeVisible();
-    expect(within(renewal).getByText('Sera ajouté')).toBeVisible();
+    expect(within(renewal).getByText('Ajouté par ce dossier')).toBeVisible();
     expect(within(renewal).getByText('En vigueur')).toBeVisible();
-    expect(within(renewal).getByRole('button', { name: 'Voir le scan' })).toBeVisible();
-    expect(screen.getByText('À vérifier : 1 point')).toBeVisible();
-    expect(screen.getByText('À vérifier (1 point)')).toBeVisible();
-    // Encadré « Après validation » calculé par le serveur.
-    const after = screen.getByRole('region', { name: 'Après validation' });
-    expect(within(after).getByText('01/01/2031')).toBeVisible();
-    expect(within(after).getByText('Valide')).toBeVisible();
-    expect(within(after).getByText(/Dépôt idéal/)).toHaveTextContent('Dépôt idéal : 01/07/2030');
-    expect(within(after).getByText(/Limite agence/)).toHaveTextContent('Limite agence : 01/10/2030');
-    expect(within(after).getByText(/Dossier complet/)).toBeVisible();
-    // La notice n'est pas une preuve d'étape : elle est rangée dans « Autres documents ».
-    expect(screen.getByText('Autres documents (1)')).toBeVisible();
+    const result = screen.getByRole('region', { name: 'Résultat' });
+    expect(within(result).getByText('Valide')).toBeVisible();
+    expect(within(result).getByText('01/01/2031')).toBeVisible();
+    expect(within(result).getByText(/la décision en vigueur a son scan/)).toBeVisible();
+    // Plus d'arbitrage : ni « Garder / Remplacer », ni bouton « Valider », ni fiabilité en avant.
+    expect(screen.queryByRole('button', { name: /Garder|Remplacer|Valider/ })).toBeNull();
+    expect(screen.getByText(/Fiabilité de la lecture/)).not.toBeVisible();
+    expect(screen.getAllByText('Rangé').length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toMatch(/renewal-/);
   });
 
-  it('traduit les blocages et interdit la validation', async () => {
-    const batch = fixture();
-    batch.preview!.blockers = [
-      'renewal-2026-01-01 : la date de fin précède la date de début.',
-      'renewal-unresolved : une décision officielle datée est nécessaire.',
-    ];
-    batch.preview!.can_apply = false;
-    detail(batch);
-    expect(
-      await screen.findByText(
-        'Bloqué : Renouvellement du 01/01/2026 : la date de fin précède la date de début.',
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText('Renouvellement (date non lue) : une décision officielle datée est nécessaire.'),
-    ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Valider' })).toBeDisabled();
-    expect(document.body.textContent).not.toMatch(/renewal-/);
-  });
-
-  it('garde la valeur enregistrée par défaut et valide sans correction', async () => {
-    const payloads: unknown[] = [];
-    const batch = fixture();
+  it('applique la valeur du scan ou ignore un point à vérifier plus tard', async () => {
+    const actions: string[] = [];
     server.use(
-      http.post(`${endpoint}/batch-1/confirm`, async ({ request }) => {
-        payloads.push(await request.json());
-        // Le lot devient appliqué côté serveur : la relecture déclenchée par la confirmation
-        // doit renvoyer le même état, sinon l'écran repasserait en « à valider ».
-        Object.assign(batch, { status: 'APPLIED', amm_id: 'amm-1', summary: appliedSummary });
-        return HttpResponse.json(batch);
-      }),
-    );
-    detail(batch);
-    await screen.findByTestId('step-1');
-    expect(keep()).toHaveAttribute('aria-pressed', 'true');
-    expect(replace()).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText('Lecture incertaine, vérifiez sur le scan.')).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: 'Valider' }));
-    await screen.findByText(/Import validé\. Les personnes concernées/);
-    expect(screen.getByText('Ce que l’import a changé')).toBeVisible();
-    expect(screen.getByText('Expirée')).toBeVisible();
-    expect(screen.getByText('Complet')).toBeVisible();
-    expect(screen.getByText(/N° 9601\/R1/)).toBeVisible();
-    expect(screen.getAllByText('Validé').length).toBeGreaterThan(0);
-    expect(payloads).toEqual([{ preview_token: 'preview-v1', accepted_changes: [] }]);
-  });
-
-  it('envoie uniquement la correction où « Remplacer » est choisi', async () => {
-    const payloads: unknown[] = [];
-    server.use(
-      http.post(`${endpoint}/batch-1/confirm`, async ({ request }) => {
-        payloads.push(await request.json());
-        return HttpResponse.json({ ...fixture(), status: 'APPLIED' });
+      http.post(`${pointsEndpoint}/:id/:action`, ({ params }) => {
+        actions.push(`${params.id}:${params.action}`);
+        return HttpResponse.json(point({ id: String(params.id), status: 'APPLIED' }));
       }),
     );
     detail();
-    await screen.findByTestId('step-1');
-    await userEvent.click(replace());
-    expect(replace()).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(/hors remplacements choisis/)).toBeVisible();
-    await userEvent.click(keep());
-    await userEvent.click(replace());
-    await userEvent.click(screen.getByRole('button', { name: 'Valider' }));
-    await waitFor(() =>
-      expect(payloads).toEqual([{ preview_token: 'preview-v1', accepted_changes: ['correction-1'] }]),
-    );
+    const list = await screen.findByRole('region', { name: 'Points à vérifier plus tard' });
+    expect(within(list).getByText('Points à vérifier plus tard (2)')).toBeVisible();
+    expect(
+      within(list).getByText(/la fiche indique « 11380113 », le scan indique « 12380213 »/),
+    ).toBeVisible();
+    const mismatch = within(list).getByTestId('point-point-1');
+    await userEvent.click(within(mismatch).getByRole('button', { name: 'Appliquer la valeur du scan' }));
+    const doubt = within(list).getByTestId('point-point-2');
+    // Un simple doute de lecture n'a pas de valeur à appliquer : on peut seulement l'ignorer.
+    expect(within(doubt).queryByRole('button', { name: 'Appliquer la valeur du scan' })).toBeNull();
+    await userEvent.click(within(doubt).getByRole('button', { name: 'Ignorer' }));
+    await waitFor(() => expect(actions).toEqual(['point-1:apply', 'point-2:ignore']));
   });
 
-  it('bloque les modifications à faible confiance même si can_apply est incohérent', async () => {
-    const batch = fixture();
-    batch.preview!.level = 'LOW';
-    batch.preview!.confidence = 35;
-    detail(batch);
-    expect(await screen.findByRole('button', { name: 'Valider' })).toBeDisabled();
-    expect(keep()).toBeDisabled();
-    expect(replace()).toBeDisabled();
-    expect(screen.getByText(/Bloqué : Lecture trop incertaine \(35 %\)/)).toBeVisible();
-  });
-
-  it('demande une nouvelle analyse après un conflit et réinitialise les choix', async () => {
-    const batch = fixture();
+  it('pose une seule question « c’est quelle AMM ? » et range sur l’AMM choisie', async () => {
+    const searches: URLSearchParams[] = [];
+    const chosen: unknown[] = [];
+    const amm = { ...db.amms.find((a) => a.country_iso2 === 'SN')! } as Amm;
+    const batch = questionFixture();
     server.use(
-      http.post(`${endpoint}/batch-1/confirm`, () =>
-        HttpResponse.json({ detail: 'Prévisualisation périmée.' }, { status: 409 }),
-      ),
-      http.post(`${endpoint}/batch-1/analyze`, () => {
-        batch.preview_token = 'preview-v2';
-        return HttpResponse.json(batch);
+      http.get('/api/v1/amms', ({ request }) => {
+        searches.push(new URL(request.url).searchParams);
+        return HttpResponse.json({ count: 1, next: null, previous: null, results: [amm] });
+      }),
+      http.post(`${endpoint}/batch-q/choose-amm`, async ({ request }) => {
+        chosen.push(await request.json());
+        Object.assign(batch, { status: 'PENDING' });
+        return HttpResponse.json(batch, { status: 202 });
       }),
     );
     detail(batch);
-    await screen.findByTestId('step-1');
-    await userEvent.click(replace());
-    await userEvent.click(screen.getByRole('button', { name: 'Valider' }));
-    await screen.findByText(/Les informations en base ont changé/);
-    expect(screen.getByRole('button', { name: 'Valider' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: 'Relancer l’analyse' }));
-    await waitFor(() => expect(screen.queryByText(/Les informations en base ont changé/)).toBeNull());
-    expect(keep()).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByTestId('batch-state')).toHaveTextContent('Question : c’est quelle AMM ?');
+    expect(screen.getByText(/absent du catalogue/)).toBeVisible();
+    // Une seule question : pas de frise ni de résultat tant que l'AMM n'est pas connue.
+    expect(screen.queryByTestId('step-1')).toBeNull();
+    const button = screen.getByRole('button', { name: 'Ranger les documents ici' });
+    expect(button).toBeDisabled();
+    await userEvent.click(screen.getByLabelText('AMM (recherche par produit)'));
+    await userEvent.click(await screen.findByRole('option', { name: new RegExp(amm.product_name) }));
+    await userEvent.click(button);
+    await waitFor(() => expect(chosen).toEqual([{ amm_id: amm.id }]));
+    // Recherche limitée au pays du dossier.
+    expect(searches.at(-1)?.get('country')).toBe('SN');
+    expect(await screen.findByText('Analyse en cours…')).toBeVisible();
   });
 
-  it('conserve l’aperçu et affiche les refus de permission', async () => {
-    server.use(
-      http.post(`${endpoint}/batch-1/confirm`, () =>
-        HttpResponse.json({ detail: 'Vous ne pouvez pas modifier cette AMM.' }, { status: 403 }),
-      ),
-    );
-    detail();
-    await userEvent.click(await screen.findByRole('button', { name: 'Valider' }));
-    expect(await screen.findByText('Vous ne pouvez pas modifier cette AMM.')).toBeVisible();
-    expect(screen.getByTestId('change-correction-1')).toBeVisible();
-  });
-
-  it('signale un import validé automatiquement, sur la page et dans l’historique', async () => {
-    const auto: DossierImportBatch = {
-      ...fixture(),
-      status: 'APPLIED',
-      auto_applied: true,
-      amm_id: 'amm-1',
-      summary: appliedSummary,
-    };
-    const review = { ...fixture(), id: 'batch-2', root_name: 'AMM Produit Y' };
-    review.preview = { ...review.preview!, warnings: ['Fichier identique présent plusieurs fois : a.pdf.'] };
-    const blocked = { ...fixture(), id: 'batch-3', root_name: 'AMM Produit Z' };
-    blocked.preview = { ...blocked.preview!, can_apply: false, blockers: ['Pays non reconnu.'] };
+  it('résume chaque lot dans l’historique : AMM, résultat et points à vérifier', async () => {
+    const ranged = fixture();
+    const question = questionFixture();
+    const running = { ...fixture(), id: 'batch-r', root_name: 'EN COURS', status: 'RUNNING' as const };
+    running.summary = {};
+    running.open_points_count = 0;
+    const failed = { ...questionFixture(), id: 'batch-f', root_name: 'ECHEC', status: 'FAILED' as const };
     server.use(
       http.get(endpoint, () =>
-        HttpResponse.json({ count: 3, next: null, previous: null, results: [auto, review, blocked] }),
+        HttpResponse.json({
+          count: 4,
+          next: null,
+          previous: null,
+          results: [ranged, question, running, failed],
+        }),
       ),
     );
-    detail(auto);
-    expect(await screen.findByText('Validé automatiquement')).toBeVisible();
-    expect(screen.getByText(/Import validé automatiquement/)).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Valider' })).toBeNull();
-
+    loginAs('u-sn');
     renderApp('/dossier-imports');
     const rows = await screen.findAllByRole('row');
-    expect(within(rows[1]).getByText('Validé automatiquement')).toBeVisible();
-    expect(within(rows[2]).getByText('À vérifier (2 points)')).toBeVisible();
-    expect(within(rows[3]).getByText('Bloqué')).toBeVisible();
+    expect(within(rows[0]).getByText('Points à vérifier')).toBeVisible();
+    expect(within(rows[1]).getByText('Rangé')).toBeVisible();
+    expect(within(rows[1]).getByRole('link', { name: 'Produit X (SN)' })).toBeVisible();
+    expect(within(rows[1]).getByLabelText('2 point(s) à vérifier')).toBeVisible();
+    expect(within(rows[2]).getByText('Question')).toBeVisible();
+    expect(within(rows[2]).getByText('À préciser')).toBeVisible();
+    expect(within(rows[3]).getByText('Analyse en cours')).toBeVisible();
+    expect(within(rows[4]).getByText('Échec')).toBeVisible();
+  });
+
+  it('dit clairement qu’un scan est perdu au lieu d’une erreur serveur', async () => {
+    server.use(
+      http.get(`${endpoint}/batch-1/file`, () =>
+        HttpResponse.json({ detail: 'gone', code: 'file_lost' }, { status: 410 }),
+      ),
+    );
+    detail();
+    const origin = await screen.findByTestId('step-1');
+    await userEvent.click(within(origin).getByRole('button', { name: 'Voir le scan' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      await within(dialog).findByText(
+        'Fichier perdu (stocké avant la mise en place du stockage permanent) : réimportez ce dossier.',
+      ),
+    ).toBeVisible();
+    expect(within(dialog).queryByText(/Erreur serveur/)).toBeNull();
   });
 
   it('charge une preuve avec authentification et libère son URL à la fermeture', async () => {
@@ -385,5 +397,29 @@ describe('import intelligent de dossiers AMM', () => {
     await waitFor(() => expect(revokeUrl).toHaveBeenCalledWith('blob:proof'));
     createUrl.mockRestore();
     revokeUrl.mockRestore();
+  });
+
+  it('montre les points à vérifier sur la fiche AMM, avec appliquer et ignorer', async () => {
+    const amm = db.amms.find((a) => a.country_iso2 === 'SN')!;
+    const actions: string[] = [];
+    server.use(
+      http.get(pointsEndpoint, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        expect(params.get('amm')).toBe(amm.id);
+        expect(params.get('status')).toBe('OPEN');
+        return HttpResponse.json([point({ amm_id: amm.id })]);
+      }),
+      http.post(`${pointsEndpoint}/:id/:action`, ({ params }) => {
+        actions.push(String(params.action));
+        return HttpResponse.json(point({ status: 'IGNORED' }));
+      }),
+    );
+    loginAs('u-sn');
+    renderApp(`/amms/${amm.id}`);
+    const list = await screen.findByRole('region', { name: 'Points à vérifier plus tard' });
+    expect(within(list).getByText(/Dossier « AMM Produit X »/)).toBeVisible();
+    expect(within(list).getByRole('button', { name: 'Voir le scan' })).toBeVisible();
+    await userEvent.click(within(list).getByRole('button', { name: 'Ignorer' }));
+    await waitFor(() => expect(actions).toEqual(['ignore']));
   });
 });

@@ -1,4 +1,4 @@
-"""Bilan d'un import de dossier validé : ce qui a changé, et qui en est prévenu.
+"""Bilan d'un dossier rangé : ce qui a changé, les points à vérifier, et qui en est prévenu.
 
 Calculé après commit, une fois l'état de l'AMM recalculé : le bilan décrit l'état réel en base,
 pas l'aperçu. Il est gardé sur le lot (`DossierImport.summary`) et notifié dans l'application
@@ -16,27 +16,17 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.notifications.models import Notification
 from apps.realtime.publisher import publish_user_event
 
+from .labels import FIELD_LABELS
 from .projection import missing_scan_label
 
 logger = logging.getLogger(__name__)
 
 STATUS_LABELS = dict(MarketingAuthorization.Status.choices)
 DOSSIER_LABELS = dict(MarketingAuthorization.DossierState.choices)
-FIELD_LABELS = {
-    "original_number": "N° d'AMM",
-    "original_start_date": "date de délivrance",
-    "original_end_date": "date d'échéance",
-    "holder": "titulaire",
-    "number": "n° de renouvellement",
-    "start_date": "date de début",
-    "end_date": "date de fin",
-    "decision_date": "date de décision",
-    "workflow_status": "statut du renouvellement",
-}
 
 
 def snapshot(amm) -> dict | None:
-    """État de l'AMM à retenir avant la validation (None pour une AMM créée par l'import)."""
+    """État de l'AMM à retenir avant le rangement (None pour une AMM créée par l'import)."""
     if amm is None or amm.pk is None:
         return None
     return {
@@ -97,6 +87,7 @@ def build_summary(batch, before: dict | None) -> dict:
         if f.document_id
     ]
     after = snapshot(amm)
+    points = list(batch.review_points.order_by("created_at").values_list("message", flat=True))
     summary = {
         "amm_id": str(amm.pk),
         "product": amm.product.name,
@@ -114,6 +105,8 @@ def build_summary(batch, before: dict | None) -> dict:
             if amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
             else None
         ),
+        # Écarts et doutes notés, jamais bloquants : à voir sur la fiche AMM ou le lot.
+        "review_points": len(points),
     }
     summary["lines"] = summary_lines(summary)
     return summary
@@ -148,6 +141,12 @@ def summary_lines(s: dict) -> list[str]:
         lines.append(f"Dossier toujours incomplet : il manque le {s['missing_scan']}.")
     if len(lines) == (1 if s["created"] else 0) and not s["documents"]:
         lines.append("Aucune modification : le dossier était déjà à jour.")
+    count = s.get("review_points", 0)
+    if count:
+        lines.append(
+            f"{count} point{'s' if count > 1 else ''} à vérifier plus tard (fiche AMM) : "
+            "valeur de la fiche gardée."
+        )
     return lines
 
 
@@ -171,11 +170,11 @@ def notify(batch, summary: dict) -> list[Notification]:
     who = batch.created_by
     author = (f"{who.first_name} {who.last_name}".strip() or who.email) if who else ""
     if batch.auto_applied:
-        how = "validé automatiquement (lecture sûre, aucune donnée existante remplacée)"
+        how = "rangé automatiquement (aucune donnée existante remplacée)"
         if author:
             how += f", import de {author}"
     else:
-        how = f"validé{f' par {author}' if author else ''}"
+        how = f"rangé{f' par {author}' if author else ''}"
     body = "\n".join(
         [
             f"Dossier « {batch.root_name} » {how}.",
@@ -199,7 +198,7 @@ def notify(batch, summary: dict) -> list[Notification]:
 
 
 def record_and_notify(batch_id, before: dict | None) -> None:
-    """Après commit : bilan puis notifications. Ne fait jamais échouer un import validé."""
+    """Après commit : bilan puis notifications. Ne fait jamais échouer un dossier rangé."""
     from apps.imports.models import DossierImport
 
     try:
@@ -207,5 +206,5 @@ def record_and_notify(batch_id, before: dict | None) -> None:
         summary = build_summary(batch, before)
         DossierImport.objects.filter(pk=batch.pk).update(summary=summary)
         notify(batch, summary)
-    except Exception:  # noqa: BLE001 — le bilan est informatif, l'import reste validé
+    except Exception:  # noqa: BLE001 — le bilan est informatif, le dossier reste rangé
         logger.exception("Bilan ou notification de l'import de dossier %s en échec", batch_id)

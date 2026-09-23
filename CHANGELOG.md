@@ -5,6 +5,21 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Import de dossiers : on dépose, c'est rangé (`docs/workflow-amm.md`, section 8)
+- **Rangement automatique dès que l'AMM (produit + pays) est identifiée**, sans seuil de
+  fiabilité : chaque scan va à sa période (origine ou renouvellement n), les renouvellements
+  obtenus lus sont créés, les champs vides complétés, statut / échéance / complétude recalculés,
+  bilan et notification. Plus de « Garder / Remplacer », de « Valider » ni de % en avant.
+- **Points à vérifier plus tard** (`DossierReviewPoint`) : un écart scan ≠ fiche sur une valeur
+  renseignée, un renouvellement en conflit, une décision sans période… ne bloquent plus ; la
+  fiche est gardée, le scan rangé, le point listé sur la fiche AMM (badge dans la liste) et sur
+  le lot, avec « Appliquer la valeur du scan » (audit `DossierChange`) ou « Ignorer ».
+- **Une seule question**, seulement si l'AMM n'est pas identifiable : « c'est quelle AMM ? »
+  (sélecteur limité au pays et au périmètre, `POST /dossier-imports/{id}/choose-amm`). Création
+  d'AMM uniquement par le siège, sur confirmation.
+- **« Voir le scan »** : fichier absent du stockage → 410 « Fichier perdu … réimportez ce
+  dossier » au lieu d'un 503 ; la copie déjà rangée dans la fiche est montrée si elle existe.
+
 ### Workflow des AMM (règles du responsable, `docs/workflow-amm.md`)
 - **Trois statuts, plus un pour la donnée manquante** : **Valide** (vert), **À renouveler**
   (orange, dans les six mois précédant la fin, toujours valide), **Expirée** (rouge, dès le

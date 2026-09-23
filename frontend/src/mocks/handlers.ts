@@ -420,6 +420,11 @@ export const handlers = [
       return HttpResponse.json(paginate(list, request));
     }),
   ),
+  // Points à vérifier plus tard (import de dossiers) : aucun dans les données de démonstration.
+  http.get(
+    url('/dossier-review-points'),
+    withAuth(() => HttpResponse.json([])),
+  ),
   http.get(
     url('/amms/:id'),
     withAuth((user, { params }) => {

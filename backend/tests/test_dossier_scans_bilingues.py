@@ -174,7 +174,7 @@ def test_scanned_original_reads_number_dates_and_holder(users, cameroon, make_am
         "original_end_date": "2028-09-29",
         "holder": "LABO EXEMPLE PVT LTD",
     }
-    assert any("lectures divergentes" in warning for warning in preview["warnings"])
+    assert any("n° d'AMM mal lisible" in point["message"] for point in preview["review_points"])
 
 
 def test_folder_product_without_country_amm_is_reported_not_created(users, cameroon, make_amm):
@@ -184,7 +184,7 @@ def test_folder_product_without_country_amm_is_reported_not_created(users, camer
     staged(batch, f"{batch.root_name}/AMM.pdf", ORIGINAL, "ocr", 80)
     preview = build_preview(batch)
     assert not preview["can_apply"] and preview["amm"]["id"] is None
-    assert any("Aucune AMM Cameroun" in item for item in preview["blockers"])
+    assert any("Aucune AMM Cameroun" in item for item in preview["question"]["reasons"])
 
 
 def test_decision_naming_another_presentation_blocks(users, cameroon, make_amm):
@@ -194,7 +194,7 @@ def test_decision_naming_another_presentation_blocks(users, cameroon, make_amm):
     staged(batch, f"{batch.root_name}/AMM.pdf", ORIGINAL, "ocr", 80)
     preview = build_preview(batch)
     assert not preview["can_apply"]
-    assert any("ne correspond pas" in item for item in preview["blockers"])
+    assert any("ne correspond pas" in item for item in preview["question"]["reasons"])
 
 
 def test_printed_product_line_alone_never_creates_a_product(users, cameroon):
@@ -202,14 +202,20 @@ def test_printed_product_line_alone_never_creates_a_product(users, cameroon):
     staged(batch, f"{batch.root_name}/AMM.pdf", ORIGINAL, "ocr", 80)
     preview = build_preview(batch)
     assert not preview["can_apply"]
-    assert any("Produit absent du catalogue" in item for item in preview["blockers"])
+    # Ligne de dénomination seule (pas « Produit : … ») : jamais de création proposée.
+    assert any("absent du catalogue" in item for item in preview["question"]["reasons"])
+    assert not preview["question"]["can_create"]
 
 
-def test_renewal_on_the_recorded_origin_date_is_blocked(users, cameroon, make_amm):
+def test_renewal_on_the_recorded_origin_date_keeps_the_record(users, cameroon, make_amm):
     product = Product.objects.create(name="EXEMPLO GH 15MG/ 90MG SUSP BUV F60ML")
     make_amm(country=cameroon, product_obj=product, start=date(2018, 9, 11))
     batch = batch_for(users, "EXEMPLO GH 15MG:90MG SUSP BUV F60ML")
     staged(batch, f"{batch.root_name}/AMM.pdf", RENEWAL, "ocr", 80)
     preview = build_preview(batch)
-    assert not preview["can_apply"]
-    assert any("même jour que l'AMM d'origine" in item for item in preview["blockers"])
+    # Pas de blocage ni de période en double : la fiche est gardée, le point noté.
+    assert preview["can_apply"] and preview["renewals"] == []
+    assert preview["documents"][0]["period"] == "unplaced"
+    assert any(
+        "même jour que l'AMM d'origine" in point["message"] for point in preview["review_points"]
+    )

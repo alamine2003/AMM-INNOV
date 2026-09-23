@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
-import type { DossierImportBatch, Paginated } from '@/api/types';
+import type { DossierImportBatch, DossierReviewPoint, Paginated } from '@/api/types';
 import { createFolderFormData, type FolderFile } from '@/features/dossier-imports/folderUpload';
 
 export const dossierImportKeys = {
@@ -58,27 +58,76 @@ export function useAnalyzeDossier(id: string) {
   });
 }
 
+/** Données touchées par un rangement : fiche AMM, renouvellements, documents, tableaux de bord. */
+const AFFECTED = [
+  'dossier-imports',
+  'review-points',
+  'amms',
+  'renewals',
+  'documents',
+  'products',
+  'analytics',
+  'alerts',
+];
+
+function invalidateAffected(qc: ReturnType<typeof useQueryClient>) {
+  for (const key of AFFECTED) void qc.invalidateQueries({ queryKey: [key] });
+}
+
+/** « Ranger les documents » (lot prêt) ou, pour le siège, créer l'AMM absente depuis le dossier. */
 export function useConfirmDossier(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { preview_token: string; accepted_changes: string[] }) =>
+    mutationFn: async (payload: { preview_token: string; create_amm?: boolean }) =>
       (await api.post<DossierImportBatch>(`/dossier-imports/${id}/confirm`, payload)).data,
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
-      for (const key of [
-        'dossier-imports',
-        'amms',
-        'renewals',
-        'documents',
-        'products',
-        'analytics',
-        'alerts',
-      ])
-        void qc.invalidateQueries({ queryKey: [key] });
+      invalidateAffected(qc);
+    },
+  });
+}
+
+/** Réponse à la question « c'est quelle AMM ? » : le dossier est relu puis rangé sur cette AMM. */
+export function useChooseAmm(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ammId: string) =>
+      (await api.post<DossierImportBatch>(`/dossier-imports/${id}/choose-amm`, { amm_id: ammId })).data,
+    onSuccess: (batch) => {
+      qc.setQueryData(dossierImportKeys.detail(id), batch);
+      invalidateAffected(qc);
     },
   });
 }
 
 export function fetchDossierFile(batchId: string, fileId: string) {
   return fetchBlob(`/dossier-imports/${batchId}/file`, { file_id: fileId });
+}
+
+export const reviewPointKeys = {
+  list: (filters: { amm?: string; batch?: string; status?: string }) => ['review-points', filters] as const,
+};
+
+/** Points à vérifier plus tard d'une AMM (fiche) ou d'un lot. */
+export function useReviewPoints(filters: { amm?: string; batch?: string; status?: 'OPEN' }, enabled = true) {
+  return useQuery({
+    queryKey: reviewPointKeys.list(filters),
+    queryFn: async () =>
+      (await api.get<DossierReviewPoint[]>('/dossier-review-points', { params: filters })).data,
+    enabled,
+  });
+}
+
+/** « Appliquer la valeur du scan » ou « Ignorer » un point. */
+export function useResolveReviewPoint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: 'apply' | 'ignore' }) =>
+      (await api.post<DossierReviewPoint>(`/dossier-review-points/${id}/${action}`)).data,
+    onSuccess: () => invalidateAffected(qc),
+  });
+}
+
+export function fetchReviewPointFile(pointId: string) {
+  return fetchBlob(`/dossier-review-points/${pointId}/file`);
 }

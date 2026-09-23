@@ -506,5 +506,8 @@
       "dryRun": "Simulation : produire le rapport sans rien modifier",
       "dryRunChip": "Simulation"
     }
+  },
+  "errors": {
+    "fileLost": "Fichier perdu (stocké avant la mise en place du stockage permanent) : réimportez ce dossier."
   }
 }

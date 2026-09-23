@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Box, Button, IconButton, Link as MuiLink, Paper, Tooltip } from '@mui/material';
+import { Box, Button, Chip, IconButton, Link as MuiLink, Paper, Tooltip } from '@mui/material';
 import { DataGrid, type GridColDef, type GridRowModel, type GridSortModel } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -119,9 +119,24 @@ export default function AmmListPage() {
       flex: 1,
       minWidth: 220,
       renderCell: (p) => (
-        <MuiLink component={Link} to={`/amms/${p.row.id}`} underline="hover" fontWeight={600}>
-          {p.row.product_name}
-        </MuiLink>
+        <>
+          <MuiLink component={Link} to={`/amms/${p.row.id}`} underline="hover" fontWeight={600}>
+            {p.row.product_name}
+          </MuiLink>
+          {!!p.row.open_review_points && (
+            <Tooltip title="Points à vérifier plus tard (import de dossiers)">
+              <Chip
+                size="small"
+                color="warning"
+                variant="outlined"
+                label={p.row.open_review_points}
+                aria-label={`${p.row.open_review_points} point(s) à vérifier`}
+                sx={{ ml: 1 }}
+                data-testid="review-points-badge"
+              />
+            </Tooltip>
+          )}
+        </>
       ),
     },
     { field: 'original_number', headerName: t('amm.columns.number'), width: 140, editable: true },

@@ -55,15 +55,19 @@ def analyze_dossier(batch_id: str) -> dict:
                 upload.save(update_fields=["extraction"])
         preview = build_preview(batch)
         # Un pays reconnu hors du périmètre de l'auteur n'est pas enregistré sur le lot :
-        # sinon le lot disparaît de sa liste (404) et il ne voit jamais le blocage expliqué.
+        # sinon le lot disparaît de sa liste (404) et il ne voit jamais la question posée.
         country_id = preview.get("amm", {}).get("country_id")
         if country_id and not batch.created_by.can_access_country(country_id):
             country_id = batch.country_id
         token = preview_token(preview)
+        # AMM non identifiable : une seule question, « c'est quelle AMM ? ». Sinon, prêt à ranger.
+        status = (
+            DossierImport.Status.QUESTION if preview["question"] else DossierImport.Status.READY
+        )
         saved = DossierImport.objects.filter(
             pk=batch_id, status=DossierImport.Status.RUNNING
         ).update(
-            status=DossierImport.Status.READY,
+            status=status,
             preview=preview,
             preview_token=token,
             country_id=country_id,
@@ -78,39 +82,35 @@ def analyze_dossier(batch_id: str) -> dict:
         )
         return {"status": "failed"}
     if saved and can_auto_apply(preview) and _auto_apply(batch, token):
-        return {"status": "applied", "confidence": preview["confidence"], "auto": True}
-    return {"status": "ready", "confidence": preview["confidence"]}
+        return {"status": "applied", "auto": True, "points": len(preview["review_points"])}
+    return {"status": status.lower()}
 
 
 def can_auto_apply(preview: dict) -> bool:
-    """Le dossier peut être validé sans intervention : rien à trancher pour le réglementaire.
+    """Rangement automatique dès que l'AMM cible est identifiée sans ambiguïté.
 
-    Lecture sûre (niveau HIGH, ≥ 90 %), aucun blocage, aucune correction qui remplacerait une
-    valeur déjà enregistrée, aucun doute sur le numéro d'AMM, et aucun produit à créer dans le
-    catalogue. Les compléments de champs vides restent appliqués, comme à la validation manuelle.
+    Plus de seuil de fiabilité : les écarts avec la fiche et les lectures douteuses deviennent des
+    points à vérifier plus tard, jamais un blocage. Seule une AMM non identifiable (question
+    posée) attend le réglementaire. Aucune AMM n'est créée automatiquement.
+    Désactivable par DOSSIER_AUTO_APPLY (le lot reste alors « prêt à ranger »).
     """
     from django.conf import settings
 
     return bool(
         getattr(settings, "DOSSIER_AUTO_APPLY", False)
-        and preview.get("can_apply")
-        and not preview.get("blockers")
-        and preview.get("level") == "HIGH"
-        and preview.get("confidence", 0) >= 90
-        and not any(change.get("requires_confirmation") for change in preview.get("changes", []))
-        and not preview.get("number_warnings")
-        and (preview.get("amm") or {}).get("product_id")
+        and not preview.get("question")
+        and (preview.get("amm") or {}).get("id")
     )
 
 
 def _auto_apply(batch, token: str) -> bool:
-    """Validation au nom de l'auteur ; en cas d'échec le lot reste « À vérifier » (READY)."""
+    """Rangement au nom de l'auteur ; en cas d'échec le lot reste « prêt à ranger » (READY)."""
     from .dossier.application import apply_dossier
 
     try:
-        apply_dossier(batch.pk, user=batch.created_by, token=token, accepted_changes=[], auto=True)
+        apply_dossier(batch.pk, user=batch.created_by, token=token, auto=True)
     except Exception:
-        logger.exception("Validation automatique du dossier %s impossible", batch.pk)
+        logger.exception("Rangement automatique du dossier %s impossible", batch.pk)
         return False
-    logger.info("Dossier %s validé automatiquement", batch.pk)
+    logger.info("Dossier %s rangé automatiquement", batch.pk)
     return True
