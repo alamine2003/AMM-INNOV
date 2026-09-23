@@ -14,7 +14,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def env(name: str, default: str | None = None) -> str | None:
-    return os.environ.get(name, default)
+    """Variable d'environnement sans espaces ni retour à la ligne autour.
+
+    Une valeur collée dans le tableau de bord de l'hébergeur garde souvent un « \\n » final :
+    « https://….r2.cloudflarestorage.com\\n » rend l'URL invalide pour boto3 (erreur 500 à
+    l'envoi des scans).
+    """
+    value = os.environ.get(name)
+    return default if value is None else value.strip()
 
 
 def env_bool(name: str, default: bool = False) -> bool:
