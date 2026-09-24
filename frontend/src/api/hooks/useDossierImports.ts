@@ -8,8 +8,9 @@ import { createFolderFormData, type FolderFile } from '@/features/dossier-import
  * que l'historique et la fiche du lot n'essaient pas de lire `preview.amm`.
  */
 export function withPreview(batch: DossierImportBatch): DossierImportBatch {
-  const preview = batch.preview as DossierImportBatch['preview'] | Record<string, never> | null;
-  return { ...batch, preview: preview && 'amm' in preview ? preview : null };
+  const preview: unknown = batch.preview;
+  const ready = !!preview && typeof preview === 'object' && 'amm' in preview && !!preview.amm;
+  return { ...batch, preview: ready ? batch.preview : null };
 }
 
 export const dossierImportKeys = {
@@ -64,7 +65,7 @@ export function useAnalyzeDossier(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { country?: string } = {}) =>
-      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/analyze`, payload)).data,
+      withPreview((await api.post<DossierImportBatch>(`/dossier-imports/${id}/analyze`, payload)).data),
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       void qc.invalidateQueries({ queryKey: dossierImportKeys.all });
@@ -93,7 +94,7 @@ export function useConfirmDossier(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { preview_token: string; create_amm?: boolean }) =>
-      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/confirm`, payload)).data,
+      withPreview((await api.post<DossierImportBatch>(`/dossier-imports/${id}/confirm`, payload)).data),
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       invalidateAffected(qc);
@@ -106,8 +107,9 @@ export function useChooseAmm(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (ammId: string) =>
-      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/choose-amm`, { amm_id: ammId }))
-        .data,
+      withPreview(
+        (await api.post<DossierImportBatch>(`/dossier-imports/${id}/choose-amm`, { amm_id: ammId })).data,
+      ),
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       invalidateAffected(qc);
