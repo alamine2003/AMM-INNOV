@@ -357,6 +357,25 @@ describe('import automatique de dossiers AMM', () => {
     expect(within(rows[4]).getByText('Échec')).toBeVisible();
   });
 
+  it('affiche l’historique quand un lot vient d’être envoyé (aperçu encore vide)', async () => {
+    const fresh = {
+      ...fixture(),
+      id: 'batch-new',
+      root_name: 'CAMEROUN - GRIPEX',
+      status: 'PENDING' as const,
+    };
+    fresh.summary = {};
+    fresh.open_points_count = 0;
+    (fresh as { preview: unknown }).preview = {};
+    server.use(
+      http.get(endpoint, () => HttpResponse.json({ count: 1, next: null, previous: null, results: [fresh] })),
+    );
+    loginAs('u-sn');
+    renderApp('/dossier-imports');
+    expect(await screen.findByText('CAMEROUN - GRIPEX')).toBeVisible();
+    expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
+  });
+
   it('dit clairement qu’un scan est perdu au lieu d’une erreur serveur', async () => {
     server.use(
       http.get(`${endpoint}/batch-1/file`, () =>

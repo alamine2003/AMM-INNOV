@@ -274,7 +274,7 @@ export default function DossierImportsPage() {
                     const ammId = hasSummary(batch.summary) ? batch.summary.amm_id : batch.amm_id;
                     const ammLabel = hasSummary(batch.summary)
                       ? `${batch.summary.product} (${batch.summary.country_iso2})`
-                      : batch.preview?.amm.product_name
+                      : batch.preview?.amm?.product_name
                         ? `${batch.preview.amm.product_name}${batch.preview.amm.country_iso2 ? ` (${batch.preview.amm.country_iso2})` : ''}`
                         : '—';
                     return (
