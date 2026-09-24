@@ -3,6 +3,15 @@ import { api, fetchBlob } from '@/api/client';
 import type { DossierImportBatch, DossierReviewPoint, Paginated } from '@/api/types';
 import { createFolderFormData, type FolderFile } from '@/features/dossier-imports/folderUpload';
 
+/**
+ * Un lot envoyé mais pas encore analysé a un aperçu vide (`{}`) : on le traite comme absent pour
+ * que l'historique et la fiche du lot n'essaient pas de lire `preview.amm`.
+ */
+export function withPreview(batch: DossierImportBatch): DossierImportBatch {
+  const preview = batch.preview as DossierImportBatch['preview'] | Record<string, never> | null;
+  return { ...batch, preview: preview && 'amm' in preview ? preview : null };
+}
+
 export const dossierImportKeys = {
   all: ['dossier-imports'] as const,
   list: (page: number) => ['dossier-imports', 'list', page] as const,
@@ -12,9 +21,12 @@ export const dossierImportKeys = {
 export function useDossierImports(page: number) {
   return useQuery({
     queryKey: dossierImportKeys.list(page),
-    queryFn: async () =>
-      (await api.get<Paginated<DossierImportBatch>>('/dossier-imports', { params: { page, page_size: 20 } }))
-        .data,
+    queryFn: async () => {
+      const data = (
+        await api.get<Paginated<DossierImportBatch>>('/dossier-imports', { params: { page, page_size: 20 } })
+      ).data;
+      return { ...data, results: data.results.map(withPreview) };
+    },
     placeholderData: keepPreviousData,
   });
 }
@@ -22,7 +34,7 @@ export function useDossierImports(page: number) {
 export function useDossierImport(id: string | undefined) {
   return useQuery({
     queryKey: dossierImportKeys.detail(id ?? ''),
-    queryFn: async () => (await api.get<DossierImportBatch>(`/dossier-imports/${id}`)).data,
+    queryFn: async () => withPreview((await api.get<DossierImportBatch>(`/dossier-imports/${id}`)).data),
     enabled: !!id,
     refetchInterval: (query) =>
       ['PENDING', 'RUNNING'].includes(query.state.data?.status ?? '') ? 2000 : false,
@@ -33,12 +45,14 @@ export function useUploadDossier() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ files, onProgress }: { files: FolderFile[]; onProgress: (value: number) => void }) =>
-      (
-        await api.post<DossierImportBatch>('/dossier-imports', createFolderFormData(files), {
-          timeout: 180000,
-          onUploadProgress: ({ loaded, total }) => total && onProgress(Math.round((loaded / total) * 100)),
-        })
-      ).data,
+      withPreview(
+        (
+          await api.post<DossierImportBatch>('/dossier-imports', createFolderFormData(files), {
+            timeout: 180000,
+            onUploadProgress: ({ loaded, total }) => total && onProgress(Math.round((loaded / total) * 100)),
+          })
+        ).data,
+      ),
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(batch.id), batch);
       void qc.invalidateQueries({ queryKey: dossierImportKeys.all });
@@ -50,7 +64,7 @@ export function useAnalyzeDossier(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { country?: string } = {}) =>
-      (await api.post<DossierImportBatch>(`/dossier-imports/${id}/analyze`, payload)).data,
+      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/analyze`, payload)).data,
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       void qc.invalidateQueries({ queryKey: dossierImportKeys.all });
@@ -79,7 +93,7 @@ export function useConfirmDossier(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { preview_token: string; create_amm?: boolean }) =>
-      (await api.post<DossierImportBatch>(`/dossier-imports/${id}/confirm`, payload)).data,
+      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/confirm`, payload)).data,
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       invalidateAffected(qc);
@@ -92,7 +106,8 @@ export function useChooseAmm(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (ammId: string) =>
-      (await api.post<DossierImportBatch>(`/dossier-imports/${id}/choose-amm`, { amm_id: ammId })).data,
+      withPreview(await api.post<DossierImportBatch>(`/dossier-imports/${id}/choose-amm`, { amm_id: ammId }))
+        .data,
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(id), batch);
       invalidateAffected(qc);
