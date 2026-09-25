@@ -285,3 +285,4 @@ def test_same_number_with_leading_zeros_is_not_a_discrepancy():
 
     assert _change("amm", "original_number", "E-2015-0418", "E-2015- 418", "f", 90) is None
     assert _change("amm", "original_number", "E-2015-0418", "E-2015-0419", "f", 90)
+

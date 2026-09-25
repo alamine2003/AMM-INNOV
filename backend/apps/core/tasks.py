@@ -68,6 +68,7 @@ def recover_pending_work() -> dict:
         "emails": 0,
         "dossiers_republished": 0,
         "dossiers_interrupted": 0,
+        "dossiers_reread": 0,
         "imports_republished": 0,
         "previews": 0,
     }
@@ -98,6 +99,8 @@ def recover_pending_work() -> dict:
         analyze_dossier.delay(str(pk))
         report["dossiers_republished"] += 1
 
+    report["dossiers_reread"] = reread_stale_dossiers()
+
     imports = ImportBatch.objects.filter(
         status=ImportBatch.Status.PENDING, created_at__lt=now - DOSSIER_PENDING_AFTER
     )
@@ -118,6 +121,50 @@ def recover_pending_work() -> dict:
     if any(report.values()):
         logger.warning("Rattrapage du travail en attente : %s", report)
     return report
+
+
+REREAD_PER_RUN = 10
+
+
+def reread_stale_dossiers() -> int:
+    """Relit les dossiers restés « prêt à ranger » ou « question » : rien à cliquer.
+
+    - lus avec d'anciennes règles (version d'aperçu inférieure) : relus avec les règles
+      actuelles, puis rangés d'office si l'AMM est identifiée (dossiers du 22/09/2026 restés
+      « À ranger », MAGLIFE en « Question » à cause d'un pays mal lu) ;
+    - « prêt à ranger » dont le rangement automatique a échoué (coupure, stockage) : nouvel
+      essai, au plus MAX_ATTEMPTS fois.
+    Quelques dossiers par passage : le worker unique de Render reste disponible.
+    """
+    from django.conf import settings
+
+    from apps.core.worker import MAX_ATTEMPTS
+    from apps.imports.dossier.preview import PREVIEW_VERSION
+    from apps.imports.models import DossierImport
+    from apps.imports.tasks import analyze_dossier
+
+    if not getattr(settings, "DOSSIER_AUTO_APPLY", False):
+        return 0
+    waiting = DossierImport.objects.filter(
+        status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION],
+        created_by__is_active=True,
+        attempts__lt=MAX_ATTEMPTS,
+    ).order_by("created_at")
+    reread = 0
+    for batch in waiting.only("pk", "status", "preview")[:200]:
+        version = (batch.preview or {}).get("version", 0)
+        stale = version < PREVIEW_VERSION
+        retry = batch.status == DossierImport.Status.READY
+        if not (stale or retry):
+            continue
+        if DossierImport.objects.filter(pk=batch.pk, status=batch.status).update(
+            status=DossierImport.Status.PENDING, preview_token=""
+        ):
+            analyze_dossier.delay(str(batch.pk))
+            reread += 1
+        if reread >= REREAD_PER_RUN:
+            break
+    return reread
 
 
 @shared_task(name="apps.core.tasks.check_integrity")

@@ -97,20 +97,60 @@ def _proof(files, proof_id):
     return files[str(proof_id)]
 
 
-def _pages_pdf(source, pages) -> bytes:
+class LostScan(ValidationError):
+    """Scan absent du stockage et d'aucune autre copie : le dossier doit être redéposé."""
+
+
+def _stored_content(field_file) -> bytes | None:
+    from apps.documents.views import file_is_missing
+
+    try:
+        with field_file.open("rb") as stream:
+            return stream.read()
+    except Exception as exc:
+        if file_is_missing(field_file, exc):
+            return None
+        raise
+
+
+def source_content(source) -> bytes:
+    """Contenu d'un scan déposé ; à défaut, n'importe quelle copie du même contenu.
+
+    Les lots déposés avant le stockage permanent (22/09/2026) ont perdu leurs fichiers ; le
+    même scan a souvent été redéposé depuis ou rangé ailleurs (même empreinte SHA-256).
+    """
+    from apps.imports.models import DossierFile
+
+    content = _stored_content(source.file) if source.file else None
+    if content is not None:
+        return content
+    copies = [
+        other.file
+        for other in DossierFile.objects.filter(sha256=source.sha256).exclude(pk=source.pk)[:5]
+    ] + [document.file for document in Document.objects.filter(sha256=source.sha256)[:5]]
+    for copy in copies:
+        content = _stored_content(copy) if copy else None
+        if content is not None and hashlib.sha256(content).hexdigest() == source.sha256:
+            return content
+    raise LostScan(
+        f"Le scan « {source.relative_path.rsplit('/', 1)[-1]} » n'est plus sur le serveur "
+        "(dossier déposé avant le stockage permanent) : redéposez ce dossier."
+    )
+
+
+def _pages_pdf(content: bytes, pages) -> bytes:
     """Pages d'un recueil de décisions qui concernent le produit, en un PDF à part."""
     from io import BytesIO
 
     from pypdf import PdfReader, PdfWriter
 
     first, last = pages
-    with source.file.open("rb") as stream:
-        reader = PdfReader(BytesIO(stream.read()), strict=False)
-        writer = PdfWriter()
-        for page in reader.pages[max(first, 1) - 1 : last]:
-            writer.add_page(page)
-        output = BytesIO()
-        writer.write(output)
+    reader = PdfReader(BytesIO(content), strict=False)
+    writer = PdfWriter()
+    for page in reader.pages[max(first, 1) - 1 : last]:
+        writer.add_page(page)
+    output = BytesIO()
+    writer.write(output)
     return output.getvalue()
 
 
@@ -118,38 +158,33 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
     existing = source.document
     if existing and existing.archived_at is None and existing.amm_id == amm.pk:
         return existing
-    duplicate = Document.objects.filter(
-        amm=amm,
-        sha256=source.sha256,
-        archived_at__isnull=True,
-    ).first()
-    converted = None
-    digest = source.sha256
-    title = source.relative_path.rsplit("/", 1)[-1]
     pages = proposal.get("pages")
-    if pages and source.content_type == "application/pdf":
+    title = source.relative_path.rsplit("/", 1)[-1]
+    is_pdf = source.content_type == "application/pdf"
+    digest = source.sha256
+    if is_pdf and not pages:
+        duplicate = Document.objects.filter(
+            amm=amm, sha256=digest, archived_at__isnull=True
+        ).first()
+        if duplicate:
+            # Déjà rangé (ce dossier réimporté, ou le même fichier à deux endroits) : il reste
+            # à sa place, jamais re-rangé ; l'aperçu en a fait un point à vérifier s'il y a lieu.
+            return duplicate
+    content = source_content(source)
+    if pages and is_pdf:
         # Recueil de décisions : la fiche ne reçoit que la décision du produit.
-        converted = _pages_pdf(source, pages)
-        digest = hashlib.sha256(converted).hexdigest()
-        duplicate = Document.objects.filter(
-            amm=amm, sha256=digest, archived_at__isnull=True
-        ).first()
-        title = f"{title} (p. {pages[0]}-{pages[1]})" if pages[0] != pages[1] else (
-            f"{title} (p. {pages[0]})"
-        )
-    elif source.content_type != "application/pdf":
-        with source.file.open("rb") as stream:
-            converted = convert_image_to_pdf(stream.read())
-        if converted is None:
+        content = _pages_pdf(content, pages)
+        span = str(pages[0]) if pages[0] == pages[1] else f"{pages[0]}-{pages[1]}"
+        title = f"{title} (p. {span})"
+    elif not is_pdf:
+        content = convert_image_to_pdf(content)
+        if content is None:
             raise ValidationError("Impossible de convertir une image du dossier en PDF.")
-        digest = hashlib.sha256(converted).hexdigest()
-        duplicate = Document.objects.filter(
-            amm=amm, sha256=digest, archived_at__isnull=True
-        ).first()
+    digest = hashlib.sha256(content).hexdigest()
+    duplicate = Document.objects.filter(amm=amm, sha256=digest, archived_at__isnull=True).first()
     if duplicate:
-        # Déjà rangé (ce dossier réimporté, ou le même fichier à deux endroits) : il reste à sa
-        # place, jamais re-rangé ; l'aperçu en a fait un point à vérifier s'il y a lieu.
         return duplicate
+    converted = content
     document = Document(
         amm=amm,
         renewal=renewal,
@@ -160,14 +195,11 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
         or today(),
         content_type="application/pdf",
         sha256=digest,
-        size_bytes=len(converted) if converted else source.size_bytes,
+        size_bytes=len(converted),
         uploaded_by=user,
     )
-    if converted is None:
-        # Copie indépendante : la preuve du dossier (DossierFile) reste intacte même si le
-        # document est remplacé, archivé puis purgé après la durée de rétention.
-        with source.file.open("rb") as stream:
-            converted = stream.read()
+    # Copie indépendante : la preuve du dossier (DossierFile) reste intacte même si le
+    # document est remplacé, archivé puis purgé après la durée de rétention.
     document.file.save("document.pdf", ContentFile(converted), save=False)
     created_blobs.append((document.file.storage, document.file.name))
     _save_with_actor(document, user)

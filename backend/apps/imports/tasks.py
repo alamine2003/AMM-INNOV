@@ -107,10 +107,18 @@ def can_auto_apply(preview: dict) -> bool:
 
 def _auto_apply(batch, token: str) -> bool:
     """Rangement au nom de l'auteur ; en cas d'échec le lot reste « prêt à ranger » (READY)."""
-    from .dossier.application import apply_dossier
+    from .dossier.application import LostScan, apply_dossier
+    from .models import DossierImport
 
     try:
         apply_dossier(batch.pk, user=batch.created_by, token=token, auto=True)
+    except LostScan as exc:
+        # Scan perdu sans autre copie (lot déposé avant le stockage permanent) : réessayer ne
+        # servirait à rien ; le lot dit clairement qu'il faut le redéposer.
+        DossierImport.objects.filter(pk=batch.pk, status=DossierImport.Status.READY).update(
+            status=DossierImport.Status.FAILED, finished_at=timezone.now(), error=exc.messages[0]
+        )
+        return False
     except Exception:
         logger.exception("Rangement automatique du dossier %s impossible", batch.pk)
         return False

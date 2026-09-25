@@ -120,6 +120,21 @@ des onglets ; un badge dans la liste des AMM en donne le nombre) et sur la page 
 l'historique avec le scan en preuve) ou **Ignorer**. Réimporter le même dossier ne recrée ni
 document, ni renouvellement, ni point déjà traité.
 
+### Rangement sans clic
+
+- Un dossier resté « À ranger » ou « Question » avec d'anciennes règles de lecture est relu
+  automatiquement (quelques dossiers toutes les 5 minutes), puis rangé d'office si l'AMM est
+  identifiée. Un rangement automatique qui a échoué (coupure, stockage) est retenté, au plus
+  3 fois.
+- Un scan dont le fichier a disparu (lots déposés avant le stockage permanent, 22/09/2026) est
+  repris d'une autre copie du même contenu (même empreinte), redéposée ou déjà rangée. Sans copie,
+  le dossier passe en échec avec « redéposez ce dossier » (plus d'erreur serveur 500).
+- Le produit se retrouve même quand le nom du dossier diffère du catalogue : abréviations
+  (« COMPRIME » = « CPR », « SIROP » = « SP »…), dosages dans l'ordre (« 10MG5MG » n'est pas
+  « 5MG10MG »), et en dernier recours la seule présentation du pays qui a cette marque et ces
+  dosages (« GENCLAV 1G 125MG B10 SACHETS », « GENFER »), jamais d'une autre forme (un comprimé
+  n'est pas une suspension).
+
 ### Le seul cas où l'import pose une question
 
 Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu ou absent du

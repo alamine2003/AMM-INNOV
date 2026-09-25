@@ -116,7 +116,13 @@ def resolve_renewal(amm, values: dict, exclude=()):
 
 
 # Abréviations interchangeables des libellés du catalogue (« FL/100ML » = « F100ML »).
-_SYNONYMS = {"fl": "f", "pdr": "pdre", "cp": "cpr", "comp": "cpr", "sachet": "sach", "coll": "col"}
+_SYNONYMS = {
+    "fl": "f", "flacon": "f", "pdr": "pdre", "poudre": "pdre", "cp": "cpr", "comp": "cpr",
+    "comprime": "cpr", "comprimes": "cpr", "sachet": "sach", "sachets": "sach", "coll": "col",
+    "collyre": "col", "suspension": "susp", "gelule": "gel", "gelules": "gel", "caps": "capsule",
+    "sirop": "sp", "injectable": "inj", "perfusion": "perf", "ampoule": "amp", "ampoules": "amp",
+    "goutte": "gtte", "gouttes": "gtte", "effervescent": "effv", "effervescents": "effv",
+}  # fmt: skip
 _UNITS = {"mg", "g", "mcg", "ml", "ui", "iu"}
 
 
@@ -138,12 +144,65 @@ def _parts(name: str) -> tuple[list[str], list[str]]:
     return words, numbers
 
 
-def _numbers_distance(first: list[str], second: list[str]) -> int:
+def _numbers_distance(first: list[str], second: list[str]) -> float:
+    """Écart entre dosages ; l'ordre compte (« 10MG/5MG » n'est pas « 5MG/10MG ») : dans le
+    désordre, les mêmes nombres coûtent un demi-point, sous une vraie concordance."""
     from .recognition import _edit_distance
 
-    joined = "|".join(first), "|".join(second)
-    ordered = "|".join(sorted(first)), "|".join(sorted(second))
-    return min(_edit_distance(*joined), _edit_distance(*ordered))
+    joined = _edit_distance("|".join(first), "|".join(second))
+    unordered = _edit_distance("|".join(sorted(first)), "|".join(sorted(second)))
+    return joined if joined <= unordered else unordered + 0.5
+
+
+# Famille de forme : un comprimé n'est jamais la suspension de la même marque (« GENFORTE CP
+# B100 » n'est pas « GENFORTE 100MG/125MG SUSP BUV », malgré le « 100 »).
+_FORM_FAMILIES = {
+    "cpr": "oral_solide", "gel": "oral_solide", "capsule": "oral_solide", "effv": "oral_solide",
+    "sp": "oral_liquide", "susp": "oral_liquide", "buv": "oral_liquide",
+    "inj": "injectable", "amp": "injectable", "perf": "injectable", "seringue": "injectable",
+    "col": "oculaire",
+    "creme": "cutane", "pde": "cutane", "pommade": "cutane", "der": "cutane",
+    "suppo": "rectal", "ovule": "vaginal", "vag": "vaginal", "inh": "inhale",
+}  # fmt: skip
+
+
+def _forms(words: list[str]) -> set[str]:
+    return {_FORM_FAMILIES[word] for word in words if word in _FORM_FAMILIES}
+
+
+def _brand_in_country(labels, products, preferred) -> object | None:
+    """Dernier recours : la marque et les dosages désignent une seule AMM du pays.
+
+    « GENCLAV 1G 125MG B10 SACHETS » (Congo) est « GENCLAV 1G/125MG PDRE SUSP BUV SACH/10 » ;
+    « GENFER » seul est la seule présentation GENFER du pays.
+    """
+    for label in labels:
+        label_words, label_numbers = _parts(label.replace(":", "/"))
+        if not label_words or len(label_words[0]) < 4:
+            continue
+        same_brand = []
+        for product in products:
+            if str(product.pk) not in preferred:
+                continue
+            words, numbers = _parts(product.name)
+            if not words or (
+                words[0] != label_words[0]
+                and SequenceMatcher(None, words[0], label_words[0]).ratio() < 0.85
+            ):
+                continue
+            label_forms, forms = _forms(label_words), _forms(words)
+            if label_forms and forms and not label_forms & forms:
+                continue
+            same_brand.append((product, numbers))
+        if label_numbers:
+            same_brand = [
+                (product, numbers)
+                for product, numbers in same_brand
+                if numbers[: len(label_numbers)] == label_numbers or numbers == label_numbers
+            ]
+        if len(same_brand) == 1:
+            return same_brand[0][0]
+    return None
 
 
 def folder_product(labels: list[str], products, preferred_ids=()) -> tuple[object, str]:
@@ -179,6 +238,9 @@ def folder_product(labels: list[str], products, preferred_ids=()) -> tuple[objec
             if ratio >= 0.85:
                 scored.append((distance, -ratio, str(product.pk) not in preferred, product))
     if not scored:
+        fallback = _brand_in_country(labels, products, preferred)
+        if fallback:
+            return fallback, ""
         return None, "Aucun produit du catalogue ne correspond au nom du dossier."
     for in_country in (True, False):
         pool = [row for row in scored if row[2] != in_country]
@@ -190,8 +252,14 @@ def folder_product(labels: list[str], products, preferred_ids=()) -> tuple[objec
             str(row[3].pk) for row in pool if row[0] == best[0] and -row[1] >= -best[1] - 0.02
         }
         if len(rivals) > 1:
+            fallback = _brand_in_country(labels, products, preferred)
+            if fallback and str(fallback.pk) in rivals:
+                return fallback, ""
             return None, "Plusieurs produits du catalogue correspondent au nom du dossier."
         return best[3], ""
+    fallback = _brand_in_country(labels, products, preferred)
+    if fallback:
+        return fallback, ""
     return None, "Aucun produit du catalogue ne correspond au nom du dossier."
 
 

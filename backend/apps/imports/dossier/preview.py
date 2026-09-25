@@ -35,6 +35,8 @@ from .recognition import normalize, recognize_file, specialty_key
 
 # Période des scans qu'on ne sait pas placer : rangés dans la fiche comme « autre document ».
 UNPLACED = "unplaced"
+# 3 : recueils de décisions, documents communs, pays sans code ISO (26/09/2026).
+PREVIEW_VERSION = 3
 # Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
 COMMON_FOLDER = "Documents communs"
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
@@ -863,7 +865,9 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
     )
     reasons = [message for _, message in questions]
     return {
-        "version": 2,
+        # Version des règles de lecture : un aperçu plus ancien est relu automatiquement
+        # (`recover_pending_work`), et rangé si l'AMM est désormais identifiée.
+        "version": PREVIEW_VERSION,
         # Fiabilité de la lecture : information de détail, n'entre plus dans aucune décision.
         "confidence": confidence,
         "level": "HIGH" if confidence >= 90 else "MEDIUM" if confidence >= 65 else "LOW",
