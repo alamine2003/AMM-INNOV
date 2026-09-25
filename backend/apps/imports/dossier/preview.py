@@ -20,7 +20,7 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.catalog.models import Country, Product
 from apps.documents.models import Document
 
-from .extraction import extract_file
+from .extraction import load_extraction
 from .labels import FIELD_LABELS, fr_date, period_label, show
 from .matching import (
     folder_product,
@@ -222,7 +222,7 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
     questions, issues, points, warnings, rows = [], [], [], [], []
     for upload in files:
         if not upload.extraction:
-            upload.extraction = extract_file(upload)
+            upload.extraction = load_extraction(upload)
             upload.save(update_fields=["extraction"])
         row = recognize_file(upload, countries, products, batch.root_name)
         rows.append(row)

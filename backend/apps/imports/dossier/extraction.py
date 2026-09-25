@@ -50,6 +50,29 @@ def needs_retry(extraction: dict | None) -> bool:
     )
 
 
+def load_extraction(upload) -> dict:
+    """Lecture du fichier, réutilisée si le même contenu (même SHA-256) a déjà été lu.
+
+    Les décisions groupées d'un pays sont jointes à chaque produit de la gamme : sans cette
+    réutilisation, le même PDF de 20 Mo était relu (voire passé à l'OCR) une fois par produit,
+    soit des heures sur le CPU réduit de Render gratuit. Le contenu étant identique, la lecture
+    l'est aussi ; une lecture interrompue (délai OCR) n'est jamais réutilisée.
+    """
+    from apps.imports.models import DossierFile
+
+    if upload.sha256:
+        known = (
+            DossierFile.objects.filter(sha256=upload.sha256)
+            .exclude(pk=upload.pk)
+            .exclude(extraction={})
+            .values_list("extraction", flat=True)[:3]
+        )
+        for extraction in known:
+            if extraction and not needs_retry(extraction):
+                return extraction
+    return extract_file(upload)
+
+
 def extract_file(upload) -> dict:
     """Return JSON diagnostics, text and metadata; never mistake failed OCR for success."""
     result = {

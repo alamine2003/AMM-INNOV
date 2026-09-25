@@ -211,6 +211,18 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {
 }
 # Worker tué en cours de tâche (s12b) : la tâche était déjà acquittée, donc perdue. Acquittée
 # après exécution, elle est redistribuée ; les tâches sont idempotentes (voir chaque tâche).
+# Un seul worker dans le conteneur du web (Render gratuit, AMM_ROLE=all) : au démarrage, une
+# analyse restée « en cours » a forcément été coupée (mise en veille, mémoire) et reprend tout
+# de suite. Désactivé par défaut avec plusieurs workers (un redémarrage couperait les autres).
+WORKER_RESUME_INTERRUPTED = env_bool("WORKER_RESUME_INTERRUPTED", env("AMM_ROLE", "") == "all")
+# Render gratuit endort le service après 15 min sans requête entrante, worker compris, même en
+# pleine analyse. Tant qu'il reste du travail, le worker appelle cette adresse publique toutes
+# les KEEPALIVE_SECONDS (RENDER_EXTERNAL_URL est fournie par Render). Vide : désactivé.
+KEEPALIVE_URL = env(
+    "KEEPALIVE_URL",
+    f"{env('RENDER_EXTERNAL_URL')}/api/v1/health/live" if env("RENDER_EXTERNAL_URL") else "",
+)
+KEEPALIVE_SECONDS = int(env("KEEPALIVE_SECONDS", "240"))
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1

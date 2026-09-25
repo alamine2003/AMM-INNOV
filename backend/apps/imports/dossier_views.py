@@ -157,7 +157,8 @@ class DossierImportViewSet(
             batch.status = DossierImport.Status.PENDING
             batch.preview_token = ""
             batch.error = ""
-            batch.save(update_fields=["country", "status", "preview_token", "error"])
+            batch.attempts = 0
+            batch.save(update_fields=["country", "status", "preview_token", "error", "attempts"])
         _enqueue_analysis(batch)
         batch.refresh_from_db()
         return Response(self.get_serializer(batch).data, status=status.HTTP_202_ACCEPTED)
@@ -200,7 +201,10 @@ class DossierImportViewSet(
             batch.status = DossierImport.Status.PENDING
             batch.preview_token = ""
             batch.error = ""
-            batch.save(update_fields=["amm", "country", "status", "preview_token", "error"])
+            batch.attempts = 0
+            batch.save(
+                update_fields=["amm", "country", "status", "preview_token", "error", "attempts"]
+            )
         _enqueue_analysis(batch)
         batch.refresh_from_db()
         return Response(self.get_serializer(batch).data, status=status.HTTP_202_ACCEPTED)
