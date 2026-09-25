@@ -155,10 +155,26 @@ def test_uncertain_reading_is_ranged_without_threshold(
     assert batch.status == DossierImport.Status.APPLIED and batch.auto_applied
 
 
-def test_unidentifiable_amm_asks_the_question_and_writes_nothing(
+def test_absent_amm_is_created_from_a_readable_decision(
     users, product, django_capture_on_commit_callbacks
 ):
-    # Produit sans AMM au Sénégal : pas de création automatique, une question.
+    """Produit sans AMM au Sénégal (hors Excel) : la fiche est créée d'office, siège notifié."""
+    from apps.amm.models import MarketingAuthorization
+
+    batch = new_batch(users["country"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    batch = analyze(batch, django_capture_on_commit_callbacks)
+    assert batch.status == DossierImport.Status.APPLIED and batch.auto_applied
+    amm = MarketingAuthorization.objects.get(product=product, country__iso2="SN")
+    assert batch.amm_id == amm.pk and amm.original_number
+    assert batch.summary["created"]
+    assert Notification.objects.filter(user=users["hq"], body__contains="AMM créée").exists()
+
+
+def test_absent_amm_asks_the_question_when_creation_is_disabled(
+    users, product, settings, django_capture_on_commit_callbacks
+):
+    settings.DOSSIER_AUTO_CREATE = False
     batch = new_batch(users["hq"])
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     batch = analyze(batch, django_capture_on_commit_callbacks)
@@ -198,3 +214,57 @@ def test_auto_apply_rules():
     assert not can_auto_apply({**identified, "question": {"reasons": ["Pays non reconnu."]}})
     # Une AMM à créer reste une décision humaine du siège.
     assert not can_auto_apply({**identified, "amm": {"id": None}})
+
+
+def lose(record):
+    """Scan perdu : déposé avant le stockage permanent (disque éphémère, 22/09/2026)."""
+    record.file.storage.delete(record.file.name)
+
+
+def test_lost_scan_is_taken_from_another_copy_of_the_same_file(
+    users, product, make_amm, django_capture_on_commit_callbacks
+):
+    amm, batch = expired_amm_with_renewal_dossier(users, product, make_amm)
+    for record in batch.files.all():
+        # Le même scan a été redéposé depuis dans un autre lot : son contenu sert au rangement.
+        copy = stored(new_batch(users["hq"]), record.relative_path, record.extraction["text"])
+        assert copy.sha256 == record.sha256
+        lose(record)
+    batch = analyze(batch, django_capture_on_commit_callbacks)
+    assert batch.status == DossierImport.Status.APPLIED, batch.error
+    assert amm.documents.count() == 2
+
+
+def test_lost_scan_without_copy_says_to_upload_again(
+    users, product, make_amm, django_capture_on_commit_callbacks, hq_client
+):
+    _, batch = expired_amm_with_renewal_dossier(users, product, make_amm)
+    for record in batch.files.all():
+        lose(record)
+    batch = analyze(batch, django_capture_on_commit_callbacks)
+    assert batch.status == DossierImport.Status.FAILED
+    assert "redéposez ce dossier" in batch.error
+    # Ranger à la main : message clair (400), plus d'erreur serveur.
+    ready(batch)
+    response = hq_client.post(
+        f"/api/v1/dossier-imports/{batch.pk}/confirm",
+        {"preview_token": batch.preview_token, "create_amm": False},
+        format="json",
+    )
+    assert response.status_code == 400 and "redéposez" in str(response.data)
+
+
+def test_dossiers_read_with_older_rules_are_reread_and_filed(
+    users, product, make_amm, django_capture_on_commit_callbacks
+):
+    """« À ranger » depuis le 22/09 : relu avec les règles actuelles, puis rangé d'office."""
+    from apps.core.tasks import reread_stale_dossiers
+
+    amm, batch = expired_amm_with_renewal_dossier(users, product, make_amm)
+    preview = ready(batch)
+    DossierImport.objects.filter(pk=batch.pk).update(preview={**preview, "version": 2})
+    with django_capture_on_commit_callbacks(execute=True):
+        assert reread_stale_dossiers() == 1
+    batch.refresh_from_db()
+    assert batch.status == DossierImport.Status.APPLIED and batch.amm_id == amm.pk
+    assert reread_stale_dossiers() == 0

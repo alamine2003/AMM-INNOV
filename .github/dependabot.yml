@@ -36,6 +36,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Le worker pdf.js doit avoir exactement la version que react-pdf embarque, sinon « Voir le
+      # scan » échoue (« The API version … does not match the Worker version … », 25/09/2026).
+      # Il suit react-pdf : mis à jour à la main avec lui (test pdfWorker.test.ts).
+      - dependency-name: "pdfjs-dist"
 
   - package-ecosystem: docker
     directory: /docker

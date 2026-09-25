@@ -12,6 +12,7 @@ donc seulement :
 """
 
 import hashlib
+import re
 from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import PurePosixPath
@@ -20,7 +21,7 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.catalog.models import Country, Product
 from apps.documents.models import Document
 
-from .extraction import load_extraction
+from .extraction import load_extraction, paged_extraction
 from .labels import FIELD_LABELS, fr_date, period_label, show
 from .matching import (
     folder_product,
@@ -30,10 +31,15 @@ from .matching import (
     resolve_renewal,
 )
 from .projection import build_projection
-from .recognition import normalize, recognize_file
+from .recognition import normalize, recognize_file, specialty_key
 
 # Période des scans qu'on ne sait pas placer : rangés dans la fiche comme « autre document ».
 UNPLACED = "unplaced"
+# 3 : recueils de décisions, documents communs, pays sans code ISO (26/09/2026).
+# 4 : AMM absente créée d'office quand la décision d'origine est lisible.
+PREVIEW_VERSION = 4
+# Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
+COMMON_FOLDER = "Documents communs"
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
 CREATABLE = {"no_amm", "product_absent"}
 
@@ -45,11 +51,15 @@ def _consensus(rows, fields, points, label):
         variants = {normalize(str(row[field])) for row in evidence}
         if len(variants) > 1:
             readings = ", ".join(sorted({show(field, row[field]) for row in evidence})[:3])
+            name = FIELD_LABELS.get(
+                f"original_{field}" if label == "AMM d'origine" else field,
+                FIELD_LABELS.get(field, field),
+            )
             _point(
                 points,
                 "contradiction",
-                f"{label} : les décisions du dossier se contredisent sur la "
-                f"{FIELD_LABELS.get(field, field)} ({readings}) ; valeur non reprise.",
+                f"{label} : les décisions du dossier se contredisent ({name} : {readings}) ; "
+                "valeur non reprise.",
             )
             continue
         if evidence:
@@ -91,6 +101,9 @@ def _change(target, field, old, new, proof, confidence, *, replaces=None):
         old = old.isoformat()
     if old == new or (not old and not new):
         return None
+    same_number = field in {"original_number", "number"} and old and new
+    if same_number and number_key(old) == number_key(new):
+        return None  # « E-2015-0418 » (fiche) et « E-2015- 418 » (scan) : le même numéro
     identity = f"{target}:{field}:{proof}:{new}"
     return {
         "id": hashlib.sha256(identity.encode()).hexdigest()[:24],
@@ -194,6 +207,129 @@ def _read_grouped_rows(rows, product, products, country, points):
         )
 
 
+def number_key(value: str) -> str:
+    """Numéro comparable : sans espaces ni zéros de tête (« E-2015-0418 » = « E-2015- 418 »)."""
+    tokens = re.findall(r"[a-z]+|\d+", normalize(str(value)))
+    return "-".join(token.lstrip("0") or "0" if token.isdigit() else token for token in tokens)
+
+
+def is_common(path: str) -> bool:
+    """Document commun d'un dossier pays (décision groupée, recueil) : pas une preuve d'identité."""
+    return f"/{COMMON_FOLDER}/" in f"/{path}"
+
+
+def _mentions_product(text: str, product, marketed) -> bool:
+    """Une ligne du document désigne-t-elle ce produit (marque et dosages compatibles) ?"""
+    brand = normalize(product.name).split(" ")[0]
+    if len(brand) < 3 or f" {brand} " not in f" {normalize(text)} ":
+        return False
+    for line in text.splitlines():
+        if brand in normalize(line):
+            label = re.sub(r"^\s*[\[(]?\d{1,3}\s*[\]).:_|-]*\s*", "", line).strip()
+            if name_compatible(label, product, marketed):
+                return True
+    return False
+
+
+def _section_row(upload, section, product, countries, products, root_name):
+    """Lecture de la seule décision du produit dans un recueil (numéro, dates, période)."""
+    text = upload.extraction.get("text", "")
+    focused = recognize_file(
+        _Part(upload, text[section["start"] : section["end"]]), countries, products, root_name
+    )
+    focused.update(
+        product_ids=[str(product.pk)],
+        product_name=product.name,
+        product_source="section",
+        product_confidence=min(focused["confidence"], 75),
+        sections=[],
+        pages=[section["first_page"], section["last_page"]] if section["first_page"] else None,
+        section_label=section["specialty"],
+    )
+    return focused
+
+
+class _Part:
+    """Une section d'un document, lue comme un document à part (même fichier de preuve)."""
+
+    def __init__(self, upload, text):
+        self.pk = upload.pk
+        self.relative_path = upload.relative_path
+        self.extraction = {**upload.extraction, "text": text}
+
+
+def _focus_on_product(files, rows, product, products, countries, country, root_name, points):
+    """Ne garde de chaque document que ce qui concerne le produit du dossier.
+
+    - Recueil de décisions (« AMM groupée 23 DEC 2023 » : six décisions, une par spécialité) :
+      seule la décision du produit est lue, et seules ses pages sont rangées.
+    - Document commun (racine du dossier pays) qui ne cite pas le produit : il n'est ni lu ni
+      rangé dans cette fiche (le 25/09/2026, les AMM de PALUCARE et les recueils de 2015 et 2023
+      étaient rangés dans la fiche de chaque produit du Mali).
+    Renvoie les documents écartés (affichés dans les détails de la lecture).
+    """
+    in_country = (
+        set(
+            MarketingAuthorization.objects.filter(country=country).values_list(
+                "product_id", flat=True
+            )
+        )
+        if country
+        else set()
+    )
+    marketed = [item for item in products if item.pk in in_country] or products
+    kept_files, kept_rows, ignored = [], [], []
+    for upload, row in zip(files, rows, strict=True):
+        common = is_common(upload.relative_path)
+        concerned = True
+        if row.get("sections"):
+            candidates = [
+                {"label": section["specialty"], "number": specialty_key(section["specialty"]),
+                 "section": section}
+                for section in row["sections"]
+            ]  # fmt: skip
+            line = pick_table_row(candidates, product, marketed)
+            if line:
+                row = _section_row(
+                    upload, line["section"], product, countries, products, root_name
+                )
+            elif common:
+                concerned = False
+            else:
+                row["official"] = False
+                row["kind"] = "AUTRE"
+                _point(
+                    points,
+                    "identity",
+                    f"{_name(row['path'])} : recueil de décisions où « {product.name} » n'a pas "
+                    "été trouvé ; il est rangé comme pièce annexe.",
+                    proof=row["file_id"],
+                )
+        elif common and row.get("table_rows"):
+            concerned = pick_table_row(row["table_rows"], product, marketed) is not None
+        elif common and row.get("specialty"):
+            concerned = name_compatible(row["specialty"], product, marketed) or bool(
+                pick_table_row([{"label": row["specialty"], "number": ""}], product, marketed)
+            )
+        elif common:
+            concerned = _mentions_product(upload.extraction.get("text", ""), product, marketed)
+        if not concerned:
+            ignored.append(
+                {
+                    "file_id": str(upload.pk),
+                    "path": upload.relative_path,
+                    "reason": f"ne concerne pas « {product.name} »",
+                }
+            )
+            continue
+        if common and not row["product_ids"]:
+            row["product_ids"] = [str(product.pk)]
+            row["product_name"] = product.name
+        kept_files.append(upload)
+        kept_rows.append(row)
+    return kept_files, kept_rows, ignored
+
+
 def _name(path: str) -> str:
     return PurePosixPath(path).name
 
@@ -225,10 +361,18 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
             upload.extraction = load_extraction(upload)
             upload.save(update_fields=["extraction"])
         row = recognize_file(upload, countries, products, batch.root_name)
+        if row["sections"]:
+            # Recueil de décisions lu avant que les sauts de page soient gardés : relu, pour ne
+            # ranger que les pages du produit.
+            paged = paged_extraction(upload)
+            if paged is not upload.extraction:
+                upload.extraction = paged
+                upload.save(update_fields=["extraction"])
+                row = recognize_file(upload, countries, products, batch.root_name)
         rows.append(row)
         diagnostics = upload.extraction.get("warnings", []) + upload.extraction.get("errors", [])
         warnings.extend(f"{upload.relative_path} : {message}" for message in diagnostics)
-        if upload.extraction.get("truncated"):
+        if upload.extraction.get("truncated") and not is_common(upload.relative_path):
             _point(
                 points,
                 "reading",
@@ -238,6 +382,16 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
             )
     if not files:
         questions.append(("empty", "Le dossier ne contient aucun document."))
+    # Les documents communs du dossier pays (décisions groupées, recueils, AMM d'autres produits
+    # posées à la racine) ne disent ni le pays ni le produit de ce dossier : ils sont mis de côté
+    # jusqu'à ce que le produit soit connu, puis seule leur partie qui le concerne est gardée.
+    pairs = list(zip(files, rows, strict=True))
+    shared = [pair for pair in pairs if is_common(pair[0].relative_path)]
+    if shared and len(shared) < len(pairs):
+        own = [pair for pair in pairs if not is_common(pair[0].relative_path)]
+        files, rows = [upload for upload, _ in own], [row for _, row in own]
+    else:
+        shared = []
 
     # --- Pays
     country_ids = {pk for row in rows for pk in row["country_ids"]}
@@ -275,8 +429,28 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         if len(product_ids) > 1:
             issues.append(("products", "Le dossier mélange plusieurs produits ou présentations."))
         product = next((item for item in products if str(item.pk) in product_ids), None)
+    ignored = []
     if product:
+        files, rows, ignored = _focus_on_product(
+            files + [upload for upload, _ in shared],
+            rows + [row for _, row in shared],
+            product,
+            products,
+            countries,
+            country,
+            batch.root_name,
+            points,
+        )
         _read_grouped_rows(rows, product, products, country, points)
+    else:
+        ignored = [
+            {
+                "file_id": str(upload.pk),
+                "path": upload.relative_path,
+                "reason": "produit du dossier non identifié",
+            }
+            for upload, _ in shared
+        ]
     named = [row for row in rows if row["official"] and row["explicit_product_name"]]
     explicit_names = {normalize(row["explicit_product_name"]) for row in named}
     unknown_names = {
@@ -650,6 +824,8 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
                 "kind": kind,
                 "period": period,
                 "document_date": row["document_date"],
+                # Recueil de décisions : seules les pages du produit sont rangées.
+                "pages": row.get("pages"),
                 "duplicate_id": str(duplicate.pk) if duplicate else None,
                 "extraction_source": upload.extraction.get("source", "unreadable"),
                 "official": row["official"],
@@ -690,7 +866,9 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
     )
     reasons = [message for _, message in questions]
     return {
-        "version": 2,
+        # Version des règles de lecture : un aperçu plus ancien est relu automatiquement
+        # (`recover_pending_work`), et rangé si l'AMM est désormais identifiée.
+        "version": PREVIEW_VERSION,
         # Fiabilité de la lecture : information de détail, n'entre plus dans aucune décision.
         "confidence": confidence,
         "level": "HIGH" if confidence >= 90 else "MEDIUM" if confidence >= 65 else "LOW",
@@ -714,6 +892,8 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         "original_proofs": original_proofs,
         "candidates": candidates,
         "documents": documents,
+        # Documents communs du dossier pays sans rapport avec ce produit : ni lus ni rangés.
+        "ignored": ignored,
         "renewals": renewals,
         "changes": changes,
         # Indicatif, hors jeton d'aperçu (voir `preview_token`) : dépend de la date du jour.

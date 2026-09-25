@@ -5,5 +5,5 @@ Bonjour {{ user.full_name }},
 Consulter l'AMM : {{ notification.link }}
 
 --
-AMM INNOV — suivi des Autorisations de Mise sur le Marché
+AMM GH — suivi des Autorisations de Mise sur le Marché
 {{ frontend_url }}

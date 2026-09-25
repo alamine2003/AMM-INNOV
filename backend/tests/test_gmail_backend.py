@@ -15,7 +15,7 @@ GMAIL_SETTINGS = {
     "GMAIL_CLIENT_ID": "client-1.apps.googleusercontent.com",
     "GMAIL_CLIENT_SECRET": "secret-1",
     "GMAIL_REFRESH_TOKEN": "refresh-1",
-    "DEFAULT_FROM_EMAIL": "AMM INNOV <regulatoire@example.com>",
+    "DEFAULT_FROM_EMAIL": "AMM GH <regulatoire@example.com>",
 }
 
 
@@ -66,7 +66,7 @@ def test_message_is_sent_through_the_api(google):
     assert len(messages) == 1
     assert messages[0]["To"] == "pays@example.com"
     assert messages[0]["Subject"] == "Alerte J-180"
-    assert messages[0]["From"] == "AMM INNOV <regulatoire@example.com>"
+    assert messages[0]["From"] == "AMM GH <regulatoire@example.com>"
     assert "Corps du message" in messages[0].get_payload()
     # le jeton d'accès accompagne l'envoi
     send_call = google.calls[-1]

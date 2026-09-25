@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useLogin } from '@/api/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/authStore';
 import { extractErrorMessage } from '@/api/client';
+import { BrandLogo } from '@/components/BrandLogo';
 
 const schema = z.object({
   email: z.string().email(),
@@ -46,9 +47,9 @@ export default function LoginPage() {
     >
       <Card sx={{ width: '100%', maxWidth: 420 }}>
         <CardContent sx={{ p: 4 }}>
-          <Typography variant="h4" color="primary" gutterBottom>
-            {t('app.name')}
-          </Typography>
+          <Box sx={{ mb: 1 }}>
+            <BrandLogo size={56} variant="h4" />
+          </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {t('auth.subtitle')}
           </Typography>

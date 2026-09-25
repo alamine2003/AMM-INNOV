@@ -219,3 +219,27 @@ def test_renewal_on_the_recorded_origin_date_keeps_the_record(users, cameroon, m
     assert any(
         "même jour que l'AMM d'origine" in point["message"] for point in preview["review_points"]
     )
+
+
+def test_folder_name_with_other_words_finds_the_only_matching_presentation(countries, make_amm):
+    """Congo : « GENCLAV 1G 125MG B10 SACHETS », « GENFER » seul, « AMLOPERIN 10MG5MG » (ordre)."""
+    from apps.catalog.models import Product
+
+    names = [
+        "GENCLAV 1G/125MG PDRE SUSP BUV SACH/10",
+        "GENCLAV 1G200MG IMIV PDRE SOL INJ F1",
+        "GENFER 100MG2ML IM AMP INJ B5",
+        "GENFORTE 100MG/125MG SUSP BUV F/120ML",
+        "AMLOPERIN 10MG/5MG CPR B/30",
+        "AMLOPERIN 5MG/10MG CPR B/30",
+    ]
+    products = [Product.objects.create(name=name) for name in names]
+    for product in products:
+        make_amm(country="ML", product_obj=product)
+    ids = [product.pk for product in products]
+    found = lambda label: folder_product(["MALI", label], products, ids)[0]  # noqa: E731
+    assert found("GENCLAV 1G 125MG B10 SACHETS").name == names[0]
+    assert found("GENFER").name == names[2]
+    assert found("AMLOPERIN 10MG5MG CPR B30").name == names[4]
+    assert found("AMLOPERIN 5MG10MG CPR B30").name == names[5]
+    assert found("GENFORTE CP B100") is None  # un comprimé n'est pas la suspension

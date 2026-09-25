@@ -29,7 +29,7 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 SCOPE = "https://www.googleapis.com/auth/gmail.send"
 
 PAGE = """<!doctype html><html lang="fr"><meta charset="utf-8">
-<title>AMM INNOV</title>
+<title>AMM GH</title>
 <body style="font-family:system-ui;padding:3rem;max-width:34rem;margin:auto">
 <h1>Autorisation enregistrée</h1>
 <p>{message}</p><p>Vous pouvez fermer cet onglet et revenir au terminal.</p></body></html>"""

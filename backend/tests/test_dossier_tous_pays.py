@@ -209,7 +209,8 @@ def test_grouped_decision_in_each_product_folder_is_read_on_its_own_line(users, 
     assert preview["original"]["original_number"] == "5880"
 
 
-def test_grouped_decision_without_the_product_is_kept_as_annex(users, make_amm):
+def test_common_grouped_decision_without_the_product_is_left_out(users, make_amm):
+    """Décision groupée du dossier pays qui ne cite pas le produit : ni lue ni rangée ici."""
     guinea = Country.objects.get(iso2="GN")
     target = Product.objects.create(name="ABSENT 10MG CPR B/30")
     make_amm(country=guinea, product_obj=target, original_number="1234")
@@ -218,7 +219,22 @@ def test_grouped_decision_without_the_product_is_kept_as_annex(users, make_amm):
     )
     staged(batch, f"{batch.root_name}/Documents communs/AMM Guinée.pdf", GUINEA_ROWS)
     preview = build_preview(batch)
+    assert preview["documents"] == []
+    assert [item["path"].rsplit("/", 1)[-1] for item in preview["ignored"]] == ["AMM Guinée.pdf"]
+    assert preview["original"].get("original_number") in (None, "")
+
+
+def test_grouped_decision_in_the_product_folder_without_it_is_kept_as_annex(users, make_amm):
+    guinea = Country.objects.get(iso2="GN")
+    target = Product.objects.create(name="ABSENT 10MG CPR B/30")
+    make_amm(country=guinea, product_obj=target, original_number="1234")
+    batch = DossierImport.objects.create(
+        root_name="GUINEE - ABSENT 10MG CPR B30", created_by=users["hq"]
+    )
+    staged(batch, f"{batch.root_name}/AMM Guinée.pdf", GUINEA_ROWS)
+    preview = build_preview(batch)
     assert any("décision groupée" in point["message"] for point in preview["review_points"])
+    assert preview["documents"][0]["kind"] == "AUTRE"
     assert preview["original"].get("original_number") in (None, "")
 
 

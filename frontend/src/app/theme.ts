@@ -6,7 +6,8 @@ export const theme = createTheme(
   {
     palette: {
       mode: 'light',
-      primary: { main: '#0f5c8c', dark: '#083d5e', light: '#3f83b0' },
+      // Bleu du logo Generic Healthcare.
+      primary: { main: '#204093', dark: '#152b66', light: '#4a66b3' },
       secondary: { main: '#00897b' },
       background: { default: '#f4f6f9', paper: '#ffffff' },
       success: { main: '#2e7d32' },

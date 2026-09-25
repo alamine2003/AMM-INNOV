@@ -2,8 +2,11 @@
 
 import re
 import unicodedata
-from datetime import date
+from datetime import date, timedelta
+from difflib import SequenceMatcher
 from pathlib import PurePosixPath
+
+from apps.core.dates import today
 
 
 def fold(value: str) -> str:
@@ -70,6 +73,15 @@ DATE_PATTERN = (
     + _MONTH_NAMES
     + r")\b\.?,?\s+\d{4})"
 )
+
+
+# Tampon dateur lu chiffre par chiffre : « Bamako, le 2 9 DEC 2023 », « COTONOU, le2 6 JUIN 2019 ».
+# Le jour est recollé (« 2 9 » → « ␣29 ») à longueur égale : `plain` reste aligné sur le texte.
+_SPACED_DAY = re.compile(rf"(?<!\d)(\d) (\d)(?=\s*\.?\s*(?:{_MONTH_NAMES})\b)")
+
+
+def _join_spaced_days(plain: str) -> str:
+    return _SPACED_DAY.sub(r" \1\2", plain)
 
 
 def parse_date(value: str) -> str | None:
@@ -252,6 +264,9 @@ _NUMBER_TOKEN = r"([0-9a-z][0-9a-z/_.-]{0,40}(?:[ ](?=[0-9])[0-9a-z/_.-]{1,20}){
 # la mention « AMM N° » française, sa traduction « Marketing Authorization No. », et la ligne
 # « Décision N° » (qui, selon les pays, porte le numéro d'AMM ou un numéro d'acte distinct).
 _NUMBER_SOURCES = {
+    # Mali : « Sous le N° 24 — 000829 du 25 juin 2024 suivant Décision ministérielle
+    # N° 2024-0000675/MSDS-SG du 15 avril 2024 » : l'AMM est la décision ministérielle.
+    "ministerial": r"decision\s+ministerielle\s+n\S{0,2}\s*",
     "registration": r"registration\s+(?:number|no\.?)\s*[:.]?\s*"
     r"|enregistre\w*\s+sous\s+le\s+n\S{0,2}\s*(?:amm[\s_:]*)?(?!/?\s*registration)",
     # « … est renouvelée sous le numéro 0374R/09/2020 », « Sous le numéro : 7897 » : le numéro
@@ -276,6 +291,15 @@ def _number_readings(plain: str, text: str) -> dict[str, list[str]]:
             if re.fullmatch(r"[0-9sSoO]+", value) and sum(c.isdigit() for c in value) >= 5:
                 value = value.upper().replace("S", "5").replace("O", "0")
             if sum(character.isdigit() for character in value) < 4:
+                continue
+            if source == "ministerial":
+                value = re.split(r"/\s*[a-z]", value, maxsplit=1, flags=re.I)[0]
+            if (
+                source == "decision"
+                and not re.search(r"[a-z]", value, re.I)
+                and not re.search(r"\d{8}|\d{4}\W{0,2}\d{3,}", value)
+            ):
+                # « DECISION N° 2023 /MSDS », « 2015. 7 7 » : numéro manuscrit illisible.
                 continue
             kind = source
             # « N°11381207 /AMM/MINSANTE » : la ligne d'en-tête porte bien un numéro d'AMM.
@@ -312,7 +336,16 @@ def _authorization_number(
                 break
         else:
             clusters.append([key])
-    priority = ("label", "granted", "registration", "fr", "en", "decision_amm", "decision")
+    priority = (
+        "label",
+        "ministerial",
+        "granted",
+        "registration",
+        "fr",
+        "en",
+        "decision_amm",
+        "decision",
+    )
 
     def rank(cluster):
         best = min(priority.index(source) for key in cluster for source in sources[key])
@@ -441,6 +474,38 @@ def _clean_label(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[|_]+", " ", value)).strip(" .;:-|")
 
 
+_GENERIC_WORDS = {
+    "comprime", "comprimes", "pellicule", "pellicules", "secable", "secables", "enrobe",
+    "enrobes", "boite", "boites", "gelule", "gelules", "sirop", "flacon", "flacons", "sachet",
+    "sachets", "suspension", "buvable", "injectable", "solution", "poudre", "ampoule",
+    "ampoules", "effervescent", "effervescents", "creme", "pommade", "collyre", "gouttes",
+    "tube", "de", "du", "des", "la", "le", "les", "pour", "et", "en", "mg", "ml", "unite",
+}  # fmt: skip
+
+
+def _generic_label(label: str) -> bool:
+    """Le libellé ne dit que la forme et le conditionnement (« comprimés pelliculés »)."""
+    words = [word for word in normalize(label).split() if not word.isdigit()]
+    return bool(words) and all(word in _GENERIC_WORDS or len(word) <= 2 for word in words)
+
+
+def _label_above(lines: list[str], index: int, label: str) -> str:
+    """Remonte jusqu'à la ligne qui porte la marque (premier mot en capitales)."""
+    parts = [label]
+    for previous in reversed(lines[max(0, index - 3) : index]):
+        if not previous.strip():
+            continue
+        if re.search(_CODED_NUMBER, previous) or re.search(
+            r"denomination|designation|n.\s*de\s+visa|delivrance", fold(previous)
+        ):
+            break
+        parts.insert(0, _clean_label(previous))
+        first = re.search(r"[A-Za-zÀ-ÿ]{3,}", previous)
+        if first and first.group().isupper() and normalize(first.group()) not in _GENERIC_WORDS:
+            break
+    return " ".join(part for part in parts if part)
+
+
 def table_rows(text: str) -> list[dict]:
     """Lignes « produit → n° d'AMM (→ date) » d'une décision groupée ; [] s'il n'y a pas de tableau.
 
@@ -465,6 +530,10 @@ def table_rows(text: str) -> list[dict]:
             or re.search(r"(?:" + _MONTH_NAMES + r")\.?\s*$", fold(label))
         ):
             continue
+        if sum(character.isalpha() for character in label) >= 4 and _generic_label(label):
+            # Côte d'Ivoire : « AMLO VH 5 mg/12,5 mg/160 mg Amlodipine, » puis, ligne suivante,
+            # « comprimés pelliculés E-2015-418 | 29/07/2015 » : la dénomination est au-dessus.
+            label = _label_above(lines, index, label)
         if sum(character.isalpha() for character in label) < 4:
             for previous in reversed(lines[max(0, index - 3) : index]):
                 candidate = _clean_label(previous)
@@ -489,6 +558,107 @@ def table_rows(text: str) -> list[dict]:
     return rows if len(rows) >= 3 else []
 
 
+PAGE_BREAK = "\f"
+# « … pour la spécialité : GENSET 10 mg comprimé », « l'autorisation … de la spécialité
+# LITACOLD sirop … est renouvelée » : la dénomination suit sur la même ligne ou la suivante.
+_SPECIALTY = re.compile(
+    r"\b(?:la|votre)\s+specialite(?:\s+pharmaceutique)?\s*[:;]?\s{0,6}"
+    r"(?=[^\n]*[a-z]{3})([^\n]{3,150})"
+)
+
+
+def decision_sections(text: str) -> list[dict]:
+    """Découpe un recueil de décisions (une par spécialité) : dénomination et pages de chacune.
+
+    Mali : « AMM groupée 23 DEC 2023 » réunit six décisions de deux pages, chacune « … pour la
+    spécialité : GENFER® 100 mg/2 mL … » ; « Renouvellement AMM 15 PRODUITS 2019 » quinze
+    décisions d'une page. Une section va de la page qui nomme la spécialité à la suivante.
+    Sans séparateur de pages (lecture ancienne), les sections sont découpées dans le texte.
+    """
+    pages = text.split(PAGE_BREAK) if PAGE_BREAK in text else [text]
+    offsets, position = [], 0
+    for page in pages:
+        offsets.append(position)
+        position += len(page) + len(PAGE_BREAK)
+    starts = []
+    for number, page in enumerate(pages, 1):
+        folded = fold(page)
+        for match in _SPECIALTY.finditer(folded):
+            label = page[match.start(1) : match.end(1)]
+            # « « ESOMERAL 40mg B/30 comprimés » octroyée à … », « … B/10 doit être cédée … »
+            label = re.split(
+                r"»|\s(?:est|is|doit|octroy\w*|accord\w*|renouvel\w*|cede\w*|c[ée]d[ée]e)\s",
+                label,
+                maxsplit=1,
+                flags=re.I,
+            )[0].strip(" .;:,-«\"'")
+            if sum(character.isalpha() for character in label) >= 3 and not re.match(
+                r"(?:arrete|article|decide|vu|ci.dessus|repond|est|sont|dont|doit)\b", fold(label)
+            ):
+                starts.append((number, offsets[number - 1] + match.start(), label[:120]))
+            if len(pages) > 1:
+                break  # une décision par page au plus : la première mention la désigne
+    sections = []
+    # Un recueil réunit plusieurs actes complets, chacun avec son en-tête : sans en-têtes
+    # répétés, les mentions multiples viennent d'une seule décision (« Analyse : … à la
+    # spécialité » puis « … accordée à la spécialité : EXEMPLO »).
+    folded = fold(text)
+    headers = max(
+        len(re.findall(r"republique\s+(?:du|de|d')", folded)),
+        len(re.findall(r"(?:^|\n)[^\n]{0,40}\b(?:decision|arrete)\s+n\S{0,3}\s*\d", folded)),
+    )
+    if len(starts) > 1 and headers < 2:
+        starts = starts[:1]
+    for index, (page, start, label) in enumerate(starts):
+        end_page = starts[index + 1][0] - 1 if index + 1 < len(starts) else len(pages)
+        end = starts[index + 1][1] if index + 1 < len(starts) else len(text)
+        if len(pages) > 1:
+            # La décision commence en haut de sa page (en-tête, visas), pas à la dénomination.
+            start = offsets[page - 1] if index else 0
+            end = offsets[end_page] if end_page < len(pages) else len(text)
+        sections.append(
+            {
+                "specialty": label,
+                "first_page": page if len(pages) > 1 else None,
+                "last_page": max(page, end_page) if len(pages) > 1 else None,
+                "start": start,
+                "end": end,
+            }
+        )
+    return sections
+
+
+def specialty_key(label: str) -> str:
+    """Clé de comparaison d'une dénomination (« NORFLOZOLE (… ) 100 mg +100 mg » relu deux fois)."""
+    return normalize(label)[:40]
+
+
+def specialty_groups(sections: list[dict]) -> list[str]:
+    """Dénominations distinctes d'un document : deux lectures voisines ne font qu'une."""
+    groups: list[str] = []
+    for section in sections:
+        key = specialty_key(section["specialty"])
+        if not any(
+            key.startswith(other) or other.startswith(key)
+            or SequenceMatcher(None, key[:25], other[:25]).ratio() >= 0.8
+            for other in groups
+        ):  # fmt: skip
+            groups.append(key)
+    return groups
+
+
+def country_labels(country) -> list[str]:
+    """Noms sous lesquels un pays est imprimé ou nommé dans un dossier (« BURKINA »)."""
+    name = normalize(country.name)
+    labels = [country.name]
+    first = name.split(" ")[0]
+    if " " in name and len(first) >= 5 and first not in {"republique", "guinee", "saint"}:
+        labels.append(first)  # « Burkina Faso » → « BURKINA »
+    if name == "cote d ivoire":
+        labels += ["ivoire", "cdi", "rci"]
+    return labels
+
+
 def _mentions(text: str, names) -> list:
     padded = f" {normalize(text)} "
     matches = []
@@ -508,7 +678,7 @@ def _mentions(text: str, names) -> list:
 def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     extraction = upload.extraction or {}
     text = extraction.get("text", "")[:160_000]
-    plain = fold(text)
+    plain = _join_spaced_days(fold(text))
     path = upload.relative_path
     # « : » dans un chemin macOS est un « / » du Finder (« 50MG:5ML » = « 50MG/5ML »).
     path_text = normalize(f"{root_name} {path}".replace(":", "/"))
@@ -525,6 +695,11 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         re.search(r"\b(recepisse|accuse de reception|receipt)\b", header + " " + basename)
     )
     letter = bool(re.search(r"\b(courrier|lettre|letter)\b", basename))
+    # « Notification provisoire » / « avis favorable » de la commission : l'AMM n'est pas encore
+    # délivrée (« les décisions … vous parviendront ultérieurement ») : pièce annexe.
+    provisional = bool(
+        re.search(r"notification provisoire", header) or re.match(r"avis favorable\b", basename)
+    )
     # Autorisation temporaire d'importation (Mauritanie) : document annexe, jamais une AMM.
     temporary = bool(
         re.search(r"autorisation temporaire d importation", header) or re.match(r"ati\b", basename)
@@ -550,6 +725,7 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         and not receipt
         and not letter
         and not temporary
+        and not provisional
         and reliability >= 65
     )
     # Une ATI est rangée comme pièce annexe (« Autre ») : elle ne prouve pas l'AMM.
@@ -573,14 +749,26 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     # Décision groupée (tableau, ou liste de plusieurs produits du catalogue) : elle ne désigne
     # pas un produit à elle seule ; la ligne du produit du dossier est choisie plus tard.
     rows = table_rows(text)
-    grouped = bool(rows) or (not explicit_product and len(matched_text) >= 3)
+    sections = decision_sections(text)
+    # Recueil de décisions (une par spécialité) : comme une décision groupée, il ne désigne pas
+    # un produit à lui seul ; la section du produit du dossier est choisie plus tard.
+    # Plusieurs marques : une même marque relue deux fois (« TENSOPLUS ne (… » puis « TENSOPLUS
+    # 10/2,5/5 ») ou citée en référence reste une seule décision.
+    groups = specialty_groups(sections)
+    compilation = len(groups) >= 2 and len({key.split(" ")[0] for key in groups}) >= 2
+    grouped = (
+        bool(rows) or compilation or (not explicit_product and len(matched_text) >= 3)
+    )
     if grouped:
         matched_text = []
     matched_products = matched_text or matched_path
     product_confidence = reliability if matched_text else 60 if matched_path else reliability
 
     explicit_country = _label_value(plain, r"pays|country", text)
-    country_names = [(country, [country.name, country.iso2]) for country in countries]
+    # Jamais le code ISO à deux lettres : « mg », « ml », « ne », « ci » sont des unités ou des
+    # mots courants (« 100 mg » lisait Madagascar, « ne … pas » le Niger : 185 pays faux sur
+    # 2 336 scans du corpus, et la question « le dossier mélange plusieurs pays » sur MAGLIFE).
+    country_names = [(country, country_labels(country)) for country in countries]
     country_text = _mentions(explicit_country, country_names) if explicit_country else []
     if not country_text:
         # The first lines describe the issuing authority; a manufacturer's address does not.
@@ -590,7 +778,13 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
             if re.search(r"republique|republic|ministere|pays|country", line)
         )
         country_text = _mentions(authority_lines, country_names)
-    country_path = _mentions(path_text, country_names)
+    # Un dossier nommé du seul code pays (« SN/… », « ML - … ») le désigne sans ambiguïté.
+    segments = {
+        part.strip() for chunk in f"{root_name}/{path}".split("/") for part in chunk.split(" - ")
+    }
+    country_path = _mentions(path_text, country_names) or [
+        country for country in countries if country.iso2 and country.iso2 in segments
+    ]
     matched_countries = country_text or country_path
     country_confidence = reliability if country_text else 65 if country_path else 0
 
@@ -614,7 +808,16 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     cut = re.search(r"\s+(?:du|date|delivre|valable|pour)\b", fold(labeled_number))
     if cut:
         labeled_number = labeled_number[: cut.start()]
-    decision_is_amm = bool(re.search(r"visa d.?homologation|portant homologation", plain))
+    # La décision est l'AMM elle-même : son numéro est le numéro d'AMM (Congo « visa
+    # d'homologation », Mali « DECISION N° 2022-002328 … portant autorisation de mise sur le
+    # marché »), faute de toute autre mention.
+    decision_is_amm = bool(
+        re.search(
+            r"visa d.?homologation|portant homologation"
+            r"|portant\s+autorisation\s+de\s+mise\s+sur\s+le\s+marche",
+            plain[:3000],
+        )
+    )
     number, number_variants = _authorization_number(
         plain, text, labeled_number.upper()[:100], decision_is_amm
     )
@@ -646,10 +849,15 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     # « Numéro AMM : 0003/CN/06/2019 du 09 Déc. 2019 au 08 Déc. 2024 »
     # « … renouvelée pour une durée de cinq (5) ans allant du 27 avril 2025 au 27 avril 2030 »
     period_range = re.search(
-        rf"(?:amm|visa|numero|n[°º]|allant|valable|validite)[^\n]{{0,60}}?\bdu\s+"
+        rf"(?:amm|visa|numero|n[°º]|allant|valable|validite|periode)[^\n]{{0,60}}?\bdu\s+"
         rf"({DATE_PATTERN})\s+au\s+({DATE_PATTERN})",
         plain,
     )
+    ministerial = re.search(
+        rf"decision\s+ministerielle[^\n]{{0,70}}?\bdu\s+({DATE_PATTERN})", plain
+    )
+    if ministerial and not start_date:
+        start_date = parse_date(ministerial.group(1))
     if certificate and not start_date:
         start_date = parse_date(certificate.group(2))
         end_date = end_date or parse_date(certificate.group(3))
@@ -666,6 +874,32 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         )
         decision_date = parse_date(signed.group(1)) if signed else None
     if not decision_date:
+        # Sénégal : tampon d'enregistrement de l'arrêté « 15.04.2026*009037 », « 14 DEC
+        # 2018*026674 » (date puis numéro d'ordre) en tête de la première page.
+        stamp = re.search(
+            rf"(?<![\d/.])(\d{{1,2}}\s?[./]\s?\d{{1,2}}\s?[./]\s?(?:19|20)\d\d"
+            rf"|\d{{1,2}}\s?(?:{_MONTH_NAMES})\.?\s?(?:19|20)\d\d)\d?\s*[*+]\s*[0-9o]",
+            plain[:2500],
+        )
+        if stamp:
+            raw = re.sub(r"\s+", " ", stamp.group(1))
+            decision_date = parse_date(re.sub(r"\s?([./])\s?", r"\1", raw))
+    if not decision_date:
+        # Lieu mal lu (« CORONOU, le 16 AVR 2019 ») : toute ligne courte « Ville, le <date> ».
+        signed = re.search(
+            rf"(?:^|\n)[^\n]{{0,25}}?\b[a-z][a-z'-]{{3,20}}(?: [a-z'-]{{2,15}})?\s*,\s*"
+            rf"(?:le|lc|te)\s*[.:,]?\s*({DATE_PATTERN})[^\n]{{0,20}}(?=\n|$)",
+            plain,
+        )
+        decision_date = parse_date(signed.group(1)) if signed else None
+    if not decision_date:
+        # Mali : « DECISION N° 2018-001928/MSHP-SG DU 28 DEC 2018 » (date du tampon d'en-tête).
+        headed = re.search(
+            rf"(?:^|\n)[ \t]*decision\s+n\S{{0,2}}[^\n]{{0,60}}?\bdu\s+({DATE_PATTERN})",
+            plain[:3000],
+        )
+        decision_date = parse_date(headed.group(1)) if headed else None
+    if not decision_date:
         # Niger : la décision reprend la date de l'avis de la commission d'homologation.
         opinion = re.search(
             rf"(?:commission\s+nationale\s+d.?homologation|\bcnh\w*)[^\n]{{0,120}}?en\s+date\s+du\s*({DATE_PATTERN})",
@@ -681,6 +915,15 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         if validity_start:
             start_date = validity_start
             end_date = end_date if end_date and end_date > start_date else validity_end
+    # Une décision ne peut être signée demain : une date de signature future est une lecture
+    # de tampon fautive (« Bamako, le 21 OCT 2071 », « 29 AOUT 2822 »).
+    horizon = (today() + timedelta(days=31)).isoformat()
+    decision_date = decision_date if not decision_date or decision_date <= horizon else None
+    if not start_date and decision_date and re.search(
+        r"(?:compter|partir)\s+de\s+la\s+date\s+de\s+(?:sa\s+)?signature", plain
+    ):
+        # Mali : « … cinq (5) ans pour compter de la date de signature de la présente décision ».
+        start_date = decision_date
 
     # The nearest renewal directory is stable across files and retains multiple periods.
     renewal_parts = [
@@ -741,6 +984,9 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         "grouped": grouped,
         "temporary_import": temporary,
         "table_rows": rows,
+        "sections": sections if compilation else [],
+        # Décision unique qui nomme sa spécialité (« … pour la spécialité : PALUCARE 20 mg »).
+        "specialty": sections[0]["specialty"] if len(sections) == 1 else "",
         "country_ids": [str(country.pk) for country in matched_countries],
         "country_confidence": country_confidence,
         # Le numéro d'une décision groupée est celui de la ligne du produit, pas celui de l'acte.

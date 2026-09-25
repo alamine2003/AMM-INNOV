@@ -135,7 +135,7 @@ def send_weekly_digest(today: str | None = None) -> dict:
         )
         try:
             send_mail(
-                subject=f"AMM INNOV — {title}",
+                subject=f"AMM GH — {title}",
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],

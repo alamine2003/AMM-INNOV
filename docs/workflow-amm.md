@@ -120,17 +120,35 @@ des onglets ; un badge dans la liste des AMM en donne le nombre) et sur la page 
 l'historique avec le scan en preuve) ou **Ignorer**. Réimporter le même dossier ne recrée ni
 document, ni renouvellement, ni point déjà traité.
 
+### Rangement sans clic
+
+- Un dossier resté « À ranger » ou « Question » avec d'anciennes règles de lecture est relu
+  automatiquement (quelques dossiers toutes les 5 minutes), puis rangé d'office si l'AMM est
+  identifiée. Un rangement automatique qui a échoué (coupure, stockage) est retenté, au plus
+  3 fois.
+- Un scan dont le fichier a disparu (lots déposés avant le stockage permanent, 22/09/2026) est
+  repris d'une autre copie du même contenu (même empreinte), redéposée ou déjà rangée. Sans copie,
+  le dossier passe en échec avec « redéposez ce dossier » (plus d'erreur serveur 500).
+- Le produit se retrouve même quand le nom du dossier diffère du catalogue : abréviations
+  (« COMPRIME » = « CPR », « SIROP » = « SP »…), dosages dans l'ordre (« 10MG5MG » n'est pas
+  « 5MG10MG »), et en dernier recours la seule présentation du pays qui a cette marque et ces
+  dosages (« GENCLAV 1G 125MG B10 SACHETS », « GENFER »), jamais d'une autre forme (un comprimé
+  n'est pas une suspension).
+
 ### Le seul cas où l'import pose une question
 
-Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu ou absent du
-catalogue, produit sans AMM dans le pays, plusieurs AMM possibles, pays inconnu ou hors de votre
-périmètre. Le lot affiche alors **« Question : c'est quelle AMM ? »** : choisissez l'AMM (recherche
+Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu, produit sans AMM
+dans le pays dont la décision d'origine est illisible (pas de numéro ou de date), pays inconnu ou
+hors de votre périmètre. Le lot affiche alors **« Question : c'est quelle AMM ? »** : choisissez l'AMM (recherche
 par produit, limitée au pays du dossier et à votre périmètre) puis **« Ranger les documents
 ici »** ; le dossier est relu et rangé automatiquement sur cette AMM.
 
-L'import ne crée jamais d'AMM ni de produit tout seul. Quand l'AMM n'existe pas encore et que la
-décision d'origine est lisible, le siège peut la créer depuis le lot (bouton secondaire, avec
-confirmation).
+**AMM absente, décision lisible : création d'office.** Quand le produit n'a pas encore de fiche
+dans le pays (produit hors de l'Excel de base) mais que la décision d'origine donne le produit, le
+pays, le numéro et la date, l'import **crée la fiche** (et le produit s'il manque au catalogue,
+nommé comme sur la décision), range le dossier et prévient le siège et le réglementaire du pays
+(« AMM créée à partir du dossier »). Aucune question dans ce cas. Désactivable par
+`DOSSIER_AUTO_CREATE=0` : le siège crée alors la fiche depuis le lot (bouton secondaire).
 
 ### « Voir le scan »
 
@@ -147,7 +165,13 @@ présentation**, c'est-à-dire le dossier qui contient les documents. Ses sous-d
 (« ORIGINE », « RENOUVELLEMENT 2020 ») restent avec lui.
 
 - Un document posé au-dessus des dossiers produits, par exemple une décision groupée à la racine
-  du pays, est joint à chaque produit en dessous, dans « Documents communs ».
+  du pays, est joint à chaque produit en dessous, dans « Documents communs ». Il n'est gardé
+  dans la fiche d'un produit **que s'il le concerne** (voir « Décisions groupées ») ; sinon il
+  est listé dans les détails de la lecture comme « laissé de côté », sans point à vérifier.
+- Les documents communs ne disent ni le pays ni le produit du dossier : l'identité vient des
+  documents du produit lui-même.
+- Importer de préférence depuis « PRÊT À IMPORTER » : les copies y portent déjà leur texte, la
+  lecture est immédiate. Les scans d'origine passent par l'OCR, très lent sur Render gratuit.
 - Les fichiers que l'import ne lit pas (xls, zip, docx, alias macOS) et ceux de plus de 25 Mo
   sont mis de côté et listés. Le reste du dossier part quand même.
 
@@ -156,18 +180,28 @@ présentation**, c'est-à-dire le dossier qui contient les documents. Ses sous-d
 | Pays | Ce qui est lu |
 |---|---|
 | Cameroun, Gabon | « Décision N° … », « Registration number », « à partir du … » |
-| Sénégal | « Sous le numéro : 7897 », « Numéro AMM : … du … au … » |
-| Mali | « renouvelée sous le numéro 0374R/09/2020 … à compter du 1er juin 2020 » (le nouveau numéro, pas l'ancien) |
+| Sénégal | « Sous le numéro : 7897 », « Numéro AMM : … du … au … », tampon d'enregistrement de l'arrêté « 15.04.2026*009037 » (date de décision) |
+| Mali | « renouvelée sous le numéro 0374R/09/2020 … à compter du 1er juin 2020 » (le nouveau numéro, pas l'ancien) ; « … suivant Décision ministérielle N° 2024-0000675/MSDS-SG du 15 avril 2024 » (numéro et date de l'AMM) ; « DECISION N° 2022-002328 … portant autorisation de mise sur le marché » (le numéro de décision est le numéro d'AMM) ; validité « à compter de la date de signature » (le début est la date de signature) |
 | Gambie | « Registration number / Registration date / Registration expiry date » |
 | Togo | « SP.TG 5223 » |
 | Bénin | « visa de commercialisation », « N° AMM_2019_4848_EG », « COTONOU, le 16 AVR 2019 » |
 | Congo | « DECISION N° CV/04C-07G/09 portant homologation » (le numéro de décision est le numéro d'AMM) |
 | Niger | date de l'avis de la commission nationale d'homologation |
-| Côte d'Ivoire, Guinée, Tchad | décisions groupées en tableau (voir ci-dessous) |
+| Côte d'Ivoire, Guinée, Tchad | décisions groupées en tableau (voir ci-dessous) ; en Côte d'Ivoire la dénomination est sur la ligne au-dessus du numéro (« AMLO VH 5 mg/… » puis « comprimés pelliculés E-2015-418 ») |
 | Mauritanie | ATI (autorisation temporaire d'importation) : pièce annexe, jamais une preuve d'AMM |
 
-La date de signature (« Bamako, le 24 SEP 2020 », « Fait à Dakar, le … ») sert de date de décision.
-Les mois abrégés (« AVR », « Déc. ») et les ordinaux (« 1er », « 22nd ») sont reconnus.
+La date de signature (« Bamako, le 24 SEP 2020 », « Fait à Dakar, le … », « CORONOU, le … » mal lu)
+sert de date de décision. Les mois abrégés (« AVR », « Déc. »), les ordinaux (« 1er », « 22nd ») et
+les tampons lus chiffre par chiffre (« le 2 9 DEC 2023 ») sont reconnus. Une date de signature
+future (« 21 OCT 2071 ») est une lecture fautive : elle est écartée.
+
+Le pays se lit sur son **nom** (« République du Mali », « BURKINA », « Côte d'Ivoire »), jamais sur
+le code à deux lettres dans le texte : « 100 mg » n'est pas Madagascar ni « ne … pas » le Niger. Un
+dossier nommé du seul code (« SN/… ») reste reconnu. Une « notification provisoire » ou un « avis
+favorable » de la commission n'est pas encore l'AMM : pièce annexe.
+
+Deux numéros qui ne diffèrent que par les espaces ou les zéros de tête (« E-2015-0418 » dans la
+fiche, « E-2015- 418 » sur le scan) sont le même numéro : pas de point à vérifier.
 
 ### Décisions groupées
 
@@ -175,7 +209,20 @@ Une décision peut accorder ou renouveler des dizaines de produits d'un coup (ta
 « Dénomination | N° AMM | Date »). L'import lit le tableau, que l'OCR le restitue ligne par ligne
 ou colonne par colonne. Il ne retient que **la ligne du produit du dossier**, pour son numéro et
 sa date. Si le produit n'y figure pas, la décision est rangée comme pièce annexe et un point à
-vérifier le signale.
+vérifier le signale — sauf si c'est un document commun du dossier pays : il est alors laissé de
+côté.
+
+Un **recueil de décisions** réunit plusieurs décisions complètes, une par spécialité (Mali :
+« AMM groupée 23 DEC 2023 », six décisions de deux pages ; « Renouvellement AMM 15 PRODUITS
+2019 », une page par produit). L'import le découpe en sections, d'après « … pour la spécialité :
+GENSET 10 mg … », lit **la seule section du produit** (numéro, dates, origine ou renouvellement) et
+ne range dans la fiche **que ses pages** (« AMM groupée 23 DEC 2023.pdf (p. 3-4) »). Une même
+marque relue deux fois dans une décision n'en fait pas un recueil.
+
+Reprise : les dossiers pays rangés avant le 26/09/2026 avaient reçu dans chaque fiche tous les
+documents de la racine du pays. Au déploiement, ceux qui ne concernent pas la fiche sont archivés
+(jamais supprimés) et leurs points à vérifier fermés (`manage.py nettoyer_documents_communs
+--dry-run` pour lister).
 
 ## 9. Où c'est écrit dans le code
 

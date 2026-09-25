@@ -65,11 +65,30 @@ def load_extraction(upload) -> dict:
             DossierFile.objects.filter(sha256=upload.sha256)
             .exclude(pk=upload.pk)
             .exclude(extraction={})
-            .values_list("extraction", flat=True)[:3]
+            .values_list("extraction", flat=True)[:10]
         )
-        for extraction in known:
-            if extraction and not needs_retry(extraction):
-                return extraction
+        usable = [item for item in known if item and not needs_retry(item)]
+        # Une lecture qui garde les sauts de page d'abord (découpe des recueils de décisions).
+        usable.sort(key=lambda item: "\f" not in item.get("text", ""))
+        if usable:
+            return usable[0]
+    return extract_file(upload)
+
+
+def paged_extraction(upload) -> dict:
+    """Lecture avec sauts de page : relue si l'ancienne n'en avait pas (avant le 26/09/2026).
+
+    Seulement pour un PDF qui porte son texte (relecture rapide) : repasser un scan à l'OCR
+    prendrait des dizaines de minutes sur Render gratuit. Le recueil scanné est alors découpé
+    dans le texte, sans les pages : il est rangé entier dans la fiche du produit qu'il cite.
+    """
+    extraction = upload.extraction or {}
+    if (
+        "\f" in extraction.get("text", "")
+        or (extraction.get("page_count") or 0) <= 1
+        or extraction.get("source") != "pdf_text"
+    ):
+        return extraction
     return extract_file(upload)
 
 
@@ -167,7 +186,9 @@ def extract_file(upload) -> dict:
                             result["errors"].append(
                                 f"Échec OCR à la page {index + 1} ({type(exc).__name__})."
                             )
-            joined = "\n\n".join(texts)
+            # Saut de page conservé : un recueil de décisions se découpe par pages (un produit
+            # n'en reçoit que les siennes).
+            joined = "\n\f\n".join(texts)
             result["truncated"] = result["truncated"] or len(joined) > MAX_TEXT
             result["text"] = joined[:MAX_TEXT]
             if result["text"].strip():
