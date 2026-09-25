@@ -1892,6 +1892,35 @@ paths:
           description: ''
         '410':
           description: No response body
+  /api/v1/dossier-imports/known-files/:
+    post:
+      operationId: v1_dossier_imports_known_files_create
+      description: 'Empreintes déjà envoyées par l''utilisateur : ces fichiers n''ont
+        pas à être renvoyés.'
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DossierKnownFilesRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DossierKnownFilesRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierKnownFilesRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/dossier-review-points/:
     get:
       operationId: v1_dossier_review_points_list
@@ -4476,6 +4505,18 @@ components:
         * `QUESTION` - Question : quelle AMM ?
         * `APPLIED` - Rangé
         * `FAILED` - Analyse échouée
+    DossierKnownFilesRequest:
+      type: object
+      properties:
+        sha256:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            pattern: ^[0-9a-f]{64}$
+          maxItems: 1000
+      required:
+      - sha256
     DossierReviewPoint:
       type: object
       description: 'Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée)
@@ -4604,8 +4645,8 @@ components:
           items:
             type: string
             format: binary
+        reused: {}
       required:
-      - files
       - paths
       - root_name
     Health:
