@@ -155,10 +155,26 @@ def test_uncertain_reading_is_ranged_without_threshold(
     assert batch.status == DossierImport.Status.APPLIED and batch.auto_applied
 
 
-def test_unidentifiable_amm_asks_the_question_and_writes_nothing(
+def test_absent_amm_is_created_from_a_readable_decision(
     users, product, django_capture_on_commit_callbacks
 ):
-    # Produit sans AMM au Sénégal : pas de création automatique, une question.
+    """Produit sans AMM au Sénégal (hors Excel) : la fiche est créée d'office, siège notifié."""
+    from apps.amm.models import MarketingAuthorization
+
+    batch = new_batch(users["country"])
+    stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
+    batch = analyze(batch, django_capture_on_commit_callbacks)
+    assert batch.status == DossierImport.Status.APPLIED and batch.auto_applied
+    amm = MarketingAuthorization.objects.get(product=product, country__iso2="SN")
+    assert batch.amm_id == amm.pk and amm.original_number
+    assert batch.summary["created"]
+    assert Notification.objects.filter(user=users["hq"], body__contains="AMM créée").exists()
+
+
+def test_absent_amm_asks_the_question_when_creation_is_disabled(
+    users, product, settings, django_capture_on_commit_callbacks
+):
+    settings.DOSSIER_AUTO_CREATE = False
     batch = new_batch(users["hq"])
     stored(batch, "AMM_PRODUIT/AMM_ORIGINE/decision_amm.pdf", decision(product))
     batch = analyze(batch, django_capture_on_commit_callbacks)

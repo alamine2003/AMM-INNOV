@@ -40,7 +40,8 @@ def analyze(client, batch):
     return batch
 
 
-def test_question_then_manual_choice_ranges_the_documents(users, product, make_amm):
+def test_question_then_manual_choice_ranges_the_documents(users, product, make_amm, settings):
+    settings.DOSSIER_AUTO_CREATE = False  # sinon la fiche absente serait créée d'office
     amm = make_amm(
         product_obj=product, original_number="AMM/SN/2025/00152", start=date(2021, 4, 28)
     )
@@ -68,7 +69,8 @@ def test_question_then_manual_choice_ranges_the_documents(users, product, make_a
     assert detail["open_points_count"] == len(detail["review_points"]) >= 1
 
 
-def test_manual_choice_is_limited_to_the_user_scope(users, make_amm):
+def test_manual_choice_is_limited_to_the_user_scope(users, make_amm, settings):
+    settings.DOSSIER_AUTO_CREATE = False
     elsewhere = make_amm(country="CI")
     client = client_for(users["country"])
     batch = analyze(client, unknown_product_batch(users["country"]))

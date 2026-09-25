@@ -1,4 +1,8 @@
-# AMM INNOV
+# AMM GH
+
+> Anciennement « AMM INNOV ». Les filiales pays travaillent sous la marque Generic Healthcare
+> (GH) ; INNOV est le siège. Les noms techniques (dépôt `AMM-INNOV`, services Render
+> `amm-innov-api` et Netlify `amm-innov`) restent inchangés pour ne pas casser les adresses.
 
 [![CI](https://github.com/alamine2003/AMM-INNOV/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alamine2003/AMM-INNOV/actions/workflows/ci.yml?query=branch%3Amain)
 

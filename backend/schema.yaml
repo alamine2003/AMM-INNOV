@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: AMM INNOV API
+  title: AMM GH API
   version: 1.0.0
   description: Suivi des Autorisations de Mise sur le Marché en Afrique.
 paths:

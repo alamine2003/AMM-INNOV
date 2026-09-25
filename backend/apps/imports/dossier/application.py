@@ -246,7 +246,7 @@ def record_points(batch, amm, plan, targets, files) -> int:
 
 
 def _create_amm(batch, plan, identity, country, files, user):
-    """Création explicite par le siège (jamais automatique), depuis la décision d'origine."""
+    """Création depuis la décision d'origine : par le siège, ou d'office à l'analyse."""
     if identity.get("product_id"):
         product = Product.objects.select_for_update().get(pk=identity["product_id"])
     else:
@@ -287,7 +287,8 @@ def apply_dossier(batch_id, *, user, token, auto=False, create=False):
     """Range le dossier : idempotent, et un aperçu qui a changé n'est jamais appliqué.
 
     `auto` : rangement automatique à la fin de l'analyse, au nom de l'auteur de l'import.
-    `create` : le siège crée l'AMM absente depuis le dossier (confirmation explicite).
+    `create` : l'AMM absente est créée depuis le dossier (par le siège, ou d'office avec
+    `auto` quand la décision d'origine est lisible).
     """
     created_blobs = []
     try:
@@ -311,7 +312,9 @@ def apply_dossier(batch_id, *, user, token, auto=False, create=False):
                     raise ValidationError(
                         "AMM non identifiée : indiquez d'abord à quelle AMM ranger ce dossier."
                     )
-                if not user.is_global:
+                if not user.is_global and not auto:
+                    # Création d'office (DOSSIER_AUTO_CREATE) : au nom de l'auteur, dans son
+                    # périmètre ; le siège est notifié. À la main, elle reste au siège.
                     raise PermissionDenied("La création d'une AMM est réservée au siège.")
                 if not question or not question.get("can_create"):
                     raise ValidationError("Ce dossier ne permet pas de créer l'AMM.")

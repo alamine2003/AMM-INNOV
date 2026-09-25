@@ -36,7 +36,8 @@ from .recognition import normalize, recognize_file, specialty_key
 # Période des scans qu'on ne sait pas placer : rangés dans la fiche comme « autre document ».
 UNPLACED = "unplaced"
 # 3 : recueils de décisions, documents communs, pays sans code ISO (26/09/2026).
-PREVIEW_VERSION = 3
+# 4 : AMM absente créée d'office quand la décision d'origine est lisible.
+PREVIEW_VERSION = 4
 # Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
 COMMON_FOLDER = "Documents communs"
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.

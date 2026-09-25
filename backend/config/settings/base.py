@@ -335,7 +335,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "AMM INNOV API",
+    "TITLE": "AMM GH API",
     "DESCRIPTION": "Suivi des Autorisations de Mise sur le Marché en Afrique.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
@@ -415,7 +415,7 @@ def parse_email_url(url: str) -> dict:
 
 
 globals().update(parse_email_url(env("EMAIL_URL", "console://")))
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "AMM INNOV <no-reply@amm.local>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "AMM GH <no-reply@amm.local>")
 
 # API Gmail (EMAIL_URL=gmail://) : jeton de rafraîchissement OAuth2, portée gmail.send.
 # Obtention : python -m scripts.gmail_oauth (voir docs/deploiement-netlify-railway.md).
@@ -483,6 +483,9 @@ DOSSIER_CLAMAV_TIMEOUT = int(env("DOSSIER_CLAMAV_TIMEOUT", "60"))
 # Rangement automatique d'un dossier dès que son AMM (produit + pays) est identifiée : aucune
 # valeur enregistrée n'est remplacée, les écarts deviennent des « points à vérifier plus tard ».
 DOSSIER_AUTO_APPLY = env_bool("DOSSIER_AUTO_APPLY", True)
+# AMM absente de la base (produit hors Excel) mais décision d'origine lisible (produit, pays,
+# numéro, date) : la fiche est créée d'office depuis le dossier, le siège est notifié.
+DOSSIER_AUTO_CREATE = env_bool("DOSSIER_AUTO_CREATE", True)
 # Multipart file bodies stream to temporary files; only metadata counts toward memory limit.
 DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
 DOCUMENT_RETENTION_YEARS = 5

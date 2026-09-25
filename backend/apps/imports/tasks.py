@@ -85,6 +85,8 @@ def analyze_dossier(batch_id: str) -> dict:
         return {"status": "failed"}
     if saved and can_auto_apply(preview) and _auto_apply(batch, token):
         return {"status": "applied", "auto": True, "points": len(preview["review_points"])}
+    if saved and can_auto_create(preview) and _auto_apply(batch, token, create=True):
+        return {"status": "created", "auto": True, "points": len(preview["review_points"])}
     return {"status": status.lower()}
 
 
@@ -105,17 +107,35 @@ def can_auto_apply(preview: dict) -> bool:
     )
 
 
-def _auto_apply(batch, token: str) -> bool:
+def can_auto_create(preview: dict) -> bool:
+    """AMM absente mais décision d'origine lisible : création d'office (DOSSIER_AUTO_CREATE).
+
+    Seul cas de question que l'application tranche seule : produit et pays identifiés, numéro et
+    date d'origine lus (`can_create` de l'aperçu). Le siège est notifié et peut corriger.
+    """
+    from django.conf import settings
+
+    question = preview.get("question") or {}
+    return bool(
+        getattr(settings, "DOSSIER_AUTO_APPLY", False)
+        and getattr(settings, "DOSSIER_AUTO_CREATE", False)
+        and question.get("can_create")
+    )
+
+
+def _auto_apply(batch, token: str, create: bool = False) -> bool:
     """Rangement au nom de l'auteur ; en cas d'échec le lot reste « prêt à ranger » (READY)."""
     from .dossier.application import LostScan, apply_dossier
     from .models import DossierImport
 
     try:
-        apply_dossier(batch.pk, user=batch.created_by, token=token, auto=True)
+        apply_dossier(batch.pk, user=batch.created_by, token=token, auto=True, create=create)
     except LostScan as exc:
         # Scan perdu sans autre copie (lot déposé avant le stockage permanent) : réessayer ne
         # servirait à rien ; le lot dit clairement qu'il faut le redéposer.
-        DossierImport.objects.filter(pk=batch.pk, status=DossierImport.Status.READY).update(
+        DossierImport.objects.filter(
+            pk=batch.pk, status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION]
+        ).update(
             status=DossierImport.Status.FAILED, finished_at=timezone.now(), error=exc.messages[0]
         )
         return False

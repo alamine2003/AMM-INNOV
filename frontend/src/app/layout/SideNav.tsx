@@ -8,7 +8,6 @@ import {
   ListItemText,
   ListSubheader,
   Toolbar,
-  Typography,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -23,6 +22,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { NavLink, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
+import { BrandLogo } from '@/components/BrandLogo';
 import { navItemsForRole, type NavItem } from './navigation';
 
 export const DRAWER_WIDTH = 240;
@@ -65,9 +65,7 @@ function NavList() {
   return (
     <Box sx={{ overflow: 'auto' }}>
       <Toolbar>
-        <Typography variant="h6" color="primary" sx={{ fontWeight: 800 }}>
-          {t('app.name')}
-        </Typography>
+        <BrandLogo />
       </Toolbar>
       <Divider />
       <List dense>{main.map(render)}</List>

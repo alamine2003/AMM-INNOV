@@ -137,15 +137,18 @@ document, ni renouvellement, ni point déjà traité.
 
 ### Le seul cas où l'import pose une question
 
-Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu ou absent du
-catalogue, produit sans AMM dans le pays, plusieurs AMM possibles, pays inconnu ou hors de votre
-périmètre. Le lot affiche alors **« Question : c'est quelle AMM ? »** : choisissez l'AMM (recherche
+Uniquement quand l'AMM cible **n'est pas identifiable** : produit non reconnu, produit sans AMM
+dans le pays dont la décision d'origine est illisible (pas de numéro ou de date), pays inconnu ou
+hors de votre périmètre. Le lot affiche alors **« Question : c'est quelle AMM ? »** : choisissez l'AMM (recherche
 par produit, limitée au pays du dossier et à votre périmètre) puis **« Ranger les documents
 ici »** ; le dossier est relu et rangé automatiquement sur cette AMM.
 
-L'import ne crée jamais d'AMM ni de produit tout seul. Quand l'AMM n'existe pas encore et que la
-décision d'origine est lisible, le siège peut la créer depuis le lot (bouton secondaire, avec
-confirmation).
+**AMM absente, décision lisible : création d'office.** Quand le produit n'a pas encore de fiche
+dans le pays (produit hors de l'Excel de base) mais que la décision d'origine donne le produit, le
+pays, le numéro et la date, l'import **crée la fiche** (et le produit s'il manque au catalogue,
+nommé comme sur la décision), range le dossier et prévient le siège et le réglementaire du pays
+(« AMM créée à partir du dossier »). Aucune question dans ce cas. Désactivable par
+`DOSSIER_AUTO_CREATE=0` : le siège crée alors la fiche depuis le lot (bouton secondaire).
 
 ### « Voir le scan »
 

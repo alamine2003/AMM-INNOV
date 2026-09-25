@@ -17,4 +17,4 @@ DOSSIERS INCOMPLETS ({{ incomplete|length }})
 Centre d'alertes : {{ frontend_url }}/alerts
 
 --
-AMM INNOV
+AMM GH
