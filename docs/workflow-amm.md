@@ -147,7 +147,13 @@ présentation**, c'est-à-dire le dossier qui contient les documents. Ses sous-d
 (« ORIGINE », « RENOUVELLEMENT 2020 ») restent avec lui.
 
 - Un document posé au-dessus des dossiers produits, par exemple une décision groupée à la racine
-  du pays, est joint à chaque produit en dessous, dans « Documents communs ».
+  du pays, est joint à chaque produit en dessous, dans « Documents communs ». Il n'est gardé
+  dans la fiche d'un produit **que s'il le concerne** (voir « Décisions groupées ») ; sinon il
+  est listé dans les détails de la lecture comme « laissé de côté », sans point à vérifier.
+- Les documents communs ne disent ni le pays ni le produit du dossier : l'identité vient des
+  documents du produit lui-même.
+- Importer de préférence depuis « PRÊT À IMPORTER » : les copies y portent déjà leur texte, la
+  lecture est immédiate. Les scans d'origine passent par l'OCR, très lent sur Render gratuit.
 - Les fichiers que l'import ne lit pas (xls, zip, docx, alias macOS) et ceux de plus de 25 Mo
   sont mis de côté et listés. Le reste du dossier part quand même.
 
@@ -156,18 +162,28 @@ présentation**, c'est-à-dire le dossier qui contient les documents. Ses sous-d
 | Pays | Ce qui est lu |
 |---|---|
 | Cameroun, Gabon | « Décision N° … », « Registration number », « à partir du … » |
-| Sénégal | « Sous le numéro : 7897 », « Numéro AMM : … du … au … » |
-| Mali | « renouvelée sous le numéro 0374R/09/2020 … à compter du 1er juin 2020 » (le nouveau numéro, pas l'ancien) |
+| Sénégal | « Sous le numéro : 7897 », « Numéro AMM : … du … au … », tampon d'enregistrement de l'arrêté « 15.04.2026*009037 » (date de décision) |
+| Mali | « renouvelée sous le numéro 0374R/09/2020 … à compter du 1er juin 2020 » (le nouveau numéro, pas l'ancien) ; « … suivant Décision ministérielle N° 2024-0000675/MSDS-SG du 15 avril 2024 » (numéro et date de l'AMM) ; « DECISION N° 2022-002328 … portant autorisation de mise sur le marché » (le numéro de décision est le numéro d'AMM) ; validité « à compter de la date de signature » (le début est la date de signature) |
 | Gambie | « Registration number / Registration date / Registration expiry date » |
 | Togo | « SP.TG 5223 » |
 | Bénin | « visa de commercialisation », « N° AMM_2019_4848_EG », « COTONOU, le 16 AVR 2019 » |
 | Congo | « DECISION N° CV/04C-07G/09 portant homologation » (le numéro de décision est le numéro d'AMM) |
 | Niger | date de l'avis de la commission nationale d'homologation |
-| Côte d'Ivoire, Guinée, Tchad | décisions groupées en tableau (voir ci-dessous) |
+| Côte d'Ivoire, Guinée, Tchad | décisions groupées en tableau (voir ci-dessous) ; en Côte d'Ivoire la dénomination est sur la ligne au-dessus du numéro (« AMLO VH 5 mg/… » puis « comprimés pelliculés E-2015-418 ») |
 | Mauritanie | ATI (autorisation temporaire d'importation) : pièce annexe, jamais une preuve d'AMM |
 
-La date de signature (« Bamako, le 24 SEP 2020 », « Fait à Dakar, le … ») sert de date de décision.
-Les mois abrégés (« AVR », « Déc. ») et les ordinaux (« 1er », « 22nd ») sont reconnus.
+La date de signature (« Bamako, le 24 SEP 2020 », « Fait à Dakar, le … », « CORONOU, le … » mal lu)
+sert de date de décision. Les mois abrégés (« AVR », « Déc. »), les ordinaux (« 1er », « 22nd ») et
+les tampons lus chiffre par chiffre (« le 2 9 DEC 2023 ») sont reconnus. Une date de signature
+future (« 21 OCT 2071 ») est une lecture fautive : elle est écartée.
+
+Le pays se lit sur son **nom** (« République du Mali », « BURKINA », « Côte d'Ivoire »), jamais sur
+le code à deux lettres dans le texte : « 100 mg » n'est pas Madagascar ni « ne … pas » le Niger. Un
+dossier nommé du seul code (« SN/… ») reste reconnu. Une « notification provisoire » ou un « avis
+favorable » de la commission n'est pas encore l'AMM : pièce annexe.
+
+Deux numéros qui ne diffèrent que par les espaces ou les zéros de tête (« E-2015-0418 » dans la
+fiche, « E-2015- 418 » sur le scan) sont le même numéro : pas de point à vérifier.
 
 ### Décisions groupées
 
@@ -175,7 +191,20 @@ Une décision peut accorder ou renouveler des dizaines de produits d'un coup (ta
 « Dénomination | N° AMM | Date »). L'import lit le tableau, que l'OCR le restitue ligne par ligne
 ou colonne par colonne. Il ne retient que **la ligne du produit du dossier**, pour son numéro et
 sa date. Si le produit n'y figure pas, la décision est rangée comme pièce annexe et un point à
-vérifier le signale.
+vérifier le signale — sauf si c'est un document commun du dossier pays : il est alors laissé de
+côté.
+
+Un **recueil de décisions** réunit plusieurs décisions complètes, une par spécialité (Mali :
+« AMM groupée 23 DEC 2023 », six décisions de deux pages ; « Renouvellement AMM 15 PRODUITS
+2019 », une page par produit). L'import le découpe en sections, d'après « … pour la spécialité :
+GENSET 10 mg … », lit **la seule section du produit** (numéro, dates, origine ou renouvellement) et
+ne range dans la fiche **que ses pages** (« AMM groupée 23 DEC 2023.pdf (p. 3-4) »). Une même
+marque relue deux fois dans une décision n'en fait pas un recueil.
+
+Reprise : les dossiers pays rangés avant le 26/09/2026 avaient reçu dans chaque fiche tous les
+documents de la racine du pays. Au déploiement, ceux qui ne concernent pas la fiche sont archivés
+(jamais supprimés) et leurs points à vérifier fermés (`manage.py nettoyer_documents_communs
+--dry-run` pour lister).
 
 ## 9. Où c'est écrit dans le code
 

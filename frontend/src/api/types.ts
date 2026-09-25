@@ -446,10 +446,14 @@ export interface DossierImportPreview {
     /** `original`, clé de renouvellement, ou `unplaced` (période non déterminée). */
     period: string;
     document_date: string | null;
+    /** Recueil de décisions : seules ces pages (première, dernière) sont rangées. */
+    pages?: [number, number] | null;
     duplicate_id: string | null;
     official?: boolean;
     confidence?: number;
   }[];
+  /** Documents communs du dossier pays sans rapport avec ce produit : ni lus ni rangés. */
+  ignored?: { file_id: string; path: string; reason: string }[];
   renewals: {
     key: string;
     existing_id: string | null;

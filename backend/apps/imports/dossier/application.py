@@ -97,6 +97,23 @@ def _proof(files, proof_id):
     return files[str(proof_id)]
 
 
+def _pages_pdf(source, pages) -> bytes:
+    """Pages d'un recueil de décisions qui concernent le produit, en un PDF à part."""
+    from io import BytesIO
+
+    from pypdf import PdfReader, PdfWriter
+
+    first, last = pages
+    with source.file.open("rb") as stream:
+        reader = PdfReader(BytesIO(stream.read()), strict=False)
+        writer = PdfWriter()
+        for page in reader.pages[max(first, 1) - 1 : last]:
+            writer.add_page(page)
+        output = BytesIO()
+        writer.write(output)
+    return output.getvalue()
+
+
 def _document(batch, source, amm, renewal, proposal, user, created_blobs):
     existing = source.document
     if existing and existing.archived_at is None and existing.amm_id == amm.pk:
@@ -108,7 +125,19 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
     ).first()
     converted = None
     digest = source.sha256
-    if source.content_type != "application/pdf":
+    title = source.relative_path.rsplit("/", 1)[-1]
+    pages = proposal.get("pages")
+    if pages and source.content_type == "application/pdf":
+        # Recueil de décisions : la fiche ne reçoit que la décision du produit.
+        converted = _pages_pdf(source, pages)
+        digest = hashlib.sha256(converted).hexdigest()
+        duplicate = Document.objects.filter(
+            amm=amm, sha256=digest, archived_at__isnull=True
+        ).first()
+        title = f"{title} (p. {pages[0]}-{pages[1]})" if pages[0] != pages[1] else (
+            f"{title} (p. {pages[0]})"
+        )
+    elif source.content_type != "application/pdf":
         with source.file.open("rb") as stream:
             converted = convert_image_to_pdf(stream.read())
         if converted is None:
@@ -125,7 +154,7 @@ def _document(batch, source, amm, renewal, proposal, user, created_blobs):
         amm=amm,
         renewal=renewal,
         kind=proposal["kind"],
-        title=source.relative_path.rsplit("/", 1)[-1][:255],
+        title=title[:255],
         document_date=typed_value("date", proposal.get("document_date"))
         or (renewal.start_date if renewal else amm.original_start_date)
         or today(),

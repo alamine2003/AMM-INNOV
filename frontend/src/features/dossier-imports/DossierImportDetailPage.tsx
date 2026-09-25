@@ -67,6 +67,12 @@ import {
 } from './dossierReview';
 
 const fileName = (path: string) => path.split('/').at(-1) ?? path;
+/** « AMM groupée 23 DEC 2023.pdf (p. 3-4) » : la partie du recueil qui concerne le produit. */
+const scanName = (doc: { path: string; pages?: [number, number] | null }) =>
+  fileName(doc.path) +
+  (doc.pages
+    ? ` (p. ${doc.pages[0] === doc.pages[1] ? doc.pages[0] : `${doc.pages[0]}-${doc.pages[1]}`})`
+    : '');
 const period = (start: string | null, end: string | null) =>
   `${formatDate(start, 'date non lue')} → ${formatDate(end, 'date non lue')}`;
 
@@ -362,7 +368,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                             color="text.secondary"
                             sx={{ overflowWrap: 'anywhere' }}
                           >
-                            {fileName(doc.path)}
+                            {scanName(doc)}
                             {doc.duplicate_id ? ' · déjà dans la fiche' : ''}
                           </Typography>
                         </Stack>
@@ -417,7 +423,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                     Voir le scan
                   </Button>
                   <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
-                    {fileName(doc.path)}
+                    {scanName(doc)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {documentKindLabels[doc.kind] ?? doc.kind} · {periodTitle(doc.period, preview)}
@@ -441,6 +447,23 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                 Fiabilité de la lecture : {preview.confidence} % (information seulement : elle ne bloque
                 rien).
               </Typography>
+            )}
+            {preview?.ignored && preview.ignored.length > 0 && (
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Documents communs du dossier pays laissés de côté (ils ne concernent pas ce produit) :
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                  {preview.ignored.map((item) => (
+                    <li key={item.file_id}>
+                      <Typography variant="caption">{fileName(item.path)}</Typography>
+                      <Button size="small" onClick={() => view(item.file_id)}>
+                        Voir le scan
+                      </Button>
+                    </li>
+                  ))}
+                </Box>
+              </Box>
             )}
             {preview && preview.warnings.length > 0 && (
               <Box component="ul" sx={{ m: 0, pl: 2 }}>
