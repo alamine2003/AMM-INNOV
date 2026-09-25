@@ -49,14 +49,37 @@ export function validateFolder(files: FolderFile[]): string[] {
   return errors;
 }
 
-export function createFolderFormData(files: FolderFile[]): FormData {
+/**
+ * `reused` : empreinte SHA-256 des fichiers que le serveur possède déjà (même utilisateur). Ils
+ * ne sont pas renvoyés : seuls leur chemin et leur empreinte partent, le serveur réutilise le
+ * fichier stocké et sa lecture. Les décisions groupées d'un dossier pays ne partent qu'une fois.
+ */
+export function createFolderFormData(files: FolderFile[], reused: Map<string, string> = new Map()): FormData {
   const errors = validateFolder(files);
   if (errors.length) throw new Error(errors.join('\n'));
   const form = new FormData();
-  files.forEach(({ file }) => form.append('files', file));
-  form.append('paths', JSON.stringify(files.map(({ path }) => path)));
+  const sent = files.filter(({ path }) => !reused.has(path));
+  sent.forEach(({ file }) => form.append('files', file));
+  form.append('paths', JSON.stringify(sent.map(({ path }) => path)));
+  form.append(
+    'reused',
+    JSON.stringify(
+      files.filter(({ path }) => reused.has(path)).map(({ path }) => ({ path, sha256: reused.get(path) })),
+    ),
+  );
   form.append('root_name', files[0].path.split('/')[0]);
   return form;
+}
+
+/** Empreinte SHA-256 (hexadécimal) d'un fichier ; null si le navigateur ne sait pas la calculer. */
+export async function fileDigest(file: File): Promise<string | null> {
+  try {
+    const buffer = await new Response(file).arrayBuffer();
+    const hash = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
 }
 
 /** readEntries is paginated by browsers; read until the final empty batch. */

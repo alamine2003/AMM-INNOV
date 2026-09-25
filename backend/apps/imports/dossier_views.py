@@ -29,13 +29,14 @@ from apps.documents.views import file_is_missing, open_stored_file
 
 from .dossier.application import StalePreview, apply_dossier
 from .dossier.review_points import apply_point, ignore_point
-from .dossier.upload import stage_dossier
+from .dossier.upload import reusable_files, stage_dossier
 from .dossier_serializers import (
     DossierAnalyzeSerializer,
     DossierChooseAmmSerializer,
     DossierConfirmSerializer,
     DossierFileRequestSerializer,
     DossierImportSerializer,
+    DossierKnownFilesSerializer,
     DossierReviewPointSerializer,
     DossierUploadSerializer,
 )
@@ -120,12 +121,22 @@ class DossierImportViewSet(
                 paths=data["paths"],
                 root_name=data["root_name"],
                 user=request.user,
+                reused=data["reused"],
             )
         except DjangoValidationError as exc:
             raise django_to_drf_validation_error(exc)
         _enqueue_analysis(batch)
         batch.refresh_from_db()
         return Response(self.get_serializer(batch).data, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(request=DossierKnownFilesSerializer, responses={200: dict})
+    @action(detail=False, methods=["post"], url_path="known-files")
+    def known_files(self, request):
+        """Empreintes déjà envoyées par l'utilisateur : ces fichiers n'ont pas à être renvoyés."""
+        params = DossierKnownFilesSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        known = reusable_files(request.user, params.validated_data["sha256"])
+        return Response({"known": sorted(known)})
 
     @extend_schema(request=DossierAnalyzeSerializer, responses={202: DossierImportSerializer})
     @action(detail=True, methods=["post"])

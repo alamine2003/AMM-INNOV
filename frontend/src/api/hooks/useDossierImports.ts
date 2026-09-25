@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
 import type { DossierImportBatch, DossierReviewPoint, Paginated } from '@/api/types';
-import { createFolderFormData, type FolderFile } from '@/features/dossier-imports/folderUpload';
+import { createFolderFormData, fileDigest, type FolderFile } from '@/features/dossier-imports/folderUpload';
 
 /**
  * Un lot envoyé mais pas encore analysé a un aperçu vide (`{}`) : on le traite comme absent pour
@@ -42,18 +42,64 @@ export function useDossierImport(id: string | undefined) {
   });
 }
 
+/** Empreintes déjà envoyées pendant cette session (évite de redemander au serveur). */
+const sentDigests = new Set<string>();
+
+/** Fichiers que le serveur possède déjà, par chemin → empreinte ; vide en cas d'erreur. */
+async function alreadySent(files: FolderFile[]): Promise<{ reused: Map<string, string>; digests: string[] }> {
+  const digests = await Promise.all(files.map(({ file }) => fileDigest(file)));
+  const unknown = [...new Set(digests.filter((d): d is string => !!d && !sentDigests.has(d)))];
+  if (unknown.length) {
+    try {
+      const { data } = await api.post<{ known: string[] }>('/dossier-imports/known-files', {
+        sha256: unknown,
+      });
+      data.known.forEach((digest) => sentDigests.add(digest));
+    } catch {
+      // Sans réponse du serveur, tout est envoyé normalement.
+    }
+  }
+  const reused = new Map<string, string>();
+  files.forEach(({ path }, index) => {
+    const digest = digests[index];
+    if (digest && sentDigests.has(digest)) reused.set(path, digest);
+  });
+  return { reused, digests: digests.filter((d): d is string => !!d) };
+}
+
 export function useUploadDossier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ files, onProgress }: { files: FolderFile[]; onProgress: (value: number) => void }) =>
-      withPreview(
-        (
-          await api.post<DossierImportBatch>('/dossier-imports', createFolderFormData(files), {
-            timeout: 180000,
-            onUploadProgress: ({ loaded, total }) => total && onProgress(Math.round((loaded / total) * 100)),
-          })
-        ).data,
-      ),
+    mutationFn: async ({
+      files,
+      onProgress,
+    }: {
+      files: FolderFile[];
+      onProgress: (value: number) => void;
+    }) => {
+      const { reused, digests } = await alreadySent(files);
+      const send = async (skip: Map<string, string>) =>
+        withPreview(
+          (
+            await api.post<DossierImportBatch>('/dossier-imports', createFolderFormData(files, skip), {
+              timeout: 180000,
+              onUploadProgress: ({ loaded, total }) =>
+                total && onProgress(Math.round((loaded / total) * 100)),
+            })
+          ).data,
+        );
+      let batch: DossierImportBatch;
+      try {
+        batch = await send(reused);
+      } catch (error) {
+        // Fichier réutilisable disparu (autre compte, stockage vidé) : on renvoie tout, une fois.
+        if (!reused.size) throw error;
+        sentDigests.clear();
+        batch = await send(new Map());
+      }
+      digests.forEach((digest) => sentDigests.add(digest));
+      return batch;
+    },
     onSuccess: (batch) => {
       qc.setQueryData(dossierImportKeys.detail(batch.id), batch);
       void qc.invalidateQueries({ queryKey: dossierImportKeys.all });
