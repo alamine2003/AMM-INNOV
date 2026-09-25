@@ -69,12 +69,8 @@ def has_pending_work() -> bool:
 
 def ping_if_busy(url: str) -> bool:
     """Une requête entrante sur l'adresse publique tant qu'il reste du travail."""
-    close_old_connections()
-    try:
-        if not has_pending_work():
-            return False
-    finally:
-        connection.close()
+    if not has_pending_work():
+        return False
     try:
         with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310 (URL de config)
             response.read(64)
@@ -87,10 +83,14 @@ def ping_if_busy(url: str) -> bool:
 def _keep_awake(url: str, every: int) -> None:
     while True:
         time.sleep(every)
+        # Fil à part : sa propre connexion PostgreSQL, rendue après chaque vérification.
+        close_old_connections()
         try:
             ping_if_busy(url)
         except Exception:
             logger.exception("Maintien en éveil : vérification impossible")
+        finally:
+            connection.close()
 
 
 def on_worker_ready() -> None:
