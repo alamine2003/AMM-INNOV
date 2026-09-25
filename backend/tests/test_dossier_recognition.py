@@ -295,7 +295,6 @@ def test_interrupted_ocr_is_retried_on_reanalysis(users, monkeypatch):
         return {"text": "ok", "source": "ocr", "confidence": 80, "errors": [], "warnings": []}
 
     monkeypatch.setattr(extraction, "extract_file", fake_extract)
-    monkeypatch.setattr("apps.imports.dossier.preview.extract_file", fake_extract)
     tasks.analyze_dossier(str(batch.pk))
     upload.refresh_from_db()
     assert calls == [upload.pk] and upload.extraction["text"] == "ok"

@@ -118,6 +118,10 @@ class DossierImport(models.Model):
     # orpheline (worker tué, s12b) et recover_pending_work la rend relançable.
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
+    # Analyses commencées depuis le dépôt ou la dernière relance manuelle. Un redémarrage du
+    # service (mise en veille, mémoire) reprend l'analyse interrompue, mais pas indéfiniment :
+    # un dossier qui fait tomber le serveur à chaque essai finit en échec.
+    attempts = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         ordering = ["-created_at"]

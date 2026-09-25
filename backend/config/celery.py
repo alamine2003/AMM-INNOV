@@ -3,7 +3,13 @@
 import os
 
 from celery import Celery
-from celery.signals import before_task_publish, task_failure, task_prerun, task_success
+from celery.signals import (
+    before_task_publish,
+    task_failure,
+    task_prerun,
+    task_success,
+    worker_ready,
+)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
 
@@ -38,3 +44,10 @@ def _bind_request_id(task=None, task_id=None, **kwargs):
     from apps.core.observability import bind_task_context
 
     bind_task_context(task=task, task_id=task_id)
+
+
+@worker_ready.connect
+def _on_worker_ready(**kwargs):
+    from apps.core.worker import on_worker_ready
+
+    on_worker_ready()
