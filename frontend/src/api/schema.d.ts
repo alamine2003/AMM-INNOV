@@ -653,6 +653,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dossier-imports/known-files/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Empreintes déjà envoyées par l'utilisateur : ces fichiers n'ont pas à être renvoyés. */
+        post: operations["v1_dossier_imports_known_files_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dossier-review-points/": {
         parameters: {
             query?: never;
@@ -1799,6 +1816,9 @@ export interface components {
          * @enum {string}
          */
         DossierImportStatusEnum: "PENDING" | "RUNNING" | "READY" | "QUESTION" | "APPLIED" | "FAILED";
+        DossierKnownFilesRequest: {
+            sha256: string[];
+        };
         /** @description Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée) ou doute de lecture. */
         DossierReviewPoint: {
             /** Format: uuid */
@@ -1845,7 +1865,8 @@ export interface components {
         DossierUploadRequest: {
             root_name: string;
             paths: unknown;
-            files: string[];
+            files?: string[];
+            reused?: unknown;
         };
         /** @description Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert au schéma OpenAPI). */
         Health: {
@@ -3930,6 +3951,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    v1_dossier_imports_known_files_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DossierKnownFilesRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DossierKnownFilesRequest"];
+                "application/json": components["schemas"]["DossierKnownFilesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
             };
         };
     };

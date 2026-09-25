@@ -43,8 +43,16 @@ _ENCODED_PATH = re.compile(r"%(?:2e|2f|5c|00|25)", re.I)
 _DRIVE_LETTER = re.compile(r"^[A-Za-z]:")
 _ALTERNATE_STREAM = re.compile(r"\.[A-Za-z0-9]{1,5}:")
 _FORBIDDEN_PDF_KEYS = {
-    "/A", "/AA", "/OpenAction", "/JS", "/JavaScript", "/EmbeddedFiles",
-    "/RichMediaContent", "/RichMediaSettings", "/XFA", "/EF",
+    "/A",
+    "/AA",
+    "/OpenAction",
+    "/JS",
+    "/JavaScript",
+    "/EmbeddedFiles",
+    "/RichMediaContent",
+    "/RichMediaSettings",
+    "/XFA",
+    "/EF",
 }
 _FORBIDDEN_PDF_TYPES = {"/EmbeddedFile", "/Filespec", "/Action", "/RichMedia"}
 
@@ -116,8 +124,13 @@ def _validate_pdf(content: bytes) -> None:
                 if (
                     _FORBIDDEN_PDF_KEYS.intersection(item.keys())
                     or str(item.get("/Type", "")) in _FORBIDDEN_PDF_TYPES
-                    or str(item.get("/S", "")) in {
-                        "/JavaScript", "/Launch", "/SubmitForm", "/ImportData", "/GoToR",
+                    or str(item.get("/S", ""))
+                    in {
+                        "/JavaScript",
+                        "/Launch",
+                        "/SubmitForm",
+                        "/ImportData",
+                        "/GoToR",
                     }
                 ):
                     _reject("PDF refusé : actions actives ou fichiers incorporés détectés.")
@@ -161,8 +174,12 @@ def _validate_image(content: bytes, mime: str) -> None:
     except ValidationError:
         raise
     except (
-        UnidentifiedImageError, Image.DecompressionBombError,
-        Image.DecompressionBombWarning, OSError, ValueError, SyntaxError,
+        UnidentifiedImageError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+        OSError,
+        ValueError,
+        SyntaxError,
     ) as exc:
         raise ValidationError({"files": "Image illisible, endommagée ou trop grande."}) from exc
 
@@ -246,7 +263,30 @@ def _validate_content(upload, path: str, remaining: int) -> tuple[bytes, str]:
     return content, mime
 
 
-def stage_dossier(*, uploads: list, paths: list[str], root_name: str, user) -> DossierImport:
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def reusable_files(user, digests) -> dict:
+    """Fichiers déjà envoyés par cet utilisateur, par empreinte SHA-256 (un par empreinte).
+
+    Un dossier pays joint les mêmes décisions groupées (« Documents communs ») à chacun de ses
+    produits : sans réutilisation, 20 Mo étaient renvoyés et relus pour chacun des 111 produits
+    du Mali. Seuls les fichiers de l'utilisateur lui-même sont réutilisables.
+    """
+    wanted = {value for value in digests if isinstance(value, str) and _SHA256.match(value)}
+    found = {}
+    for record in (
+        DossierFile.objects.filter(sha256__in=wanted, batch__created_by=user)
+        .exclude(file="")
+        .order_by("-batch__created_at")
+    ):
+        found.setdefault(record.sha256, record)
+    return found
+
+
+def stage_dossier(
+    *, uploads: list, paths: list[str], root_name: str, user, reused: list | None = None
+) -> DossierImport:
     """Validate the entire selection before writing records, then stage it atomically.
 
     File content is spooled to local temporary storage, so a large accepted folder is
@@ -257,13 +297,24 @@ def stage_dossier(*, uploads: list, paths: list[str], root_name: str, user) -> D
         _reject("La sélection doit être une liste de fichiers.")
     if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths):
         _reject("Les chemins doivent être une liste de chaînes de caractères.", "paths")
+    reused = reused or []
+    if not isinstance(reused, list) or not all(
+        isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and isinstance(item.get("sha256"), str)
+        for item in reused
+    ):
+        _reject("Les fichiers réutilisés doivent être une liste {path, sha256}.", "reused")
     maximum_files = int(getattr(settings, "DOSSIER_MAX_FILES", 200))
-    if not uploads or len(uploads) > maximum_files:
+    if not (uploads or reused) or len(uploads) + len(reused) > maximum_files:
         _reject(f"Sélectionnez entre 1 et {maximum_files} fichiers.")
     if len(paths) != len(uploads):
         _reject("Chaque fichier doit posséder un chemin relatif.", "paths")
+    sources = reusable_files(user, [item["sha256"] for item in reused])
+    if any(item["sha256"] not in sources for item in reused):
+        _reject("Un fichier déjà envoyé est introuvable : renvoyez le dossier complet.", "reused")
     seen_paths = set()
-    for path in paths:
+    for path in [*paths, *(item["path"] for item in reused)]:
         validate_relative_path(path, root_name)
         normalized = unicodedata.normalize("NFC", path).casefold()
         if normalized in seen_paths:
@@ -283,21 +334,30 @@ def stage_dossier(*, uploads: list, paths: list[str], root_name: str, user) -> D
             except Exception:
                 temporary.close()
                 raise
-            validated.append(_ValidatedUpload(
-                path=path, temporary=temporary, sha256=hashlib.sha256(content).hexdigest(),
-                mime=mime, size=len(content),
-            ))
+            validated.append(
+                _ValidatedUpload(
+                    path=path,
+                    temporary=temporary,
+                    sha256=hashlib.sha256(content).hexdigest(),
+                    mime=mime,
+                    size=len(content),
+                )
+            )
             remaining -= len(content)
         with transaction.atomic():
             batch = DossierImport.objects.create(root_name=root_name, created_by=user)
             for item in validated:
                 record = DossierFile(
-                    batch=batch, relative_path=item.path, sha256=item.sha256,
-                    content_type=item.mime, size_bytes=item.size,
+                    batch=batch,
+                    relative_path=item.path,
+                    sha256=item.sha256,
+                    content_type=item.mime,
+                    size_bytes=item.size,
                 )
                 storage = record.file.storage
                 destination = record.file.field.generate_filename(
-                    record, PurePosixPath(item.path).name,
+                    record,
+                    PurePosixPath(item.path).name,
                 )
                 # Register the intended key before save(), even if a backend writes
                 # the object and then fails to return its response.
@@ -307,6 +367,18 @@ def stage_dossier(*, uploads: list, paths: list[str], root_name: str, user) -> D
                     stored.append((storage, saved_name))
                 record.file.name = saved_name
                 record.save()
+            for item in reused:
+                # Même objet de stockage et même lecture : ni renvoi ni nouvelle analyse du texte.
+                source = sources[item["sha256"]]
+                DossierFile.objects.create(
+                    batch=batch,
+                    relative_path=item["path"],
+                    file=source.file.name,
+                    sha256=source.sha256,
+                    content_type=source.content_type,
+                    size_bytes=source.size_bytes,
+                    extraction=source.extraction,
+                )
         return batch
     except Exception:
         for storage, name in reversed(stored):

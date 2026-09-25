@@ -135,7 +135,15 @@ class DossierImportSerializer(serializers.ModelSerializer):
 class DossierUploadSerializer(serializers.Serializer):
     root_name = serializers.CharField(max_length=255, trim_whitespace=False)
     paths = serializers.JSONField()
-    files = serializers.ListField(child=serializers.FileField(), allow_empty=False)
+    files = serializers.ListField(child=serializers.FileField(), required=False, default=list)
+    # Fichiers déjà envoyés (même empreinte) : [{"path": …, "sha256": …}], sans renvoi du contenu.
+    reused = serializers.JSONField(required=False, default=list)
+
+
+class DossierKnownFilesSerializer(serializers.Serializer):
+    sha256 = serializers.ListField(
+        child=serializers.RegexField(r"^[0-9a-f]{64}$"), max_length=1000, allow_empty=True
+    )
 
 
 class DossierAnalyzeSerializer(serializers.Serializer):

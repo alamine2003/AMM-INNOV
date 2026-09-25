@@ -27,14 +27,16 @@ def pdf_bytes(*, pages=1, active=None, encrypted=False):
     elif active == "attachment":
         writer.add_attachment("payload.txt", b"content")
     elif active == "launch":
-        writer._root_object[NameObject("/OpenAction")] = DictionaryObject({
-            NameObject("/S"): NameObject("/Launch"),
-            NameObject("/F"): TextStringObject("application.exe"),
-        })
+        writer._root_object[NameObject("/OpenAction")] = DictionaryObject(
+            {
+                NameObject("/S"): NameObject("/Launch"),
+                NameObject("/F"): TextStringObject("application.exe"),
+            }
+        )
     elif active == "nested":
-        writer._root_object[NameObject("/Unusual")] = ArrayObject([
-            DictionaryObject({NameObject("/AA"): DictionaryObject()})
-        ])
+        writer._root_object[NameObject("/Unusual")] = ArrayObject(
+            [DictionaryObject({NameObject("/AA"): DictionaryObject()})]
+        )
     elif active == "too_deep":
         nested = DictionaryObject()
         writer._root_object[NameObject("/Unusual")] = nested
@@ -67,29 +69,51 @@ def isolated_storage(settings, tmp_path):
     return tmp_path / "media"
 
 
-@pytest.mark.parametrize("path", [
-    "../Dossier/decision.pdf", "/Dossier/decision.pdf", "Dossier/../decision.pdf",
-    "Dossier/./decision.pdf", "Dossier//decision.pdf", "Dossier/decision.pdf/",
-    "Dossier\\decision.pdf", "Dossier/AMM\\decision.pdf", "Dossier/C:/decision.pdf",
-    "Dossier/file.pdf:script.exe", "Dossier/\x00decision.pdf", "Dossier/\ndecision.pdf",
-    "Dossier/\u202edecision.pdf", "Dossier/CON.pdf", "Dossier/aux/decision.pdf",
-    "Dossier/LPT1.pdf", "Dossier/decision.pdf.", "Dossier/decision.pdf ",
-    "Dossier/%2e%2e/decision.pdf", "Dossier/%252e%252e/decision.pdf",
-    "Dossier/%2fetc/decision.pdf", "Another/decision.pdf", "Dossier",
-    f"Dossier/{'x' * 256}.pdf", f"Dossier/{'x' * 250}/{'x' * 250}.pdf",
-])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../Dossier/decision.pdf",
+        "/Dossier/decision.pdf",
+        "Dossier/../decision.pdf",
+        "Dossier/./decision.pdf",
+        "Dossier//decision.pdf",
+        "Dossier/decision.pdf/",
+        "Dossier\\decision.pdf",
+        "Dossier/AMM\\decision.pdf",
+        "Dossier/C:/decision.pdf",
+        "Dossier/file.pdf:script.exe",
+        "Dossier/\x00decision.pdf",
+        "Dossier/\ndecision.pdf",
+        "Dossier/\u202edecision.pdf",
+        "Dossier/CON.pdf",
+        "Dossier/aux/decision.pdf",
+        "Dossier/LPT1.pdf",
+        "Dossier/decision.pdf.",
+        "Dossier/decision.pdf ",
+        "Dossier/%2e%2e/decision.pdf",
+        "Dossier/%252e%252e/decision.pdf",
+        "Dossier/%2fetc/decision.pdf",
+        "Another/decision.pdf",
+        "Dossier",
+        f"Dossier/{'x' * 256}.pdf",
+        f"Dossier/{'x' * 250}/{'x' * 250}.pdf",
+    ],
+)
 def test_unsafe_relative_paths_rejected(path):
     with pytest.raises(ValidationError):
         validate_relative_path(path, "Dossier")
 
 
-@pytest.mark.parametrize("path", [
-    # Noms réels du dossier Cameroun : le Finder de macOS écrit « / » sous la forme « : ».
-    "CAMEROUN/FLUGEN 50MG :5ML PDRE SUSP BUV F60ML/AMM renouvellée FLUGEN SYROP.pdf",
-    "CAMEROUN/GENSET 10MG CPR B3:0/AMM GENSET CP B30_EXP.2028.pdf",
-    "CAMEROUN/LITACOLD NUIT 500MG:25MG CPR B16/AMM LITACOLD NUIT_2028.pdf",
-    "CAMEROUN/PANTOPRAL D 40MG30MG CPR B30/AMM PANTOPRAL D _2028.pdf",
-])
+@pytest.mark.parametrize(
+    "path",
+    [
+        # Noms réels du dossier Cameroun : le Finder de macOS écrit « / » sous la forme « : ».
+        "CAMEROUN/FLUGEN 50MG :5ML PDRE SUSP BUV F60ML/AMM renouvellée FLUGEN SYROP.pdf",
+        "CAMEROUN/GENSET 10MG CPR B3:0/AMM GENSET CP B30_EXP.2028.pdf",
+        "CAMEROUN/LITACOLD NUIT 500MG:25MG CPR B16/AMM LITACOLD NUIT_2028.pdf",
+        "CAMEROUN/PANTOPRAL D 40MG30MG CPR B30/AMM PANTOPRAL D _2028.pdf",
+    ],
+)
 def test_macos_colons_in_names_are_accepted(path):
     assert validate_relative_path(path, "CAMEROUN") == path
 
@@ -110,15 +134,20 @@ def test_paths_must_be_a_list_of_strings(users, paths):
 def test_uploads_must_be_a_list(users, uploads):
     with pytest.raises(ValidationError, match="liste de fichiers"):
         stage_dossier(
-            uploads=uploads, paths=["Dossier/decision.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=uploads,
+            paths=["Dossier/decision.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
 
 
 def test_preserves_structure_original_content_and_hash(users):
     original = pdf_bytes()
     batch = stage_dossier(
-        uploads=[uploaded(original)], paths=["Dossier/AMM_ORIGINE/décision.pdf"],
-        root_name="Dossier", user=users["hq"],
+        uploads=[uploaded(original)],
+        paths=["Dossier/AMM_ORIGINE/décision.pdf"],
+        root_name="Dossier",
+        user=users["hq"],
     )
     file = batch.files.get()
     assert batch.created_by == users["hq"]
@@ -133,14 +162,20 @@ def test_preserves_structure_original_content_and_hash(users):
         assert stored.read() == original
 
 
-@pytest.mark.parametrize(("format", "name", "mime"), [
-    ("PNG", "scan.png", "image/png"), ("JPEG", "scan.jpeg", "image/jpeg"),
-])
+@pytest.mark.parametrize(
+    ("format", "name", "mime"),
+    [
+        ("PNG", "scan.png", "image/png"),
+        ("JPEG", "scan.jpeg", "image/jpeg"),
+    ],
+)
 def test_original_images_not_converted(users, format, name, mime):
     original = image_bytes(format)
     batch = stage_dossier(
-        uploads=[uploaded(original, name, mime)], paths=[f"Dossier/{name}"],
-        root_name="Dossier", user=users["hq"],
+        uploads=[uploaded(original, name, mime)],
+        paths=[f"Dossier/{name}"],
+        root_name="Dossier",
+        user=users["hq"],
     )
     file = batch.files.get()
     assert file.content_type == mime
@@ -148,24 +183,34 @@ def test_original_images_not_converted(users, format, name, mime):
         assert stored.read() == original
 
 
-@pytest.mark.parametrize(("name", "path", "mime", "content"), [
-    ("decision.png", "Dossier/decision.png", "image/png", pdf_bytes()),
-    ("decision.pdf", "Dossier/decision.pdf", "image/png", pdf_bytes()),
-    ("decision.exe", "Dossier/decision.pdf", "application/pdf", pdf_bytes()),
-    ("decision.pdf", "Dossier/decision.exe", "application/pdf", pdf_bytes()),
-    ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b"%PDF-not-real"),
-    ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b"MZpayload"),
-    ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b""),
-    ("scan.png", "Dossier/scan.png", "image/png", b"\x89PNG\r\n\x1a\ninvalid"),
-    ("scan.jpg", "Dossier/scan.jpg", "image/jpeg", b"\xff\xd8\xffinvalid"),
-])
+@pytest.mark.parametrize(
+    ("name", "path", "mime", "content"),
+    [
+        ("decision.png", "Dossier/decision.png", "image/png", pdf_bytes()),
+        ("decision.pdf", "Dossier/decision.pdf", "image/png", pdf_bytes()),
+        ("decision.exe", "Dossier/decision.pdf", "application/pdf", pdf_bytes()),
+        ("decision.pdf", "Dossier/decision.exe", "application/pdf", pdf_bytes()),
+        ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b"%PDF-not-real"),
+        ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b"MZpayload"),
+        ("decision.pdf", "Dossier/decision.pdf", "application/pdf", b""),
+        ("scan.png", "Dossier/scan.png", "image/png", b"\x89PNG\r\n\x1a\ninvalid"),
+        ("scan.jpg", "Dossier/scan.jpg", "image/jpeg", b"\xff\xd8\xffinvalid"),
+    ],
+)
 def test_mime_extension_spoofing_and_malformed_files_rejected(
-    users, isolated_storage, name, path, mime, content,
+    users,
+    isolated_storage,
+    name,
+    path,
+    mime,
+    content,
 ):
     with pytest.raises(ValidationError):
         stage_dossier(
-            uploads=[uploaded(content, name, mime)], paths=[path],
-            root_name="Dossier", user=users["hq"],
+            uploads=[uploaded(content, name, mime)],
+            paths=[path],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
     assert not DossierFile.objects.exists()
@@ -175,8 +220,10 @@ def test_mime_extension_spoofing_and_malformed_files_rejected(
 @pytest.mark.parametrize("mime", ["application/octet-stream", "", None])
 def test_generic_mime_accepted_after_signature_validation(users, mime):
     batch = stage_dossier(
-        uploads=[uploaded(mime=mime)], paths=["Dossier/decision.pdf"],
-        root_name="Dossier", user=users["hq"],
+        uploads=[uploaded(mime=mime)],
+        paths=["Dossier/decision.pdf"],
+        root_name="Dossier",
+        user=users["hq"],
     )
     assert batch.files.get().content_type == "application/pdf"
 
@@ -187,7 +234,8 @@ def test_duplicate_paths_rejected(users, second):
         stage_dossier(
             uploads=[uploaded(), uploaded(name=second)],
             paths=["Dossier/decision.pdf", f"Dossier/{second}"],
-            root_name="Dossier", user=users["hq"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
 
@@ -197,7 +245,8 @@ def test_same_bytes_at_distinct_paths_staged_for_later_deduplication(users):
     batch = stage_dossier(
         uploads=[uploaded(original), uploaded(original)],
         paths=["Dossier/AMM/decision.pdf", "Dossier/ARCHIVES/decision.pdf"],
-        root_name="Dossier", user=users["hq"],
+        root_name="Dossier",
+        user=users["hq"],
     )
     assert batch.files.count() == 2
     assert batch.files.values("sha256").distinct().count() == 1
@@ -208,8 +257,10 @@ def test_same_bytes_at_distinct_paths_staged_for_later_deduplication(users):
 def test_pdf_active_content_and_unbounded_structures_rejected(users, active):
     with pytest.raises(ValidationError):
         stage_dossier(
-            uploads=[uploaded(pdf_bytes(active=active))], paths=["Dossier/decision.pdf"],
-            root_name="Dossier", user=users["hq"],
+            uploads=[uploaded(pdf_bytes(active=active))],
+            paths=["Dossier/decision.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
 
@@ -217,8 +268,10 @@ def test_pdf_active_content_and_unbounded_structures_rejected(users, active):
 def test_encrypted_pdf_rejected(users):
     with pytest.raises(ValidationError, match="chiffrés"):
         stage_dossier(
-            uploads=[uploaded(pdf_bytes(encrypted=True))], paths=["Dossier/decision.pdf"],
-            root_name="Dossier", user=users["hq"],
+            uploads=[uploaded(pdf_bytes(encrypted=True))],
+            paths=["Dossier/decision.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
 
 
@@ -227,7 +280,9 @@ def test_file_page_pixel_and_folder_limits(users, settings):
     settings.DOSSIER_MAX_FILES = 1
     with pytest.raises(ValidationError):
         stage_dossier(
-            uploads=[uploaded(), uploaded()], paths=["Dossier/1.pdf", "Dossier/2.pdf"], **args,
+            uploads=[uploaded(), uploaded()],
+            paths=["Dossier/1.pdf", "Dossier/2.pdf"],
+            **args,
         )
     settings.DOSSIER_MAX_PAGES = 1
     with pytest.raises(ValidationError, match="pages"):
@@ -236,7 +291,8 @@ def test_file_page_pixel_and_folder_limits(users, settings):
     with pytest.raises(ValidationError, match="pixels"):
         stage_dossier(
             uploads=[uploaded(image_bytes(), "scan.png", "image/png")],
-            paths=["Dossier/scan.png"], **args,
+            paths=["Dossier/scan.png"],
+            **args,
         )
     settings.DOCUMENT_MAX_MB = 1
     with pytest.raises(ValidationError, match="volumineux"):
@@ -252,7 +308,10 @@ def test_untrusted_declared_size_cannot_bypass_actual_limit(users, settings):
     source.size = 1
     with pytest.raises(ValidationError, match="volumineux"):
         stage_dossier(
-            uploads=[source], paths=["Dossier/decision.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=[source],
+            paths=["Dossier/decision.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
 
 
@@ -260,7 +319,9 @@ def test_no_storage_writes_if_later_file_invalid(users, isolated_storage):
     with pytest.raises(ValidationError):
         stage_dossier(
             uploads=[uploaded(), uploaded(b"invalid")],
-            paths=["Dossier/1.pdf", "Dossier/2.pdf"], root_name="Dossier", user=users["hq"],
+            paths=["Dossier/1.pdf", "Dossier/2.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
     assert not isolated_storage.exists()
@@ -279,8 +340,10 @@ def test_database_failure_cleans_up_all_storage_writes(users, isolated_storage, 
     monkeypatch.setattr(DossierFile, "save", fail_second)
     with pytest.raises(RuntimeError, match="Database unavailable"):
         stage_dossier(
-            uploads=[uploaded(), uploaded()], paths=["Dossier/1.pdf", "Dossier/2.pdf"],
-            root_name="Dossier", user=users["hq"],
+            uploads=[uploaded(), uploaded()],
+            paths=["Dossier/1.pdf", "Dossier/2.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
     assert not DossierFile.objects.exists()
@@ -298,7 +361,10 @@ def test_storage_failure_after_write_cleans_up_partial_object(users, isolated_st
     monkeypatch.setattr(storage, "save", interrupted)
     with pytest.raises(OSError, match="Storage response lost"):
         stage_dossier(
-            uploads=[uploaded()], paths=["Dossier/1.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=[uploaded()],
+            paths=["Dossier/1.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert not DossierImport.objects.exists()
     assert not [path for path in isolated_storage.rglob("*") if path.is_file()]
@@ -308,13 +374,19 @@ def test_required_antivirus_fails_closed(users, settings):
     settings.DOSSIER_REQUIRE_ANTIVIRUS = True
     with pytest.raises(ValidationError, match="antivirus obligatoire"):
         stage_dossier(
-            uploads=[uploaded()], paths=["Dossier/1.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=[uploaded()],
+            paths=["Dossier/1.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
 
 
 @pytest.mark.parametrize("returncode", [1, 2])
 def test_antivirus_refusal_or_scanner_error_rejects_upload(
-    users, settings, monkeypatch, returncode,
+    users,
+    settings,
+    monkeypatch,
+    returncode,
 ):
     settings.DOSSIER_CLAMAV_COMMAND = "clamdscan --no-summary"
     calls = []
@@ -330,7 +402,10 @@ def test_antivirus_refusal_or_scanner_error_rejects_upload(
     monkeypatch.setattr(upload_service.subprocess, "run", scanner)
     with pytest.raises(ValidationError, match="antivirus"):
         stage_dossier(
-            uploads=[uploaded()], paths=["Dossier/1.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=[uploaded()],
+            paths=["Dossier/1.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
     assert len(calls) == 1
     assert not DossierImport.objects.exists()
@@ -345,7 +420,10 @@ def test_scanner_timeout_rejects_upload(users, settings, monkeypatch):
     monkeypatch.setattr(upload_service.subprocess, "run", timeout)
     with pytest.raises(ValidationError, match="indisponible"):
         stage_dossier(
-            uploads=[uploaded()], paths=["Dossier/1.pdf"], root_name="Dossier", user=users["hq"],
+            uploads=[uploaded()],
+            paths=["Dossier/1.pdf"],
+            root_name="Dossier",
+            user=users["hq"],
         )
 
 
@@ -366,3 +444,97 @@ def test_tolerant_reading_still_rejects_active_content():
     for active in ("javascript", "attachment", "launch", "nested"):
         with pytest.raises(ValidationError):
             _validate_pdf(pdf_bytes(active=active))
+
+
+def test_common_documents_are_reused_without_resending_or_rereading(users):
+    """Dossier pays : la décision groupée jointe à chaque produit est envoyée et lue une fois."""
+    common = pdf_bytes(pages=2)
+    digest = hashlib.sha256(common).hexdigest()
+    first = stage_dossier(
+        uploads=[uploaded(common, "groupee.pdf"), uploaded(name="a.pdf")],
+        paths=["MALI - A/Documents communs/groupee.pdf", "MALI - A/a.pdf"],
+        root_name="MALI - A",
+        user=users["hq"],
+    )
+    source = first.files.get(sha256=digest)
+    source.extraction = {"text": "DECISION", "source": "pdf", "confidence": 98}
+    source.save(update_fields=["extraction"])
+
+    second = stage_dossier(
+        uploads=[uploaded(name="b.pdf")],
+        paths=["MALI - B/b.pdf"],
+        root_name="MALI - B",
+        user=users["hq"],
+        reused=[{"path": "MALI - B/Documents communs/groupee.pdf", "sha256": digest}],
+    )
+    copy = second.files.get(sha256=digest)
+    assert copy.file.name == source.file.name and copy.file.storage.exists(copy.file.name)
+    assert copy.extraction["text"] == "DECISION" and copy.size_bytes == len(common)
+    assert copy.relative_path == "MALI - B/Documents communs/groupee.pdf"
+
+
+def test_only_the_uploaders_own_files_can_be_reused(users):
+    content = pdf_bytes(pages=3)
+    digest = hashlib.sha256(content).hexdigest()
+    stage_dossier(
+        uploads=[uploaded(content)],
+        paths=["Dossier/x.pdf"],
+        root_name="Dossier",
+        user=users["hq"],
+    )
+    assert upload_service.reusable_files(users["country"], [digest]) == {}
+    with pytest.raises(ValidationError, match="introuvable"):
+        stage_dossier(
+            uploads=[],
+            paths=[],
+            root_name="Autre",
+            user=users["country"],
+            reused=[{"path": "Autre/x.pdf", "sha256": digest}],
+        )
+    assert not DossierImport.objects.filter(root_name="Autre").exists()
+
+
+def test_known_files_endpoint_lists_the_users_own_digests(users):
+    from .conftest import client_for
+
+    content = pdf_bytes(pages=4)
+    digest = hashlib.sha256(content).hexdigest()
+    stage_dossier(
+        uploads=[uploaded(content)],
+        paths=["Dossier/x.pdf"],
+        root_name="Dossier",
+        user=users["hq"],
+    )
+    url = "/api/v1/dossier-imports/known-files"
+    body = {"sha256": [digest, "0" * 64]}
+    assert client_for(users["hq"]).post(url, body, format="json").json() == {"known": [digest]}
+    assert client_for(users["country"]).post(url, body, format="json").json() == {"known": []}
+
+
+def test_upload_api_accepts_reused_files_in_multipart(users, monkeypatch):
+    import json
+
+    from .conftest import client_for
+
+    monkeypatch.setattr("apps.imports.dossier_views._enqueue_analysis", lambda batch: None)
+    content = pdf_bytes(pages=5)
+    digest = hashlib.sha256(content).hexdigest()
+    stage_dossier(
+        uploads=[uploaded(content)], paths=["P - A/g.pdf"], root_name="P - A", user=users["hq"]
+    )
+    response = client_for(users["hq"]).post(
+        "/api/v1/dossier-imports",
+        {
+            "files": [uploaded(name="b.pdf")],
+            "paths": json.dumps(["P - B/b.pdf"]),
+            "reused": json.dumps([{"path": "P - B/Documents communs/g.pdf", "sha256": digest}]),
+            "root_name": "P - B",
+        },
+        format="multipart",
+    )
+    assert response.status_code == 202, response.content
+    batch = DossierImport.objects.get(root_name="P - B")
+    assert sorted(batch.files.values_list("relative_path", flat=True)) == [
+        "P - B/Documents communs/g.pdf",
+        "P - B/b.pdf",
+    ]

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createFolderFormData,
+  fileDigest,
   filesFromDrop,
   filesFromPicker,
   setAside,
@@ -164,5 +165,28 @@ describe('upload de dossiers', () => {
       'PAYS/A/Archive.zip (format non lu)',
       'PAYS/B/scan.pdf (plus de 25 Mo)',
     ]);
+  });
+
+  it('n’envoie pas le contenu des fichiers que le serveur possède déjà', () => {
+    const files = filesFromPicker([
+      fileAt('MALI - B/b.pdf'),
+      fileAt('MALI - B/Documents communs/groupee.pdf'),
+    ]);
+    const form = createFolderFormData(
+      files,
+      new Map([['MALI - B/Documents communs/groupee.pdf', 'a'.repeat(64)]]),
+    );
+    expect(form.getAll('files')).toEqual([files[0].file]);
+    expect(JSON.parse(form.get('paths') as string)).toEqual(['MALI - B/b.pdf']);
+    expect(JSON.parse(form.get('reused') as string)).toEqual([
+      { path: 'MALI - B/Documents communs/groupee.pdf', sha256: 'a'.repeat(64) },
+    ]);
+  });
+
+  it('calcule l’empreinte SHA-256 d’un fichier', async () => {
+    const digest = await fileDigest(new File(['abc'], 'a.pdf'));
+    expect(
+      digest === null || digest === 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    ).toBe(true);
   });
 });
