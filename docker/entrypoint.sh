@@ -74,10 +74,15 @@ fi
 
 # Render gratuit : pas d'offre gratuite pour un worker séparé. AMM_ROLE=all lance Celery (beat
 # intégré, une seule concurrence) en arrière-plan dans le même conteneur que le serveur web.
+# Mémoire limitée à 512 Mo : pool « solo » (la tâche tourne dans le processus du worker, sans
+# processus enfant de plus, ~100 Mo gagnés), pas d'échanges inter-workers, et moins d'arènes
+# malloc. En prefork, l'analyse des 40 produits d'un dossier pays dépassait 512 Mo (instance
+# tuée « Ran out of memory », 24/09/2026).
 if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "all" ]; then
-  echo "[entrypoint] worker Celery en arrière-plan (beat intégré), concurrence ${CELERY_CONCURRENCY:-1}"
-  celery -A config worker -l info --concurrency "${CELERY_CONCURRENCY:-1}" \
-    -B --scheduler django_celery_beat.schedulers:DatabaseScheduler &
+  export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
+  echo "[entrypoint] worker Celery en arrière-plan (pool solo, beat intégré)"
+  celery -A config worker -l info --pool solo --without-gossip --without-mingle \
+    --without-heartbeat -B --scheduler django_celery_beat.schedulers:DatabaseScheduler &
 fi
 
 if [ "${1:-}" = "serve" ]; then
