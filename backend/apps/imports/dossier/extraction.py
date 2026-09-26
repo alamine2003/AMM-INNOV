@@ -20,6 +20,12 @@ OCR_TIMEOUT = int(os.environ.get("DOSSIER_OCR_TIMEOUT", "180"))
 # fois moins de pixels que 2200 px.
 OCR_RENDER_PX = int(os.environ.get("DOSSIER_OCR_RENDER_PX", "1700"))
 MIN_PAGE_TEXT = 35
+# Pages scannées passées à l'OCR dans le dossier d'un produit : une décision tient en une à trois
+# pages, le reste d'un long scan (dossier technique, courriers) ne sert pas au rangement et
+# coûte plus d'une minute par page sur Render gratuit. Les recueils de décisions du dossier pays
+# (« Documents communs ») sont lus en entier : chaque produit y a sa page.
+OCR_MAX_PAGES = int(os.environ.get("DOSSIER_OCR_MAX_PAGES", "6"))
+COMMON_MARK = "/Documents communs/"
 
 
 def _ocr_image(path: Path, workspace: Path, page: int) -> str:
@@ -145,6 +151,13 @@ def extract_file(upload) -> dict:
             else:
                 result["page_count"] = 1
                 texts, sparse_pages = [""], [0]
+            common = COMMON_MARK in f"/{getattr(upload, 'relative_path', '') or ''}"
+            if not common and len(sparse_pages) > OCR_MAX_PAGES:
+                result["warnings"].append(
+                    f"Scan de {len(sparse_pages)} pages : seules les {OCR_MAX_PAGES} premières "
+                    "sont lues (décision) ; le document entier est rangé."
+                )
+                sparse_pages = sparse_pages[:OCR_MAX_PAGES]
             if sparse_pages:
                 required = ["tesseract"] + (["pdftoppm"] if is_pdf else [])
                 missing = [binary for binary in required if not shutil.which(binary)]

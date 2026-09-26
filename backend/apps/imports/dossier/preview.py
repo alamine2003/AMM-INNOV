@@ -24,24 +24,29 @@ from apps.documents.models import Document
 from .extraction import load_extraction, paged_extraction
 from .labels import FIELD_LABELS, fr_date, period_label, show
 from .matching import (
+    _strengths,
+    _strengths_fit,
     folder_product,
     match_authorizations,
     name_compatible,
     pick_table_row,
     resolve_renewal,
+    same_product_in_country,
 )
 from .projection import build_projection
-from .recognition import normalize, recognize_file, specialty_key
+from .recognition import country_labels, normalize, recognize_file, specialty_key
 
 # Période des scans qu'on ne sait pas placer : rangés dans la fiche comme « autre document ».
 UNPLACED = "unplaced"
 # 3 : recueils de décisions, documents communs, pays sans code ISO (26/09/2026).
 # 4 : AMM absente créée d'office quand la décision d'origine est lisible.
-PREVIEW_VERSION = 4
+# 5 : classement autonome (doutes tranchés seuls, la décision officielle corrige la fiche).
+PREVIEW_VERSION = 5
 # Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
 COMMON_FOLDER = "Documents communs"
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
 CREATABLE = {"no_amm", "product_absent"}
+UNKNOWN_PRODUCT = "produit du dossier non identifié"
 
 
 def _consensus(rows, fields, points, label):
@@ -116,6 +121,80 @@ def _change(target, field, old, new, proof, confidence, *, replaces=None):
         # Jamais d'écrasement automatique d'une valeur renseignée : elle devient un point.
         "requires_confirmation": bool(old not in (None, "")) if replaces is None else replaces,
     }
+
+
+# Champs qu'une décision officielle lisible corrige d'office (classement autonome).
+CORRECTABLE = {
+    "original_number",
+    "original_start_date",
+    "original_end_date",
+    "holder",
+    "number",
+    "start_date",
+    "end_date",
+    "decision_date",
+}
+CORRECTION_MIN_CONFIDENCE = 70
+
+
+def _correct_from_scans(changes, rows, amm, renewals, decisions):
+    """La décision officielle fait foi : l'écart scan ≠ fiche corrige la fiche.
+
+    Seulement pour une lecture sûre : preuve officielle, lecture concordante (une contradiction
+    entre décisions n'a déjà retenu aucune valeur), n° lu sans variante, PDF texte ou lecture OCR
+    confirmée par une deuxième décision, et jamais une date de fin qui précéderait le début.
+    L'ancienne valeur reste dans l'historique de la fiche et dans le récapitulatif ; sinon
+    l'écart reste un point.
+    """
+    by_file = {row["file_id"]: row for row in rows}
+    existing = {item["key"]: item for item in renewals if item.get("existing_id")}
+    candidates = defaultdict(list)
+    for change in changes:
+        if not change["requires_confirmation"] or change["field"] not in CORRECTABLE:
+            continue
+        proof = by_file.get(str(change["proof_file_id"]))
+        if not proof or not proof["official"] or change["confidence"] < CORRECTION_MIN_CONFIDENCE:
+            continue
+        if change["field"] in {"original_number", "number"} and proof.get("number_variants"):
+            continue
+        # Lecture OCR (fiabilité 80) : il faut une deuxième décision qui lise la même valeur.
+        key = change["field"].removeprefix("original_")
+        agreeing = {
+            row["file_id"]
+            for row in rows
+            if row["official"]
+            and row.get(key)
+            and normalize(str(row[key])) == normalize(str(change["new"]))
+        }
+        if proof["confidence"] < 90 and len(agreeing) < 2:
+            continue
+        candidates[change["target"]].append(change)
+    for target, proposals in candidates.items():
+        values = {change["field"]: change["new"] for change in proposals}
+        if target == "amm":
+            start = values.get("original_start_date") or _iso(amm and amm.original_start_date)
+            end = values.get("original_end_date") or _iso(amm and amm.original_end_date)
+        else:
+            if target not in existing:
+                continue
+            start = values.get("start_date") or existing[target].get("start_date")
+            end = values.get("end_date") or existing[target].get("end_date")
+        if start and end and str(end) < str(start):
+            continue
+        for change in proposals:
+            change["requires_confirmation"] = False
+            change["correction"] = True
+            where = "AMM d'origine" if target == "amm" else period_label(target)
+            _decision(
+                decisions,
+                f"{FIELD_LABELS.get(change['field'], change['field']).capitalize()} ({where}) "
+                f"corrigé d'après la décision : « {show(change['field'], change['old'])} » → "
+                f"« {show(change['field'], change['new'])} ».",
+            )
+
+
+def _iso(value):
+    return value.isoformat() if hasattr(value, "isoformat") else value
 
 
 def _identify_by_folder(batch, files, rows, products, country, issues, warnings):
@@ -290,9 +369,7 @@ def _focus_on_product(files, rows, product, products, countries, country, root_n
             ]  # fmt: skip
             line = pick_table_row(candidates, product, marketed)
             if line:
-                row = _section_row(
-                    upload, line["section"], product, countries, products, root_name
-                )
+                row = _section_row(upload, line["section"], product, countries, products, root_name)
             elif common:
                 concerned = False
             else:
@@ -344,7 +421,63 @@ def _dedupe(items):
     return result
 
 
+def _autonomous() -> bool:
+    """Classement autonome (DOSSIER_AUTONOMOUS, actif par défaut) : l'application tranche seule
+    les doutes d'identité (pays ou produits mêlés, nom proche, produit absent, décision
+    illisible) et note sa décision ; seul ce qu'elle ne peut pas trancher reste une question."""
+    from django.conf import settings
+
+    return bool(getattr(settings, "DOSSIER_AUTONOMOUS", False))
+
+
+def _decision(decisions, message):
+    """Décision prise seule par l'application, montrée dans le récapitulatif."""
+    if message not in decisions:
+        decisions.append(message)
+
+
+GENERIC_FOLDER = re.compile(
+    r"^(amm|amm produit|dossiers?|documents?( communs)?|decisions?|renouvellements?|origine|"
+    r"scans?|pieces?|autres?|produits?|nouveau dossier|pret a importer|gamme.*|.*afrique)$"
+)
+
+
+def _folder_label(batch, country) -> str:
+    """Nom du produit tel que le dossier le donne : son dossier le plus profond.
+
+    « CARDIO AFRIQUE - MALI - VITAGEN INJ » → « VITAGEN INJ ». Un nom générique (« AMM »,
+    « Documents ») ou un nom de pays ne désigne pas un produit.
+    """
+    parts = [part.strip() for part in batch.root_name.split(" - ") if part.strip()]
+    label = parts[-1] if parts else ""
+    key = normalize(label).replace("_", " ").strip()
+    countries = {normalize(item) for item in country_labels(country)} if country else set()
+    if not re.search(r"[a-z]{3}", key) or key in countries or GENERIC_FOLDER.match(key):
+        return ""
+    return label
+
+
+def _path_country(batch, countries):
+    """Pays désigné par le dossier déposé (« MALI - VITAGEN », « CARDIO AFRIQUE - MALI - … »)."""
+    parts = [normalize(part) for part in batch.root_name.split(" - ") if part.strip()]
+    found = [
+        country
+        for country in countries
+        if any(part in {normalize(label) for label in country_labels(country)} for part in parts)
+    ]
+    return found[0] if len(found) == 1 else None
+
+
+def _majority(values):
+    counts = defaultdict(int)
+    for value in values:
+        counts[value] += 1
+    return max(counts, key=lambda value: counts[value]) if counts else None
+
+
 def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, étape par étape
+    autonomous = _autonomous()
+    decisions = []
     files = list(batch.files.all().order_by("relative_path", "pk"))
     countries = list(Country.objects.all())
     products = list(Product.objects.prefetch_related("aliases").all())
@@ -403,18 +536,36 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
                 "identity",
                 f"Les documents semblent venir d'un autre pays que l'AMM choisie ({country.name}).",
             )
+    elif autonomous:
+        # Le dossier pays déposé (« MALI - … ») fait foi ; sinon le pays le plus cité. Une pièce
+        # d'un autre pays devient une annexe (plus bas). Décision identique à chaque relecture.
+        folder_country = _path_country(batch, countries)
+        chosen = folder_country or next(
+            (item for item in countries if str(item.pk) in country_ids), None
+        )
+        if not folder_country and len(country_ids) > 1:
+            majority = _majority(pk for row in rows for pk in row["country_ids"])
+            chosen = next(item for item in countries if str(item.pk) == majority)
+            _decision(
+                decisions,
+                f"Pièces de plusieurs pays : rangé pour {chosen.name}, le pays le plus cité.",
+            )
+        country = chosen
+        if batch.country_id and batch.country != chosen:
+            country = batch.country
+            _decision(decisions, f"Pays choisi au dépôt retenu : {country.name}.")
     else:
+        country = next((item for item in countries if str(item.pk) in country_ids), None)
         if len(country_ids) > 1:
             questions.append(("countries", "Le dossier mélange plusieurs pays : séparez-les."))
-        country = next((item for item in countries if str(item.pk) in country_ids), None)
         if batch.country_id:
             if country_ids and country_ids != {str(batch.country_id)}:
                 questions.append(
                     ("country_conflict", "Le pays choisi contredit le pays lu dans les documents.")
                 )
             country = batch.country
-        if not country:
-            questions.append(("country", "Pays non reconnu dans les documents."))
+    if not forced and not country:
+        questions.append(("country", "Pays non reconnu dans les documents."))
     if country and (not user or not user.can_access_country(country)):
         questions.append(("scope", "Le pays du dossier est hors de votre périmètre."))
 
@@ -428,7 +579,16 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         product_ids = {pk for row in rows for pk in row["product_ids"]}
         if len(product_ids) > 1:
             issues.append(("products", "Le dossier mélange plusieurs produits ou présentations."))
-        product = next((item for item in products if str(item.pk) in product_ids), None)
+        # Plusieurs produits cités : celui du nom du dossier, sinon le plus cité par les décisions.
+        chosen = next(
+            (pk for row in rows if row["product_source"] == "folder" for pk in row["product_ids"]),
+            None,
+        ) or _majority(
+            pk
+            for row in sorted(rows, key=lambda item: not item["official"])
+            for pk in row["product_ids"]
+        )
+        product = next((item for item in products if str(item.pk) == chosen), None)
     ignored = []
     if product:
         files, rows, ignored = _focus_on_product(
@@ -447,7 +607,7 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
             {
                 "file_id": str(upload.pk),
                 "path": upload.relative_path,
-                "reason": "produit du dossier non identifié",
+                "reason": UNKNOWN_PRODUCT,
             }
             for upload, _ in shared
         ]
@@ -469,26 +629,81 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         product_name = (
             product.name if product else (named[0]["explicit_product_name"] if named else "")
         )
+        folder_name = _folder_label(batch, country) if autonomous and not product else ""
+        if not product_name and folder_name:
+            # Aucune décision ne nomme le produit : le nom du dossier le désigne.
+            product_name = folder_name
+            explicit_names = {normalize(folder_name)}
         if not product_name:
             questions.append(("product", "Produit non reconnu dans les documents."))
         if not product and product_name:
-            near = any(
-                SequenceMatcher(None, name, normalize(item.name)).ratio() >= 0.84
-                for item in products
-                for name in explicit_names
-            )
-            labeled = any(row["explicit_product_labeled"] for row in named)
-            creatable_product = labeled and not near
-            questions.append(
+            scored = sorted(
                 (
-                    "product_absent" if creatable_product else "product",
-                    f"Produit « {product_name} » absent du catalogue"
-                    + (" (nom proche d'un produit existant)." if near else "."),
-                )
+                    (SequenceMatcher(None, name, normalize(item.name)).ratio(), item)
+                    for item in products
+                    for name in explicit_names
+                ),
+                key=lambda pair: pair[0],
+                reverse=True,
             )
-    # Avec une AMM choisie à la main, un doute sur le produit n'est plus qu'un point.
+            near = bool(scored) and scored[0][0] >= 0.84
+            labeled = any(row["explicit_product_labeled"] for row in named)
+            known = None
+            if autonomous and country:
+                # Produit déjà suivi dans ce pays sous un autre libellé (« KETOPROFENE-GH CPR
+                # B30 » = « KETOPROFEN GH 100MG CPR B/30 ») : pas de fiche en double.
+                in_country = set(
+                    MarketingAuthorization.objects.filter(country=country).values_list(
+                        "product_id", flat=True
+                    )
+                )
+                known = same_product_in_country(
+                    [row["explicit_product_name"] for row in named],
+                    _folder_label(batch, country),
+                    products,
+                    in_country,
+                )
+            if autonomous and near and not known:
+                # Nom proche mais dosage ou volume différent (« F45ML » / « F50ML ») : une autre
+                # présentation, jamais rattachée d'office.
+                near = _strengths_fit(
+                    _strengths(product_name)[0], _strengths(scored[0][1].name)[0]
+                ) and _strengths_fit(_strengths(scored[0][1].name)[0], _strengths(product_name)[0])
+            if autonomous and (known or near):
+                # Nom proche d'un produit du catalogue (coquille, OCR) : rattaché à ce produit.
+                product = known or scored[0][1]
+                _decision(
+                    decisions,
+                    f"« {product_name} » rattaché au produit « {product.name} »"
+                    + (", déjà suivi dans ce pays." if known else " (nom proche)."),
+                )
+                product_name = product.name
+                files, rows, extra = _focus_on_product(
+                    files + [upload for upload, _ in shared],
+                    rows + [row for _, row in shared],
+                    product,
+                    products,
+                    countries,
+                    country,
+                    batch.root_name,
+                    points,
+                )
+                ignored = [item for item in ignored if item.get("reason") != UNKNOWN_PRODUCT]
+                ignored += extra
+                _read_grouped_rows(rows, product, products, country, points)
+            else:
+                creatable_product = (labeled or autonomous) and not near
+                questions.append(
+                    (
+                        "product_absent" if creatable_product else "product",
+                        f"Produit « {product_name} » absent du catalogue"
+                        + (" (nom proche d'un produit existant)." if near else "."),
+                    )
+                )
+    # Avec une AMM choisie à la main, ou en classement autonome, un doute sur le produit n'est
+    # plus qu'un point : le produit retenu est celui du dossier.
     for code, message in _dedupe(issues):
-        if forced:
+        if forced or autonomous:
             _point(points, "identity", message)
         else:
             questions.append((code, message))
@@ -504,6 +719,52 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
                 + ").",
                 proof=row["file_id"],
             )
+
+    if autonomous and not forced and product and country:
+        in_country = set(
+            MarketingAuthorization.objects.filter(country=country).values_list(
+                "product_id", flat=True
+            )
+        )
+        if product.pk not in in_country:
+            # Produit du catalogue sans AMM dans ce pays (fiche créée ailleurs sous ce libellé) :
+            # la présentation déjà suivie ici sous un autre libellé est la bonne fiche.
+            known = same_product_in_country(
+                [product.name, *(row["explicit_product_name"] for row in named)],
+                _folder_label(batch, country),
+                products,
+                in_country,
+            )
+            if known:
+                _decision(
+                    decisions,
+                    f"« {product.name} » rattaché au produit « {known.name} », déjà suivi dans "
+                    "ce pays.",
+                )
+                for row in rows:
+                    if row["product_ids"] == [str(product.pk)]:
+                        row["product_ids"] = [str(known.pk)]
+                        row["product_name"] = known.name
+                product, product_name = known, known.name
+
+    if autonomous and not forced:
+        # Une décision d'un autre produit ou d'un autre pays glissée dans ce dossier n'est pas une
+        # preuve pour lui : rangée comme pièce annexe, jamais lue comme sa décision.
+        for row in rows:
+            other_product = (
+                product and row["product_ids"] and str(product.pk) not in row["product_ids"]
+            )
+            other_country = (
+                country and row["country_ids"] and str(country.pk) not in row["country_ids"]
+            )
+            if row["official"] and (other_product or other_country):
+                row["official"] = False
+                row["kind"] = "AUTRE"
+                _decision(
+                    decisions,
+                    f"{_name(row['path'])} concerne un autre "
+                    f"{'produit' if other_product else 'pays'} : rangé comme pièce annexe.",
+                )
 
     # --- AMM
     amm, candidates = forced, []
@@ -538,7 +799,7 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
     if files and not official:
         _point(
             points,
-            "reading",
+            "unreadable",
             "Aucune décision officielle lisible dans le dossier : les scans sont rangés comme "
             "autres documents, vérifiez-les.",
         )
@@ -833,6 +1094,8 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
             }
         )
 
+    if autonomous:
+        _correct_from_scans(changes, rows, amm, renewals, decisions)
     # Écart scan ≠ fiche sur une valeur renseignée : la fiche est gardée, le point est noté.
     for change in changes:
         if not change["requires_confirmation"]:
@@ -854,6 +1117,7 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
 
     questions = _dedupe(questions)
     codes = {code for code, _ in questions}
+    readable = bool(original["original_number"] and original["original_start_date"])
     can_create = bool(
         questions
         and codes <= CREATABLE
@@ -861,9 +1125,15 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         and amm is None
         and country
         and (product or creatable_product)
-        and original["original_number"]
-        and original["original_start_date"]
+        and (readable or autonomous)
     )
+    if can_create and not readable:
+        # Classement autonome : la fiche est créée quand même, à compléter depuis le scan.
+        _point(
+            points,
+            "incomplete",
+            "Fiche créée sans n° d'AMM ou date de début lisibles : complétez-les depuis le scan.",
+        )
     reasons = [message for _, message in questions]
     return {
         # Version des règles de lecture : un aperçu plus ancien est relu automatiquement
@@ -878,6 +1148,8 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         if questions
         else None,
         "review_points": _dedupe(points),
+        # Doutes tranchés seuls par l'application (classement autonome), pour le récapitulatif.
+        "decisions": decisions,
         "warnings": sorted(set(warnings)),
         "forced": bool(forced),
         "amm": {

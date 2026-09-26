@@ -549,6 +549,45 @@ export interface DossierImportBatch {
   open_points_count?: number;
 }
 
+/** Récapitulatif des imports (GET /dossier-imports/report) : organisé, corrigé, créé, à traiter. */
+export interface DossierReportItem {
+  batch_id: string;
+  folder: string;
+  amm_id: string | null;
+  product: string;
+  country_iso2: string;
+}
+
+export interface DossierReport {
+  days: number;
+  since: string;
+  totals: {
+    folders: number;
+    filed: number;
+    created: number;
+    corrected: number;
+    completed: number;
+    documents: number;
+    renewals: number;
+    decisions: number;
+    attention: number;
+    in_progress: number;
+  };
+  attention: (DossierReportItem & { kind: 'question' | 'failed' | 'ready' | 'incomplete'; reason: string })[];
+  created: (DossierReportItem & { number: string })[];
+  corrections: (DossierReportItem & { label: string; old: unknown; new: unknown })[];
+  decisions: (DossierReportItem & { message: string })[];
+  filed: (DossierReportItem & {
+    created: boolean;
+    documents: number;
+    renewals: number;
+    completed: number;
+    corrected: number;
+    status_after: string | null;
+    lines: string[];
+  })[];
+}
+
 export const hasSummary = (summary: DossierImportBatch['summary']): summary is DossierImportSummary =>
   !!summary && 'amm_id' in summary;
 

@@ -486,6 +486,10 @@ DOSSIER_AUTO_APPLY = env_bool("DOSSIER_AUTO_APPLY", True)
 # AMM absente de la base (produit hors Excel) mais décision d'origine lisible (produit, pays,
 # numéro, date) : la fiche est créée d'office depuis le dossier, le siège est notifié.
 DOSSIER_AUTO_CREATE = env_bool("DOSSIER_AUTO_CREATE", True)
+# Classement autonome : l'application tranche seule les doutes (pays ou produits mêlés, nom
+# proche, produit absent, décision illisible) et la décision officielle corrige la fiche en cas
+# d'écart ; tout est listé dans le récapitulatif des imports, seuls les vrais blocages restent.
+DOSSIER_AUTONOMOUS = env_bool("DOSSIER_AUTONOMOUS", True)
 # Multipart file bodies stream to temporary files; only metadata counts toward memory limit.
 DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
 DOCUMENT_RETENTION_YEARS = 5

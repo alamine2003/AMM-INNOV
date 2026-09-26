@@ -167,3 +167,67 @@ class DossierChooseAmmSerializer(serializers.Serializer):
 
 class DossierFileRequestSerializer(serializers.Serializer):
     file_id = serializers.UUIDField()
+
+
+# --- Récapitulatif des imports (lecture seule, calculé à la demande)
+
+
+class _ReportItemSerializer(serializers.Serializer):
+    batch_id = serializers.UUIDField()
+    folder = serializers.CharField()
+    amm_id = serializers.UUIDField(allow_null=True)
+    product = serializers.CharField(allow_blank=True)
+    country_iso2 = serializers.CharField(allow_blank=True)
+
+
+class DossierReportAttentionSerializer(_ReportItemSerializer):
+    kind = serializers.ChoiceField(choices=["question", "failed", "ready", "incomplete"])
+    reason = serializers.CharField()
+
+
+class DossierReportCreatedSerializer(_ReportItemSerializer):
+    number = serializers.CharField(allow_blank=True)
+
+
+class DossierReportCorrectionSerializer(_ReportItemSerializer):
+    label = serializers.CharField()
+    old = serializers.JSONField(allow_null=True)
+    new = serializers.JSONField(allow_null=True)
+
+
+class DossierReportDecisionSerializer(_ReportItemSerializer):
+    message = serializers.CharField()
+
+
+class DossierReportFiledSerializer(_ReportItemSerializer):
+    created = serializers.BooleanField()
+    documents = serializers.IntegerField()
+    renewals = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    corrected = serializers.IntegerField()
+    status_after = serializers.CharField(allow_null=True)
+    lines = serializers.ListField(child=serializers.CharField())
+
+
+class DossierReportTotalsSerializer(serializers.Serializer):
+    folders = serializers.IntegerField()
+    filed = serializers.IntegerField()
+    created = serializers.IntegerField()
+    corrected = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    documents = serializers.IntegerField()
+    renewals = serializers.IntegerField()
+    decisions = serializers.IntegerField()
+    attention = serializers.IntegerField()
+    in_progress = serializers.IntegerField()
+
+
+class DossierReportSerializer(serializers.Serializer):
+    days = serializers.IntegerField()
+    since = serializers.DateTimeField()
+    totals = DossierReportTotalsSerializer()
+    attention = DossierReportAttentionSerializer(many=True)
+    created = DossierReportCreatedSerializer(many=True)
+    corrections = DossierReportCorrectionSerializer(many=True)
+    decisions = DossierReportDecisionSerializer(many=True)
+    filed = DossierReportFiledSerializer(many=True)

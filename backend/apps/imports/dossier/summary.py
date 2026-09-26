@@ -75,6 +75,8 @@ def build_summary(batch, before: dict | None) -> dict:
                 "label": FIELD_LABELS.get(change.field, change.field),
                 "old": change.old_value,
                 "new": change.new_value,
+                # Valeur déjà renseignée, corrigée d'après la décision officielle.
+                "corrected": change.old_value not in (None, ""),
             }
         )
     documents = [
@@ -107,6 +109,8 @@ def build_summary(batch, before: dict | None) -> dict:
         ),
         # Écarts et doutes notés, jamais bloquants : à voir sur la fiche AMM ou le lot.
         "review_points": len(points),
+        # Doutes tranchés seuls par l'application (classement autonome).
+        "decisions": list((batch.preview or {}).get("decisions", [])),
     }
     summary["lines"] = summary_lines(summary)
     return summary
@@ -205,6 +209,9 @@ def record_and_notify(batch_id, before: dict | None) -> None:
         batch = DossierImport.objects.select_related("created_by").get(pk=batch_id)
         summary = build_summary(batch, before)
         DossierImport.objects.filter(pk=batch.pk).update(summary=summary)
-        notify(batch, summary)
+        # Classement autonome : pas une notification par produit rangé seul (un dossier pays en
+        # compte des dizaines) ; le récapitulatif des imports les regroupe.
+        if not (batch.auto_applied and getattr(settings, "DOSSIER_AUTONOMOUS", False)):
+            notify(batch, summary)
     except Exception:  # noqa: BLE001 — le bilan est informatif, le dossier reste rangé
         logger.exception("Bilan ou notification de l'import de dossier %s en échec", batch_id)

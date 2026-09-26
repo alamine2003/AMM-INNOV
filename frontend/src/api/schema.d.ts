@@ -670,6 +670,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dossier-imports/report/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Récapitulatif : organisé, corrigé, créé, décidé seul, et ce qui reste à traiter. */
+        get: operations["v1_dossier_imports_report_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dossier-review-points/": {
         parameters: {
             query?: never;
@@ -1818,6 +1835,96 @@ export interface components {
         DossierImportStatusEnum: "PENDING" | "RUNNING" | "READY" | "QUESTION" | "APPLIED" | "FAILED";
         DossierKnownFilesRequest: {
             sha256: string[];
+        };
+        DossierReport: {
+            days: number;
+            /** Format: date-time */
+            since: string;
+            totals: components["schemas"]["DossierReportTotals"];
+            attention: components["schemas"]["DossierReportAttention"][];
+            created: components["schemas"]["DossierReportCreated"][];
+            corrections: components["schemas"]["DossierReportCorrection"][];
+            decisions: components["schemas"]["DossierReportDecision"][];
+            filed: components["schemas"]["DossierReportFiled"][];
+        };
+        DossierReportAttention: {
+            /** Format: uuid */
+            batch_id: string;
+            folder: string;
+            /** Format: uuid */
+            amm_id: string | null;
+            product: string;
+            country_iso2: string;
+            kind: components["schemas"]["DossierReportAttentionKindEnum"];
+            reason: string;
+        };
+        /**
+         * @description * `question` - question
+         *     * `failed` - failed
+         *     * `ready` - ready
+         *     * `incomplete` - incomplete
+         * @enum {string}
+         */
+        DossierReportAttentionKindEnum: "question" | "failed" | "ready" | "incomplete";
+        DossierReportCorrection: {
+            /** Format: uuid */
+            batch_id: string;
+            folder: string;
+            /** Format: uuid */
+            amm_id: string | null;
+            product: string;
+            country_iso2: string;
+            label: string;
+            old: unknown;
+            new: unknown;
+        };
+        DossierReportCreated: {
+            /** Format: uuid */
+            batch_id: string;
+            folder: string;
+            /** Format: uuid */
+            amm_id: string | null;
+            product: string;
+            country_iso2: string;
+            number: string;
+        };
+        DossierReportDecision: {
+            /** Format: uuid */
+            batch_id: string;
+            folder: string;
+            /** Format: uuid */
+            amm_id: string | null;
+            product: string;
+            country_iso2: string;
+            message: string;
+        };
+        DossierReportFiled: {
+            /** Format: uuid */
+            batch_id: string;
+            folder: string;
+            /** Format: uuid */
+            amm_id: string | null;
+            product: string;
+            country_iso2: string;
+            created: boolean;
+            documents: number;
+            renewals: number;
+            completed: number;
+            corrected: number;
+            status_after: string | null;
+            lines: string[];
+        };
+        DossierReportTotals: {
+            folders: number;
+            filed: number;
+            created: number;
+            corrected: number;
+            completed: number;
+            documents: number;
+            renewals: number;
+            decisions: number;
+            attention: number;
+            in_progress: number;
         };
         /** @description Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée) ou doute de lecture. */
         DossierReviewPoint: {
@@ -3977,6 +4084,28 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    v1_dossier_imports_report_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Période en jours (1 à 90, 7 par défaut). */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierReport"];
                 };
             };
         };
