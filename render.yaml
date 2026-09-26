@@ -41,10 +41,13 @@ services:
         value: "8"
       - key: NUM_PROXIES
         value: "1"
+      # Interface sur Cloudflare Pages ; Netlify gardé en secours (docs/deploiement-cloudflare-pages.md).
       - key: CORS_ALLOWED_ORIGINS
-        value: https://amm-innov.netlify.app
+        value: https://amm-gh.pages.dev,https://amm-innov.netlify.app
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://amm-gh.pages.dev,https://amm-innov.netlify.app
       - key: FRONTEND_URL
-        value: https://amm-innov.netlify.app
+        value: https://amm-gh.pages.dev
       - key: AUTH_REFRESH_COOKIE_SAMESITE
         value: None
       - key: TIME_ZONE
