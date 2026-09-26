@@ -28,6 +28,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { formatBytes } from '@/lib/download';
+import { DossierImportReport } from './DossierImportReport';
 import { batchState } from './dossierReview';
 import {
   filesFromDrop,
@@ -38,6 +39,8 @@ import {
   type FolderFile,
   type ProductGroup,
 } from './folderUpload';
+
+const PARALLEL_UPLOADS = 3;
 
 export default function DossierImportsPage() {
   const navigate = useNavigate();
@@ -74,7 +77,7 @@ export default function DossierImportsPage() {
   const analyzeAll = async () => {
     const run = { done: 0, created: 0, failed: [] as string[] };
     setBatchRun({ ...run });
-    for (const group of groups) {
+    const sendOne = async (group: ProductGroup) => {
       try {
         await upload.mutateAsync({ files: group.files, onProgress: setProgress });
         run.created += 1;
@@ -83,7 +86,17 @@ export default function DossierImportsPage() {
       }
       run.done += 1;
       setBatchRun({ ...run });
-    }
+    };
+    // Le premier produit part seul : les documents communs du dossier pays ne sont envoyés
+    // qu'une fois. Les suivants partent trois par trois.
+    const [first, ...rest] = groups;
+    if (first) await sendOne(first);
+    const queue = [...rest];
+    await Promise.all(
+      Array.from({ length: Math.min(PARALLEL_UPLOADS, queue.length) }, async () => {
+        for (let group = queue.shift(); group; group = queue.shift()) await sendOne(group);
+      }),
+    );
     setFiles([]);
     setGroups([]);
   };
@@ -92,7 +105,7 @@ export default function DossierImportsPage() {
     <Box>
       <PageHeader
         title="Import intelligent de dossiers AMM"
-        subtitle="Déposez le dossier reçu (décision d’origine, renouvellements, courriers) : l’application trouve l’AMM, range chaque scan à sa période et met à jour dates, statut et complétude. Elle ne vous pose une question que si elle ne sait pas de quelle AMM il s’agit."
+        subtitle="Déposez un dossier produit, pays ou gamme : l’application trouve chaque AMM, range chaque scan à sa période, corrige la fiche d’après les décisions officielles et crée les fiches manquantes, sans rien vous demander. Le récapitulatif ci-dessous montre ce qui a été fait et seulement ce qui demande votre intervention."
       />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
@@ -200,15 +213,15 @@ export default function DossierImportsPage() {
             )}
             {groups.length > 0 && (
               <Alert severity="info">
-                Ce dossier regroupe {groups.length} produits : chacun est analysé et rangé comme un import
-                séparé. Suivez le résultat de chaque produit dans l’historique ci-dessous.
+                Ce dossier regroupe {groups.length} produits : chacun est analysé et rangé automatiquement. Le
+                récapitulatif ci-dessous se met à jour au fil du classement.
               </Alert>
             )}
             {batchRun && (
               <Alert severity={batchRun.failed.length ? 'warning' : 'success'}>
                 {running
                   ? `Envoi des produits : ${batchRun.done + 1} / ${groups.length}…`
-                  : `${batchRun.created} import(s) créé(s). Leur résultat s’affiche dans l’historique ci-dessous.`}
+                  : `${batchRun.created} produit(s) envoyé(s) : le classement se poursuit tout seul, voir le récapitulatif.`}
                 {batchRun.failed.length > 0 && (
                   <Box component="ul" sx={{ m: 0, pl: 2 }}>
                     {batchRun.failed.map((failure) => (
@@ -246,6 +259,7 @@ export default function DossierImportsPage() {
           </Stack>
         </CardContent>
       </Card>
+      <DossierImportReport />
       <Typography variant="h6" gutterBottom>
         Historique des dossiers importés
       </Typography>
