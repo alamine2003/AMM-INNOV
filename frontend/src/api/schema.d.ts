@@ -579,6 +579,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/{key}/presence/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Signal « classeur ouvert » (chaque minute) ; DELETE en le refermant. */
+        post: operations["v1_binders_presence_create"];
+        /** @description Signal « classeur ouvert » (chaque minute) ; DELETE en le refermant. */
+        delete: operations["v1_binders_presence_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/binders/{key}/uncheck/": {
         parameters: {
             query?: never;
@@ -1810,6 +1828,7 @@ export interface components {
             /** Format: date-time */
             last_checked_at: string | null;
             last_checked_by: string | null;
+            readers: string[];
             extra_pages: components["schemas"]["ExtraPage"][];
             resume_page: number;
         };
@@ -1886,6 +1905,7 @@ export interface components {
             /** Format: date-time */
             last_checked_at: string | null;
             last_checked_by: string | null;
+            readers: string[];
         };
         /**
          * @description * `IN_APP` - In-app
@@ -2500,6 +2520,7 @@ export interface components {
             range_label: string;
             original: components["schemas"]["Slot"];
             renewal: components["schemas"]["RenewalSlot"] | null;
+            pending_renewal: components["schemas"]["PendingRenewal"] | null;
             status: components["schemas"]["AmmStatusEnum"];
             status_label: string;
             dossier_state: components["schemas"]["DossierStateEnum"];
@@ -2855,6 +2876,12 @@ export interface components {
             /** Actif */
             is_active?: boolean;
             password?: string;
+        };
+        PendingRenewal: {
+            workflow_status: string;
+            workflow_label: string;
+            /** Format: date */
+            filing_date: string | null;
         };
         Product: {
             /** Format: uuid */
@@ -4240,6 +4267,46 @@ export interface operations {
         responses: {
             /** @description Classeur en PDF */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_presence_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_presence_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

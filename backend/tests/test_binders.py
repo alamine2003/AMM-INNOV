@@ -408,3 +408,23 @@ def test_scan_imported_from_the_page_is_read_and_filed(settings, country_client,
     page = country_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
     assert page["scan"] is not None
     assert page["original"]["number"] == "AMM/SN/2025/00152"
+
+
+# --- Détails réalistes : renouvellement déposé, classeur sorti de l'étagère ---------------
+
+
+def test_filed_renewal_is_stamped_on_the_page(hq_client, shelf_data, make_renewal):
+    make_renewal(shelf_data["amlo"], status="DEPOSE", filing_date=date(2026, 6, 2))
+    page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+    assert page["pending_renewal"]["workflow_status"] == "DEPOSE"
+    assert page["pending_renewal"]["filing_date"] == "2026-06-02"
+
+
+def test_open_binder_is_shown_pulled_out_with_the_reader(hq_client, country_client, shelf_data):
+    assert country_client.post("/api/v1/binders/SN-cardio/presence").status_code == 204
+    shelf = {b["key"]: b for b in hq_client.get("/api/v1/binders").json()}
+    assert shelf["SN-cardio"]["readers"] == ["Fatou"] and shelf["ML"]["readers"] == []
+    assert country_client.delete("/api/v1/binders/SN-cardio/presence").status_code == 204
+    assert hq_client.get("/api/v1/binders/SN-cardio").json()["readers"] == []
+    # Hors périmètre : pas de présence possible.
+    assert country_client.post("/api/v1/binders/CI/presence").status_code == 404

@@ -75,7 +75,15 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 - **Détails réalistes** :
   - la pile de feuilles s'épaissit à droite au début du classeur et à gauche à mesure qu'on avance ;
   - le scan est agrafé à la fiche par un trombone ;
-  - la note de l'archiviste apparaît en post-it jaune sur la page.
+  - la note de l'archiviste apparaît en post-it jaune sur la page ;
+  - un dossier complet est rangé dans sa pochette plastique (reflets), une AMM expirée est sur papier
+    jauni au coin corné ;
+  - un renouvellement déposé ou en instruction est tamponné « DÉPOSÉ le … », à l'écran comme dans le PDF ;
+  - le bruit de page qui tourne est synthétisé dans le navigateur (bouton « Son », coupé par défaut) ;
+  - chaque classeur porte le drapeau de son pays, dessiné en SVG pour s'afficher aussi sous Windows ;
+  - un classeur ouvert par un archiviste est sorti de l'étagère avec un marque-page à son prénom. La
+    page envoie un signal chaque minute (`POST /binders/{clé}/presence`, `DELETE` en sortant), et
+    l'étagère se rafraîchit toutes les 30 s.
 
 ## Classeur complet avec les décisions officielles (siège)
 

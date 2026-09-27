@@ -7,6 +7,7 @@ télécharger chaque classeur en PDF, tel qu'il apparaît à l'écran.
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -22,7 +23,7 @@ from apps.documents.views import open_stored_file
 
 from . import actions
 from .layout import binder_detail, get_binder, shelf
-from .models import BinderExport
+from .models import BinderExport, BinderPresence
 from .pdf import binder_pdf
 from .serializers import (
     AddPageInputSerializer,
@@ -59,6 +60,19 @@ class BinderViewSet(viewsets.ViewSet):
             raise Http404("AMM inconnue.")
         except DjangoValidationError as exc:
             raise django_to_drf_validation_error(exc)
+
+    @extend_schema(request=None, responses={204: None})
+    @action(detail=True, methods=["post", "delete"])
+    def presence(self, request, key=None):
+        """Signal « classeur ouvert » (chaque minute) ; DELETE en le refermant."""
+        binder = get_binder(request.user, key)
+        if request.method == "DELETE":
+            BinderPresence.objects.filter(binder_key=binder.key, user=request.user).delete()
+        else:
+            BinderPresence.objects.update_or_create(
+                binder_key=binder.key, user=request.user, defaults={"last_seen": timezone.now()}
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(request=CheckInputSerializer, responses=BinderDetailSerializer)
     @action(detail=True, methods=["post"])

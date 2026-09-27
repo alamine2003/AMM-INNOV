@@ -133,3 +133,21 @@ class BinderExport(models.Model):
 
     def __str__(self) -> str:
         return f"{self.binder_key} — {self.get_status_display()}"
+
+
+class BinderPresence(models.Model):
+    """Classeur ouvert par un utilisateur : l'étagère le montre sorti, avec un marque-page."""
+
+    binder_key = models.CharField("classeur", max_length=40)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    last_seen = models.DateTimeField("vu le", db_index=True)
+
+    class Meta:
+        verbose_name = "classeur ouvert"
+        verbose_name_plural = "classeurs ouverts"
+        constraints = [
+            models.UniqueConstraint(fields=["binder_key", "user"], name="binder_presence_uniq")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.binder_key} — {self.user_id}"

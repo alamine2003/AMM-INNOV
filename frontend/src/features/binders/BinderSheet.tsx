@@ -147,6 +147,54 @@ function SlotCard({
   );
 }
 
+const agedSx = {
+  bgcolor: '#f1e4c3',
+  backgroundImage:
+    'radial-gradient(ellipse at 85% 90%, rgba(150,110,40,0.16), transparent 45%), ' +
+    'radial-gradient(ellipse at 12% 18%, rgba(150,110,40,0.10), transparent 35%), ' +
+    'linear-gradient(90deg, rgba(0,0,0,0.05), transparent 4%)',
+};
+
+/** Pochette plastique transparente : reflets et bord soudé. */
+function Sleeve() {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        pointerEvents: 'none',
+        border: '5px solid rgba(255,255,255,0.55)',
+        boxShadow: 'inset 0 0 0 1px rgba(150,170,200,0.35)',
+        background:
+          'linear-gradient(115deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.06) 22%, transparent 34%, ' +
+          'rgba(255,255,255,0.16) 55%, transparent 68%, rgba(255,255,255,0.12) 88%, transparent 100%)',
+      }}
+    />
+  );
+}
+
+function FoldedCorner() {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        zIndex: 2,
+        width: 40,
+        height: 40,
+        pointerEvents: 'none',
+        background: 'linear-gradient(45deg, #e6dcc4 0 50%, #d7c8a3 50% 100%)',
+        boxShadow: '3px -3px 5px rgba(0,0,0,0.18)',
+        borderTopRightRadius: 4,
+      }}
+    />
+  );
+}
+
 /** Une page d'AMM du classeur, avec le constat de l'archiviste. */
 export function BinderSheet({
   binder,
@@ -204,9 +252,12 @@ export function BinderSheet({
 
   const scan = page.scan;
   const stamp = page.check;
+  // Dossier complet : rangé dans sa pochette plastique. AMM expirée : papier jauni, coin corné.
+  const sleeved = page.dossier_state === 'COMPLET';
+  const aged = page.status === 'EXPIRE';
   return (
     <Box
-      sx={paperSx}
+      sx={aged ? { ...(paperSx as object), ...agedSx } : paperSx}
       data-testid="binder-sheet"
       onDragOver={(e) => {
         if (!Array.from(e.dataTransfer.types).includes('Files')) return;
@@ -223,6 +274,8 @@ export function BinderSheet({
       }}
     >
       <Holes />
+      {sleeved && <Sleeve />}
+      {aged && <FoldedCorner />}
       {dragging && (
         <Box
           sx={{
@@ -250,16 +303,16 @@ export function BinderSheet({
           aria-label="Note de l'archiviste"
           sx={{
             position: 'absolute',
-            top: 58,
-            right: 22,
+            bottom: 34,
+            left: 64,
             zIndex: 2,
-            width: 150,
+            width: 170,
             p: 1.25,
             bgcolor: '#fff59d',
             color: '#4a3b00',
             fontSize: 12,
             lineHeight: 1.35,
-            transform: 'rotate(3deg)',
+            transform: 'rotate(-3deg)',
             boxShadow: '2px 4px 8px rgba(0,0,0,0.18)',
             '&::before': {
               content: '""',
@@ -343,6 +396,32 @@ export function BinderSheet({
                 {page.dossier_state === 'COMPLET' ? 'Dossier complet' : 'Dossier incomplet'}
               </Typography>
               {page.to_scan && <Pill color="#c62828">À SCANNER</Pill>}
+              {page.pending_renewal && (
+                <Box
+                  aria-label="Renouvellement déposé"
+                  sx={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    px: 1,
+                    border: '2px solid #1565c0',
+                    borderRadius: 1,
+                    color: '#1565c0',
+                    transform: 'rotate(-6deg)',
+                    mixBlendMode: 'multiply',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  <Box component="span" sx={{ fontWeight: 900, fontSize: 15, letterSpacing: 1 }}>
+                    {page.pending_renewal.workflow_status === 'DEPOSE' ? 'DÉPOSÉ' : 'EN INSTRUCTION'}
+                  </Box>
+                  {page.pending_renewal.filing_date && (
+                    <Box component="span" sx={{ fontSize: 10, fontWeight: 700 }}>
+                      le {formatDate(page.pending_renewal.filing_date)}
+                    </Box>
+                  )}
+                </Box>
+              )}
             </Stack>
             <Typography
               sx={{ fontSize: 13, mt: 1, color: scan ? INK : '#c62828', fontWeight: scan ? 400 : 700 }}

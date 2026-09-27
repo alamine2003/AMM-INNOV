@@ -21,7 +21,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useSnackbar } from 'notistack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { useCurrentUser } from '@/api/hooks/useAuth';
-import { useBinder } from '@/api/hooks/useBinders';
+import { useBinder, useBinderPresence } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage as Page } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { AddPageDialog } from './AddPageDialog';
@@ -30,6 +30,7 @@ import { BinderSheet } from './BinderSheet';
 import { DividerLeaf, EndLeaf, InsideCover, LeafBack, TitleLeaf } from './BinderLeaves';
 import { FILTER_LABELS, buildLeaves, pagesById, resumeIndex, type Leaf, type LeafFilter } from './leaves';
 import { NAVY } from './paper';
+import { playPageTurn, readSound, saveSound } from './sound';
 
 const FLIP_MS = 380;
 const ANIMATION_KEY = 'amm-gh.binders.animation';
@@ -125,6 +126,8 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
   const [filter, setFilter] = useState<LeafFilter>('all');
   const [animation, setAnimation] = useState(readAnimation);
+  const [sound, setSound] = useState(readSound);
+  useBinderPresence(binder.key);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [current, setCurrent] = useState(0);
   const [flip, setFlip] = useState<Flip | null>(null);
@@ -167,6 +170,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       const next = Math.max(0, Math.min(target, leaves.length - 1));
       if (next === index) return;
       const step = Math.abs(next - index) === 1;
+      if (sound) playPageTurn(animation && step ? FLIP_MS : 220);
       if (animation && animate && step) {
         setFlip({ dir: next > index ? 'next' : 'prev', from: index });
       } else {
@@ -175,7 +179,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       }
       setCurrent(next);
     },
-    [animation, index, leaves.length],
+    [animation, index, leaves.length, sound],
   );
 
   const indexRef = useRef(index);
@@ -352,6 +356,19 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             />
           }
           label="Animation"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={sound}
+              onChange={(e) => {
+                setSound(e.target.checked);
+                saveSound(e.target.checked);
+                if (e.target.checked) playPageTurn();
+              }}
+            />
+          }
+          label="Son"
         />
         <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
           Ajouter une page

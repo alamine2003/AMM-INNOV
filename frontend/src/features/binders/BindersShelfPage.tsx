@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate } from '@/lib/dates';
 import { BinderDownload } from './BinderDownload';
+import { Flag } from './Flag';
 import { NAVY } from './paper';
 
 /** Dos d'un classeur à levier : étiquette, jauge d'avancement, trou de préhension. */
@@ -16,6 +17,8 @@ function Spine({ binder }: { binder: BinderSummary }) {
   const color = single ? binder.sections[0].color : NAVY;
   const done = binder.total > 0 && binder.checked === binder.total;
   const progress = binder.total ? (binder.checked / binder.total) * 100 : 0;
+  // Ouvert en ce moment par un archiviste : le classeur est sorti de l'étagère, marque-page au nom.
+  const out = binder.readers.length > 0;
   return (
     <Box
       component={Link}
@@ -26,7 +29,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
         position: 'relative',
         display: 'block',
         width: 78,
-        height: 290,
+        height: 310,
         borderRadius: '6px 6px 3px 3px',
         bgcolor: color,
         backgroundImage:
@@ -34,12 +37,50 @@ function Spine({ binder }: { binder: BinderSummary }) {
         boxShadow: '3px 0 6px rgba(0,0,0,0.35), inset 0 -6px 0 rgba(0,0,0,0.25)',
         textDecoration: 'none',
         transition: 'transform 180ms ease, box-shadow 180ms ease',
+        ...(out && {
+          transform: 'translateY(-30px) rotate(-2.5deg)',
+          boxShadow: '8px 14px 18px rgba(0,0,0,0.45)',
+          zIndex: 1,
+        }),
         '&:hover, &:focus-visible': {
           transform: 'translateY(-16px) rotate(-1.5deg)',
           boxShadow: '6px 10px 16px rgba(0,0,0,0.4)',
         },
       }}
     >
+      {out && (
+        <Box
+          aria-label={`Ouvert par ${binder.readers.join(', ')}`}
+          sx={{
+            position: 'absolute',
+            top: -54,
+            right: 8,
+            width: 20,
+            height: 78,
+            bgcolor: '#c62828',
+            color: '#fff',
+            clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            pt: 0.75,
+            boxShadow: 'inset -3px 0 0 rgba(0,0,0,0.15)',
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              writingMode: 'vertical-rl',
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: 0.5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {binder.readers[0].slice(0, 9)}
+          </Box>
+        </Box>
+      )}
       {!single && (
         <Stack sx={{ position: 'absolute', top: 10, left: 8, right: 8, gap: '3px' }}>
           {binder.sections.map((section) => (
@@ -53,7 +94,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
           top: single ? 16 : 40,
           left: 9,
           right: 9,
-          height: 168,
+          height: 190,
           bgcolor: '#f4efe3',
           borderRadius: 1,
           boxShadow: 'inset 0 0 0 1px #c9bfa8, 0 1px 2px rgba(0,0,0,0.3)',
@@ -64,6 +105,9 @@ function Spine({ binder }: { binder: BinderSummary }) {
           overflow: 'hidden',
         }}
       >
+        <Box sx={{ mb: 0.75 }}>
+          <Flag iso2={binder.country_iso2} width={34} />
+        </Box>
         <Box
           sx={{
             flex: 1,
@@ -93,7 +137,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
           position: 'absolute',
           left: 12,
           right: 12,
-          top: single ? 194 : 218,
+          top: single ? 216 : 240,
           height: 5,
           borderRadius: 3,
           bgcolor: 'rgba(255,255,255,0.25)',
@@ -104,7 +148,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
         <VerifiedIcon
           sx={{
             position: 'absolute',
-            top: single ? 206 : 228,
+            top: single ? 226 : 250,
             left: '50%',
             ml: '-11px',
             color: '#7ee081',
@@ -182,6 +226,12 @@ export default function BindersShelfPage() {
                       {binder.country_name} — {binder.title}
                     </b>
                     <br />
+                    {binder.readers.length > 0 && (
+                      <>
+                        Ouvert par {binder.readers.join(', ')}
+                        <br />
+                      </>
+                    )}
                     {binder.checked} / {binder.total} vérifiées · {binder.absent} absentes · {binder.to_scan}{' '}
                     à scanner
                     {binder.last_checked_at && (

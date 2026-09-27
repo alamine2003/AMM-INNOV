@@ -10,9 +10,11 @@ Rien n'est stocké : ajouter une AMM ou changer la gamme d'un produit met les cl
 
 import unicodedata
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.db.models import Prefetch
 from django.http import Http404
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
 from apps.amm.models import MarketingAuthorization
@@ -216,8 +218,16 @@ def check_payload(check) -> dict | None:
     }
 
 
+def pending_renewal(renewals):
+    """Renouvellement déposé ou en instruction : tamponné « DÉPOSÉ » sur la page."""
+    pending = [r for r in renewals if r.is_pending]
+    return max(pending, key=lambda r: r.sequence) if pending else None
+
+
 def page_payload(amm) -> dict:
-    renewal = last_obtained(list(amm.renewals.all()))
+    renewals = list(amm.renewals.all())
+    renewal = last_obtained(renewals)
+    filed = pending_renewal(renewals)
     scans = getattr(amm, "decision_scans", None)
     if scans is None:
         scans = list(
@@ -267,6 +277,15 @@ def page_payload(amm) -> dict:
             if renewal
             else None
         ),
+        "pending_renewal": (
+            {
+                "workflow_status": filed.workflow_status,
+                "workflow_label": filed.get_workflow_status_display(),
+                "filing_date": filed.filing_date,
+            }
+            if filed
+            else None
+        ),
         "status": amm.status,
         "status_label": amm.get_status_display(),
         "dossier_state": amm.dossier_state,
@@ -304,7 +323,29 @@ def _count(counts: dict, result: str | None, dossier_state: str) -> None:
         counts["to_scan"] += 1
 
 
-def _summary(binder: Binder, sections: dict, extras: int, last_check) -> dict:
+READING_WINDOW = timedelta(minutes=2)
+
+
+def readers_by_binder(keys) -> dict[str, list[str]]:
+    """Qui a chaque classeur ouvert en ce moment (signal envoyé chaque minute par la page)."""
+    from .models import BinderPresence
+
+    readers: dict[str, list[str]] = {}
+    for presence in (
+        BinderPresence.objects.filter(
+            binder_key__in=list(keys), last_seen__gte=timezone.now() - READING_WINDOW
+        )
+        .select_related("user")
+        .order_by("last_seen")
+    ):
+        user = presence.user
+        readers.setdefault(presence.binder_key, []).append(user.first_name or user.full_name)
+    return readers
+
+
+def _summary(
+    binder: Binder, sections: dict, extras: int, last_check, readers: list | None = None
+) -> dict:
     counts = _empty_counts()
     for section in sections.values():
         for name in counts:
@@ -330,6 +371,7 @@ def _summary(binder: Binder, sections: dict, extras: int, last_check) -> dict:
         "extras": extras,
         "last_checked_at": last_check["at"] if last_check else None,
         "last_checked_by": last_check["by"] if last_check else None,
+        "readers": readers or [],
     }
 
 
@@ -365,6 +407,9 @@ def shelf(user) -> list[dict]:
     ):
         extras[key] = extras.get(key, 0) + 1
 
+    reading = readers_by_binder(
+        binder.key for country in countries for binder in binders_of(country)
+    )
     result = []
     for country in countries:
         for binder in binders_of(country):
@@ -378,7 +423,9 @@ def shelf(user) -> list[dict]:
                 _count(sections[code or NO_RANGE], check, state)
                 if at and (last is None or at > last["at"]):
                     last = {"at": at, "by": f"{first} {last_name}".strip() or email}
-            result.append(_summary(binder, sections, extras.get(binder.key, 0), last))
+            result.append(
+                _summary(binder, sections, extras.get(binder.key, 0), last, reading.get(binder.key))
+            )
     return result
 
 
@@ -424,6 +471,7 @@ def binder_detail(binder: Binder) -> dict:
         {code: sections.get(code, _empty_counts()) for code in binder.ranges},
         len(extras),
         last,
+        readers_by_binder([binder.key]).get(binder.key),
     )
     for section in summary["sections"]:
         section["pages"] = pages_by_section.get(section["code"], [])

@@ -21,6 +21,7 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     range_label: 'Cardio',
     original: { number: 'AMM/SN/2010/0152', start_date: '2010-12-22', end_date: '2015-12-22' },
     renewal: null,
+    pending_renewal: null,
     status: 'VALIDE',
     status_label: 'Valide',
     dossier_state: 'COMPLET',
@@ -55,6 +56,7 @@ function binder(pages: BinderPage[]): BinderDetail {
     extras: 0,
     last_checked_at: null,
     last_checked_by: null,
+    readers: [],
     sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts, pages }],
     extra_pages: [],
     resume_page: 2,
@@ -71,6 +73,7 @@ const summary: BinderSummary = {
   extras: 0,
   last_checked_at: null,
   last_checked_by: null,
+  readers: [],
   sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts }],
 };
 

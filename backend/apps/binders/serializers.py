@@ -106,6 +106,12 @@ class CheckSerializer(serializers.Serializer):
     checked_at = serializers.DateTimeField()
 
 
+class PendingRenewalSerializer(serializers.Serializer):
+    workflow_status = serializers.CharField()
+    workflow_label = serializers.CharField()
+    filing_date = serializers.DateField(allow_null=True)
+
+
 class PageSerializer(serializers.Serializer):
     amm_id = serializers.UUIDField()
     page = serializers.IntegerField()
@@ -115,6 +121,7 @@ class PageSerializer(serializers.Serializer):
     range_label = serializers.CharField()
     original = SlotSerializer()
     renewal = RenewalSlotSerializer(allow_null=True)
+    pending_renewal = PendingRenewalSerializer(allow_null=True)
     status = serializers.ChoiceField(choices=MarketingAuthorization.Status.choices)
     status_label = serializers.CharField()
     dossier_state = serializers.ChoiceField(choices=MarketingAuthorization.DossierState.choices)
@@ -161,6 +168,8 @@ class BinderSummarySerializer(CountsMixin):
     extras = serializers.IntegerField()
     last_checked_at = serializers.DateTimeField(allow_null=True)
     last_checked_by = serializers.CharField(allow_null=True)
+    # Qui a ce classeur ouvert en ce moment (dernières 2 minutes) : il est « sorti » de l'étagère.
+    readers = serializers.ListField(child=serializers.CharField())
 
 
 class BinderDetailSerializer(BinderSummarySerializer):

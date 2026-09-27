@@ -675,6 +675,8 @@ export interface BinderSummary extends BinderCounts {
   extras: number;
   last_checked_at: string | null;
   last_checked_by: string | null;
+  /** Qui a ce classeur ouvert en ce moment : il est sorti de l'étagère. */
+  readers: string[];
 }
 
 export interface BinderSlotValues {
@@ -692,6 +694,8 @@ export interface BinderPage {
   range_label: string;
   original: BinderSlotValues;
   renewal: (BinderSlotValues & { id: string; sequence: number }) | null;
+  /** Renouvellement déposé ou en instruction : tampon « DÉPOSÉ ». */
+  pending_renewal: { workflow_status: string; workflow_label: string; filing_date: string | null } | null;
   status: AmmStatus;
   status_label: string;
   dossier_state: DossierState;

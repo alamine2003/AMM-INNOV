@@ -436,6 +436,11 @@ class BinderDocument:
         c.drawString(LEFT + 120, y - 64, text)
         if page["to_scan"]:
             self._pill(LEFT + 260, y - 65, "À SCANNER", HexColor("#c62828"), 8)
+        filed = page.get("pending_renewal")
+        if filed:
+            label = "DÉPOSÉ" if filed["workflow_status"] == "DEPOSE" else "EN INSTRUCTION"
+            when = f" LE {_date(filed['filing_date'])}" if filed.get("filing_date") else ""
+            self._pill(LEFT + 360, y - 43, f"{label}{when}", HexColor("#1565c0"), 7.5)
         joined = (self.attachments or {}).get(page["amm_id"], 0)
         if joined:
             self._pill(
