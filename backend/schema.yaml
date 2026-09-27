@@ -1343,6 +1343,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/BinderDetail'
           description: ''
+  /api/v1/binders/{key}/exports/:
+    get:
+      operationId: v1_binders_exports_list
+      description: Dernières préparations du classeur avec les décisions officielles.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BinderExport'
+          description: ''
+    post:
+      operationId: v1_binders_exports_create
+      description: Lance la préparation (une seule à la fois par classeur).
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderExport'
+          description: ''
+  /api/v1/binders/{key}/exports/{export_id}/file/:
+    get:
+      operationId: v1_binders_exports_file_retrieve
+      parameters:
+      - in: path
+        name: export_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Classeur complet
   /api/v1/binders/{key}/extras/:
     post:
       operationId: v1_binders_extras_create
@@ -4198,6 +4266,107 @@ components:
       - title
       - to_scan
       - total
+    BinderExport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        binder_key:
+          type: string
+          readOnly: true
+          title: Classeur
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BinderExportStatusEnum'
+          readOnly: true
+          title: Statut
+        progress_done:
+          type: integer
+          readOnly: true
+          title: AMM traitées
+        progress_total:
+          type: integer
+          readOnly: true
+          title: AMM à traiter
+        size_bytes:
+          type: integer
+          readOnly: true
+          title: Taille (octets)
+        page_count:
+          type: integer
+          readOnly: true
+          title: Pages
+        decisions:
+          type: integer
+          readOnly: true
+          title: Décisions jointes
+        unavailable:
+          type: integer
+          readOnly: true
+          title: Scans illisibles ou absents du stockage
+        without_scan:
+          type: integer
+          readOnly: true
+          title: AMM sans scan
+        error:
+          type: string
+          readOnly: true
+          title: Erreur
+        created_by:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Demandé le
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Commencé le
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Terminé le
+        has_file:
+          type: boolean
+          readOnly: true
+      required:
+      - binder_key
+      - created_at
+      - created_by
+      - decisions
+      - error
+      - finished_at
+      - has_file
+      - id
+      - page_count
+      - progress_done
+      - progress_total
+      - size_bytes
+      - started_at
+      - status
+      - unavailable
+      - without_scan
+    BinderExportStatusEnum:
+      enum:
+      - PENDING
+      - RUNNING
+      - READY
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - En attente
+        * `RUNNING` - En préparation
+        * `READY` - Prêt
+        * `FAILED` - Échec
     BinderResultEnum:
       enum:
       - CONFORME

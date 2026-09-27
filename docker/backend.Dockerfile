@@ -33,9 +33,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MEDIA_ROOT=/app/media \
     TZ=Africa/Dakar
 
-# libpq5 : client PostgreSQL pour psycopg ; curl : healthcheck ; tzdata : fuseau Dakar
+# libpq5 : client PostgreSQL pour psycopg ; curl : healthcheck ; tzdata : fuseau Dakar ;
+# qpdf : assemblage des classeurs avec décisions officielles (apps/binders/export.py)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 curl tzdata poppler-utils \
+    && apt-get install -y --no-install-recommends libpq5 curl tzdata poppler-utils qpdf \
         tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid "${APP_GID}" app \

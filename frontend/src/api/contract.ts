@@ -17,6 +17,7 @@ import type {
   AmmDocument,
   BinderCorrection,
   BinderDetail,
+  BinderExport,
   BinderResult,
   BinderSummary,
   Country,
@@ -65,6 +66,7 @@ export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEn
 export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
 export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderSummary>>;
 export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;
+export type _BinderExport = Assert<Assignable<Schemas['BinderExport'], BinderExport>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API
 type Sends<Payload, Request> = Payload extends Request ? true : false;

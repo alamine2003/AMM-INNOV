@@ -364,6 +364,7 @@ SPECTACULAR_SETTINGS = {
         "ImportOutcomeEnum": "apps.imports.models.ImportRow.Outcome",
         "RangeCodeEnum": "apps.catalog.models.ProductRange.Code",
         "BinderResultEnum": "apps.binders.models.BinderCheck.Result",
+        "BinderExportStatusEnum": "apps.binders.models.BinderExport.Status",
     },
 }
 

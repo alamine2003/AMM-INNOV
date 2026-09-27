@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.amm.models import MarketingAuthorization
 
-from .models import BinderCheck
+from .models import BinderCheck, BinderExport
 
 SLOTS = [("original", "AMM d'origine"), ("renewal", "Dernier renouvellement")]
 PAGE_FIELDS = [("number", "N° d'AMM"), ("start_date", "Date de début"), ("end_date", "Date de fin")]
@@ -146,3 +146,35 @@ class BinderDetailSerializer(BinderSummarySerializer):
     sections = SectionSerializer(many=True)
     extra_pages = ExtraPageSerializer(many=True)
     resume_page = serializers.IntegerField()
+
+
+class BinderExportSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(
+        source="created_by.full_name", default=None, allow_null=True, read_only=True
+    )
+    has_file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BinderExport
+        fields = [
+            "id",
+            "binder_key",
+            "status",
+            "progress_done",
+            "progress_total",
+            "size_bytes",
+            "page_count",
+            "decisions",
+            "unavailable",
+            "without_scan",
+            "error",
+            "created_by",
+            "created_at",
+            "started_at",
+            "finished_at",
+            "has_file",
+        ]
+        read_only_fields = fields
+
+    def get_has_file(self, obj) -> bool:
+        return bool(obj.file) and obj.status == BinderExport.Status.READY

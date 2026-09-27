@@ -1,17 +1,13 @@
-import { useState } from 'react';
-import { Box, IconButton, LinearProgress, Stack, Tooltip, Typography } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
+import { Box, LinearProgress, Stack, Tooltip, Typography } from '@mui/material';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { Link } from 'react-router';
-import { useSnackbar } from 'notistack';
-import { extractErrorMessage } from '@/api/client';
 import { useCurrentUser } from '@/api/hooks/useAuth';
-import { fetchBinderPdf, useBinders } from '@/api/hooks/useBinders';
+import { useBinders } from '@/api/hooks/useBinders';
 import type { BinderSummary } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate } from '@/lib/dates';
-import { saveBlob } from '@/lib/download';
+import { BinderDownload } from './BinderDownload';
 import { NAVY } from './paper';
 
 /** Dos d'un classeur à levier : étiquette, jauge d'avancement, trou de préhension. */
@@ -137,20 +133,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
 export default function BindersShelfPage() {
   const shelf = useBinders();
   const user = useCurrentUser();
-  const { enqueueSnackbar } = useSnackbar();
-  const [downloading, setDownloading] = useState<string | null>(null);
   const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
-
-  const download = async (binder: BinderSummary) => {
-    setDownloading(binder.key);
-    try {
-      saveBlob(await fetchBinderPdf(binder.key), `Classeur_${binder.key}.pdf`);
-    } catch (e) {
-      enqueueSnackbar(extractErrorMessage(e), { variant: 'error' });
-    } finally {
-      setDownloading(null);
-    }
-  };
 
   const binders = shelf.data ?? [];
   const totals = binders.reduce(
@@ -226,19 +209,11 @@ export default function BindersShelfPage() {
                 }}
               />
               {isHq && (
-                <Tooltip title="Télécharger le classeur en PDF">
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={() => void download(binder)}
-                      disabled={downloading === binder.key}
-                      aria-label={`Télécharger le classeur ${binder.country_name} ${binder.title}`}
-                      sx={{ display: 'flex', mx: 'auto', mt: 0.5 }}
-                    >
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
+                <BinderDownload
+                  binderKey={binder.key}
+                  label={`${binder.country_name} ${binder.title}`}
+                  variant="icon"
+                />
               )}
             </Box>
           ))}

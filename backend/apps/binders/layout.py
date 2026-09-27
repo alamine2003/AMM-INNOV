@@ -131,18 +131,22 @@ def shelf_order(country: Country) -> tuple:
     return (country.iso2 != HEADQUARTERS, sort_name(country.name))
 
 
-def get_binder(user, key: str) -> Binder:
+def binder_by_key(key: str) -> Binder:
     iso2, _, slug = (key or "").partition("-")
     country = Country.objects.filter(iso2=iso2.upper()).first()
-    if country is None:
-        raise Http404("Classeur inconnu.")
-    if not user.can_access_country(country):
+    if country is not None:
+        for binder in binders_of(country):
+            if binder.key == f"{country.iso2}{'-' + slug if slug else ''}":
+                return binder
+    raise Http404("Classeur inconnu.")
+
+
+def get_binder(user, key: str) -> Binder:
+    binder = binder_by_key(key)
+    if not user.can_access_country(binder.country):
         # Un pays ne voit que ses classeurs : même réponse qu'un classeur inexistant.
         raise Http404("Classeur inconnu.")
-    for binder in binders_of(country):
-        if binder.key == f"{country.iso2}{'-' + slug if slug else ''}":
-            return binder
-    raise Http404("Classeur inconnu.")
+    return binder
 
 
 def ensure_in_binder(binder: Binder, amm) -> None:

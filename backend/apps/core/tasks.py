@@ -118,9 +118,36 @@ def recover_pending_work() -> dict:
         generate_document_preview.delay(str(pk))
         report["previews"] += 1
 
+    report.update(recover_binder_exports(now))
+
     if any(report.values()):
         logger.warning("Rattrapage du travail en attente : %s", report)
     return report
+
+
+BINDER_EXPORT_RUNNING_MAX = timedelta(minutes=35)  # soft_time_limit de la tâche : 30 min
+
+
+def recover_binder_exports(now) -> dict:
+    """Classeurs avec décisions : republie une demande restée en attente, clôt une préparation
+    interrompue (redémarrage du service) pour que le siège puisse la relancer."""
+    from apps.binders.models import BinderExport
+    from apps.binders.tasks import build_binder_export
+
+    interrupted = BinderExport.objects.filter(
+        status=BinderExport.Status.RUNNING, started_at__lt=now - BINDER_EXPORT_RUNNING_MAX
+    ).update(
+        status=BinderExport.Status.FAILED,
+        finished_at=now,
+        error="La préparation a été interrompue (redémarrage du service). Relancez-la.",
+    )
+    republished = 0
+    for pk in BinderExport.objects.filter(
+        status=BinderExport.Status.PENDING, created_at__lt=now - DOSSIER_PENDING_AFTER
+    ).values_list("pk", flat=True)[:10]:
+        build_binder_export.delay(str(pk))
+        republished += 1
+    return {"binder_exports_interrupted": interrupted, "binder_exports_republished": republished}
 
 
 REREAD_PER_RUN = 10

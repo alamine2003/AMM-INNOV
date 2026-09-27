@@ -192,3 +192,130 @@ def test_pdf_is_for_headquarters_only(hq_client, country_client, shelf_data):
     assert response.content.startswith(b"%PDF")
     assert "Classeur_ML_" in response["Content-Disposition"]
     assert country_client.get("/api/v1/binders/ML/pdf").status_code == 403
+
+
+# --- Classeur avec les décisions officielles ----------------------------------------------
+
+
+def _pdf(text: str) -> bytes:
+    from io import BytesIO
+
+    from reportlab.pdfgen.canvas import Canvas
+
+    buffer = BytesIO()
+    canvas = Canvas(buffer)
+    canvas.drawString(100, 700, text)
+    canvas.showPage()
+    canvas.drawString(100, 700, f"{text} (suite)")
+    canvas.showPage()
+    canvas.save()
+    return buffer.getvalue()
+
+
+def _png() -> bytes:
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGBA", (120, 160), (200, 30, 30, 128)).save(buffer, "PNG")
+    return buffer.getvalue()
+
+
+def _attach(amm, content: bytes, content_type: str, renewal=None):
+    import hashlib
+
+    from django.core.files.base import ContentFile
+
+    from apps.documents.models import Document
+
+    document = Document(
+        amm=amm,
+        renewal=renewal,
+        kind="AMM",
+        document_date=amm.original_start_date,
+        content_type=content_type,
+        sha256=hashlib.sha256(content).hexdigest(),
+        size_bytes=len(content),
+    )
+    document.file.save("scan", ContentFile(content), save=False)
+    document.save()
+    return document
+
+
+@pytest.mark.skipif(not __import__("shutil").which("qpdf"), reason="qpdf non installé")
+def test_full_binder_joins_official_decisions(hq_client, users, shelf_data, make_renewal):
+    from pypdf import PdfReader
+
+    from apps.binders.models import BinderExport
+    from apps.notifications.models import Notification
+
+    # Mali : EPIGEN (PDF 2 p. + renouvellement en image), ZINCGEN (rien), AMLODIPINE (scan perdu).
+    epigen, amlo = shelf_data["ml_aaa"], shelf_data["ml_cardio"]
+    _attach(epigen, _pdf("Decision EPIGEN"), "application/pdf")
+    renewal = make_renewal(epigen, status="OBTENU", start_date=date(2025, 1, 1), number="R-1")
+    _attach(epigen, _png(), "image/png", renewal=renewal)
+    lost = _attach(amlo, _pdf("Decision AMLO"), "application/pdf")
+    lost.file.storage.delete(lost.file.name)
+
+    response = hq_client.post("/api/v1/binders/ML/exports")
+    assert response.status_code == 202
+    export = BinderExport.objects.get(pk=response.json()["id"])
+    assert export.status == "READY", export.error
+    assert (export.decisions, export.unavailable, export.without_scan) == (2, 1, 1)
+
+    listed = hq_client.get("/api/v1/binders/ML/exports").json()
+    assert listed[0]["id"] == str(export.pk) and listed[0]["has_file"]
+    download = hq_client.get(f"/api/v1/binders/ML/exports/{export.pk}/file")
+    assert download.status_code == 200
+    content = b"".join(download.streaming_content)
+    pdf = PdfReader(__import__("io").BytesIO(content))
+    # Couverture, 2 intercalaires, 3 fiches, bilan = 7 ; + 2 p. PDF, 1 image, 1 remplacement.
+    assert len(pdf.pages) == 7 + 2 + 1 + 1 == export.page_count
+    texts = [page.extract_text() for page in pdf.pages]
+    # La décision suit sa fiche : EPIGEN (1re fiche Générale) puis ses scans.
+    fiche = next(i for i, text in enumerate(texts) if "ÉPIGEN 10MG" in text and "PAGE 1 /" in text)
+    assert "Decision EPIGEN" in texts[fiche + 1] and "(suite)" in texts[fiche + 2]
+    assert Notification.objects.filter(user=users["hq"], title__contains="ML prêt").exists()
+
+
+def test_full_binder_is_for_headquarters_only(country_client, shelf_data):
+    assert country_client.post("/api/v1/binders/ML/exports").status_code == 403
+    assert country_client.get("/api/v1/binders/ML/exports").status_code == 403
+
+
+def test_only_one_preparation_at_a_time_and_last_kept(hq_client, users, shelf_data, countries):
+    from apps.binders.export import prune
+    from apps.binders.models import BinderExport
+
+    running = BinderExport.objects.create(
+        country=countries["ML"], binder_key="ML", status="RUNNING", created_by=users["hq"]
+    )
+    response = hq_client.post("/api/v1/binders/ML/exports")
+    assert response.json()["id"] == str(running.pk)
+    assert BinderExport.objects.count() == 1
+
+    running.status = "READY"
+    running.save()
+    hq_client.post("/api/v1/binders/ML/exports")
+    prune("ML")
+    assert BinderExport.objects.filter(binder_key="ML", status="READY").count() == 1
+
+
+def test_interrupted_preparation_is_closed_by_the_sweeper(users, countries):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.binders.models import BinderExport
+    from apps.core.tasks import recover_pending_work
+
+    stale = BinderExport.objects.create(
+        country=countries["ML"],
+        binder_key="ML",
+        status="RUNNING",
+        started_at=timezone.now() - timedelta(hours=1),
+    )
+    report = recover_pending_work()
+    stale.refresh_from_db()
+    assert stale.status == "FAILED" and report["binder_exports_interrupted"] == 1

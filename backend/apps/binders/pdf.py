@@ -64,9 +64,14 @@ def _value(field: str, value) -> str:
 
 
 class BinderDocument:
-    def __init__(self, binder: dict, generated_by: str):
+    def __init__(self, binder: dict, generated_by: str, attachments: dict | None = None):
+        """`attachments` (amm_id → nombre de décisions jointes) : version avec les décisions
+        officielles, où chaque fiche est suivie de ses scans (voir `export`)."""
         self.binder = binder
         self.generated_by = generated_by
+        self.attachments = attachments
+        # Index (0 = première page) de la fiche de chaque AMM dans le PDF produit.
+        self.page_index: dict[str, int] = {}
         self.buffer = BytesIO()
         self.canvas = Canvas(self.buffer, pagesize=A4)
         self.canvas.setTitle(f"Classeur {binder['country_name']} — {binder['title']}")
@@ -154,7 +159,13 @@ class BinderDocument:
         c.roundRect(118, HEIGHT - 422, WIDTH - 236, 244, 7, stroke=1, fill=0)
         c.setFillColor(MUTED)
         c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(WIDTH / 2, HEIGHT - 212, "AMM GH · CLASSEUR DES AMM")
+        c.drawCentredString(
+            WIDTH / 2,
+            HEIGHT - 212,
+            "AMM GH · CLASSEUR AVEC DÉCISIONS OFFICIELLES"
+            if self.attachments is not None
+            else "AMM GH · CLASSEUR DES AMM",
+        )
         c.setFillColor(INK)
         c.setFont("Helvetica-Bold", 34)
         c.drawCentredString(WIDTH / 2, HEIGHT - 268, b["country_name"].upper())
@@ -344,6 +355,7 @@ class BinderDocument:
 
     def page(self, page: dict, section: dict):
         c = self.canvas
+        self.page_index[page["amm_id"]] = c.getPageNumber() - 1
         color = HexColor(section["color"])
         self._paper()
         self._holes()
@@ -424,6 +436,15 @@ class BinderDocument:
         c.drawString(LEFT + 120, y - 64, text)
         if page["to_scan"]:
             self._pill(LEFT + 260, y - 65, "À SCANNER", HexColor("#c62828"), 8)
+        joined = (self.attachments or {}).get(page["amm_id"], 0)
+        if joined:
+            self._pill(
+                RIGHT - 150,
+                y - 20,
+                f"{joined} DÉCISION{'S' if joined > 1 else ''} JOINTE{'S' if joined > 1 else ''} ›",
+                NAVY,
+                7.5,
+            )
         y -= 84 + 16
         # Écarts relevés à la lecture du scan.
         if page["discrepancies"]:

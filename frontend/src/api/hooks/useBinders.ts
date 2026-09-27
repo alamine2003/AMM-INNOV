@@ -3,6 +3,7 @@ import { api, fetchBlob } from '@/api/client';
 import type {
   BinderCorrection,
   BinderDetail,
+  BinderExport,
   BinderExtraPage,
   BinderResult,
   BinderSummary,
@@ -12,6 +13,7 @@ export const binderKeys = {
   all: ['binders'] as const,
   shelf: ['binders', 'shelf'] as const,
   detail: (key: string) => ['binders', 'detail', key] as const,
+  exports: (key: string) => ['binders', 'exports', key] as const,
 };
 
 /** Les classeurs visibles : le siège voit tout, un pays ne voit que les siens. */
@@ -93,3 +95,25 @@ export function useExtraPages(key: string) {
 
 /** PDF du classeur, page par page (réservé au siège). */
 export const fetchBinderPdf = (key: string) => fetchBlob(`/binders/${key}/pdf`);
+
+/** Préparations du classeur avec décisions officielles ; suivies tant qu'une est en cours. */
+export function useBinderExports(key: string, enabled: boolean) {
+  return useQuery({
+    queryKey: binderKeys.exports(key),
+    queryFn: async () => (await api.get<BinderExport[]>(`/binders/${key}/exports`)).data,
+    enabled,
+    refetchInterval: (query) =>
+      query.state.data?.some((e) => e.status === 'PENDING' || e.status === 'RUNNING') ? 3000 : false,
+  });
+}
+
+export function useStartBinderExport(key: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.post<BinderExport>(`/binders/${key}/exports`)).data,
+    onSuccess: () => void client.invalidateQueries({ queryKey: binderKeys.exports(key) }),
+  });
+}
+
+export const fetchBinderExportFile = (key: string, exportId: string) =>
+  fetchBlob(`/binders/${key}/exports/${exportId}/file`);

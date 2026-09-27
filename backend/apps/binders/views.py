@@ -5,7 +5,8 @@ télécharger chaque classeur en PDF, tel qu'il apparaît à l'écran.
 """
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.http import Http404, HttpResponse
+from django.db import transaction
+from django.http import FileResponse, Http404, HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -15,12 +16,16 @@ from rest_framework.response import Response
 from apps.amm.models import MarketingAuthorization
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
+from apps.core.tasks import enqueue
+from apps.documents.views import open_stored_file
 
 from . import actions
 from .layout import binder_detail, get_binder, shelf
+from .models import BinderExport
 from .pdf import binder_pdf
 from .serializers import (
     BinderDetailSerializer,
+    BinderExportSerializer,
     BinderSummarySerializer,
     CheckInputSerializer,
     ExtraPageInputSerializer,
@@ -118,5 +123,66 @@ class BinderViewSet(viewsets.ViewSet):
         name = f"Classeur_{binder.key}_{today():%Y-%m-%d}.pdf"
         response = HttpResponse(content, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{name}"'
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+    # --- Classeur avec les décisions officielles (siège) --------------------------------------
+
+    def _hq_binder(self, request, key):
+        if not request.user.is_global:
+            raise PermissionDenied("Le téléchargement des classeurs est réservé au siège.")
+        return get_binder(request.user, key)
+
+    @extend_schema(
+        methods=["GET"],
+        responses=BinderExportSerializer(many=True),
+        description="Dernières préparations du classeur avec les décisions officielles.",
+    )
+    @extend_schema(
+        methods=["POST"],
+        request=None,
+        responses={202: BinderExportSerializer},
+        description="Lance la préparation (une seule à la fois par classeur).",
+    )
+    @action(detail=True, methods=["get", "post"])
+    def exports(self, request, key=None):
+        binder = self._hq_binder(request, key)
+        if request.method == "GET":
+            recent = BinderExport.objects.filter(binder_key=binder.key).select_related(
+                "created_by"
+            )[:3]
+            return Response(BinderExportSerializer(recent, many=True).data)
+        from .tasks import build_binder_export
+
+        with transaction.atomic():
+            active = (
+                BinderExport.objects.select_for_update()
+                .filter(binder_key=binder.key, status__in=BinderExport.ACTIVE)
+                .first()
+            )
+            export = active or BinderExport.objects.create(
+                country=binder.country, binder_key=binder.key, created_by=request.user
+            )
+            if active is None:
+                enqueue(build_binder_export, str(export.pk))
+        export.refresh_from_db()
+        return Response(BinderExportSerializer(export).data, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(
+        responses={(200, "application/pdf"): OpenApiResponse(description="Classeur complet")}
+    )
+    @action(detail=True, methods=["get"], url_path=r"exports/(?P<export_id>[0-9a-f-]{36})/file")
+    def export_file(self, request, key=None, export_id=None):
+        binder = self._hq_binder(request, key)
+        export = BinderExport.objects.filter(
+            pk=export_id, binder_key=binder.key, status=BinderExport.Status.READY
+        ).first()
+        if export is None or not export.file:
+            raise Http404("Classeur pas encore prêt.")
+        name = f"Classeur_{binder.key}_decisions_{export.finished_at:%Y-%m-%d}.pdf"
+        open_stored_file(export.file)
+        response = FileResponse(
+            export.file, content_type="application/pdf", as_attachment=True, filename=name
+        )
         response["Cache-Control"] = "private, no-store"
         return response
