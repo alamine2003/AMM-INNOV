@@ -15,7 +15,8 @@ export interface NavItem {
     | 'countries'
     | 'ranges'
     | 'rules'
-    | 'imports';
+    | 'imports'
+    | 'binders';
   section?: 'admin';
 }
 
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'alerts', labelKey: 'nav.alerts', to: '/alerts', icon: 'alerts' },
   { key: 'documents', labelKey: 'nav.documents', to: '/documents', icon: 'documents' },
   { key: 'dossier-imports', labelKey: 'nav.dossierImports', to: '/dossier-imports', icon: 'imports' },
+  { key: 'binders', labelKey: 'nav.binders', to: '/classeurs', icon: 'binders' },
   { key: 'products', labelKey: 'nav.products', to: '/products', icon: 'products' },
   {
     key: 'users',

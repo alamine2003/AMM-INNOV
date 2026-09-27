@@ -20,6 +20,7 @@ from apps.accounts.views import (
 from apps.alerts.views import AlertRuleViewSet, AlertViewSet
 from apps.amm.views import AmmViewSet, RenewalViewSet
 from apps.analytics.views import AfricaView, CountryView, ExportView, ProductCoverageView
+from apps.binders.views import BinderViewSet
 from apps.catalog.views import CountryViewSet, ProductRangeViewSet, ProductViewSet
 from apps.documents.views import DocumentViewSet
 from apps.imports.dossier_views import DossierImportViewSet, DossierReviewPointViewSet
@@ -40,6 +41,7 @@ router.register("alert-rules", AlertRuleViewSet, basename="alert-rule")
 router.register("notifications", NotificationViewSet, basename="notification")
 router.register("imports", ImportViewSet, basename="import")
 router.register("dossier-imports", DossierImportViewSet, basename="dossier-import")
+router.register("binders", BinderViewSet, basename="binder")
 router.register(
     "dossier-review-points", DossierReviewPointViewSet, basename="dossier-review-point"
 )

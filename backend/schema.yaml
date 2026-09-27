@@ -1271,6 +1271,186 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/v1/binders/:
+    get:
+      operationId: v1_binders_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BinderSummary'
+          description: ''
+  /api/v1/binders/{key}/:
+    get:
+      operationId: v1_binders_retrieve
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+  /api/v1/binders/{key}/check/:
+    post:
+      operationId: v1_binders_check_create
+      description: 'Constat de l''archiviste sur une page : conforme, corrigé (valeurs
+        lues) ou absent.'
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+  /api/v1/binders/{key}/extras/:
+    post:
+      operationId: v1_binders_extras_create
+      description: Dossier présent dans le classeur papier mais sans AMM dans l'application.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtraPageInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExtraPageInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExtraPageInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtraPage'
+          description: ''
+  /api/v1/binders/{key}/extras/{extra_id}/:
+    delete:
+      operationId: v1_binders_extras_destroy
+      parameters:
+      - in: path
+        name: extra_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/binders/{key}/pdf/:
+    get:
+      operationId: v1_binders_pdf_retrieve
+      description: Le classeur page par page, comme à l'écran. Réservé au siège.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Classeur en PDF
+  /api/v1/binders/{key}/uncheck/:
+    post:
+      operationId: v1_binders_uncheck_create
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UncheckInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UncheckInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UncheckInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
   /api/v1/countries/:
     get:
       operationId: v1_countries_list
@@ -3956,6 +4136,132 @@ components:
         * `A_RENOUVELER` - À renouveler
         * `EXPIRE` - Expirée
         * `INDETERMINE` - Échéance inconnue
+    BinderDetail:
+      type: object
+      properties:
+        total:
+          type: integer
+        checked:
+          type: integer
+        conformes:
+          type: integer
+        corrected:
+          type: integer
+        absent:
+          type: integer
+        to_scan:
+          type: integer
+        key:
+          type: string
+        title:
+          type: string
+        country_iso2:
+          type: string
+        country_name:
+          type: string
+        is_headquarters:
+          type: boolean
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Section'
+        extras:
+          type: integer
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_checked_by:
+          type: string
+          nullable: true
+        extra_pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraPage'
+        resume_page:
+          type: integer
+      required:
+      - absent
+      - checked
+      - conformes
+      - corrected
+      - country_iso2
+      - country_name
+      - extra_pages
+      - extras
+      - is_headquarters
+      - key
+      - last_checked_at
+      - last_checked_by
+      - resume_page
+      - sections
+      - title
+      - to_scan
+      - total
+    BinderResultEnum:
+      enum:
+      - CONFORME
+      - CORRIGE
+      - ABSENT
+      type: string
+      description: |-
+        * `CONFORME` - Conforme
+        * `CORRIGE` - Corrigé
+        * `ABSENT` - Absent du classeur
+    BinderSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        checked:
+          type: integer
+        conformes:
+          type: integer
+        corrected:
+          type: integer
+        absent:
+          type: integer
+        to_scan:
+          type: integer
+        key:
+          type: string
+        title:
+          type: string
+        country_iso2:
+          type: string
+        country_name:
+          type: string
+        is_headquarters:
+          type: boolean
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionSummary'
+        extras:
+          type: integer
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_checked_by:
+          type: string
+          nullable: true
+      required:
+      - absent
+      - checked
+      - conformes
+      - corrected
+      - country_iso2
+      - country_name
+      - extras
+      - is_headquarters
+      - key
+      - last_checked_at
+      - last_checked_by
+      - sections
+      - title
+      - to_scan
+      - total
     ChannelEnum:
       enum:
       - IN_APP
@@ -3964,6 +4270,78 @@ components:
       description: |-
         * `IN_APP` - In-app
         * `EMAIL` - Email
+    Check:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/BinderResultEnum'
+        corrections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Correction'
+        note:
+          type: string
+        checked_by:
+          type: string
+          nullable: true
+        checked_at:
+          type: string
+          format: date-time
+      required:
+      - checked_at
+      - checked_by
+      - corrections
+      - note
+      - result
+    CheckInputRequest:
+      type: object
+      properties:
+        amm:
+          type: string
+          format: uuid
+        result:
+          $ref: '#/components/schemas/BinderResultEnum'
+        corrections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionInputRequest'
+        note:
+          type: string
+          default: ''
+      required:
+      - amm
+      - result
+    Correction:
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/SlotEnum'
+        field:
+          $ref: '#/components/schemas/FieldEnum'
+        old:
+          nullable: true
+        new:
+          nullable: true
+      required:
+      - field
+      - new
+      - old
+      - slot
+    CorrectionInputRequest:
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/SlotEnum'
+        field:
+          $ref: '#/components/schemas/FieldEnum'
+        value:
+          type: string
+          nullable: true
+          maxLength: 100
+      required:
+      - field
+      - slot
+      - value
     Country:
       type: object
       properties:
@@ -4026,6 +4404,25 @@ components:
       required:
       - iso2
       - name
+    Discrepancy:
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/SlotEnum'
+        field:
+          $ref: '#/components/schemas/FieldEnum'
+        recorded:
+          nullable: true
+        scan:
+          nullable: true
+        message:
+          type: string
+      required:
+      - field
+      - message
+      - recorded
+      - scan
+      - slot
     Document:
       type: object
       properties:
@@ -4911,6 +5308,50 @@ components:
       required:
       - paths
       - root_name
+    ExtraPage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+        note:
+          type: string
+        created_by:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - created_by
+      - id
+      - note
+      - product_name
+    ExtraPageInputRequest:
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        note:
+          type: string
+          default: ''
+      required:
+      - product_name
+    FieldEnum:
+      enum:
+      - number
+      - start_date
+      - end_date
+      type: string
+      description: |-
+        * `number` - N° d'AMM
+        * `start_date` - Date de début
+        * `end_date` - Date de fin
     Health:
       type: object
       description: 'Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert
@@ -5274,6 +5715,64 @@ components:
     NullEnum:
       enum:
       - null
+    Page:
+      type: object
+      properties:
+        amm_id:
+          type: string
+          format: uuid
+        page:
+          type: integer
+        section_page:
+          type: integer
+        product_name:
+          type: string
+        range_code:
+          type: string
+        range_label:
+          type: string
+        original:
+          $ref: '#/components/schemas/Slot'
+        renewal:
+          allOf:
+          - $ref: '#/components/schemas/RenewalSlot'
+          nullable: true
+        status:
+          $ref: '#/components/schemas/AmmStatusEnum'
+        status_label:
+          type: string
+        dossier_state:
+          $ref: '#/components/schemas/DossierStateEnum'
+        scan:
+          allOf:
+          - $ref: '#/components/schemas/Scan'
+          nullable: true
+        discrepancies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Discrepancy'
+        check:
+          allOf:
+          - $ref: '#/components/schemas/Check'
+          nullable: true
+        to_scan:
+          type: boolean
+      required:
+      - amm_id
+      - check
+      - discrepancies
+      - dossier_state
+      - original
+      - page
+      - product_name
+      - range_code
+      - range_label
+      - renewal
+      - scan
+      - section_page
+      - status
+      - status_label
+      - to_scan
     PaginatedAlertList:
       type: object
       required:
@@ -6051,6 +6550,30 @@ components:
           title: Date de fin saisie manuellement
         notes:
           type: string
+    RenewalSlot:
+      type: object
+      properties:
+        number:
+          type: string
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        id:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+      required:
+      - end_date
+      - id
+      - number
+      - sequence
+      - start_date
     RenewalTransitionRequest:
       type: object
       properties:
@@ -6089,6 +6612,89 @@ components:
         * `CEO_ADMIN` - CEO / administrateur
         * `HQ_REGULATORY` - Réglementaire siège
         * `COUNTRY_REGULATORY` - Réglementaire pays
+    Scan:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        document_date:
+          type: string
+          format: date
+        page_count:
+          type: integer
+          nullable: true
+      required:
+      - document_date
+      - document_id
+      - page_count
+    Section:
+      type: object
+      properties:
+        total:
+          type: integer
+        checked:
+          type: integer
+        conformes:
+          type: integer
+        corrected:
+          type: integer
+        absent:
+          type: integer
+        to_scan:
+          type: integer
+        code:
+          type: string
+        label:
+          type: string
+        color:
+          type: string
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+      required:
+      - absent
+      - checked
+      - code
+      - color
+      - conformes
+      - corrected
+      - label
+      - pages
+      - to_scan
+      - total
+    SectionSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        checked:
+          type: integer
+        conformes:
+          type: integer
+        corrected:
+          type: integer
+        absent:
+          type: integer
+        to_scan:
+          type: integer
+        code:
+          type: string
+        label:
+          type: string
+        color:
+          type: string
+      required:
+      - absent
+      - checked
+      - code
+      - color
+      - conformes
+      - corrected
+      - label
+      - to_scan
+      - total
     SeverityEnum:
       enum:
       - INFO
@@ -6099,6 +6705,31 @@ components:
         * `INFO` - Information
         * `WARNING` - Avertissement
         * `CRITICAL` - Critique
+    Slot:
+      type: object
+      properties:
+        number:
+          type: string
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - end_date
+      - number
+      - start_date
+    SlotEnum:
+      enum:
+      - original
+      - renewal
+      type: string
+      description: |-
+        * `original` - AMM d'origine
+        * `renewal` - Dernier renouvellement
     TokenRefresh:
       type: object
       properties:
@@ -6118,6 +6749,14 @@ components:
           minLength: 1
       required:
       - refresh
+    UncheckInputRequest:
+      type: object
+      properties:
+        amm:
+          type: string
+          format: uuid
+      required:
+      - amm
     UrgencyEnum:
       enum:
       - OK

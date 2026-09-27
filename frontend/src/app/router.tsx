@@ -21,6 +21,8 @@ const AlertRulesAdminPage = lazy(() => import('@/features/admin/AlertRulesAdminP
 const ImportsPage = lazy(() => import('@/features/imports/ImportsPage'));
 const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'));
 const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
+const BindersShelfPage = lazy(() => import('@/features/binders/BindersShelfPage'));
+const BinderPage = lazy(() => import('@/features/binders/BinderPage'));
 const DossierImportDetailPage = lazy(() => import('@/features/dossier-imports/DossierImportDetailPage'));
 
 const Fallback = () => (
@@ -48,6 +50,8 @@ export const routes: RouteObject[] = [
           { path: 'documents', element: page(<DocumentsLibraryPage />) },
           { path: 'dossier-imports', element: page(<DossierImportsPage />) },
           { path: 'dossier-imports/:id', element: page(<DossierImportDetailPage />) },
+          { path: 'classeurs', element: page(<BindersShelfPage />) },
+          { path: 'classeurs/:binderKey', element: page(<BinderPage />) },
           { path: 'products', element: page(<ProductsPage />) },
           { path: 'products/:id', element: page(<ProductDetailPage />) },
           {

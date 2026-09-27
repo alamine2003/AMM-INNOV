@@ -412,6 +412,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_binders_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_binders_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/check/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Constat de l'archiviste sur une page : conforme, corrigé (valeurs lues) ou absent. */
+        post: operations["v1_binders_check_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/extras/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Dossier présent dans le classeur papier mais sans AMM dans l'application. */
+        post: operations["v1_binders_extras_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/extras/{extra_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["v1_binders_extras_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Le classeur page par page, comme à l'écran. Réservé au siège. */
+        get: operations["v1_binders_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/uncheck/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_binders_uncheck_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/countries/": {
         parameters: {
             query?: never;
@@ -1593,12 +1708,84 @@ export interface components {
          * @enum {string}
          */
         AmmStatusEnum: "VALIDE" | "A_RENOUVELER" | "EXPIRE" | "INDETERMINE";
+        BinderDetail: {
+            total: number;
+            checked: number;
+            conformes: number;
+            corrected: number;
+            absent: number;
+            to_scan: number;
+            key: string;
+            title: string;
+            country_iso2: string;
+            country_name: string;
+            is_headquarters: boolean;
+            sections: components["schemas"]["Section"][];
+            extras: number;
+            /** Format: date-time */
+            last_checked_at: string | null;
+            last_checked_by: string | null;
+            extra_pages: components["schemas"]["ExtraPage"][];
+            resume_page: number;
+        };
+        /**
+         * @description * `CONFORME` - Conforme
+         *     * `CORRIGE` - Corrigé
+         *     * `ABSENT` - Absent du classeur
+         * @enum {string}
+         */
+        BinderResultEnum: "CONFORME" | "CORRIGE" | "ABSENT";
+        BinderSummary: {
+            total: number;
+            checked: number;
+            conformes: number;
+            corrected: number;
+            absent: number;
+            to_scan: number;
+            key: string;
+            title: string;
+            country_iso2: string;
+            country_name: string;
+            is_headquarters: boolean;
+            sections: components["schemas"]["SectionSummary"][];
+            extras: number;
+            /** Format: date-time */
+            last_checked_at: string | null;
+            last_checked_by: string | null;
+        };
         /**
          * @description * `IN_APP` - In-app
          *     * `EMAIL` - Email
          * @enum {string}
          */
         ChannelEnum: "IN_APP" | "EMAIL";
+        Check: {
+            result: components["schemas"]["BinderResultEnum"];
+            corrections: components["schemas"]["Correction"][];
+            note: string;
+            checked_by: string | null;
+            /** Format: date-time */
+            checked_at: string;
+        };
+        CheckInputRequest: {
+            /** Format: uuid */
+            amm: string;
+            result: components["schemas"]["BinderResultEnum"];
+            corrections?: components["schemas"]["CorrectionInputRequest"][];
+            /** @default  */
+            note: string;
+        };
+        Correction: {
+            slot: components["schemas"]["SlotEnum"];
+            field: components["schemas"]["FieldEnum"];
+            old: unknown;
+            new: unknown;
+        };
+        CorrectionInputRequest: {
+            slot: components["schemas"]["SlotEnum"];
+            field: components["schemas"]["FieldEnum"];
+            value: string | null;
+        };
         Country: {
             /** Format: uuid */
             readonly id: string;
@@ -1624,6 +1811,13 @@ export interface components {
             validity_years?: number;
             /** Fuseau horaire */
             timezone?: string;
+        };
+        Discrepancy: {
+            slot: components["schemas"]["SlotEnum"];
+            field: components["schemas"]["FieldEnum"];
+            recorded: unknown;
+            scan: unknown;
+            message: string;
         };
         Document: {
             /** Format: uuid */
@@ -1975,6 +2169,27 @@ export interface components {
             files?: string[];
             reused?: unknown;
         };
+        ExtraPage: {
+            /** Format: uuid */
+            id: string;
+            product_name: string;
+            note: string;
+            created_by: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ExtraPageInputRequest: {
+            product_name: string;
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description * `number` - N° d'AMM
+         *     * `start_date` - Date de début
+         *     * `end_date` - Date de fin
+         * @enum {string}
+         */
+        FieldEnum: "number" | "start_date" | "end_date";
         /** @description Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert au schéma OpenAPI). */
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
@@ -2141,6 +2356,24 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        Page: {
+            /** Format: uuid */
+            amm_id: string;
+            page: number;
+            section_page: number;
+            product_name: string;
+            range_code: string;
+            range_label: string;
+            original: components["schemas"]["Slot"];
+            renewal: components["schemas"]["RenewalSlot"] | null;
+            status: components["schemas"]["AmmStatusEnum"];
+            status_label: string;
+            dossier_state: components["schemas"]["DossierStateEnum"];
+            scan: components["schemas"]["Scan"] | null;
+            discrepancies: components["schemas"]["Discrepancy"][];
+            check: components["schemas"]["Check"] | null;
+            to_scan: boolean;
+        };
         PaginatedAlertList: {
             /** @example 123 */
             count: number;
@@ -2613,6 +2846,16 @@ export interface components {
             end_date_manual?: boolean;
             notes?: string;
         };
+        RenewalSlot: {
+            number: string;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            /** Format: uuid */
+            id: string;
+            sequence: number;
+        };
         RenewalTransitionRequest: {
             to: components["schemas"]["WorkflowStatusEnum"];
             /** Format: date */
@@ -2633,6 +2876,36 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "CEO_ADMIN" | "HQ_REGULATORY" | "COUNTRY_REGULATORY";
+        Scan: {
+            /** Format: uuid */
+            document_id: string;
+            /** Format: date */
+            document_date: string;
+            page_count: number | null;
+        };
+        Section: {
+            total: number;
+            checked: number;
+            conformes: number;
+            corrected: number;
+            absent: number;
+            to_scan: number;
+            code: string;
+            label: string;
+            color: string;
+            pages: components["schemas"]["Page"][];
+        };
+        SectionSummary: {
+            total: number;
+            checked: number;
+            conformes: number;
+            corrected: number;
+            absent: number;
+            to_scan: number;
+            code: string;
+            label: string;
+            color: string;
+        };
         /**
          * @description * `INFO` - Information
          *     * `WARNING` - Avertissement
@@ -2640,12 +2913,29 @@ export interface components {
          * @enum {string}
          */
         SeverityEnum: "INFO" | "WARNING" | "CRITICAL";
+        Slot: {
+            number: string;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+        };
+        /**
+         * @description * `original` - AMM d'origine
+         *     * `renewal` - Dernier renouvellement
+         * @enum {string}
+         */
+        SlotEnum: "original" | "renewal";
         TokenRefresh: {
             readonly access: string;
             refresh: string;
         };
         TokenRefreshRequest: {
             refresh: string;
+        };
+        UncheckInputRequest: {
+            /** Format: uuid */
+            amm: string;
         };
         /**
          * @description * `OK` - OK
@@ -3560,6 +3850,168 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenRefresh"];
+                };
+            };
+        };
+    };
+    v1_binders_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderSummary"][];
+                };
+            };
+        };
+    };
+    v1_binders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_check_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CheckInputRequest"];
+                "multipart/form-data": components["schemas"]["CheckInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_extras_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtraPageInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ExtraPageInputRequest"];
+                "multipart/form-data": components["schemas"]["ExtraPageInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtraPage"];
+                };
+            };
+        };
+    };
+    v1_binders_extras_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                extra_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_pdf_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classeur en PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_uncheck_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UncheckInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UncheckInputRequest"];
+                "multipart/form-data": components["schemas"]["UncheckInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
                 };
             };
         };
