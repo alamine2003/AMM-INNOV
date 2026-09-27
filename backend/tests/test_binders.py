@@ -319,3 +319,92 @@ def test_interrupted_preparation_is_closed_by_the_sweeper(users, countries):
     report = recover_pending_work()
     stale.refresh_from_db()
     assert stale.status == "FAILED" and report["binder_exports_interrupted"] == 1
+
+
+# --- Pages ajoutées et scans importés depuis le classeur ----------------------------------
+
+
+def test_forgotten_product_gets_its_page(country_client, shelf_data):
+    response = country_client.post(
+        "/api/v1/binders/SN-cardio/pages",
+        {
+            "product_name": "  bisoprolol gh 5mg cpr b30 ",
+            "original_number": "AMM/SN/2019/0042",
+            "original_start_date": "2019-03-01",
+        },
+        format="json",
+    )
+    assert response.status_code == 201, response.content
+    body = response.json()
+    assert body["binder_key"] == "SN-cardio" and body["product_created"] is True
+    names = [p["product_name"] for p in body["binder"]["sections"][0]["pages"]]
+    # Rangée à sa place alphabétique, avec la gamme du classeur.
+    assert names == ["AMLODIPINE GH 5MG", "BISOPROLOL GH 5MG CPR B30"]
+    amm = MarketingAuthorization.objects.get(pk=body["amm_id"])
+    assert amm.product.range.code == "CARDIO" and amm.original_number == "AMM/SN/2019/0042"
+
+    again = country_client.post(
+        "/api/v1/binders/SN-cardio/pages",
+        {"product_name": "BISOPROLOL GH 5MG CPR B/30"},
+        format="json",
+    )
+    assert again.status_code == 400 and "déjà sa page" in str(again.json())
+
+
+def test_extra_page_becomes_a_page_in_the_right_binder(country_client, shelf_data):
+    extra = country_client.post(
+        "/api/v1/binders/SN-generale-a-k/extras", {"product_name": "LOPERAGEN 2MG"}, format="json"
+    ).json()
+    response = country_client.post(
+        "/api/v1/binders/SN-generale-a-k/pages",
+        {"product_name": "LOPERAGEN 2MG", "extra_id": extra["id"]},
+        format="json",
+    )
+    assert response.status_code == 201
+    # « L » : la page va dans le classeur Générale L-Z, la page en trop disparaît.
+    assert response.json()["binder_key"] == "SN-generale-l-z"
+    assert country_client.get("/api/v1/binders/SN-generale-a-k").json()["extras"] == 0
+
+
+def test_country_cannot_add_pages_elsewhere(country_client, shelf_data):
+    response = country_client.post("/api/v1/binders/CI/pages", {"product_name": "X"}, format="json")
+    assert response.status_code == 404
+
+
+def test_scan_imported_from_the_page_is_read_and_filed(settings, country_client, shelf_data):
+    from io import BytesIO
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from reportlab.pdfgen.canvas import Canvas
+
+    from apps.imports.models import DossierImport
+
+    settings.DOSSIER_AUTONOMOUS = True
+    settings.DOSSIER_AUTO_APPLY = True
+    amm = shelf_data["amlo"]
+    buffer = BytesIO()
+    canvas = Canvas(buffer)
+    lines = [
+        "République du Sénégal",
+        "Décision d'autorisation de mise sur le marché",
+        f"Produit : {amm.product.name}",
+        "Pays : Sénégal",
+        "Numéro AMM : AMM/SN/2025/00152",
+        "Date de délivrance : 28/04/2025",
+    ]
+    for i, line in enumerate(lines):
+        canvas.drawString(72, 760 - 18 * i, line)
+    canvas.showPage()
+    canvas.save()
+    upload = SimpleUploadedFile("decision.pdf", buffer.getvalue(), content_type="application/pdf")
+
+    response = country_client.post(
+        f"/api/v1/binders/SN-cardio/pages/{amm.pk}/scan", {"files": [upload]}, format="multipart"
+    )
+    assert response.status_code == 202, response.content
+    batch = DossierImport.objects.get(pk=response.json()["batch_id"])
+    assert batch.amm_id == amm.pk
+    assert batch.status == DossierImport.Status.APPLIED, (batch.status, batch.error)
+    page = country_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+    assert page["scan"] is not None
+    assert page["original"]["number"] == "AMM/SN/2025/00152"

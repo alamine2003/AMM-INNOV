@@ -11,6 +11,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.amm.models import MarketingAuthorization
@@ -24,12 +25,16 @@ from .layout import binder_detail, get_binder, shelf
 from .models import BinderExport
 from .pdf import binder_pdf
 from .serializers import (
+    AddPageInputSerializer,
+    AddPageResultSerializer,
     BinderDetailSerializer,
     BinderExportSerializer,
     BinderSummarySerializer,
     CheckInputSerializer,
     ExtraPageInputSerializer,
     ExtraPageSerializer,
+    PageScanInputSerializer,
+    PageScanResultSerializer,
     UncheckInputSerializer,
 )
 
@@ -85,6 +90,53 @@ class BinderViewSet(viewsets.ViewSet):
             lambda: actions.undo_check(binder, serializer.validated_data["amm"], user=request.user)
         )
         return Response(BinderDetailSerializer(binder_detail(binder)).data)
+
+    @extend_schema(request=AddPageInputSerializer, responses={201: AddPageResultSerializer})
+    @action(detail=True, methods=["post"])
+    def pages(self, request, key=None):
+        """Ajoute la page d'un produit oublié : l'AMM est créée dans le pays du classeur."""
+        binder = get_binder(request.user, key)
+        serializer = AddPageInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        amm, landing, created = self._run(
+            lambda: actions.add_page(binder, user=request.user, **serializer.validated_data)
+        )
+        payload = {
+            "amm_id": amm.pk,
+            "binder_key": landing.key,
+            "product_created": created,
+            "binder": binder_detail(landing),
+        }
+        return Response(AddPageResultSerializer(payload).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request={"multipart/form-data": PageScanInputSerializer},
+        responses={202: PageScanResultSerializer},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/scan",
+        parser_classes=[MultiPartParser, FormParser, JSONParser],
+    )
+    def page_scan(self, request, key=None, amm_id=None):
+        """Importe le scan d'une page : lu et rangé comme un import de dossier, sur cette AMM."""
+        from apps.imports.dossier_views import _enqueue_analysis
+
+        binder = get_binder(request.user, key)
+        serializer = PageScanInputSerializer(data={"files": request.FILES.getlist("files")})
+        serializer.is_valid(raise_exception=True)
+        batch = self._run(
+            lambda: actions.import_page_scan(
+                binder, amm_id, files=serializer.validated_data["files"], user=request.user
+            )
+        )
+        _enqueue_analysis(batch)
+        batch.refresh_from_db()
+        return Response(
+            PageScanResultSerializer({"batch_id": batch.pk, "status": batch.status}).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
 
     @extend_schema(request=ExtraPageInputSerializer, responses={201: ExtraPageSerializer})
     @action(detail=True, methods=["post"], url_path="extras")

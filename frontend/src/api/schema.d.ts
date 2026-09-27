@@ -528,6 +528,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/{key}/pages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ajoute la page d'un produit oublié : l'AMM est créée dans le pays du classeur. */
+        post: operations["v1_binders_pages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/pages/{amm_id}/scan/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Importe le scan d'une page : lu et rangé comme un import de dossier, sur cette AMM. */
+        post: operations["v1_binders_pages_scan_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/binders/{key}/pdf/": {
         parameters: {
             query?: never;
@@ -1403,6 +1437,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddPageInputRequest: {
+            product_name: string;
+            range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** @default  */
+            original_number: string;
+            /** Format: date */
+            original_start_date?: string | null;
+            /** Format: uuid */
+            extra_id?: string | null;
+        };
+        AddPageResult: {
+            /** Format: uuid */
+            amm_id: string;
+            binder_key: string;
+            product_created: boolean;
+            binder: components["schemas"]["BinderDetail"];
+        };
         Alert: {
             /** Format: uuid */
             readonly id: string;
@@ -2456,6 +2507,14 @@ export interface components {
             discrepancies: components["schemas"]["Discrepancy"][];
             check: components["schemas"]["Check"] | null;
             to_scan: boolean;
+        };
+        PageScanInputRequest: {
+            files: string[];
+        };
+        PageScanResult: {
+            /** Format: uuid */
+            batch_id: string;
+            status: string;
         };
         PaginatedAlertList: {
             /** @example 123 */
@@ -4112,6 +4171,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    v1_binders_pages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPageInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AddPageInputRequest"];
+                "multipart/form-data": components["schemas"]["AddPageInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddPageResult"];
+                };
+            };
+        };
+    };
+    v1_binders_pages_scan_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["PageScanInputRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageScanResult"];
+                };
             };
         };
     };

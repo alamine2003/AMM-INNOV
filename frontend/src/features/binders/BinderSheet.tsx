@@ -16,6 +16,7 @@ import type {
   BinderSlot,
 } from '@/api/types';
 import { formatDate, formatDateTime } from '@/lib/dates';
+import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
 import { ScanThumbnail } from './ScanThumbnail';
 import { Holes, INK, LINE, MUTED, Pill, STATUS_COLORS, Stamp, paperSx } from './paper';
 
@@ -125,6 +126,7 @@ function SlotCard({
                         px: gap ? 0.5 : 0,
                         bgcolor: gap ? '#fff3b0' : 'transparent',
                         wordBreak: 'break-word',
+                        whiteSpace: field === 'number' ? 'normal' : 'nowrap',
                       }}
                     >
                       {show(field, source?.[field])}
@@ -166,6 +168,8 @@ export function BinderSheet({
   const [note, setNote] = useState(page.check?.note ?? '');
   const [justStamped, setJustStamped] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const scanImport = usePageScanImport(binder.key, page.amm_id);
   const busy = check.isPending || uncheck.isPending;
 
   const send = (result: BinderResult, corrections: BinderCorrection[] = []) => {
@@ -201,8 +205,79 @@ export function BinderSheet({
   const scan = page.scan;
   const stamp = page.check;
   return (
-    <Box sx={paperSx} data-testid="binder-sheet">
+    <Box
+      sx={paperSx}
+      data-testid="binder-sheet"
+      onDragOver={(e) => {
+        if (!Array.from(e.dataTransfer.types).includes('Files')) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        scanImport.start(Array.from(e.dataTransfer.files));
+      }}
+    >
       <Holes />
+      {dragging && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 12,
+            zIndex: 3,
+            border: '3px dashed #204093',
+            borderRadius: 3,
+            bgcolor: 'rgba(32,64,147,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            textAlign: 'center',
+            p: 3,
+          }}
+        >
+          <Typography sx={{ fontWeight: 800, color: '#204093', fontSize: 18 }}>
+            Déposez le scan de la décision : il sera lu et rangé sur {page.product_name}
+          </Typography>
+        </Box>
+      )}
+      {stamp?.note && !editing && (
+        <Box
+          aria-label="Note de l'archiviste"
+          sx={{
+            position: 'absolute',
+            top: 58,
+            right: 22,
+            zIndex: 2,
+            width: 150,
+            p: 1.25,
+            bgcolor: '#fff59d',
+            color: '#4a3b00',
+            fontSize: 12,
+            lineHeight: 1.35,
+            transform: 'rotate(3deg)',
+            boxShadow: '2px 4px 8px rgba(0,0,0,0.18)',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: -7,
+              left: '50%',
+              width: 46,
+              height: 14,
+              ml: '-23px',
+              bgcolor: 'rgba(255,255,255,0.55)',
+              transform: 'rotate(-4deg)',
+            },
+          }}
+        >
+          {stamp.note}
+          <Box sx={{ mt: 0.5, fontSize: 10, opacity: 0.7 }}>— {stamp.checked_by}</Box>
+        </Box>
+      )}
       <Box
         sx={{
           position: 'absolute',
@@ -276,6 +351,7 @@ export function BinderSheet({
                 ? `Décision scannée du ${formatDate(scan.document_date)}${scan.page_count ? ` · ${scan.page_count} p.` : ''}`
                 : 'Aucun scan dans AMM GH'}
             </Typography>
+            <ScanImportButton scanImport={scanImport} hasScan={!!scan} />
           </Box>
           {scan && (
             <ScanThumbnail
@@ -286,6 +362,8 @@ export function BinderSheet({
             />
           )}
         </Stack>
+
+        <ScanImportStatus scanImport={scanImport} />
 
         {page.discrepancies.length > 0 && !editing && (
           <Alert severity="warning" sx={{ mt: 1.5, py: 0.25, bgcolor: '#fff8e1' }}>
@@ -395,7 +473,6 @@ export function BinderSheet({
                   `${FIELDS.find((f) => f.field === c.field)?.label} (${c.slot === 'original' ? 'origine' : 'renouvellement'}) ${show(c.field, c.old)} → ${show(c.field, c.new)}`,
               )
               .join(' · ')}
-            {stamp.note ? ` · Note : ${stamp.note}` : ''}
           </Box>
         )}
       </Box>

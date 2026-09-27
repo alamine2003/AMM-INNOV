@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
 import type {
+  BinderAddPageResult,
   BinderCorrection,
   BinderDetail,
   BinderExport,
   BinderExtraPage,
+  BinderPageScanResult,
   BinderResult,
   BinderSummary,
 } from '@/api/types';
@@ -117,3 +119,37 @@ export function useStartBinderExport(key: string) {
 
 export const fetchBinderExportFile = (key: string, exportId: string) =>
   fetchBlob(`/binders/${key}/exports/${exportId}/file`);
+
+export interface AddPagePayload {
+  product_name: string;
+  range_code?: string | null;
+  original_number?: string;
+  original_start_date?: string | null;
+  extra_id?: string | null;
+}
+
+/** Page oubliée : l'AMM est créée et prend sa place alphabétique dans le classeur. */
+export function useAddPage(key: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: AddPagePayload) =>
+      (await api.post<BinderAddPageResult>(`/binders/${key}/pages`, payload)).data,
+    onSuccess: (result) => {
+      client.setQueryData(binderKeys.detail(result.binder_key), result.binder);
+      void client.invalidateQueries({ queryKey: binderKeys.detail(key) });
+      void client.invalidateQueries({ queryKey: binderKeys.shelf });
+      void client.invalidateQueries({ queryKey: ['amms'] });
+    },
+  });
+}
+
+/** Scan déposé sur une page : envoyé comme un dossier rangé sur cette AMM. */
+export function useImportPageScan(key: string) {
+  return useMutation({
+    mutationFn: async ({ amm, files }: { amm: string; files: File[] }) => {
+      const form = new FormData();
+      for (const file of files) form.append('files', file, file.name);
+      return (await api.post<BinderPageScanResult>(`/binders/${key}/pages/${amm}/scan`, form)).data;
+    },
+  });
+}

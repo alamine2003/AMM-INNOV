@@ -149,10 +149,13 @@ export function EndLeaf({
   binder,
   onOpenPage,
   downloadButton,
+  onAddPage,
 }: {
   binder: BinderDetail;
   onOpenPage: (ammId: string) => void;
   downloadButton: React.ReactNode;
+  /** Ouvre l'ajout de page (prérempli depuis une page en trop). */
+  onAddPage: (prefill?: { product_name: string; extra_id: string }) => void;
 }) {
   const { add, remove } = useExtraPages(binder.key);
   const [name, setName] = useState('');
@@ -203,8 +206,12 @@ export function EndLeaf({
           Pages en trop ({binder.extra_pages.length})
         </Typography>
         <Typography sx={{ fontSize: 12, color: MUTED, mb: 1 }}>
-          Un dossier est dans le classeur papier mais pas dans AMM GH : notez-le ici.
+          Un dossier est dans le classeur papier mais pas dans AMM GH : notez-le ici, ou créez directement sa
+          page avec « Ajouter une page ».
         </Typography>
+        <Button size="small" variant="contained" onClick={() => onAddPage()} sx={{ mb: 1 }}>
+          Ajouter une page
+        </Button>
         {binder.extra_pages.map((extra) => (
           <Stack key={extra.id} direction="row" alignItems="center" gap={1}>
             <Typography sx={{ fontSize: 13, flex: 1 }}>
@@ -214,6 +221,12 @@ export function EndLeaf({
                 ({extra.created_by ?? '—'}, {formatDateTime(extra.created_at)})
               </Box>
             </Typography>
+            <Button
+              size="small"
+              onClick={() => onAddPage({ product_name: extra.product_name, extra_id: extra.id })}
+            >
+              Créer la page
+            </Button>
             <Tooltip title="Retirer">
               <IconButton
                 size="small"

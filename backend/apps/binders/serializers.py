@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.amm.models import MarketingAuthorization
+from apps.catalog.models import ProductRange
 
 from .models import BinderCheck, BinderExport
 
@@ -35,6 +36,26 @@ class CheckInputSerializer(serializers.Serializer):
 
 class UncheckInputSerializer(serializers.Serializer):
     amm = serializers.UUIDField()
+
+
+class AddPageInputSerializer(serializers.Serializer):
+    product_name = serializers.CharField(max_length=255)
+    # Gamme : imposée par le classeur au siège, à choisir dans un classeur de pays.
+    range_code = serializers.ChoiceField(
+        choices=ProductRange.Code.choices, required=False, allow_null=True, default=None
+    )
+    original_number = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, default=""
+    )
+    original_start_date = serializers.DateField(required=False, allow_null=True, default=None)
+    # « Page en trop » transformée en vraie page : elle disparaît de la liste.
+    extra_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+
+
+class PageScanInputSerializer(serializers.Serializer):
+    files = serializers.ListField(
+        child=serializers.FileField(), min_length=1, max_length=10, allow_empty=False
+    )
 
 
 class ExtraPageInputSerializer(serializers.Serializer):
@@ -178,3 +199,15 @@ class BinderExportSerializer(serializers.ModelSerializer):
 
     def get_has_file(self, obj) -> bool:
         return bool(obj.file) and obj.status == BinderExport.Status.READY
+
+
+class AddPageResultSerializer(serializers.Serializer):
+    amm_id = serializers.UUIDField()
+    binder_key = serializers.CharField()
+    product_created = serializers.BooleanField()
+    binder = BinderDetailSerializer()
+
+
+class PageScanResultSerializer(serializers.Serializer):
+    batch_id = serializers.UUIDField()
+    status = serializers.CharField()

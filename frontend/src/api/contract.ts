@@ -15,7 +15,9 @@ import type {
   AlertRule,
   Amm,
   AmmDocument,
+  BinderAddPageResult,
   BinderCorrection,
+  BinderPageScanResult,
   BinderDetail,
   BinderExport,
   BinderResult,
@@ -66,6 +68,8 @@ export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEn
 export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
 export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderSummary>>;
 export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;
+export type _BinderAddPage = Assert<Assignable<Schemas['AddPageResult'], BinderAddPageResult>>;
+export type _BinderPageScan = Assert<Assignable<Schemas['PageScanResult'], BinderPageScanResult>>;
 export type _BinderExport = Assert<Assignable<Schemas['BinderExport'], BinderExport>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API

@@ -752,3 +752,18 @@ export interface BinderExport {
   finished_at: string | null;
   has_file: boolean;
 }
+
+/** Page ajoutée depuis un classeur (POST /binders/{clé}/pages). */
+export interface BinderAddPageResult {
+  amm_id: string;
+  /** Classeur où la page a pris place (au siège, la Générale peut basculer A-K / L-Z). */
+  binder_key: string;
+  product_created: boolean;
+  binder: BinderDetail;
+}
+
+/** Scan importé depuis une page : lu et rangé comme un import de dossier. */
+export interface BinderPageScanResult {
+  batch_id: string;
+  status: string;
+}
