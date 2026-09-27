@@ -1921,6 +1921,28 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/dossier-imports/report/:
+    get:
+      operationId: v1_dossier_imports_report_retrieve
+      description: 'Récapitulatif : organisé, corrigé, créé, décidé seul, et ce qui
+        reste à traiter.'
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Période en jours (1 à 90, 7 par défaut).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierReport'
+          description: ''
   /api/v1/dossier-review-points/:
     get:
       operationId: v1_dossier_review_points_list
@@ -4517,6 +4539,246 @@ components:
           maxItems: 1000
       required:
       - sha256
+    DossierReport:
+      type: object
+      properties:
+        days:
+          type: integer
+        since:
+          type: string
+          format: date-time
+        totals:
+          $ref: '#/components/schemas/DossierReportTotals'
+        attention:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReportAttention'
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReportCreated'
+        corrections:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReportCorrection'
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReportDecision'
+        filed:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierReportFiled'
+      required:
+      - attention
+      - corrections
+      - created
+      - days
+      - decisions
+      - filed
+      - since
+      - totals
+    DossierReportAttention:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        folder:
+          type: string
+        amm_id:
+          type: string
+          format: uuid
+          nullable: true
+        product:
+          type: string
+        country_iso2:
+          type: string
+        kind:
+          $ref: '#/components/schemas/DossierReportAttentionKindEnum'
+        reason:
+          type: string
+      required:
+      - amm_id
+      - batch_id
+      - country_iso2
+      - folder
+      - kind
+      - product
+      - reason
+    DossierReportAttentionKindEnum:
+      enum:
+      - question
+      - failed
+      - ready
+      - incomplete
+      type: string
+      description: |-
+        * `question` - question
+        * `failed` - failed
+        * `ready` - ready
+        * `incomplete` - incomplete
+    DossierReportCorrection:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        folder:
+          type: string
+        amm_id:
+          type: string
+          format: uuid
+          nullable: true
+        product:
+          type: string
+        country_iso2:
+          type: string
+        label:
+          type: string
+        old:
+          nullable: true
+        new:
+          nullable: true
+      required:
+      - amm_id
+      - batch_id
+      - country_iso2
+      - folder
+      - label
+      - new
+      - old
+      - product
+    DossierReportCreated:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        folder:
+          type: string
+        amm_id:
+          type: string
+          format: uuid
+          nullable: true
+        product:
+          type: string
+        country_iso2:
+          type: string
+        number:
+          type: string
+      required:
+      - amm_id
+      - batch_id
+      - country_iso2
+      - folder
+      - number
+      - product
+    DossierReportDecision:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        folder:
+          type: string
+        amm_id:
+          type: string
+          format: uuid
+          nullable: true
+        product:
+          type: string
+        country_iso2:
+          type: string
+        message:
+          type: string
+      required:
+      - amm_id
+      - batch_id
+      - country_iso2
+      - folder
+      - message
+      - product
+    DossierReportFiled:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        folder:
+          type: string
+        amm_id:
+          type: string
+          format: uuid
+          nullable: true
+        product:
+          type: string
+        country_iso2:
+          type: string
+        created:
+          type: boolean
+        documents:
+          type: integer
+        renewals:
+          type: integer
+        completed:
+          type: integer
+        corrected:
+          type: integer
+        status_after:
+          type: string
+          nullable: true
+        lines:
+          type: array
+          items:
+            type: string
+      required:
+      - amm_id
+      - batch_id
+      - completed
+      - corrected
+      - country_iso2
+      - created
+      - documents
+      - folder
+      - lines
+      - product
+      - renewals
+      - status_after
+    DossierReportTotals:
+      type: object
+      properties:
+        folders:
+          type: integer
+        filed:
+          type: integer
+        created:
+          type: integer
+        corrected:
+          type: integer
+        completed:
+          type: integer
+        documents:
+          type: integer
+        renewals:
+          type: integer
+        decisions:
+          type: integer
+        attention:
+          type: integer
+        in_progress:
+          type: integer
+      required:
+      - attention
+      - completed
+      - corrected
+      - created
+      - decisions
+      - documents
+      - filed
+      - folders
+      - in_progress
+      - renewals
     DossierReviewPoint:
       type: object
       description: 'Point à vérifier plus tard : écart scan ≠ fiche (fiche gardée)

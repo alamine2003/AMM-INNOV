@@ -224,6 +224,67 @@ function detail(batch = fixture()) {
   return renderApp(`/dossier-imports/${batch.id}`);
 }
 
+describe('récapitulatif du classement automatique', () => {
+  it('montre ce qui a été rangé, corrigé et créé, et seulement ce qui est à traiter', async () => {
+    const item = {
+      batch_id: 'b1',
+      folder: 'MALI - DOLEX',
+      amm_id: 'amm-1',
+      product: 'DOLEX',
+      country_iso2: 'ML',
+    };
+    server.use(
+      http.get(endpoint, () => HttpResponse.json({ count: 0, next: null, previous: null, results: [] })),
+      http.get(`${endpoint}/report`, () =>
+        HttpResponse.json({
+          days: 7,
+          since: '2026-09-19T00:00:00Z',
+          totals: {
+            folders: 3,
+            filed: 2,
+            created: 1,
+            corrected: 1,
+            completed: 2,
+            documents: 5,
+            renewals: 1,
+            decisions: 0,
+            attention: 1,
+            in_progress: 0,
+          },
+          attention: [
+            { ...item, batch_id: 'b3', amm_id: null, product: '', kind: 'failed', reason: 'Scan illisible' },
+          ],
+          created: [{ ...item, batch_id: 'b2', product: 'NOUVEAU', number: '' }],
+          corrections: [{ ...item, label: 'n° d’AMM', old: '11380113', new: '12380213' }],
+          decisions: [],
+          filed: [
+            {
+              ...item,
+              created: false,
+              documents: 3,
+              renewals: 1,
+              completed: 1,
+              corrected: 1,
+              status_after: 'VALIDE',
+              lines: [],
+            },
+          ],
+        }),
+      ),
+    );
+    loginAs('u-hq');
+    renderApp('/dossier-imports');
+    const attention = await screen.findByTestId('report-attention');
+    expect(attention).toHaveTextContent('À traiter par vous (1)');
+    expect(attention).toHaveTextContent('Analyse échouée');
+    expect(attention).toHaveTextContent('Scan illisible');
+    expect(screen.getByText('valeurs corrigées')).toBeVisible();
+    await userEvent.click(screen.getByText('Valeurs corrigées d’après les décisions officielles (1)'));
+    expect(await screen.findByText('12380213')).toBeVisible();
+    expect(screen.getByText('Fiches créées (1)')).toBeVisible();
+  });
+});
+
 describe('import automatique de dossiers AMM', () => {
   it('reste accessible au réglementaire pays et envoie les chemins du dossier sélectionné', async () => {
     const requests: FormData[] = [];

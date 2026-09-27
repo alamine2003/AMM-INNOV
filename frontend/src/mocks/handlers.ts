@@ -425,6 +425,35 @@ export const handlers = [
     url('/dossier-review-points'),
     withAuth(() => HttpResponse.json([])),
   ),
+  // Récapitulatif du classement automatique : aucun import dans les données de démonstration.
+  http.get(
+    url('/dossier-imports/report'),
+    withAuth((_user, { request }) => {
+      const days = Number(new URL(request.url).searchParams.get('days') ?? 7);
+      const totals = {
+        folders: 0,
+        filed: 0,
+        created: 0,
+        corrected: 0,
+        completed: 0,
+        documents: 0,
+        renewals: 0,
+        decisions: 0,
+        attention: 0,
+        in_progress: 0,
+      };
+      return HttpResponse.json({
+        days,
+        since: new Date(Date.now() - days * 86400000).toISOString(),
+        totals,
+        attention: [],
+        created: [],
+        corrections: [],
+        decisions: [],
+        filed: [],
+      });
+    }),
+  ),
   http.get(
     url('/amms/:id'),
     withAuth((user, { params }) => {

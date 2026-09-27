@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -28,6 +28,7 @@ from apps.core.tasks import enqueue
 from apps.documents.views import file_is_missing, open_stored_file
 
 from .dossier.application import StalePreview, apply_dossier
+from .dossier.report import build_report
 from .dossier.review_points import apply_point, ignore_point
 from .dossier.upload import reusable_files, stage_dossier
 from .dossier_serializers import (
@@ -37,6 +38,7 @@ from .dossier_serializers import (
     DossierFileRequestSerializer,
     DossierImportSerializer,
     DossierKnownFilesSerializer,
+    DossierReportSerializer,
     DossierReviewPointSerializer,
     DossierUploadSerializer,
 )
@@ -128,6 +130,24 @@ class DossierImportViewSet(
         _enqueue_analysis(batch)
         batch.refresh_from_db()
         return Response(self.get_serializer(batch).data, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "days", int, description="Période en jours (1 à 90, 7 par défaut).", required=False
+            )
+        ],
+        responses={200: DossierReportSerializer},
+    )
+    @action(detail=False, methods=["get"])
+    def report(self, request):
+        """Récapitulatif : organisé, corrigé, créé, décidé seul, et ce qui reste à traiter."""
+        try:
+            days = min(90, max(1, int(request.query_params.get("days", 7))))
+        except ValueError:
+            days = 7
+        report = build_report(self.get_queryset(), days=days)
+        return Response(DossierReportSerializer(report).data)
 
     @extend_schema(request=DossierKnownFilesSerializer, responses={200: dict})
     @action(detail=False, methods=["post"], url_path="known-files")

@@ -39,3 +39,6 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {  # noqa: F405
     "login": "1000/min",
     "login_email": "1000/min",
 }
+# Les tests historiques décrivent le classement prudent (questions, écarts notés) ; le
+# classement autonome est testé explicitement (tests/test_dossier_autonome.py).
+DOSSIER_AUTONOMOUS = False

@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
-import type { DossierImportBatch, DossierReviewPoint, Paginated } from '@/api/types';
+import type { DossierImportBatch, DossierReport, DossierReviewPoint, Paginated } from '@/api/types';
 import { createFolderFormData, fileDigest, type FolderFile } from '@/features/dossier-imports/folderUpload';
 
 /**
@@ -29,6 +29,15 @@ export function useDossierImports(page: number) {
       return { ...data, results: data.results.map(withPreview) };
     },
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Récapitulatif des imports ; rafraîchi tant que des dossiers sont en cours d'analyse. */
+export function useDossierReport(days: number) {
+  return useQuery({
+    queryKey: [...dossierImportKeys.all, 'report', days] as const,
+    queryFn: async () => (await api.get<DossierReport>('/dossier-imports/report', { params: { days } })).data,
+    refetchInterval: (query) => ((query.state.data?.totals.in_progress ?? 0) > 0 ? 5000 : false),
   });
 }
 

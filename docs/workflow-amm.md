@@ -224,6 +224,31 @@ documents de la racine du pays. Au déploiement, ceux qui ne concernent pas la f
 (jamais supprimés) et leurs points à vérifier fermés (`manage.py nettoyer_documents_communs
 --dry-run` pour lister).
 
+### Classement autonome (depuis le 27/09/2026)
+
+`DOSSIER_AUTONOMOUS` (actif par défaut) : l'import ne demande plus rien quand une décision
+raisonnable existe. Il tranche seul, note sa décision et la montre dans le **récapitulatif** en
+tête de la page d'import (`GET /dossier-imports/report?days=7`) :
+
+| Situation | Décision automatique |
+| --- | --- |
+| Écart scan ≠ fiche (n°, dates, titulaire) | La décision officielle **corrige la fiche** si la lecture est sûre : PDF texte, ou OCR confirmé par une 2ᵉ décision ; jamais une fin avant le début. L'ancienne valeur reste dans l'historique. Sinon : point à vérifier. |
+| Produit écrit autrement que dans le catalogue | Rattaché au produit **déjà suivi dans le pays** : même marque (« KETOPROFENE-GH » = « KETOPROFEN GH »), même forme, dosages et mots distinctifs concordants, conditionnement pour départager (« GENFORTE CP B100 »). Un nom lu sur la décision qui ne correspond à aucun produit du pays désigne un autre produit. |
+| Produit absent du catalogue | Produit + AMM **créés** depuis la décision (ou le nom du dossier). Nom proche d'un produit mais dosage différent (« F45ML » / « F50ML ») : autre présentation, créée. |
+| AMM absente dans le pays | Fiche créée, même sans n° ni date lisibles (signalée « à compléter »). |
+| Pièces de plusieurs pays / produits | Le dossier pays déposé fait foi (sinon le pays le plus cité) ; une décision d'un autre pays ou produit devient une **pièce annexe**, jamais une preuve. |
+| Aucune décision lisible | Scans rangés dans la fiche du produit du dossier comme autres documents. |
+
+**À traiter** (seul ce qui exige une action) : dossier sans pays ni produit identifiable, hors
+périmètre, analyse échouée, fiche créée sans n° ni date d'origine, fiche existante sans n°/date et
+sans décision lisible. Les rangements automatiques ne créent plus une notification par produit :
+le récapitulatif les regroupe.
+
+Vitesse : dans le dossier d'un produit, l'OCR ne lit que les 6 premières pages d'un long scan
+(`DOSSIER_OCR_MAX_PAGES`) ; les recueils des « Documents communs » sont lus en entier. Le
+navigateur envoie les produits trois par trois. Mesure sur 300 dossiers réels du corpus : tous
+rangés sans question (dont 31 fiches créées), 0,3 s d'analyse par dossier hors OCR.
+
 ## 9. Où c'est écrit dans le code
 
 | Quoi | Où |

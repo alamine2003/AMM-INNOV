@@ -350,3 +350,108 @@ def pick_table_row(rows: list[dict], product, products) -> dict | None:
     if any(normalize(row["number"]) != normalize(best[1]["number"]) for row in rivals):
         return None
     return best[1]
+
+
+_PACK = re.compile(r"\b(?:b|bte|boite|x)\s*[:/]?\s*(\d+)\b")
+
+
+def _strengths(name: str) -> tuple[list[str], str]:
+    """Dosages et volumes (« 60MG/500MG », « F/100ML ») d'un libellé, et son conditionnement
+    (« B:30 », « B/100 ») à part : « GLIDE-M LP 60MG500MG CPR B30 » → (["60", "500"], "30")."""
+    text = normalize(re.sub(r"(\d)[.,](\d)", r"\1p\2", name))
+    pack = _PACK.search(text)
+    text = _PACK.sub(" ", text)
+    text = re.sub(r"(\d)\s*(mg|g|ml)(?=\d)", r"\1\2 ", text)  # « 60MG500MG »
+    values = []
+    # Un nombre collé à des lettres sans unité (« P1 » = page 1) n'est pas un dosage.
+    pattern = r"(\d+(?:p\d+)?)\s*(mg|g|mcg|ml|ui|iu)\b|(?<![a-z])(\d+(?:p\d+)?)(?![a-z])"
+    for with_unit, unit, bare in re.findall(pattern, text):
+        value = with_unit or bare
+        amount = float(value.replace("p", ".")) * (1000 if unit == "g" else 1)
+        values.append(_amount(amount))
+    return values, pack.group(1) if pack else ""
+
+
+def _strengths_fit(label: list[str], product: list[str]) -> bool:
+    """Chaque dosage du libellé se retrouve dans le produit (« 1590 » = « 15/90 » collés)."""
+    remaining = list(product)
+    joined = {a + b for a, b in zip(product, product[1:], strict=False)}
+    for value in label:
+        if value in remaining:
+            remaining.remove(value)
+        elif value not in joined:
+            return False
+    return True
+
+
+# Mots qui ne distinguent pas deux produits d'une même marque (formes, unités, liaisons).
+_PLAIN_WORDS = set(_SYNONYMS.values()) | set(_FORM_FAMILIES) | _UNITS | {
+    "gh", "b", "bte", "boite", "x", "f", "sol", "buv", "pell", "disp", "secable", "et", "de",
+    "du", "la", "le", "en", "pour", "a", "oral", "mui",
+}  # fmt: skip
+
+
+def _distinctive(words: list[str]) -> set[str]:
+    return {word for word in words[1:] if word not in _PLAIN_WORDS and len(word) > 1}
+
+
+def _words_fit(first: set[str], second: set[str]) -> bool:
+    """« RHUME ET GRIPPE SEVERE » n'est pas « RHUME JOUR ET NUIT » ; « MOLLE » est « MOL »."""
+    if not first or not second:
+        return True
+    shared = sum(
+        1 for word in first if any(word.startswith(o) or o.startswith(word) for o in second)
+    )
+    return shared / min(len(first), len(second)) >= 0.6
+
+
+def _country_candidates(name: str, marketed) -> list[tuple[object, str]]:
+    words, _ = _parts(name)
+    words = [word for word in words if word not in _UNITS]
+    if not words or len(words[0]) < 4:
+        return []
+    strengths, _ = _strengths(name)
+    forms, distinctive = _forms(words), _distinctive(words)
+    found = []
+    for product in marketed:
+        other, _ = _parts(product.name)
+        other = [word for word in other if word not in _UNITS]
+        if not other or SequenceMatcher(None, words[0], other[0]).ratio() < 0.85:
+            continue
+        other_forms = _forms(other)
+        if forms and other_forms and not forms & other_forms:
+            continue
+        other_strengths, other_pack = _strengths(product.name)
+        if not _strengths_fit(strengths, other_strengths):
+            continue
+        if not _words_fit(distinctive, _distinctive(other)):
+            continue
+        found.append((product, other_pack))
+    return found
+
+
+def same_product_in_country(names: list[str], folder_label: str, products, in_country):
+    """Produit déjà suivi dans le pays que désigne un libellé écrit autrement.
+
+    Même marque (« KETOPROFENE-GH » = « KETOPROFEN GH »), même famille de forme, dosages et
+    mots distinctifs concordants. Les noms lus sur les décisions (`names`) priment : si l'un ne
+    correspond à aucun produit du pays, la décision parle d'un autre produit et rien n'est
+    rattaché. Le nom du dossier ne sert qu'à départager (« GENFORTE CP B100 » parmi B/30 et
+    B/100), ou à défaut de nom lu. Une seule réponse ou rien : pas de fiche en double.
+    """
+    marketed = [product for product in products if product.pk in in_country]
+    pools = [_country_candidates(name, marketed) for name in names if name]
+    if pools:
+        if any(not pool for pool in pools):
+            return None
+        keys = set.intersection(*({item[0].pk for item in pool} for pool in pools))
+        found = [item for item in pools[0] if item[0].pk in keys]
+    else:
+        found = _country_candidates(folder_label, marketed) if folder_label else []
+    if len(found) > 1 and folder_label:
+        narrowed = {item[0].pk for item in _country_candidates(folder_label, marketed)}
+        found = [item for item in found if item[0].pk in narrowed] or found
+        _, pack = _strengths(folder_label)
+        if len(found) > 1 and pack:
+            found = [item for item in found if item[1] == pack] or found
+    return found[0][0] if len(found) == 1 else None
