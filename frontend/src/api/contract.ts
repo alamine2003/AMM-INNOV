@@ -15,6 +15,10 @@ import type {
   AlertRule,
   Amm,
   AmmDocument,
+  BinderCorrection,
+  BinderDetail,
+  BinderResult,
+  BinderSummary,
   Country,
   DossierReviewPoint,
   Health,
@@ -59,6 +63,8 @@ export type _ImportBatch = Assert<Assignable<Schemas['ImportBatch'], ImportBatch
 export type _ImportRow = Assert<Assignable<Schemas['ImportRow'], ImportRow>>;
 export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEntry>>;
 export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
+export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderSummary>>;
+export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API
 type Sends<Payload, Request> = Payload extends Request ? true : false;
@@ -68,6 +74,12 @@ export type _TransitionRequest = Assert<
   Sends<
     { to: Schemas['WorkflowStatusEnum']; filing_date?: string | null },
     Schemas['RenewalTransitionRequest']
+  >
+>;
+export type _CheckRequest = Assert<
+  Sends<
+    { amm: string; result: BinderResult; corrections: BinderCorrection[]; note: string },
+    Schemas['CheckInputRequest']
   >
 >;
 export type _RefreshResponse = Assert<Assignable<Schemas['TokenRefresh'], { access: string }>>;

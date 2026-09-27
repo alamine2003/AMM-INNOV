@@ -644,3 +644,91 @@ export interface Health {
   /** APP_VERSION côté API (« dev » par défaut) ; '' si l'API ne l'expose pas encore. */
   version: string;
 }
+
+/** Classeurs d'archivage (GET /binders) : un classeur papier reconstitué depuis les AMM. */
+export type BinderResult = 'CONFORME' | 'CORRIGE' | 'ABSENT';
+export type BinderSlot = 'original' | 'renewal';
+export type BinderField = 'number' | 'start_date' | 'end_date';
+
+export interface BinderCounts {
+  total: number;
+  checked: number;
+  conformes: number;
+  corrected: number;
+  absent: number;
+  to_scan: number;
+}
+
+export interface BinderSectionSummary extends BinderCounts {
+  code: string;
+  label: string;
+  color: string;
+}
+
+export interface BinderSummary extends BinderCounts {
+  key: string;
+  title: string;
+  country_iso2: string;
+  country_name: string;
+  is_headquarters: boolean;
+  sections: BinderSectionSummary[];
+  extras: number;
+  last_checked_at: string | null;
+  last_checked_by: string | null;
+}
+
+export interface BinderSlotValues {
+  number: string;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface BinderPage {
+  amm_id: string;
+  page: number;
+  section_page: number;
+  product_name: string;
+  range_code: string;
+  range_label: string;
+  original: BinderSlotValues;
+  renewal: (BinderSlotValues & { id: string; sequence: number }) | null;
+  status: AmmStatus;
+  status_label: string;
+  dossier_state: DossierState;
+  scan: { document_id: string; document_date: string; page_count: number | null } | null;
+  discrepancies: {
+    slot: BinderSlot;
+    field: BinderField;
+    recorded: unknown;
+    scan: unknown;
+    message: string;
+  }[];
+  check: {
+    result: BinderResult;
+    corrections: { slot: BinderSlot; field: BinderField; old: unknown; new: unknown }[];
+    note: string;
+    checked_by: string | null;
+    checked_at: string;
+  } | null;
+  to_scan: boolean;
+}
+
+export interface BinderExtraPage {
+  id: string;
+  product_name: string;
+  note: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface BinderDetail extends Omit<BinderSummary, 'sections'> {
+  sections: (BinderSectionSummary & { pages: BinderPage[] })[];
+  extra_pages: BinderExtraPage[];
+  resume_page: number;
+}
+
+export interface BinderCorrection {
+  slot: BinderSlot;
+  field: BinderField;
+  value: string | null;
+}

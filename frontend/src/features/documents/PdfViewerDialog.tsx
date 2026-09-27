@@ -16,6 +16,9 @@ import type { AmmDocument } from '@/api/types';
 import { saveBlob } from '@/lib/download';
 import { LoadingBlock, ErrorBlock } from '@/components/QueryState';
 
+/** Seuls l’identifiant et le titre du document servent à la visionneuse. */
+type ViewerDoc = Pick<AmmDocument, 'id' | 'title'>;
+
 interface Loaded {
   blob: Blob;
   url: string;
@@ -27,7 +30,7 @@ function PdfViewerContent({
   onClose,
   fileName,
 }: {
-  doc: AmmDocument;
+  doc: ViewerDoc;
   onClose: () => void;
   fileName?: string;
 }) {
@@ -148,7 +151,7 @@ export function PdfViewerDialog({
   onClose,
   fileName,
 }: {
-  doc: AmmDocument | null;
+  doc: ViewerDoc | null;
   open: boolean;
   onClose: () => void;
   fileName?: string;

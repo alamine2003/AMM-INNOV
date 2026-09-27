@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "apps.realtime",
     "apps.analytics",
     "apps.imports",
+    "apps.binders",
 ]
 
 MIDDLEWARE = [
@@ -362,6 +363,7 @@ SPECTACULAR_SETTINGS = {
         "ImportStatusEnum": "apps.imports.models.ImportBatch.Status",
         "ImportOutcomeEnum": "apps.imports.models.ImportRow.Outcome",
         "RangeCodeEnum": "apps.catalog.models.ProductRange.Code",
+        "BinderResultEnum": "apps.binders.models.BinderCheck.Result",
     },
 }
 

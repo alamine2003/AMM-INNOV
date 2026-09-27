@@ -51,6 +51,7 @@
     "alertRules": "Règles d'alerte",
     "imports": "Imports Excel",
     "dossierImports": "Import de dossiers AMM",
+    "binders": "Classeurs",
     "logout": "Se déconnecter",
     "profile": "Mon profil",
     "grafana": "Grafana",
