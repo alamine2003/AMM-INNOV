@@ -555,7 +555,15 @@ def table_rows(text: str) -> list[dict]:
                 "date": _row_date(re.split(_CODED_NUMBER, after)[0]),
             }
         )
-    return rows if len(rows) >= 3 else []
+    if len(rows) < 3:
+        return []
+    # Côte d'Ivoire : tous les visas d'une même liste portent la date de la séance ; une date
+    # décalée par l'OCR (au-dessus de la dénomination) est celle des autres lignes.
+    dates = {row["date"] for row in rows if row["date"]}
+    if len(dates) == 1 and sum(1 for row in rows if row["date"]) >= 2:
+        for row in rows:
+            row["date"] = row["date"] or next(iter(dates))
+    return rows
 
 
 PAGE_BREAK = "\f"
@@ -756,9 +764,7 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     # 10/2,5/5 ») ou citée en référence reste une seule décision.
     groups = specialty_groups(sections)
     compilation = len(groups) >= 2 and len({key.split(" ")[0] for key in groups}) >= 2
-    grouped = (
-        bool(rows) or compilation or (not explicit_product and len(matched_text) >= 3)
-    )
+    grouped = bool(rows) or compilation or (not explicit_product and len(matched_text) >= 3)
     if grouped:
         matched_text = []
     matched_products = matched_text or matched_path
@@ -799,7 +805,7 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     # Certificat guinéen : « PGHT N° E-AMM Début de validité Fin de validité » puis, ligne
     # suivante, « 22 EURO 5264 21/05/2024 21/05/2029 ».
     certificate = re.search(
-        r"n\S{0,2}\s*e?\W?amm[^\n]*debut\s+de\s+validite[^\n]*\n[^\n]*?(?<![\d,.])(\d{4,6})\s+"
+        r"n\S{0,2}\s*[a-z]?\W?amm[^\n]*debut\s+de\s+validite[^\n]*\n[^\n]*?(?<![\d,.])(\d{4,6})\s+"
         r"(\d{1,2}/\d{1,2}/\d{4})\s+(\d{1,2}/\d{1,2}/\d{4})",
         plain,
     )
@@ -861,6 +867,17 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     if certificate and not start_date:
         start_date = parse_date(certificate.group(2))
         end_date = end_date or parse_date(certificate.group(3))
+    if not start_date:
+        # Certificat dont le tableau « Début de validité | Fin de validité » est lu colonne par
+        # colonne : les deux dates suivent l'en-tête de quelques lignes.
+        columns = re.search(
+            r"debut\s+de\s+validite\s*\|?\s*fin\s+de\s+validite[\s\S]{0,200}?"
+            r"(\d{1,2}/\d{1,2}/\d{4})\s*\|?\s*(\d{1,2}/\d{1,2}/\d{4})",
+            plain,
+        )
+        if columns:
+            start_date = parse_date(columns.group(1))
+            end_date = end_date or parse_date(columns.group(2))
     if period_range and not start_date:
         start_date = parse_date(period_range.group(1))
         end_date = end_date or parse_date(period_range.group(2))
@@ -878,12 +895,19 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         # 2018*026674 » (date puis numéro d'ordre) en tête de la première page.
         stamp = re.search(
             rf"(?<![\d/.])(\d{{1,2}}\s?[./]\s?\d{{1,2}}\s?[./]\s?(?:19|20)\d\d"
-            rf"|\d{{1,2}}\s?(?:{_MONTH_NAMES})\.?\s?(?:19|20)\d\d)\d?\s*[*+]\s*[0-9o]",
+            rf"|\d{{1,2}}\s?(?:{_MONTH_NAMES})\.?\s?(?:19|20)\d\d)\d?\s*[*+][:;]?\s*[0-9o]",
+            plain[:2500],
+        ) or re.search(
+            # « 10.06.2016 08452 » : tampon sans astérisque, seul en début de ligne.
+            r"(?:^|\n)[^\S\n]*(\d{1,2}\.\d{1,2}\.(?:19|20)\d\d)[^\S\n]+\d{4,6}[^\S\n]*(?=\n|$)",
             plain[:2500],
         )
         if stamp:
             raw = re.sub(r"\s+", " ", stamp.group(1))
-            decision_date = parse_date(re.sub(r"\s?([./])\s?", r"\1", raw))
+            # « 15. 04.2026 » se recolle ; « 06 DEC. 2022 » (mois en lettres) se lit tel quel.
+            decision_date = parse_date(re.sub(r"\s?([./])\s?", r"\1", raw)) or parse_date(
+                re.sub(r"([a-z])\.?\s?(\d)", r"\1 \2", raw)  # « 06 DEC. 2022 », « 01 JUIN2021 »
+            )
     if not decision_date:
         # Lieu mal lu (« CORONOU, le 16 AVR 2019 ») : toute ligne courte « Ville, le <date> ».
         signed = re.search(
@@ -899,10 +923,18 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
             plain[:3000],
         )
         decision_date = parse_date(headed.group(1)) if headed else None
+    # Au Sénégal, l'avis de la « Commission nationale du médicament » précède l'AMM de plusieurs
+    # mois ; au Niger, la décision reprend sa date.
+    niger_commission = (
+        r"|commission\s+nationale\s+du\s+medicament"
+        if any(getattr(country, "iso2", "") == "NE" for country in matched_countries)
+        else ""
+    )
     if not decision_date:
         # Niger : la décision reprend la date de l'avis de la commission d'homologation.
         opinion = re.search(
-            rf"(?:commission\s+nationale\s+d.?homologation|\bcnh\w*)[^\n]{{0,120}}?en\s+date\s+du\s*({DATE_PATTERN})",
+            rf"(?:commission\s+nationale\s+d.?homologation|\bcnh\w*{niger_commission})"
+            rf"[^\n]{{0,120}}?en\s+date\s+du\s*({DATE_PATTERN})",
             plain,
         )
         decision_date = parse_date(opinion.group(1)) if opinion else None
@@ -919,8 +951,10 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     # de tampon fautive (« Bamako, le 21 OCT 2071 », « 29 AOUT 2822 »).
     horizon = (today() + timedelta(days=31)).isoformat()
     decision_date = decision_date if not decision_date or decision_date <= horizon else None
-    if not start_date and decision_date and re.search(
-        r"(?:compter|partir)\s+de\s+la\s+date\s+de\s+(?:sa\s+)?signature", plain
+    if (
+        not start_date
+        and decision_date
+        and re.search(r"(?:compter|partir)\s+de\s+la\s+date\s+de\s+(?:sa\s+)?signature", plain)
     ):
         # Mali : « … cinq (5) ans pour compter de la date de signature de la présente décision ».
         start_date = decision_date
@@ -945,6 +979,33 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
     )
     renewal_filename = bool(re.search(r"\b(renouvellement|renouv|renewal)\b", basename))
     is_renewal = bool(renewal_parts or renewal_content or renewal_filename)
+    if not start_date and not decision_date and not is_renewal:
+        # « l'AMM n° 5735 du 22/12/2010 », « autorisation de mise sur le marché n°003610 du
+        # 23 février 2022 » : la date accolée au n° d'AMM est celle de l'AMM. Pas dans un
+        # renouvellement, où elle désigne l'AMM d'origine renouvelée ; pas « dossier enregistré
+        # sous le n° … du … » (Bénin), qui date le dépôt.
+        dated = re.search(
+            r"(?:\bamm\b|autorisation\s+de\s+mise\s+sur\s+le\s+marche)"
+            rf"[^\n]{{0,20}}?n\W{{0,3}}\s*[\w/.-]{{3,30}}(?:\s*\(?bis\)?)?\s*,?\s*"
+            rf"(?:du|en\s+date\s+du)\s*({DATE_PATTERN})",
+            plain,
+        )
+        if dated:
+            start_date = parse_date(re.sub(r"\s?/\s?", "/", dated.group(1)))
+    cited_original = None
+    if is_renewal:
+        # Sénégal : « … l'AMM n° 5735 du 22/12/2010 est renouvelée pour … » : le renouvellement
+        # cite l'AMM d'origine, son n° et sa date.
+        cited = re.search(
+            rf"\bamm\s+n\W{{0,3}}\s*([\w/.-]{{3,30}}(?:\s*\(?bis\)?)?)\s*,?\s*du\s*"
+            rf"({DATE_PATTERN})\s*,?\s*(?:est|a\s+ete)\s+renouvele",
+            plain,
+        )
+        if cited:
+            cited_original = {
+                "number": cited.group(1).strip().upper(),
+                "start_date": parse_date(cited.group(2)),
+            }
     period = "original"
     uncertain_period = False
     if is_renewal:
@@ -996,6 +1057,8 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         "start_date": start_date if official else None,
         "decision_date": decision_date if official else None,
         "end_date": end_date if official else None,
+        # AMM d'origine citée par une décision de renouvellement (n° et date).
+        "cited_original": cited_original if official else None,
         # Un récépissé porte la date de dépôt (« Déposé le 01/03/2026 »), pas une date « Date : ».
         "document_date": decision_date
         or start_date
