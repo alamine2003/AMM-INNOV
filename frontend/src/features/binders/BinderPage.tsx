@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
+  Button,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -16,11 +17,14 @@ import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
+import { useSnackbar } from 'notistack';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { useCurrentUser } from '@/api/hooks/useAuth';
 import { useBinder } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage as Page } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
+import { AddPageDialog } from './AddPageDialog';
 import { BinderDownload } from './BinderDownload';
 import { BinderSheet } from './BinderSheet';
 import { DividerLeaf, EndLeaf, InsideCover, LeafBack, TitleLeaf } from './BinderLeaves';
@@ -79,6 +83,33 @@ interface Snapshot {
   key: string;
   filter: LeafFilter;
   leaves: Leaf[];
+  source: BinderDetail;
+}
+
+/** Épaisseur de pile réaliste : 1 à 7 feuilles visibles selon le nombre de pages. */
+function stackLayers(pagesInStack: number): number {
+  return Math.max(1, Math.min(7, Math.ceil(pagesInStack / 18)));
+}
+
+function PageStack({ count, side }: { count: number; side: 'left' | 'right' }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => count - i).map((n) => (
+        <Box
+          key={n}
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            transform: `translate(${side === 'right' ? n * 1.6 : -n * 1.6}px, ${n * 1.6}px)`,
+            bgcolor: n % 2 ? '#efe9dc' : '#f7f2e8',
+            borderRadius: 1,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.22)',
+          }}
+        />
+      ))}
+    </>
+  );
 }
 
 export default function BinderPage() {
@@ -99,16 +130,31 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const [flip, setFlip] = useState<Flip | null>(null);
   const [jumped, setJumped] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
+  const [adding, setAdding] = useState<{ prefill?: { product_name: string; extra_id: string } } | null>(null);
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const bookRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
 
   // L'ordre des feuilles est figé par filtre : une page vérifiée ne disparaît pas sous les doigts.
-  if (!snapshot || snapshot.key !== binder.key || snapshot.filter !== filter) {
+  // Une page attendue (ajoutée, ou masquée par le filtre) : on relit le classeur jusqu'à la trouver.
+  if (
+    !snapshot ||
+    snapshot.key !== binder.key ||
+    snapshot.filter !== filter ||
+    (pending && snapshot.source !== binder)
+  ) {
     const leaves = buildLeaves(binder, filter);
     const target = pending ? leaves.findIndex((leaf) => leaf.key === pending) : -1;
-    setSnapshot({ key: binder.key, filter, leaves });
-    setCurrent(target >= 0 ? target : resumeIndex(leaves, binder));
-    setPending(null);
+    const fresh = !snapshot || snapshot.key !== binder.key || snapshot.filter !== filter;
+    setSnapshot({ key: binder.key, filter, leaves, source: binder });
+    if (target >= 0) {
+      setCurrent(target);
+      setPending(null);
+      setJumped((n) => n + 1);
+    } else if (fresh) {
+      setCurrent(resumeIndex(leaves, binder));
+    }
     setFlip(null);
   }
   const leaves = snapshot?.leaves ?? buildLeaves(binder, filter);
@@ -199,6 +245,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
               setFilter('all');
             }
           }}
+          onAddPage={(prefill) => setAdding({ prefill })}
           downloadButton={
             isHq ? (
               <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
@@ -306,8 +353,33 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           }
           label="Animation"
         />
+        <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
+          Ajouter une page
+        </Button>
         {isHq && <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />}
       </Stack>
+      <AddPageDialog
+        binder={binder}
+        open={!!adding}
+        prefill={adding?.prefill ?? null}
+        onClose={() => setAdding(null)}
+        onAdded={(result) => {
+          setAdding(null);
+          const target = `page:${result.amm_id}`;
+          if (result.binder_key === binder.key) {
+            // Le classeur est relu : on l'ouvre sur la nouvelle page, à sa place alphabétique.
+            setPending(target);
+            enqueueSnackbar('Page ajoutée : importez son scan directement depuis la page.', {
+              variant: 'success',
+            });
+          } else {
+            enqueueSnackbar(`Page rangée dans le classeur ${result.binder.title} (ordre alphabétique).`, {
+              variant: 'info',
+            });
+            navigate(`/classeurs/${result.binder_key}`);
+          }
+        }}
+      />
 
       <Box
         ref={bookRef}
@@ -349,18 +421,20 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             perspective: '2400px',
           }}
         >
-          <Box
-            sx={{
-              position: 'relative',
-              flex: 1,
-              display: { xs: 'none', md: 'block' },
-              mr: 0.5,
-              borderRadius: 1,
-              overflow: 'hidden',
-              boxShadow: 'inset -14px 0 18px -12px rgba(0,0,0,0.5)',
-            }}
-          >
-            {leftIndex >= 0 ? <LeafBack label={leafLabel(leftIndex)} /> : <InsideCover />}
+          <Box sx={{ position: 'relative', flex: 1, display: { xs: 'none', md: 'block' }, mr: 0.5 }}>
+            {/* Feuilles déjà tournées : la pile s'épaissit à mesure qu'on avance. */}
+            {leftIndex >= 0 && <PageStack count={stackLayers(index)} side="left" />}
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 1,
+                overflow: 'hidden',
+                boxShadow: 'inset -14px 0 18px -12px rgba(0,0,0,0.5)',
+              }}
+            >
+              {leftIndex >= 0 ? <LeafBack label={leafLabel(leftIndex)} /> : <InsideCover />}
+            </Box>
           </Box>
           {/* Anneaux du mécanisme. */}
           <Box
@@ -396,22 +470,8 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             ))}
           </Box>
           <Box sx={{ position: 'relative', flex: 1, ml: { md: 0.5 } }}>
-            {/* Tranche de la pile de feuilles restantes. */}
-            {index < last &&
-              [3, 2, 1].map((n) => (
-                <Box
-                  key={n}
-                  aria-hidden
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    transform: `translate(${n * 2}px, ${n * 2}px)`,
-                    bgcolor: n % 2 ? '#efe9dc' : '#f7f2e8',
-                    borderRadius: 1,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
-                  }}
-                />
-              ))}
+            {/* Tranche des feuilles restantes : plus épaisse au début du classeur. */}
+            {index < last && <PageStack count={stackLayers(last - index)} side="right" />}
             <Box
               data-leaf="current"
               key={`${rightIndex}-${jumped}`}

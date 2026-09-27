@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, ButtonBase, CircularProgress, Typography } from '@mui/material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { useQuery } from '@tanstack/react-query';
 import { Document, Page } from 'react-pdf';
 import { fetchDocumentBlob } from '@/api/hooks/useDocuments';
@@ -45,7 +46,21 @@ export function ScanThumbnail({
   const scan = blob.data;
 
   return (
-    <>
+    <Box sx={{ position: 'relative', flexShrink: 0 }}>
+      {/* Trombone : le scan est agrafé à la fiche, comme dans le classeur. */}
+      <AttachFileIcon
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: -12,
+          left: 14,
+          zIndex: 1,
+          fontSize: 30,
+          color: '#8a94a6',
+          transform: 'rotate(38deg)',
+          filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.3))',
+        }}
+      />
       <ButtonBase
         onClick={() => setOpen(true)}
         aria-label={`Ouvrir le scan du ${formatDate(documentDate)}`}
@@ -85,6 +100,6 @@ export function ScanThumbnail({
         )}
       </ButtonBase>
       <PdfViewerDialog doc={{ id: documentId, title }} open={open} onClose={() => setOpen(false)} />
-    </>
+    </Box>
   );
 }

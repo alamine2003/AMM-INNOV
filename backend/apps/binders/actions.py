@@ -147,3 +147,96 @@ def remove_extra(binder: Binder, extra_id, *, user) -> None:
     deleted, _ = BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).delete()
     if not deleted:
         raise ValidationError("Page en trop introuvable.")
+
+
+def _product(name: str, range_code: str | None):
+    """Le produit du catalogue (même libellé, alias ou même clé), créé s'il n'existe pas."""
+    from apps.catalog.models import Product, ProductAlias, ProductRange
+    from apps.catalog.normalize import normalize_product_name, product_key
+
+    label = normalize_product_name(name)
+    if not label:
+        raise ValidationError("Indiquez le nom du produit tel qu'il figure sur le dossier.")
+    range_obj = ProductRange.objects.filter(code=range_code).first() if range_code else None
+    alias = ProductAlias.objects.filter(raw_name=label).select_related("product").first()
+    product = (
+        alias.product
+        if alias
+        else Product.objects.filter(name=label).first()
+        or Product.objects.filter(key=product_key(label)).first()
+    )
+    if product is None:
+        return Product.objects.create(name=label, range=range_obj), True
+    if product.range_id is None and range_obj is not None:
+        product.range = range_obj
+        product.save(update_fields=["range"])
+    return product, False
+
+
+def add_page(
+    binder: Binder,
+    *,
+    product_name: str,
+    range_code: str | None,
+    original_number: str,
+    original_start_date,
+    extra_id=None,
+    user,
+):
+    """Page oubliée : l'AMM du produit dans ce pays est créée et prend sa place dans le
+    classeur (ordre alphabétique). Une « page en trop » signalée peut ainsi devenir une page."""
+    from .layout import binders_of
+
+    ensure_country_in_scope(user, binder.country)
+    if range_code is None and binder.part is not None:
+        range_code = next((code for code in binder.part.ranges if code), None)
+    with transaction.atomic():
+        product, created = _product(product_name, range_code)
+        existing = MarketingAuthorization.objects.filter(
+            product=product, country=binder.country
+        ).first()
+        if existing is not None:
+            raise ValidationError(
+                f"{product.name} a déjà sa page dans les classeurs {binder.country.name}."
+            )
+        amm = MarketingAuthorization(
+            product=product,
+            country=binder.country,
+            original_number=(original_number or "").strip(),
+            original_start_date=original_start_date,
+            notes="Page ajoutée depuis le classeur papier.",
+        )
+        amm._history_user = user
+        amm._change_reason = "Page ajoutée depuis le classeur papier"
+        amm.save()
+        if extra_id:
+            BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).delete()
+    code = product.range.code if product.range_id else None
+    landing = next(
+        (b for b in binders_of(binder.country) if b.contains(code, product.name)), binder
+    )
+    return amm, landing, created
+
+
+def import_page_scan(binder: Binder, amm_id, *, files: list, user):
+    """« Importer le scan » depuis une page : le dossier est rangé sur cette AMM, lu comme un
+    import de dossier (n° et dates relus, scan rangé, fiche corrigée si la décision le dit)."""
+    from apps.imports.dossier.upload import stage_dossier
+    from apps.imports.models import DossierImport
+
+    amm = MarketingAuthorization.objects.select_related("country", "product__range").get(pk=amm_id)
+    ensure_country_in_scope(user, amm.country)
+    ensure_in_binder(binder, amm)
+    if not files:
+        raise ValidationError("Choisissez le scan de la décision (PDF ou image).")
+    folder = f"{amm.country.name.upper()} - {amm.product.name}"
+    batch = stage_dossier(
+        uploads=files,
+        paths=[f"{folder}/{getattr(file, 'name', 'scan.pdf')}" for file in files],
+        root_name=folder,
+        user=user,
+    )
+    # L'AMM est connue : l'analyse ne cherche pas le produit ni le pays, elle lit le scan.
+    DossierImport.objects.filter(pk=batch.pk).update(amm=amm, country=amm.country)
+    batch.refresh_from_db()
+    return batch

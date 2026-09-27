@@ -1468,6 +1468,76 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/binders/{key}/pages/:
+    post:
+      operationId: v1_binders_pages_create
+      description: 'Ajoute la page d''un produit oublié : l''AMM est créée dans le
+        pays du classeur.'
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPageInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddPageInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddPageInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPageResult'
+          description: ''
+  /api/v1/binders/{key}/pages/{amm_id}/scan/:
+    post:
+      operationId: v1_binders_pages_scan_create
+      description: 'Importe le scan d''une page : lu et rangé comme un import de dossier,
+        sur cette AMM.'
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PageScanInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageScanResult'
+          description: ''
   /api/v1/binders/{key}/pdf/:
     get:
       operationId: v1_binders_pdf_retrieve
@@ -3577,6 +3647,49 @@ paths:
           description: No response body
 components:
   schemas:
+    AddPageInputRequest:
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        range_code:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/RangeCodeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        original_number:
+          type: string
+          default: ''
+          maxLength: 100
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+        extra_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - product_name
+    AddPageResult:
+      type: object
+      properties:
+        amm_id:
+          type: string
+          format: uuid
+        binder_key:
+          type: string
+        product_created:
+          type: boolean
+        binder:
+          $ref: '#/components/schemas/BinderDetail'
+      required:
+      - amm_id
+      - binder
+      - binder_key
+      - product_created
     Alert:
       type: object
       properties:
@@ -5942,6 +6055,29 @@ components:
       - status
       - status_label
       - to_scan
+    PageScanInputRequest:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 10
+          minItems: 1
+      required:
+      - files
+    PageScanResult:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+      required:
+      - batch_id
+      - status
     PaginatedAlertList:
       type: object
       required:

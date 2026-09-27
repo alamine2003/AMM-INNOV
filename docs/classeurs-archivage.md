@@ -57,6 +57,26 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   encore vérifiée porte un cadre de constat à cocher à la main, pour vérifier aussi sur papier. Il faut
   compter environ 0,4 s pour les 207 pages de la Guinée.
 
+## Ajouter une page, importer un scan depuis une page
+
+- **Ajouter une page** (en haut du classeur, ou « Créer la page » sur une page en trop du bilan) : un dossier
+  présent sur le papier mais oublié dans AMM GH.
+  - L'AMM du produit est créée dans le pays du classeur. Le produit du catalogue est repris s'il existe, par
+    son libellé, un alias ou la même clé de rapprochement ; sinon il est créé.
+  - La page prend sa place alphabétique. Au siège, la gamme est celle du classeur, et un produit en « L »
+    ajouté depuis Générale A-K va dans Générale L-Z. Le classeur s'ouvre sur la nouvelle page.
+  - Une AMM qui existe déjà est refusée.
+- **Importer le scan** (sur chaque page, ou glisser-déposer du fichier sur la feuille) : le scan est envoyé
+  comme un import de dossier déjà rattaché à cette AMM. L'analyse ne cherche ni le produit ni le pays : elle
+  lit le n° d'AMM et les dates, range le scan (origine ou renouvellement), corrige la fiche si la décision
+  officielle le dit, puis la page se met à jour (miniature agrafée, dates, statut).
+  - Le dossier importé reste visible dans « Import de dossiers AMM » avec son bilan.
+  - S'il demande une vérification, la page donne le lien.
+- **Détails réalistes** :
+  - la pile de feuilles s'épaissit à droite au début du classeur et à gauche à mesure qu'on avance ;
+  - le scan est agrafé à la fiche par un trombone ;
+  - la note de l'archiviste apparaît en post-it jaune sur la page.
+
 ## Classeur complet avec les décisions officielles (siège)
 
 Le bouton **Télécharger** (étagère, classeur ouvert, bilan) propose deux versions :
@@ -89,6 +109,8 @@ Déroulement :
 | POST | `/api/v1/binders/{clé}/check` | constat `{amm, result, corrections[], note}` |
 | POST | `/api/v1/binders/{clé}/uncheck` | annuler le constat `{amm}` |
 | POST, DELETE | `/api/v1/binders/{clé}/extras[/{id}]` | pages en trop |
+| POST | `/api/v1/binders/{clé}/pages` | ajouter la page d'un produit oublié `{product_name, range_code?, original_number?, original_start_date?, extra_id?}` |
+| POST | `/api/v1/binders/{clé}/pages/{amm}/scan` | importer le scan d'une page (multipart `files`), lu comme un import de dossier |
 | GET | `/api/v1/binders/{clé}/pdf` | PDF des fiches (siège uniquement) |
 | GET, POST | `/api/v1/binders/{clé}/exports` | préparations avec décisions officielles ; POST en lance une (siège) |
 | GET | `/api/v1/binders/{clé}/exports/{id}/file` | classeur complet prêt (siège) |

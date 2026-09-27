@@ -178,4 +178,41 @@ describe('Classeurs', () => {
     await waitFor(() => expect(sent).toMatchObject({ amm: 'amm-1', result: 'CONFORME' }));
     expect(await within(book).findAllByTestId('binder-stamp')).not.toHaveLength(0);
   });
+
+  it("ajoute la page d'un produit oublié et l'ouvre", async () => {
+    loginAs('u-sn');
+    const added = page({
+      amm_id: 'amm-9',
+      page: 2,
+      product_name: 'BISOPROLOL GH 5MG',
+      original: { number: '19070123', start_date: null, end_date: null },
+    });
+    let body: unknown = null;
+    const after = () => binder([checked, added, page({ page: 3 })]);
+    server.use(
+      http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(body ? after() : binder([checked, page()]))),
+      http.post(`${endpoint}/SN-cardio/pages`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(
+          {
+            amm_id: 'amm-9',
+            binder_key: 'SN-cardio',
+            product_created: true,
+            binder: binder([checked, added, page({ page: 3 })]),
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    renderApp('/classeurs/SN-cardio');
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter une page' }));
+    await userEvent.type(screen.getByLabelText(/Produit \(tel/), 'BISOPROLOL GH 5MG');
+    await userEvent.type(screen.getByLabelText("N° d'AMM d'origine"), '19070123');
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la page' }));
+    await waitFor(() =>
+      expect(body).toMatchObject({ product_name: 'BISOPROLOL GH 5MG', original_number: '19070123' }),
+    );
+    const book = screen.getByTestId('binder-book');
+    expect(await within(book).findByRole('heading', { name: 'BISOPROLOL GH 5MG' })).toBeInTheDocument();
+  });
 });
