@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
-  Button,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -15,17 +14,14 @@ import {
 } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DownloadIcon from '@mui/icons-material/Download';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Link, useParams } from 'react-router';
-import { useSnackbar } from 'notistack';
-import { extractErrorMessage } from '@/api/client';
 import { useCurrentUser } from '@/api/hooks/useAuth';
-import { fetchBinderPdf, useBinder } from '@/api/hooks/useBinders';
+import { useBinder } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage as Page } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
-import { saveBlob } from '@/lib/download';
+import { BinderDownload } from './BinderDownload';
 import { BinderSheet } from './BinderSheet';
 import { DividerLeaf, EndLeaf, InsideCover, LeafBack, TitleLeaf } from './BinderLeaves';
 import { FILTER_LABELS, buildLeaves, pagesById, resumeIndex, type Leaf, type LeafFilter } from './leaves';
@@ -95,7 +91,6 @@ export default function BinderPage() {
 
 function OpenBinder({ binder }: { binder: BinderDetail }) {
   const user = useCurrentUser();
-  const { enqueueSnackbar } = useSnackbar();
   const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
   const [filter, setFilter] = useState<LeafFilter>('all');
   const [animation, setAnimation] = useState(readAnimation);
@@ -103,7 +98,6 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const [current, setCurrent] = useState(0);
   const [flip, setFlip] = useState<Flip | null>(null);
   const [jumped, setJumped] = useState(0);
-  const [downloading, setDownloading] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const bookRef = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ x: number; y: number } | null>(null);
@@ -180,17 +174,6 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const resumeLabel =
     resumeLeaf?.kind === 'page' ? (pages.get(resumeLeaf.ammId)?.product_name ?? null) : null;
 
-  const download = async () => {
-    setDownloading(true);
-    try {
-      saveBlob(await fetchBinderPdf(binder.key), `Classeur_${binder.key}.pdf`);
-    } catch (e) {
-      enqueueSnackbar(extractErrorMessage(e), { variant: 'error' });
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   const renderLeaf = (at: number) => {
     const leaf = leaves[at];
     if (!leaf) return null;
@@ -216,8 +199,11 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
               setFilter('all');
             }
           }}
-          onDownload={isHq ? () => void download() : null}
-          downloading={downloading}
+          downloadButton={
+            isHq ? (
+              <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
+            ) : null
+          }
         />
       );
     }
@@ -320,16 +306,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           }
           label="Animation"
         />
-        {isHq && (
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={() => void download()}
-            disabled={downloading}
-          >
-            PDF
-          </Button>
-        )}
+        {isHq && <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />}
       </Stack>
 
       <Box

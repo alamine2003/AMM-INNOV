@@ -10,7 +10,6 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import DownloadIcon from '@mui/icons-material/Download';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { extractErrorMessage } from '@/api/client';
 import { useExtraPages } from '@/api/hooks/useBinders';
@@ -149,13 +148,11 @@ export function DividerLeaf({ section, pages }: { section: BinderSectionSummary;
 export function EndLeaf({
   binder,
   onOpenPage,
-  onDownload,
-  downloading,
+  downloadButton,
 }: {
   binder: BinderDetail;
   onOpenPage: (ammId: string) => void;
-  onDownload: (() => void) | null;
-  downloading: boolean;
+  downloadButton: React.ReactNode;
 }) {
   const { add, remove } = useExtraPages(binder.key);
   const [name, setName] = useState('');
@@ -175,16 +172,7 @@ export function EndLeaf({
           <Typography component="h2" sx={{ fontSize: 24, fontWeight: 900 }}>
             Bilan du classeur
           </Typography>
-          {onDownload && (
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              onClick={onDownload}
-              disabled={downloading}
-            >
-              Télécharger le PDF
-            </Button>
-          )}
+          {downloadButton}
         </Stack>
         <Typography sx={{ fontSize: 13, color: MUTED, mb: 2 }}>
           {binder.checked} / {binder.total} pages vérifiées · {binder.conformes} conformes ·{' '}

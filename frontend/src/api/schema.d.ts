@@ -461,6 +461,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/{key}/exports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Dernières préparations du classeur avec les décisions officielles. */
+        get: operations["v1_binders_exports_list"];
+        put?: never;
+        /** @description Lance la préparation (une seule à la fois par classeur). */
+        post: operations["v1_binders_exports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/exports/{export_id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_binders_exports_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/binders/{key}/extras/": {
         parameters: {
             query?: never;
@@ -1728,6 +1762,55 @@ export interface components {
             extra_pages: components["schemas"]["ExtraPage"][];
             resume_page: number;
         };
+        BinderExport: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Classeur */
+            readonly binder_key: string;
+            /** Statut */
+            readonly status: components["schemas"]["BinderExportStatusEnum"];
+            /** AMM traitées */
+            readonly progress_done: number;
+            /** AMM à traiter */
+            readonly progress_total: number;
+            /** Taille (octets) */
+            readonly size_bytes: number;
+            /** Pages */
+            readonly page_count: number;
+            /** Décisions jointes */
+            readonly decisions: number;
+            /** Scans illisibles ou absents du stockage */
+            readonly unavailable: number;
+            /** AMM sans scan */
+            readonly without_scan: number;
+            /** Erreur */
+            readonly error: string;
+            readonly created_by: string | null;
+            /**
+             * Demandé le
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Commencé le
+             * Format: date-time
+             */
+            readonly started_at: string | null;
+            /**
+             * Terminé le
+             * Format: date-time
+             */
+            readonly finished_at: string | null;
+            readonly has_file: boolean;
+        };
+        /**
+         * @description * `PENDING` - En attente
+         *     * `RUNNING` - En préparation
+         *     * `READY` - Prêt
+         *     * `FAILED` - Échec
+         * @enum {string}
+         */
+        BinderExportStatusEnum: "PENDING" | "RUNNING" | "READY" | "FAILED";
         /**
          * @description * `CONFORME` - Conforme
          *     * `CORRIGE` - Corrigé
@@ -3918,6 +4001,69 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BinderDetail"];
                 };
+            };
+        };
+    };
+    v1_binders_exports_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderExport"][];
+                };
+            };
+        };
+    };
+    v1_binders_exports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderExport"];
+                };
+            };
+        };
+    };
+    v1_binders_exports_file_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classeur complet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

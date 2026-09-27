@@ -80,3 +80,56 @@ class BinderExtraPage(models.Model):
 
     def __str__(self) -> str:
         return f"{self.binder_key} — {self.product_name}"
+
+
+def export_upload_to(instance, filename: str) -> str:
+    return f"binders/{instance.binder_key}/{instance.pk}.pdf"
+
+
+class BinderExport(models.Model):
+    """Classeur complet avec les décisions officielles, assemblé en arrière-plan (siège)."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En attente"
+        RUNNING = "RUNNING", "En préparation"
+        READY = "READY", "Prêt"
+        FAILED = "FAILED", "Échec"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    country = models.ForeignKey(
+        "catalog.Country", on_delete=models.CASCADE, related_name="+", verbose_name="pays"
+    )
+    binder_key = models.CharField("classeur", max_length=40, db_index=True)
+    status = models.CharField(
+        "statut", max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    progress_done = models.PositiveIntegerField("AMM traitées", default=0)
+    progress_total = models.PositiveIntegerField("AMM à traiter", default=0)
+    file = models.FileField("fichier", upload_to=export_upload_to, max_length=300, blank=True)
+    size_bytes = models.PositiveBigIntegerField("taille (octets)", default=0)
+    page_count = models.PositiveIntegerField("pages", default=0)
+    decisions = models.PositiveIntegerField("décisions jointes", default=0)
+    unavailable = models.PositiveIntegerField("scans illisibles ou absents du stockage", default=0)
+    without_scan = models.PositiveIntegerField("AMM sans scan", default=0)
+    error = models.TextField("erreur", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="demandé par",
+    )
+    created_at = models.DateTimeField("demandé le", auto_now_add=True)
+    started_at = models.DateTimeField("commencé le", null=True, blank=True)
+    finished_at = models.DateTimeField("terminé le", null=True, blank=True)
+
+    ACTIVE = (Status.PENDING, Status.RUNNING)
+
+    class Meta:
+        verbose_name = "export de classeur"
+        verbose_name_plural = "exports de classeur"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.binder_key} — {self.get_status_display()}"

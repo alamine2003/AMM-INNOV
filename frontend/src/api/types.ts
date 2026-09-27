@@ -732,3 +732,23 @@ export interface BinderCorrection {
   field: BinderField;
   value: string | null;
 }
+
+/** Classeur complet avec les décisions officielles, préparé en arrière-plan (siège). */
+export interface BinderExport {
+  id: string;
+  binder_key: string;
+  status: 'PENDING' | 'RUNNING' | 'READY' | 'FAILED';
+  progress_done: number;
+  progress_total: number;
+  size_bytes: number;
+  page_count: number;
+  decisions: number;
+  unavailable: number;
+  without_scan: number;
+  error: string;
+  created_by: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  has_file: boolean;
+}

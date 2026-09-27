@@ -105,6 +105,50 @@ describe('Classeurs', () => {
     expect(screen.getByLabelText(/Télécharger le classeur Sénégal Cardio/)).toBeInTheDocument();
   });
 
+  it('le siège prépare et télécharge le classeur avec les décisions officielles', async () => {
+    loginAs('u-hq');
+    let started = false;
+    server.use(
+      http.get(endpoint, () => HttpResponse.json([summary])),
+      http.get(`${endpoint}/SN-cardio/exports`, () =>
+        HttpResponse.json(
+          started
+            ? [
+                {
+                  id: 'exp-1',
+                  binder_key: 'SN-cardio',
+                  status: 'READY',
+                  progress_done: 94,
+                  progress_total: 94,
+                  size_bytes: 52_428_800,
+                  page_count: 402,
+                  decisions: 88,
+                  unavailable: 0,
+                  without_scan: 6,
+                  error: '',
+                  created_by: 'Siège',
+                  created_at: '2026-09-27T10:00:00Z',
+                  started_at: '2026-09-27T10:00:01Z',
+                  finished_at: '2026-09-27T10:03:00Z',
+                  has_file: true,
+                },
+              ]
+            : [],
+        ),
+      ),
+      http.post(`${endpoint}/SN-cardio/exports`, () => {
+        started = true;
+        return HttpResponse.json({}, { status: 202 });
+      }),
+    );
+    renderApp('/classeurs');
+    await userEvent.click(await screen.findByLabelText(/Télécharger le classeur Sénégal Cardio/));
+    await userEvent.click(await screen.findByText('Avec les décisions officielles'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Préparer le classeur' }));
+    expect(await screen.findByText(/88 décisions officielles jointes/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Télécharger' })).toBeInTheDocument();
+  });
+
   it('un pays ne voit pas le téléchargement', async () => {
     loginAs('u-sn');
     server.use(http.get(endpoint, () => HttpResponse.json([summary])));

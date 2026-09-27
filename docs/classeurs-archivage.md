@@ -57,6 +57,29 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   encore vérifiée porte un cadre de constat à cocher à la main, pour vérifier aussi sur papier. Il faut
   compter environ 0,4 s pour les 207 pages de la Guinée.
 
+## Classeur complet avec les décisions officielles (siège)
+
+Le bouton **Télécharger** (étagère, classeur ouvert, bilan) propose deux versions :
+
+- **Fiches du classeur** : générées immédiatement.
+- **Avec les décisions officielles** : chaque fiche est suivie des scans de la décision d'origine, puis de
+  ses renouvellements (documents « AMM » en vigueur), dans l'ordre du classeur papier.
+  - Une fiche porte la mention « N décisions jointes ».
+  - Une AMM sans scan reste marquée « Aucun scan ».
+  - Un scan illisible ou absent du stockage est remplacé par une page d'avertissement.
+
+Déroulement :
+
+- **Préparation** : elle tourne en arrière-plan (tâche Celery `build_binder_export`) et une seule à la fois
+  par classeur. La fenêtre affiche l'avancement. Une notification prévient le demandeur quand c'est prêt.
+- **Conservation** : seul le dernier classeur prêt est gardé dans le stockage (R2), car ces fichiers pèsent
+  plusieurs dizaines de Mo.
+- **Mémoire** : le service a 512 Mo. Les scans sont copiés sur disque un par un, puis assemblés par
+  `qpdf`, qui ne les lit qu'au moment d'écrire. Mesure sur 207 décisions de 3,5 Mo (Guinée, 630 pages,
+  723 Mo) : 118 Mo pour Python, 116 Mo pour qpdf, 6 s hors téléchargement depuis R2.
+- **Reprise** : une préparation interrompue par un redémarrage est close par le rattrapage (35 min), puis on
+  peut la relancer.
+
 ## API
 
 | Méthode | Chemin | Rôle |
@@ -66,6 +89,8 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 | POST | `/api/v1/binders/{clé}/check` | constat `{amm, result, corrections[], note}` |
 | POST | `/api/v1/binders/{clé}/uncheck` | annuler le constat `{amm}` |
 | POST, DELETE | `/api/v1/binders/{clé}/extras[/{id}]` | pages en trop |
-| GET | `/api/v1/binders/{clé}/pdf` | PDF du classeur (siège uniquement) |
+| GET | `/api/v1/binders/{clé}/pdf` | PDF des fiches (siège uniquement) |
+| GET, POST | `/api/v1/binders/{clé}/exports` | préparations avec décisions officielles ; POST en lance une (siège) |
+| GET | `/api/v1/binders/{clé}/exports/{id}/file` | classeur complet prêt (siège) |
 
 Exemples de clés : `SN-generale-a-k`, `SN-cardio`, `ML`, `CI`.
