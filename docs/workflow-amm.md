@@ -249,6 +249,17 @@ Vitesse : dans le dossier d'un produit, l'OCR ne lit que les 6 premières pages 
 navigateur envoie les produits trois par trois. Mesure sur 300 dossiers réels du corpus : tous
 rangés sans question (dont 31 fiches créées), 0,3 s d'analyse par dossier hors OCR.
 
+### Dates : ce qui a été mesuré (27/09/2026)
+
+Sur 1 313 dossiers réels, dates justes **530 → 616** par de nouvelles règles de lecture (tampons
+sénégalais « 06 DEC. 2022*… » ou sans astérisque, date accolée au n° d'AMM, AMM d'origine citée
+par une lettre de renouvellement sénégalaise, certificat guinéen « N° F-AMM », avis de la
+commission au Niger seulement). Un meilleur OCR local (300 dpi, redressement, binarisation,
+modèles Tesseract « best ») a été testé sur 37 scans ratés : **aucun gain**, pour 2 à 3 fois plus
+de calcul. Les dates encore manquées sont surtout manuscrites (Guinée, Burkina : « Fait à …, le »),
+absentes du document (l'Excel reprend une autre date) ou dans des listes sans date par produit
+(Tchad, Djibouti).
+
 ## 9. Où c'est écrit dans le code
 
 | Quoi | Où |

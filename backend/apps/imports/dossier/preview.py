@@ -41,7 +41,8 @@ UNPLACED = "unplaced"
 # 3 : recueils de décisions, documents communs, pays sans code ISO (26/09/2026).
 # 4 : AMM absente créée d'office quand la décision d'origine est lisible.
 # 5 : classement autonome (doutes tranchés seuls, la décision officielle corrige la fiche).
-PREVIEW_VERSION = 5
+# 6 : dates relues (tampons sénégalais, n° daté, AMM d'origine citée par un renouvellement).
+PREVIEW_VERSION = 6
 # Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
 COMMON_FOLDER = "Documents communs"
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
@@ -809,6 +810,19 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
     original_values, original_proofs_raw, original_confidences = _consensus(
         original_rows, ("number", "start_date", "end_date", "holder"), points, "AMM d'origine"
     )
+    # Sans décision d'origine lisible, un renouvellement qui la cite (« l'AMM n° 5735 du
+    # 22/12/2010 est renouvelée ») donne son n° et sa date, si toutes les citations concordent.
+    citations = [row for row in rows if row["official"] and row.get("cited_original")]
+    for field in ("number", "start_date"):
+        values = {normalize(str(row["cited_original"].get(field) or "")) for row in citations}
+        values.discard("")
+        if field in original_values or len(values) != 1:
+            continue
+        row = max(citations, key=lambda item: item["confidence"])
+        if row["cited_original"].get(field):
+            original_values[field] = row["cited_original"][field]
+            original_proofs_raw[field] = row["file_id"]
+            original_confidences[field] = row["confidence"]
     if (
         original_values.get("start_date")
         and original_values.get("end_date")
