@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
+  Chip,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -17,11 +18,11 @@ import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useSnackbar } from 'notistack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { useCurrentUser } from '@/api/hooks/useAuth';
-import { useBinder } from '@/api/hooks/useBinders';
+import { useBinder, useBinderPresence } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage as Page } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { AddPageDialog } from './AddPageDialog';
@@ -30,6 +31,7 @@ import { BinderSheet } from './BinderSheet';
 import { DividerLeaf, EndLeaf, InsideCover, LeafBack, TitleLeaf } from './BinderLeaves';
 import { FILTER_LABELS, buildLeaves, pagesById, resumeIndex, type Leaf, type LeafFilter } from './leaves';
 import { NAVY } from './paper';
+import { playPageTurn, readSound, saveSound } from './sound';
 
 const FLIP_MS = 380;
 const ANIMATION_KEY = 'amm-gh.binders.animation';
@@ -84,6 +86,12 @@ interface Snapshot {
   filter: LeafFilter;
   leaves: Leaf[];
   source: BinderDetail;
+  /** Pages du classeur (ordre) : un import ou le dashboard peut en ajouter ou en retirer. */
+  signature: string;
+}
+
+function pageSignature(binder: BinderDetail): string {
+  return binder.sections.map((s) => `${s.code}:${s.pages.map((p) => p.amm_id).join(',')}`).join('|');
 }
 
 /** Épaisseur de pile réaliste : 1 à 7 feuilles visibles selon le nombre de pages. */
@@ -125,11 +133,18 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
   const [filter, setFilter] = useState<LeafFilter>('all');
   const [animation, setAnimation] = useState(readAnimation);
+  const [sound, setSound] = useState(readSound);
+  useBinderPresence(binder.key);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [current, setCurrent] = useState(0);
   const [flip, setFlip] = useState<Flip | null>(null);
   const [jumped, setJumped] = useState(0);
-  const [pending, setPending] = useState<string | null>(null);
+  // Lien depuis la fiche AMM ou un import (`?amm=`) : le classeur s'ouvre sur sa page.
+  const [searchParams] = useSearchParams();
+  const [pending, setPending] = useState<string | null>(() => {
+    const amm = searchParams.get('amm');
+    return amm ? `page:${amm}` : null;
+  });
   const [adding, setAdding] = useState<{ prefill?: { product_name: string; extra_id: string } } | null>(null);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -138,7 +153,25 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
 
   // L'ordre des feuilles est figé par filtre : une page vérifiée ne disparaît pas sous les doigts.
   // Une page attendue (ajoutée, ou masquée par le filtre) : on relit le classeur jusqu'à la trouver.
+  const signature = pageSignature(binder);
   if (
+    snapshot &&
+    snapshot.key === binder.key &&
+    snapshot.filter === filter &&
+    !pending &&
+    snapshot.signature !== signature
+  ) {
+    // Pages ajoutées ou retirées pendant la lecture (import Excel, import de dossier, dashboard) :
+    // le classeur suit, en gardant la page ouverte et les pages déjà vues.
+    const seen = new Set(snapshot.leaves.map((leaf) => leaf.key));
+    const wanted = new Set(buildLeaves(binder, filter).map((leaf) => leaf.key));
+    const leaves = buildLeaves(binder, 'all').filter((leaf) => seen.has(leaf.key) || wanted.has(leaf.key));
+    const open = snapshot.leaves[Math.min(current, snapshot.leaves.length - 1)]?.key;
+    const keep = leaves.findIndex((leaf) => leaf.key === open);
+    setSnapshot({ key: binder.key, filter, leaves, source: binder, signature });
+    setCurrent(keep >= 0 ? keep : Math.min(current, leaves.length - 1));
+    setFlip(null);
+  } else if (
     !snapshot ||
     snapshot.key !== binder.key ||
     snapshot.filter !== filter ||
@@ -147,7 +180,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
     const leaves = buildLeaves(binder, filter);
     const target = pending ? leaves.findIndex((leaf) => leaf.key === pending) : -1;
     const fresh = !snapshot || snapshot.key !== binder.key || snapshot.filter !== filter;
-    setSnapshot({ key: binder.key, filter, leaves, source: binder });
+    setSnapshot({ key: binder.key, filter, leaves, source: binder, signature });
     if (target >= 0) {
       setCurrent(target);
       setPending(null);
@@ -167,6 +200,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       const next = Math.max(0, Math.min(target, leaves.length - 1));
       if (next === index) return;
       const step = Math.abs(next - index) === 1;
+      if (sound) playPageTurn(animation && step ? FLIP_MS : 220);
       if (animation && animate && step) {
         setFlip({ dir: next > index ? 'next' : 'prev', from: index });
       } else {
@@ -175,7 +209,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       }
       setCurrent(next);
     },
-    [animation, index, leaves.length],
+    [animation, index, leaves.length, sound],
   );
 
   const indexRef = useRef(index);
@@ -325,6 +359,14 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             <Typography variant="body2" color="text.secondary">
               {binder.checked} / {total} vérifiées
             </Typography>
+            {binder.stale > 0 && (
+              <Chip
+                size="small"
+                color="warning"
+                label={`${binder.stale} à revérifier`}
+                onClick={() => setFilter('unchecked')}
+              />
+            )}
           </Stack>
         </Box>
         <TextField
@@ -352,6 +394,19 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             />
           }
           label="Animation"
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={sound}
+              onChange={(e) => {
+                setSound(e.target.checked);
+                saveSound(e.target.checked);
+                if (e.target.checked) playPageTurn();
+              }}
+            />
+          }
+          label="Son"
         />
         <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
           Ajouter une page

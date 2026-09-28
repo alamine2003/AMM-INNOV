@@ -1556,6 +1556,41 @@ paths:
       responses:
         '200':
           description: Classeur en PDF
+  /api/v1/binders/{key}/presence/:
+    post:
+      operationId: v1_binders_presence_create
+      description: Signal « classeur ouvert » (chaque minute) ; DELETE en le refermant.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    delete:
+      operationId: v1_binders_presence_destroy
+      description: Signal « classeur ouvert » (chaque minute) ; DELETE en le refermant.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/binders/{key}/uncheck/:
     post:
       operationId: v1_binders_uncheck_create
@@ -1588,6 +1623,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BinderDetail'
+          description: ''
+  /api/v1/binders/locate/:
+    get:
+      operationId: v1_binders_locate_retrieve
+      description: Classeur et page d'une AMM (lien depuis la fiche AMM et les imports).
+      parameters:
+      - in: query
+        name: amm
+        schema:
+          type: string
+        description: Identifiant de l'AMM
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderLocation'
           description: ''
   /api/v1/countries/:
     get:
@@ -4355,11 +4412,17 @@ components:
         last_checked_by:
           type: string
           nullable: true
+        readers:
+          type: array
+          items:
+            type: string
         extra_pages:
           type: array
           items:
             $ref: '#/components/schemas/ExtraPage'
         resume_page:
+          type: integer
+        stale:
           type: integer
       required:
       - absent
@@ -4374,8 +4437,10 @@ components:
       - key
       - last_checked_at
       - last_checked_by
+      - readers
       - resume_page
       - sections
+      - stale
       - title
       - to_scan
       - total
@@ -4480,6 +4545,33 @@ components:
         * `RUNNING` - En préparation
         * `READY` - Prêt
         * `FAILED` - Échec
+    BinderLocation:
+      type: object
+      properties:
+        binder_key:
+          type: string
+        title:
+          type: string
+        country_name:
+          type: string
+        page:
+          type: integer
+        total:
+          type: integer
+        check:
+          allOf:
+          - $ref: '#/components/schemas/Check'
+          nullable: true
+        stale:
+          type: boolean
+      required:
+      - binder_key
+      - check
+      - country_name
+      - page
+      - stale
+      - title
+      - total
     BinderResultEnum:
       enum:
       - CONFORME
@@ -4528,6 +4620,10 @@ components:
         last_checked_by:
           type: string
           nullable: true
+        readers:
+          type: array
+          items:
+            type: string
       required:
       - absent
       - checked
@@ -4540,10 +4636,27 @@ components:
       - key
       - last_checked_at
       - last_checked_by
+      - readers
       - sections
       - title
       - to_scan
       - total
+    ChangeSinceCheck:
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/SlotEnum'
+        field:
+          $ref: '#/components/schemas/FieldEnum'
+        checked:
+          nullable: true
+        now:
+          nullable: true
+      required:
+      - checked
+      - field
+      - now
+      - slot
     ChannelEnum:
       enum:
       - IN_APP
@@ -5573,6 +5686,27 @@ components:
       description: |-
         * `COMPLET` - Dossier complet
         * `INCOMPLET` - Dossier incomplet
+    DossierTrace:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+        folder:
+          type: string
+        auto_applied:
+          type: boolean
+      required:
+      - auto_applied
+      - batch_id
+      - date
+      - folder
+      - status
     DossierUploadRequest:
       type: object
       properties:
@@ -5590,6 +5724,27 @@ components:
       required:
       - paths
       - root_name
+    ExcelTrace:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        sheet:
+          type: string
+        row:
+          type: integer
+        outcome:
+          type: string
+      required:
+      - batch_id
+      - date
+      - outcome
+      - row
+      - sheet
     ExtraPage:
       type: object
       properties:
@@ -6019,6 +6174,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/RenewalSlot'
           nullable: true
+        pending_renewal:
+          allOf:
+          - $ref: '#/components/schemas/PendingRenewal'
+          nullable: true
         status:
           $ref: '#/components/schemas/AmmStatusEnum'
         status_label:
@@ -6037,15 +6196,27 @@ components:
           allOf:
           - $ref: '#/components/schemas/Check'
           nullable: true
+        changed_since_check:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeSinceCheck'
+        changed_by:
+          type: string
+          nullable: true
+        trace:
+          $ref: '#/components/schemas/Trace'
         to_scan:
           type: boolean
       required:
       - amm_id
+      - changed_by
+      - changed_since_check
       - check
       - discrepancies
       - dossier_state
       - original
       - page
+      - pending_renewal
       - product_name
       - range_code
       - range_label
@@ -6055,6 +6226,7 @@ components:
       - status
       - status_label
       - to_scan
+      - trace
     PageScanInputRequest:
       type: object
       properties:
@@ -6616,6 +6788,21 @@ components:
           type: string
           writeOnly: true
           minLength: 1
+    PendingRenewal:
+      type: object
+      properties:
+        workflow_status:
+          type: string
+        workflow_label:
+          type: string
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - filing_date
+      - workflow_label
+      - workflow_status
     Product:
       type: object
       properties:
@@ -6958,6 +7145,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Page'
+        stale:
+          type: integer
       required:
       - absent
       - checked
@@ -6967,6 +7156,7 @@ components:
       - corrected
       - label
       - pages
+      - stale
       - to_scan
       - total
     SectionSummary:
@@ -7054,6 +7244,20 @@ components:
           minLength: 1
       required:
       - refresh
+    Trace:
+      type: object
+      properties:
+        excel:
+          allOf:
+          - $ref: '#/components/schemas/ExcelTrace'
+          nullable: true
+        dossier:
+          allOf:
+          - $ref: '#/components/schemas/DossierTrace'
+          nullable: true
+      required:
+      - dossier
+      - excel
     UncheckInputRequest:
       type: object
       properties:

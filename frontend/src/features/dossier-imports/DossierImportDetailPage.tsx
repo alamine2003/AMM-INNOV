@@ -48,6 +48,7 @@ import {
 } from '@/api/types';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PageHeader } from '@/components/PageHeader';
+import { BinderLink } from '@/features/binders/BinderLink';
 import { FilingDates } from '@/components/FilingDates';
 import { DossierChip, StatusChip } from '@/components/chips';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
@@ -558,6 +559,7 @@ export default function DossierImportDetailPage() {
         actions={
           <>
             <Chip label={state.label} color={state.tone} />
+            {batch.status === 'APPLIED' && <BinderLink ammId={batch.amm_id} />}
             <Button component={Link} to="/dossier-imports">
               Tous les imports de dossiers
             </Button>

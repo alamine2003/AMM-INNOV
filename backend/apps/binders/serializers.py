@@ -106,6 +106,40 @@ class CheckSerializer(serializers.Serializer):
     checked_at = serializers.DateTimeField()
 
 
+class PendingRenewalSerializer(serializers.Serializer):
+    workflow_status = serializers.CharField()
+    workflow_label = serializers.CharField()
+    filing_date = serializers.DateField(allow_null=True)
+
+
+class ChangeSinceCheckSerializer(serializers.Serializer):
+    slot = serializers.ChoiceField(choices=SLOTS)
+    field = serializers.ChoiceField(choices=PAGE_FIELDS)
+    checked = serializers.JSONField(allow_null=True)
+    now = serializers.JSONField(allow_null=True)
+
+
+class ExcelTraceSerializer(serializers.Serializer):
+    batch_id = serializers.UUIDField()
+    date = serializers.DateTimeField()
+    sheet = serializers.CharField()
+    row = serializers.IntegerField()
+    outcome = serializers.CharField()
+
+
+class DossierTraceSerializer(serializers.Serializer):
+    batch_id = serializers.UUIDField()
+    date = serializers.DateTimeField()
+    status = serializers.CharField()
+    folder = serializers.CharField()
+    auto_applied = serializers.BooleanField()
+
+
+class TraceSerializer(serializers.Serializer):
+    excel = ExcelTraceSerializer(allow_null=True)
+    dossier = DossierTraceSerializer(allow_null=True)
+
+
 class PageSerializer(serializers.Serializer):
     amm_id = serializers.UUIDField()
     page = serializers.IntegerField()
@@ -115,12 +149,16 @@ class PageSerializer(serializers.Serializer):
     range_label = serializers.CharField()
     original = SlotSerializer()
     renewal = RenewalSlotSerializer(allow_null=True)
+    pending_renewal = PendingRenewalSerializer(allow_null=True)
     status = serializers.ChoiceField(choices=MarketingAuthorization.Status.choices)
     status_label = serializers.CharField()
     dossier_state = serializers.ChoiceField(choices=MarketingAuthorization.DossierState.choices)
     scan = ScanSerializer(allow_null=True)
     discrepancies = DiscrepancySerializer(many=True)
     check = CheckSerializer(allow_null=True)
+    changed_since_check = ChangeSinceCheckSerializer(many=True)
+    changed_by = serializers.CharField(allow_null=True)
+    trace = TraceSerializer()
     to_scan = serializers.BooleanField()
 
 
@@ -141,6 +179,7 @@ class SectionSummarySerializer(CountsMixin):
 
 class SectionSerializer(SectionSummarySerializer):
     pages = PageSerializer(many=True)
+    stale = serializers.IntegerField()
 
 
 class ExtraPageSerializer(serializers.Serializer):
@@ -161,12 +200,16 @@ class BinderSummarySerializer(CountsMixin):
     extras = serializers.IntegerField()
     last_checked_at = serializers.DateTimeField(allow_null=True)
     last_checked_by = serializers.CharField(allow_null=True)
+    # Qui a ce classeur ouvert en ce moment (dernières 2 minutes) : il est « sorti » de l'étagère.
+    readers = serializers.ListField(child=serializers.CharField())
 
 
 class BinderDetailSerializer(BinderSummarySerializer):
     sections = SectionSerializer(many=True)
     extra_pages = ExtraPageSerializer(many=True)
     resume_page = serializers.IntegerField()
+    # Pages modifiées depuis leur vérification (dashboard, import Excel ou de dossier).
+    stale = serializers.IntegerField()
 
 
 class BinderExportSerializer(serializers.ModelSerializer):
@@ -211,3 +254,13 @@ class AddPageResultSerializer(serializers.Serializer):
 class PageScanResultSerializer(serializers.Serializer):
     batch_id = serializers.UUIDField()
     status = serializers.CharField()
+
+
+class BinderLocationSerializer(serializers.Serializer):
+    binder_key = serializers.CharField()
+    title = serializers.CharField()
+    country_name = serializers.CharField()
+    page = serializers.IntegerField()
+    total = serializers.IntegerField()
+    check = CheckSerializer(allow_null=True)
+    stale = serializers.BooleanField()

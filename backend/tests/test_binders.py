@@ -408,3 +408,95 @@ def test_scan_imported_from_the_page_is_read_and_filed(settings, country_client,
     page = country_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
     assert page["scan"] is not None
     assert page["original"]["number"] == "AMM/SN/2025/00152"
+
+
+# --- Détails réalistes : renouvellement déposé, classeur sorti de l'étagère ---------------
+
+
+def test_filed_renewal_is_stamped_on_the_page(hq_client, shelf_data, make_renewal):
+    make_renewal(shelf_data["amlo"], status="DEPOSE", filing_date=date(2026, 6, 2))
+    page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+    assert page["pending_renewal"]["workflow_status"] == "DEPOSE"
+    assert page["pending_renewal"]["filing_date"] == "2026-06-02"
+
+
+def test_open_binder_is_shown_pulled_out_with_the_reader(hq_client, country_client, shelf_data):
+    assert country_client.post("/api/v1/binders/SN-cardio/presence").status_code == 204
+    shelf = {b["key"]: b for b in hq_client.get("/api/v1/binders").json()}
+    assert shelf["SN-cardio"]["readers"] == ["Fatou"] and shelf["ML"]["readers"] == []
+    assert country_client.delete("/api/v1/binders/SN-cardio/presence").status_code == 204
+    assert hq_client.get("/api/v1/binders/SN-cardio").json()["readers"] == []
+    # Hors périmètre : pas de présence possible.
+    assert country_client.post("/api/v1/binders/CI/presence").status_code == 404
+
+
+def test_scan_import_accepts_product_names_with_slashes(country_client, shelf_data):
+    """« LITACOLD CPR B/80 » : le « / » du libellé ne doit pas devenir un sous-dossier refusé."""
+    from io import BytesIO
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from reportlab.pdfgen.canvas import Canvas
+
+    from apps.imports.models import DossierImport
+
+    buffer = BytesIO()
+    canvas = Canvas(buffer)
+    canvas.drawString(72, 760, "Décision : LITACOLD CPR B/80")
+    canvas.showPage()
+    canvas.save()
+    upload = SimpleUploadedFile(
+        "scan: décision.pdf", buffer.getvalue(), content_type="application/pdf"
+    )
+    amm = shelf_data["litacold"]
+    response = country_client.post(
+        f"/api/v1/binders/SN-generale-l-z/pages/{amm.pk}/scan",
+        {"files": [upload]},
+        format="multipart",
+    )
+    assert response.status_code == 202, response.content
+    batch = DossierImport.objects.get(pk=response.json()["batch_id"])
+    assert batch.amm_id == amm.pk and "/" not in batch.root_name
+
+
+# --- Tout est relié : dashboard, imports Excel et de dossiers ----------------------------
+
+
+def test_page_changed_by_the_dashboard_is_to_recheck(users, country_client, shelf_data):
+    from apps.imports.models import ImportBatch, ImportRow
+
+    amm = shelf_data["amlo"]
+    url = "/api/v1/binders/SN-cardio"
+    country_client.post(f"{url}/check", {"amm": str(amm.pk), "result": "CONFORME"}, format="json")
+    page = country_client.get(url).json()["sections"][0]["pages"][0]
+    assert page["changed_since_check"] == [] and page["changed_by"] is None
+
+    # Le Dashboard AMM Afrique (import Excel) change la date de début après la vérification.
+    batch = ImportBatch.objects.create(file="imports/x.xlsx", created_by=users["hq"])
+    ImportRow.objects.create(
+        batch=batch, sheet="SENEGAL", row_number=42, outcome="UPDATED", amm=amm, raw={}
+    )
+    old_start = amm.original_start_date
+    amm.original_start_date = date(2024, 3, 15)
+    amm.save()
+
+    body = country_client.get(url).json()
+    page = body["sections"][0]["pages"][0]
+    assert page["changed_since_check"][0]["field"] == "start_date"
+    assert page["changed_since_check"][0]["checked"] == old_start.isoformat()
+    assert page["changed_since_check"][0]["now"] == "2024-03-15"
+    assert page["changed_by"] == "import Excel du Dashboard"
+    assert page["trace"]["excel"]["row"] == 42 and page["trace"]["excel"]["sheet"] == "SENEGAL"
+    assert body["stale"] == 1 and body["sections"][0]["stale"] == 1
+    # La reprise tombe sur la page à revérifier ; un nouveau constat la remet à jour.
+    assert body["resume_page"] == 0
+    country_client.post(f"{url}/check", {"amm": str(amm.pk), "result": "CONFORME"}, format="json")
+    assert country_client.get(url).json()["stale"] == 0
+
+
+def test_locate_links_the_amm_card_to_its_page(country_client, shelf_data):
+    amm = shelf_data["gripex"]
+    body = country_client.get(f"/api/v1/binders/locate?amm={amm.pk}").json()
+    assert body["binder_key"] == "SN-generale-a-k" and body["page"] == 2 and body["total"] == 2
+    ci = shelf_data["ci"]
+    assert country_client.get(f"/api/v1/binders/locate?amm={ci.pk}").status_code == 404
+    assert country_client.get("/api/v1/binders/locate?amm=pas-un-uuid").status_code == 404

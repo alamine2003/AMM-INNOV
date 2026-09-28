@@ -15,6 +15,7 @@ import { extractErrorMessage } from '@/api/client';
 import { useExtraPages } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage, BinderSectionSummary } from '@/api/types';
 import { formatDateTime } from '@/lib/dates';
+import { Flag } from './Flag';
 import { Holes, INK, LINE, MUTED, NAVY, Pill, paperSx, tint } from './paper';
 
 function Tile({ value, label }: { value: number; label: string }) {
@@ -44,9 +45,12 @@ export function TitleLeaf({
         <Typography sx={{ fontSize: 12, fontWeight: 800, color: MUTED, letterSpacing: 1 }}>
           AMM GH · CLASSEUR DES AMM
         </Typography>
-        <Typography component="h2" sx={{ fontSize: 34, fontWeight: 900, color: INK, mt: 1, lineHeight: 1.1 }}>
-          {binder.country_name}
-        </Typography>
+        <Stack direction="row" alignItems="center" gap={1.5} sx={{ mt: 1 }}>
+          <Flag iso2={binder.country_iso2} width={48} />
+          <Typography component="h2" sx={{ fontSize: 34, fontWeight: 900, color: INK, lineHeight: 1.1 }}>
+            {binder.country_name}
+          </Typography>
+        </Stack>
         <Typography sx={{ fontSize: 20, color: INK, mb: 1.5 }}>{binder.title}</Typography>
         <Stack direction="row" gap={0.75} flexWrap="wrap" sx={{ mb: 2 }}>
           {binder.sections.map((section) => (
@@ -61,6 +65,7 @@ export function TitleLeaf({
           <Tile value={binder.corrected} label="corrigées" />
           <Tile value={binder.absent} label="absentes" />
           <Tile value={binder.to_scan} label="à scanner" />
+          {binder.stale > 0 && <Tile value={binder.stale} label="à revérifier" />}
           <Tile value={binder.extras} label="en trop" />
         </Stack>
         <Box sx={{ mt: 2 }}>
@@ -93,7 +98,13 @@ export function TitleLeaf({
 }
 
 /** Intercalaire de gamme : carton de couleur avec l'avancement de la gamme. */
-export function DividerLeaf({ section, pages }: { section: BinderSectionSummary; pages: BinderPage[] }) {
+export function DividerLeaf({
+  section,
+  pages,
+}: {
+  section: BinderSectionSummary & { stale?: number };
+  pages: BinderPage[];
+}) {
   const progress = section.total ? (section.checked / section.total) * 100 : 0;
   return (
     <Box
@@ -132,6 +143,11 @@ export function DividerLeaf({ section, pages }: { section: BinderSectionSummary;
         {pages.length > 0 && (
           <Typography sx={{ fontSize: 13, color: MUTED, mt: 2 }}>
             de {pages[0].product_name} à {pages[pages.length - 1].product_name}
+          </Typography>
+        )}
+        {!!section.stale && (
+          <Typography sx={{ fontSize: 13, color: '#e65100', fontWeight: 700, mt: 1 }}>
+            {section.stale} page(s) modifiée(s) depuis leur vérification : à revérifier
           </Typography>
         )}
         {section.absent + section.to_scan > 0 && (

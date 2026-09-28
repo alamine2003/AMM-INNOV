@@ -141,6 +141,7 @@ export function useRealtime(enabled = true) {
       void qc.invalidateQueries({ queryKey: queryKeys.alerts.all });
       void qc.invalidateQueries({ queryKey: queryKeys.analytics.all });
       void qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      void qc.invalidateQueries({ queryKey: ['binders'] });
     }, pollInterval());
     return () => clearInterval(id);
   }, [enabled, access, status, qc]);

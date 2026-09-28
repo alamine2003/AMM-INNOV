@@ -75,7 +75,39 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 - **Détails réalistes** :
   - la pile de feuilles s'épaissit à droite au début du classeur et à gauche à mesure qu'on avance ;
   - le scan est agrafé à la fiche par un trombone ;
-  - la note de l'archiviste apparaît en post-it jaune sur la page.
+  - la note de l'archiviste apparaît en post-it jaune sur la page ;
+  - un dossier complet est rangé dans sa pochette plastique (reflets), une AMM expirée est sur papier
+    jauni au coin corné ;
+  - un renouvellement déposé ou en instruction est tamponné « DÉPOSÉ le … », à l'écran comme dans le PDF ;
+  - le bruit de page qui tourne est synthétisé dans le navigateur (bouton « Son », coupé par défaut) ;
+  - chaque classeur porte le drapeau de son pays, dessiné en SVG pour s'afficher aussi sous Windows ;
+  - un classeur ouvert par un archiviste est sorti de l'étagère avec un marque-page à son prénom. La
+    page envoie un signal chaque minute (`POST /binders/{clé}/presence`, `DELETE` en sortant), et
+    l'étagère se rafraîchit toutes les 30 s.
+
+## Tout est relié : dashboard, imports Excel, imports de dossiers
+
+- **Classeur toujours à jour** : les classeurs se recalculent depuis les AMM. Une fiche modifiée
+  (dashboard, import Excel du Dashboard AMM Afrique, import de dossier) ou une AMM ajoutée apparaît
+  sans recharger la page.
+  - Un événement temps réel rafraîchit les classeurs (ou la relève périodique si le temps réel est
+    coupé).
+  - Un classeur ouvert intègre les pages ajoutées ou retirées en gardant la page en cours.
+- **À revérifier** :
+  - Le constat garde les valeurs vérifiées (n°, dates d'origine et du dernier renouvellement).
+  - Si la fiche change ensuite, la page affiche « À revérifier » avec l'ancienne et la nouvelle valeur et
+    l'origine du changement (import Excel du Dashboard, import de dossier ou modification de la fiche). Le
+    tampon pâlit.
+  - La page compte parmi « À vérifier ou revérifier ». La reprise, l'intercalaire, la page de garde et le
+    PDF la signalent.
+- **Provenance** : chaque page indique la ligne du Dashboard (feuille, n° de ligne, lien vers l'import
+  Excel) et le dernier dossier importé (lien vers le dossier).
+- **Depuis ailleurs vers le classeur** :
+  - la fiche AMM et le dossier importé ont un bouton « Classeur … · page n/N », avec l'état du constat
+    (vérifié, corrigé, absent, à vérifier, à revérifier) ; il ouvre le classeur directement sur la page
+    (`/classeurs/{clé}?amm={id}`) ;
+  - le Dashboard Afrique montre l'avancement des classeurs papier (pages vérifiées, corrigées, dossiers
+    absents, décisions à scanner, pages en trop, classeurs ouverts en ce moment).
 
 ## Classeur complet avec les décisions officielles (siège)
 
@@ -105,7 +137,8 @@ Déroulement :
 | Méthode | Chemin | Rôle |
 | --- | --- | --- |
 | GET | `/api/v1/binders` | étagère (classeurs visibles, avancement) |
-| GET | `/api/v1/binders/{clé}` | classeur complet : intercalaires, pages, pages en trop, page de reprise |
+| GET | `/api/v1/binders/{clé}` | classeur complet : intercalaires, pages (avec `changed_since_check`, `trace`), pages en trop, page de reprise |
+| GET | `/api/v1/binders/locate?amm={id}` | classeur et page d'une AMM, état du constat |
 | POST | `/api/v1/binders/{clé}/check` | constat `{amm, result, corrections[], note}` |
 | POST | `/api/v1/binders/{clé}/uncheck` | annuler le constat `{amm}` |
 | POST, DELETE | `/api/v1/binders/{clé}/extras[/{id}]` | pages en trop |

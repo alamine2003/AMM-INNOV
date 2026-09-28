@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
 import type {
@@ -6,6 +7,7 @@ import type {
   BinderDetail,
   BinderExport,
   BinderExtraPage,
+  BinderLocation,
   BinderPageScanResult,
   BinderResult,
   BinderSummary,
@@ -23,6 +25,8 @@ export function useBinders() {
   return useQuery({
     queryKey: binderKeys.shelf,
     queryFn: async () => (await api.get<BinderSummary[]>('/binders')).data,
+    // Classeurs sortis par d'autres archivistes : l'étagère suit les allées et venues.
+    refetchInterval: 30_000,
   });
 }
 
@@ -151,5 +155,28 @@ export function useImportPageScan(key: string) {
       for (const file of files) form.append('files', file, file.name);
       return (await api.post<BinderPageScanResult>(`/binders/${key}/pages/${amm}/scan`, form)).data;
     },
+  });
+}
+
+/** Signale que le classeur est ouvert (chaque minute) : l'étagère le montre sorti. */
+export function useBinderPresence(key: string) {
+  useEffect(() => {
+    const ping = () => void api.post(`/binders/${key}/presence`).catch(() => undefined);
+    ping();
+    const timer = window.setInterval(ping, 60_000);
+    return () => {
+      window.clearInterval(timer);
+      void api.delete(`/binders/${key}/presence`).catch(() => undefined);
+    };
+  }, [key]);
+}
+
+/** Classeur et page d'une AMM : relie la fiche AMM et les imports au classeur papier. */
+export function useBinderLocation(ammId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...binderKeys.all, 'locate', ammId ?? ''] as const,
+    queryFn: async () => (await api.get<BinderLocation>('/binders/locate', { params: { amm: ammId } })).data,
+    enabled: !!ammId,
+    retry: false,
   });
 }

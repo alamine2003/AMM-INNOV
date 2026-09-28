@@ -30,6 +30,9 @@ class BinderCheck(models.Model):
     # Champs corrigés par l'archiviste : [{"slot", "field", "old", "new"}].
     corrections = models.JSONField("corrections", default=list, blank=True)
     note = models.TextField("note", blank=True)
+    # Valeurs de la fiche au moment du constat : si le dashboard, un import Excel ou un import
+    # de dossier les change ensuite, la page est « à revérifier ».
+    snapshot = models.JSONField("valeurs vérifiées", default=dict, blank=True)
     checked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -133,3 +136,21 @@ class BinderExport(models.Model):
 
     def __str__(self) -> str:
         return f"{self.binder_key} — {self.get_status_display()}"
+
+
+class BinderPresence(models.Model):
+    """Classeur ouvert par un utilisateur : l'étagère le montre sorti, avec un marque-page."""
+
+    binder_key = models.CharField("classeur", max_length=40)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    last_seen = models.DateTimeField("vu le", db_index=True)
+
+    class Meta:
+        verbose_name = "classeur ouvert"
+        verbose_name_plural = "classeurs ouverts"
+        constraints = [
+            models.UniqueConstraint(fields=["binder_key", "user"], name="binder_presence_uniq")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.binder_key} — {self.user_id}"
