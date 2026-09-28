@@ -218,6 +218,15 @@ def add_page(
     return amm, landing, created
 
 
+def _safe_segment(name: str) -> str:
+    """Nom utilisable comme dossier ou fichier d'un import (mêmes règles que l'envoi de
+    dossiers) : séparateurs et caractères réservés remplacés, pas de point ni d'espace final."""
+    import re
+
+    cleaned = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "-", name).strip().rstrip(". ")
+    return cleaned[:200] or "scan"
+
+
 def import_page_scan(binder: Binder, amm_id, *, files: list, user):
     """« Importer le scan » depuis une page : le dossier est rangé sur cette AMM, lu comme un
     import de dossier (n° et dates relus, scan rangé, fiche corrigée si la décision le dit)."""
@@ -229,10 +238,13 @@ def import_page_scan(binder: Binder, amm_id, *, files: list, user):
     ensure_in_binder(binder, amm)
     if not files:
         raise ValidationError("Choisissez le scan de la décision (PDF ou image).")
-    folder = f"{amm.country.name.upper()} - {amm.product.name}"
+    # « B/100 », « 5MG:10ML »… : un libellé de produit n'est pas un nom de dossier valide.
+    folder = _safe_segment(f"{amm.country.name.upper()} - {amm.product.name}")
     batch = stage_dossier(
         uploads=files,
-        paths=[f"{folder}/{getattr(file, 'name', 'scan.pdf')}" for file in files],
+        paths=[
+            f"{folder}/{_safe_segment(getattr(file, 'name', '') or 'scan.pdf')}" for file in files
+        ],
         root_name=folder,
         user=user,
     )

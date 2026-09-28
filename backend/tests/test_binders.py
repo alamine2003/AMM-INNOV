@@ -428,3 +428,31 @@ def test_open_binder_is_shown_pulled_out_with_the_reader(hq_client, country_clie
     assert hq_client.get("/api/v1/binders/SN-cardio").json()["readers"] == []
     # Hors périmètre : pas de présence possible.
     assert country_client.post("/api/v1/binders/CI/presence").status_code == 404
+
+
+def test_scan_import_accepts_product_names_with_slashes(country_client, shelf_data):
+    """« LITACOLD CPR B/80 » : le « / » du libellé ne doit pas devenir un sous-dossier refusé."""
+    from io import BytesIO
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from reportlab.pdfgen.canvas import Canvas
+
+    from apps.imports.models import DossierImport
+
+    buffer = BytesIO()
+    canvas = Canvas(buffer)
+    canvas.drawString(72, 760, "Décision : LITACOLD CPR B/80")
+    canvas.showPage()
+    canvas.save()
+    upload = SimpleUploadedFile(
+        "scan: décision.pdf", buffer.getvalue(), content_type="application/pdf"
+    )
+    amm = shelf_data["litacold"]
+    response = country_client.post(
+        f"/api/v1/binders/SN-generale-l-z/pages/{amm.pk}/scan",
+        {"files": [upload]},
+        format="multipart",
+    )
+    assert response.status_code == 202, response.content
+    batch = DossierImport.objects.get(pk=response.json()["batch_id"])
+    assert batch.amm_id == amm.pk and "/" not in batch.root_name
