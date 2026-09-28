@@ -517,7 +517,20 @@
       "errorCount": "Erreurs",
       "warnings": "Divergences",
       "dryRun": "Simulation : produire le rapport sans rien modifier",
-      "dryRunChip": "Simulation"
+      "dryRunChip": "Simulation",
+      "dropzoneHint": "Accepte le Dashboard AMM Afrique et le registre GHPL « 0_REGISTRE AMM GHPL.xlsx » (classement général des scans) : le registre complète les fiches sans rien écraser.",
+      "registryChip": "Registre GHPL",
+      "registryHelp": "Registre GHPL : les fiches sont complétées sans rien écraser (n° et date d'origine manquants), un dossier déposé ouvre un renouvellement « déposé », et les présentations connues seulement par les scans sont créées. Les avertissements signalent les AMM introuvables et les actes classés plus récents que le Dashboard.",
+      "registryWarnings": "Avertissements",
+      "rowsTitle": "Lignes",
+      "noRows": "Aucune ligne",
+      "outcome": {
+        "ERROR": "Erreurs",
+        "WARNING": "Avertissements",
+        "CREATED": "Créées",
+        "UPDATED": "Mises à jour",
+        "SKIPPED": "Ignorées"
+      }
     }
   },
   "errors": {
