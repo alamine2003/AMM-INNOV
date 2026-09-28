@@ -613,6 +613,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/locate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Classeur et page d'une AMM (lien depuis la fiche AMM et les imports). */
+        get: operations["v1_binders_locate_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/countries/": {
         parameters: {
             query?: never;
@@ -1831,6 +1848,7 @@ export interface components {
             readers: string[];
             extra_pages: components["schemas"]["ExtraPage"][];
             resume_page: number;
+            stale: number;
         };
         BinderExport: {
             /** Format: uuid */
@@ -1881,6 +1899,15 @@ export interface components {
          * @enum {string}
          */
         BinderExportStatusEnum: "PENDING" | "RUNNING" | "READY" | "FAILED";
+        BinderLocation: {
+            binder_key: string;
+            title: string;
+            country_name: string;
+            page: number;
+            total: number;
+            check: components["schemas"]["Check"] | null;
+            stale: boolean;
+        };
         /**
          * @description * `CONFORME` - Conforme
          *     * `CORRIGE` - Corrigé
@@ -1906,6 +1933,12 @@ export interface components {
             last_checked_at: string | null;
             last_checked_by: string | null;
             readers: string[];
+        };
+        ChangeSinceCheck: {
+            slot: components["schemas"]["SlotEnum"];
+            field: components["schemas"]["FieldEnum"];
+            checked: unknown;
+            now: unknown;
         };
         /**
          * @description * `IN_APP` - In-app
@@ -2317,11 +2350,29 @@ export interface components {
          * @enum {string}
          */
         DossierStateEnum: "COMPLET" | "INCOMPLET";
+        DossierTrace: {
+            /** Format: uuid */
+            batch_id: string;
+            /** Format: date-time */
+            date: string;
+            status: string;
+            folder: string;
+            auto_applied: boolean;
+        };
         DossierUploadRequest: {
             root_name: string;
             paths: unknown;
             files?: string[];
             reused?: unknown;
+        };
+        ExcelTrace: {
+            /** Format: uuid */
+            batch_id: string;
+            /** Format: date-time */
+            date: string;
+            sheet: string;
+            row: number;
+            outcome: string;
         };
         ExtraPage: {
             /** Format: uuid */
@@ -2527,6 +2578,9 @@ export interface components {
             scan: components["schemas"]["Scan"] | null;
             discrepancies: components["schemas"]["Discrepancy"][];
             check: components["schemas"]["Check"] | null;
+            changed_since_check: components["schemas"]["ChangeSinceCheck"][];
+            changed_by: string | null;
+            trace: components["schemas"]["Trace"];
             to_scan: boolean;
         };
         PageScanInputRequest: {
@@ -3063,6 +3117,7 @@ export interface components {
             label: string;
             color: string;
             pages: components["schemas"]["Page"][];
+            stale: number;
         };
         SectionSummary: {
             total: number;
@@ -3101,6 +3156,10 @@ export interface components {
         };
         TokenRefreshRequest: {
             refresh: string;
+        };
+        Trace: {
+            excel: components["schemas"]["ExcelTrace"] | null;
+            dossier: components["schemas"]["DossierTrace"] | null;
         };
         UncheckInputRequest: {
             /** Format: uuid */
@@ -4337,6 +4396,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_locate_retrieve: {
+        parameters: {
+            query: {
+                /** @description Identifiant de l'AMM */
+                amm: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderLocation"];
                 };
             };
         };

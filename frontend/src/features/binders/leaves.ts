@@ -11,19 +11,30 @@ export type LeafFilter = 'all' | 'unchecked' | 'issues';
 
 export const FILTER_LABELS: Record<LeafFilter, string> = {
   all: 'Toutes les pages',
-  unchecked: 'Pas encore vérifiées',
+  unchecked: 'À vérifier ou revérifier',
   issues: 'Écarts et manques',
 };
 
 /** Page qui mérite un œil attentif : écart avec le scan, pas de scan, n° ou date manquants. */
 export function hasIssue(page: BinderPage): boolean {
   const original = page.original;
-  return page.discrepancies.length > 0 || !page.scan || !original.number || !original.start_date;
+  return (
+    page.discrepancies.length > 0 ||
+    page.changed_since_check.length > 0 ||
+    !page.scan ||
+    !original.number ||
+    !original.start_date
+  );
+}
+
+/** À (re)vérifier : jamais vérifiée, ou modifiée depuis par le dashboard ou un import. */
+export function needsCheck(page: BinderPage): boolean {
+  return !page.check || page.changed_since_check.length > 0;
 }
 
 function keep(page: BinderPage, filter: LeafFilter): boolean {
   if (filter === 'all') return true;
-  if (page.check) return false;
+  if (!needsCheck(page)) return false;
   return filter === 'unchecked' || hasIssue(page);
 }
 
@@ -48,7 +59,10 @@ export function buildLeaves(binder: BinderDetail, filter: LeafFilter): Leaf[] {
 /** Première page pas encore vérifiée (reprise), sinon la page de garde. */
 export function resumeIndex(leaves: Leaf[], binder: BinderDetail): number {
   const pages = pagesById(binder);
-  const index = leaves.findIndex((leaf) => leaf.kind === 'page' && !pages.get(leaf.ammId)?.check);
+  const index = leaves.findIndex((leaf) => {
+    const page = leaf.kind === 'page' ? pages.get(leaf.ammId) : undefined;
+    return !!page && needsCheck(page);
+  });
   return index >= 0 ? index : 0;
 }
 

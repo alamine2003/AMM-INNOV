@@ -436,6 +436,14 @@ class BinderDocument:
         c.drawString(LEFT + 120, y - 64, text)
         if page["to_scan"]:
             self._pill(LEFT + 260, y - 65, "À SCANNER", HexColor("#c62828"), 8)
+        if page.get("changed_since_check"):
+            self._pill(
+                LEFT + 120,
+                y - 22,
+                f"À REVÉRIFIER ({page.get('changed_by') or 'fiche modifiée'})",
+                HexColor("#e65100"),
+                7,
+            )
         filed = page.get("pending_renewal")
         if filed:
             label = "DÉPOSÉ" if filed["workflow_status"] == "DEPOSE" else "EN INSTRUCTION"

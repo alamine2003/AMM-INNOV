@@ -23,6 +23,7 @@ import { KpiCard } from '@/components/KpiCard';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { PRIORITY_URGENCIES, STATUS_COLORS } from '@/lib/urgency';
 import type { AfricaRow } from '@/api/types';
+import { BindersDashboardCard } from '@/features/binders/BindersDashboardCard';
 import { PrioritiesTable } from './PrioritiesTable';
 
 const pct = (v: number) => `${Math.round(v)} %`;
@@ -143,6 +144,8 @@ export default function AfricaDashboardPage() {
           </Grid>
         ))}
       </Grid>
+
+      <BindersDashboardCard />
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardHeader title={t('dashboard.table.title')} titleTypographyProps={{ variant: 'h6' }} />

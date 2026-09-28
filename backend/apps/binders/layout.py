@@ -224,7 +224,108 @@ def pending_renewal(renewals):
     return max(pending, key=lambda r: r.sequence) if pending else None
 
 
-def page_payload(amm) -> dict:
+FIELD_NAMES = ("number", "start_date", "end_date")
+
+
+def _json(value):
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
+
+def page_values(amm, renewal) -> dict:
+    """Valeurs de la page telles qu'elles sont vérifiées sur le papier (format JSON)."""
+    values = {
+        "original": {
+            "number": amm.original_number,
+            "start_date": _json(amm.original_start_date),
+            "end_date": _json(amm.original_end_date),
+        }
+    }
+    if renewal is not None:
+        values["renewal"] = {
+            "number": renewal.number,
+            "start_date": _json(renewal.start_date),
+            "end_date": _json(renewal.end_date),
+        }
+    return values
+
+
+def changes_since(snapshot: dict, current: dict) -> list[dict]:
+    """Ce qui a changé dans la fiche depuis le constat de l'archiviste."""
+    if not snapshot:
+        return []
+    changes = []
+    for slot in ("original", "renewal"):
+        before, now = snapshot.get(slot) or {}, current.get(slot) or {}
+        if not before and not now:
+            continue
+        for field in FIELD_NAMES:
+            if (before.get(field) or None) != (now.get(field) or None):
+                changes.append(
+                    {
+                        "slot": slot,
+                        "field": field,
+                        "checked": before.get(field),
+                        "now": now.get(field),
+                    }
+                )
+    return changes
+
+
+def traces_for(amm_ids) -> dict:
+    """Derniers imports qui ont touché chaque AMM : ligne du Dashboard (Excel) et dossier."""
+    from apps.imports.models import DossierImport, ImportRow
+
+    traces: dict = {str(pk): {"excel": None, "dossier": None} for pk in amm_ids}
+    for row in (
+        ImportRow.objects.filter(amm_id__in=amm_ids)
+        .exclude(outcome=ImportRow.Outcome.ERROR)
+        .order_by("amm_id", "-batch__created_at", "-row_number")
+        .values("amm_id", "batch_id", "batch__created_at", "sheet", "row_number", "outcome")
+    ):
+        trace = traces[str(row["amm_id"])]
+        if trace["excel"] is None:
+            trace["excel"] = {
+                "batch_id": str(row["batch_id"]),
+                "date": row["batch__created_at"],
+                "sheet": row["sheet"],
+                "row": row["row_number"],
+                "outcome": row["outcome"],
+            }
+    for batch in (
+        DossierImport.objects.filter(amm_id__in=amm_ids)
+        .order_by("amm_id", "-created_at")
+        .values("amm_id", "id", "created_at", "status", "root_name", "auto_applied")
+    ):
+        trace = traces[str(batch["amm_id"])]
+        if trace["dossier"] is None:
+            trace["dossier"] = {
+                "batch_id": str(batch["id"]),
+                "date": batch["created_at"],
+                "status": batch["status"],
+                "folder": batch["root_name"],
+                "auto_applied": batch["auto_applied"],
+            }
+    return traces
+
+
+def _change_source(trace: dict | None, since) -> str:
+    """D'où vient la modification faite après le constat (le plus récent des imports)."""
+    if trace:
+        dossier, excel = trace.get("dossier"), trace.get("excel")
+        candidates = [
+            (item["date"], label)
+            for item, label in (
+                (dossier, "import de dossier"),
+                (excel, "import Excel du Dashboard"),
+            )
+            if item and item["date"] > since
+        ]
+        if candidates:
+            return max(candidates)[1]
+    return "modification de la fiche AMM"
+
+
+def page_payload(amm, trace: dict | None = None) -> dict:
     renewals = list(amm.renewals.all())
     renewal = last_obtained(renewals)
     filed = pending_renewal(renewals)
@@ -256,6 +357,7 @@ def page_payload(amm) -> dict:
         )
     check = amm.binder_check if hasattr(amm, "binder_check") else None
     code = _range_code(amm)
+    changed = changes_since(check.snapshot, page_values(amm, renewal)) if check else []
     return {
         "amm_id": str(amm.pk),
         "product_name": amm.product.name,
@@ -300,6 +402,10 @@ def page_payload(amm) -> dict:
         ),
         "discrepancies": discrepancies,
         "check": check_payload(check),
+        # Le dashboard ou un import a changé la fiche depuis le constat : à revérifier.
+        "changed_since_check": changed,
+        "changed_by": _change_source(trace, check.checked_at) if changed else None,
+        "trace": trace or {"excel": None, "dossier": None},
         # Le papier est là mais la décision en vigueur n'a pas de scan.
         "to_scan": bool(
             check
@@ -433,12 +539,14 @@ def binder_detail(binder: Binder) -> dict:
     from .models import BinderExtraPage
 
     amms = binder_amms(binder)
+    traces = traces_for([amm.pk for amm in amms])
     sections: dict = {}
     pages_by_section: dict = {}
+    stale: dict = {}
     resume = None
     last = None
     for index, amm in enumerate(amms):
-        page = page_payload(amm)
+        page = page_payload(amm, traces.get(str(amm.pk)))
         code = page["range_code"]
         section = pages_by_section.setdefault(code, [])
         page["page"] = index + 1
@@ -450,7 +558,9 @@ def binder_detail(binder: Binder) -> dict:
             check["result"] if check else None,
             amm.dossier_state,
         )
-        if check is None and resume is None:
+        if page["changed_since_check"]:
+            stale[code] = stale.get(code, 0) + 1
+        if (check is None or page["changed_since_check"]) and resume is None:
             resume = index
         if check and (last is None or check["checked_at"] > last["at"]):
             last = {"at": check["checked_at"], "by": check["checked_by"]}
@@ -475,6 +585,29 @@ def binder_detail(binder: Binder) -> dict:
     )
     for section in summary["sections"]:
         section["pages"] = pages_by_section.get(section["code"], [])
+        section["stale"] = stale.get(section["code"], 0)
+    summary["stale"] = sum(stale.values())
     summary["extra_pages"] = extras
     summary["resume_page"] = resume if resume is not None else 0
     return summary
+
+
+def locate(user, amm_id) -> dict:
+    """La page d'une AMM dans les classeurs : pour relier la fiche AMM et les imports au papier."""
+    amm = MarketingAuthorization.objects.select_related("country", "product__range").get(pk=amm_id)
+    if not user.can_access_country(amm.country):
+        raise Http404("AMM inconnue.")
+    code = _range_code(amm)
+    binder = next(b for b in binders_of(amm.country) if b.contains(code, amm.product.name))
+    amms = binder_amms(binder)
+    index = next(i for i, item in enumerate(amms) if item.pk == amm.pk)
+    page = page_payload(amms[index])
+    return {
+        "binder_key": binder.key,
+        "title": binder.title,
+        "country_name": amm.country.name,
+        "page": index + 1,
+        "total": len(amms),
+        "check": page["check"],
+        "stale": bool(page["changed_since_check"]),
+    }

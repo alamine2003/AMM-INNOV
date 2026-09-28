@@ -29,6 +29,9 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     discrepancies: [],
     check: null,
     to_scan: false,
+    changed_since_check: [],
+    changed_by: null,
+    trace: { excel: null, dossier: null },
     ...overrides,
   };
 }
@@ -57,9 +60,10 @@ function binder(pages: BinderPage[]): BinderDetail {
     last_checked_at: null,
     last_checked_by: null,
     readers: [],
-    sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts, pages }],
+    sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts, pages, stale: 0 }],
     extra_pages: [],
     resume_page: 2,
+    stale: 0,
   };
 }
 
@@ -217,5 +221,37 @@ describe('Classeurs', () => {
     );
     const book = screen.getByTestId('binder-book');
     expect(await within(book).findByRole('heading', { name: 'BISOPROLOL GH 5MG' })).toBeInTheDocument();
+  });
+
+  it("s'ouvre sur la page demandée et signale ce que le dashboard a changé depuis le constat", async () => {
+    loginAs('u-sn');
+    const stale = {
+      ...checked,
+      changed_since_check: [
+        { slot: 'original' as const, field: 'start_date' as const, checked: '2010-12-22', now: '2015-12-22' },
+      ],
+      changed_by: 'import Excel du Dashboard',
+      trace: {
+        excel: {
+          batch_id: 'imp-1',
+          date: '2026-09-28T09:00:00Z',
+          sheet: 'SENEGAL',
+          row: 42,
+          outcome: 'UPDATED',
+        },
+        dossier: null,
+      },
+    };
+    server.use(
+      http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json({ ...binder([stale, page()]), stale: 1 })),
+    );
+    renderApp('/classeurs/SN-cardio?amm=amm-0');
+    const book = await screen.findByTestId('binder-book');
+    expect(await within(book).findByRole('heading', { name: 'ACARBOSE GH 100MG' })).toBeInTheDocument();
+    const banner = within(book).getAllByTestId('page-stale')[0];
+    expect(banner).toHaveTextContent('import Excel du Dashboard');
+    expect(banner).toHaveTextContent('22/12/2010');
+    expect(within(book).getAllByTestId('page-trace')[0]).toHaveTextContent('feuille SENEGAL, ligne 42');
+    expect(screen.getByText('1 à revérifier')).toBeInTheDocument();
   });
 });

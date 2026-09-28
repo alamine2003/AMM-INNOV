@@ -30,6 +30,9 @@ class BinderCheck(models.Model):
     # Champs corrigés par l'archiviste : [{"slot", "field", "old", "new"}].
     corrections = models.JSONField("corrections", default=list, blank=True)
     note = models.TextField("note", blank=True)
+    # Valeurs de la fiche au moment du constat : si le dashboard, un import Excel ou un import
+    # de dossier les change ensuite, la page est « à revérifier ».
+    snapshot = models.JSONField("valeurs vérifiées", default=dict, blank=True)
     checked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

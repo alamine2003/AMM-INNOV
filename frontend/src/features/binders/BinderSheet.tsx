@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Link as MuiLink, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Link } from 'react-router';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import FolderOffIcon from '@mui/icons-material/FolderOff';
@@ -195,6 +196,35 @@ function FoldedCorner() {
   );
 }
 
+/** D'où viennent les valeurs de la page : ligne du Dashboard AMM Afrique et dossier importé. */
+function PageTrace({ page }: { page: BinderPage }) {
+  const { excel, dossier } = page.trace;
+  if (!excel && !dossier) return null;
+  return (
+    <Typography sx={{ fontSize: 11.5, color: MUTED, mt: 1 }} data-testid="page-trace">
+      {excel && (
+        <>
+          Dashboard AMM Afrique : feuille {excel.sheet}, ligne {excel.row} (
+          <MuiLink component={Link} to={`/imports/${excel.batch_id}`}>
+            import du {formatDate(excel.date)}
+          </MuiLink>
+          )
+        </>
+      )}
+      {excel && dossier && ' · '}
+      {dossier && (
+        <>
+          Dossier importé le{' '}
+          <MuiLink component={Link} to={`/dossier-imports/${dossier.batch_id}`}>
+            {formatDate(dossier.date)}
+          </MuiLink>
+          {dossier.auto_applied ? ' (rangé automatiquement)' : ''}
+        </>
+      )}
+    </Typography>
+  );
+}
+
 /** Une page d'AMM du classeur, avec le constat de l'archiviste. */
 export function BinderSheet({
   binder,
@@ -252,6 +282,8 @@ export function BinderSheet({
 
   const scan = page.scan;
   const stamp = page.check;
+  // Le dashboard ou un import a changé la fiche depuis le constat : le tampon ne vaut plus.
+  const stale = page.changed_since_check.length > 0;
   // Dossier complet : rangé dans sa pochette plastique. AMM expirée : papier jauni, coin corné.
   const sleeved = page.dossier_state === 'COMPLET';
   const aged = page.status === 'EXPIRE';
@@ -296,39 +328,6 @@ export function BinderSheet({
           <Typography sx={{ fontWeight: 800, color: '#204093', fontSize: 18 }}>
             Déposez le scan de la décision : il sera lu et rangé sur {page.product_name}
           </Typography>
-        </Box>
-      )}
-      {stamp?.note && !editing && (
-        <Box
-          aria-label="Note de l'archiviste"
-          sx={{
-            position: 'absolute',
-            bottom: 34,
-            left: 64,
-            zIndex: 2,
-            width: 170,
-            p: 1.25,
-            bgcolor: '#fff59d',
-            color: '#4a3b00',
-            fontSize: 12,
-            lineHeight: 1.35,
-            transform: 'rotate(-3deg)',
-            boxShadow: '2px 4px 8px rgba(0,0,0,0.18)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: -7,
-              left: '50%',
-              width: 46,
-              height: 14,
-              ml: '-23px',
-              bgcolor: 'rgba(255,255,255,0.55)',
-              transform: 'rotate(-4deg)',
-            },
-          }}
-        >
-          {stamp.note}
-          <Box sx={{ mt: 0.5, fontSize: 10, opacity: 0.7 }}>— {stamp.checked_by}</Box>
         </Box>
       )}
       <Box
@@ -444,6 +443,23 @@ export function BinderSheet({
 
         <ScanImportStatus scanImport={scanImport} />
 
+        {stale && !editing && (
+          <Alert severity="warning" sx={{ mt: 1.5, bgcolor: '#fff3e0' }} data-testid="page-stale">
+            <Typography variant="subtitle2">
+              À revérifier : la fiche a changé depuis le constat ({page.changed_by}).
+            </Typography>
+            {page.changed_since_check.map((change) => (
+              <Box key={`${change.slot}.${change.field}`} sx={{ fontSize: 13 }}>
+                {FIELDS.find((f) => f.field === change.field)?.label} (
+                {change.slot === 'original' ? 'origine' : 'renouvellement'}) : vérifié{' '}
+                <b>{show(change.field, change.checked)}</b>, maintenant{' '}
+                <b>{show(change.field, change.now)}</b>
+              </Box>
+            ))}
+          </Alert>
+        )}
+        <PageTrace page={page} />
+
         {page.discrepancies.length > 0 && !editing && (
           <Alert severity="warning" sx={{ mt: 1.5, py: 0.25, bgcolor: '#fff8e1' }}>
             Écart entre la fiche et le scan : vérifiez sur le papier, puis « Conforme » si la fiche est juste
@@ -525,21 +541,59 @@ export function BinderSheet({
             </Stack>
           )}
           {stamp && !editing && (
-            <Stack alignItems="center" spacing={1} sx={{ alignSelf: 'flex-end', pr: { sm: 3 } }}>
-              <Stamp
-                result={stamp.result}
-                caption={`${formatDate(stamp.checked_at)} · ${stamp.checked_by ?? ''}`}
-                animate={justStamped}
-              />
-              <Button
-                size="small"
-                startIcon={<UndoIcon />}
-                onClick={() => uncheck.mutate(page.amm_id, { onSuccess: () => setJustStamped(false) })}
-                disabled={busy}
-                sx={{ color: MUTED }}
-              >
-                Annuler le constat
-              </Button>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-end" gap={2}>
+              {stamp.note ? (
+                <Box
+                  aria-label="Note de l'archiviste"
+                  sx={{
+                    position: 'relative',
+                    flexShrink: 0,
+                    width: 170,
+                    mt: 1,
+                    p: 1.25,
+                    bgcolor: '#fff59d',
+                    color: '#4a3b00',
+                    fontSize: 12,
+                    lineHeight: 1.35,
+                    transform: 'rotate(-3deg)',
+                    boxShadow: '2px 4px 8px rgba(0,0,0,0.18)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: -7,
+                      left: '50%',
+                      width: 46,
+                      height: 14,
+                      ml: '-23px',
+                      bgcolor: 'rgba(255,255,255,0.55)',
+                      transform: 'rotate(-4deg)',
+                    },
+                  }}
+                >
+                  {stamp.note}
+                  <Box sx={{ mt: 0.5, fontSize: 10, opacity: 0.7 }}>— {stamp.checked_by}</Box>
+                </Box>
+              ) : (
+                <span />
+              )}
+              <Stack alignItems="center" spacing={1} sx={{ pr: { sm: 3 } }}>
+                <Box sx={{ opacity: stale ? 0.4 : 1 }}>
+                  <Stamp
+                    result={stamp.result}
+                    caption={`${formatDate(stamp.checked_at)} · ${stamp.checked_by ?? ''}`}
+                    animate={justStamped}
+                  />
+                </Box>
+                <Button
+                  size="small"
+                  startIcon={<UndoIcon />}
+                  onClick={() => uncheck.mutate(page.amm_id, { onSuccess: () => setJustStamped(false) })}
+                  disabled={busy}
+                  sx={{ color: MUTED }}
+                >
+                  Annuler le constat
+                </Button>
+              </Stack>
             </Stack>
           )}
         </Stack>

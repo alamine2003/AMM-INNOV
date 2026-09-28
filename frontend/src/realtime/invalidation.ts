@@ -2,6 +2,8 @@ import type { QueryKey } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
 import type { RealtimeEvent, RealtimeEventType } from '@/api/types';
 
+const BINDERS: QueryKey = ['binders'];
+
 /**
  * Table événement → clés de requêtes à invalider.
  * Les événements ne transportent que des identifiants : les données sont rechargées via l'API.
@@ -43,7 +45,9 @@ export function keysToInvalidate(event: RealtimeEvent): QueryKey[] {
     'dashboard.refresh': () => [queryKeys.analytics.all, queryKeys.amms.list()],
   };
   const resolver = table[type];
-  return resolver ? resolver() : [];
+  if (!resolver) return [];
+  // Les classeurs se déduisent des AMM : toute évolution du dashboard ou d'un import les rafraîchit.
+  return type === 'notification.created' || type.startsWith('alert.') ? resolver() : [...resolver(), BINDERS];
 }
 
 export const KNOWN_EVENTS: RealtimeEventType[] = [

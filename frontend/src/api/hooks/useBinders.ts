@@ -7,6 +7,7 @@ import type {
   BinderDetail,
   BinderExport,
   BinderExtraPage,
+  BinderLocation,
   BinderPageScanResult,
   BinderResult,
   BinderSummary,
@@ -168,4 +169,14 @@ export function useBinderPresence(key: string) {
       void api.delete(`/binders/${key}/presence`).catch(() => undefined);
     };
   }, [key]);
+}
+
+/** Classeur et page d'une AMM : relie la fiche AMM et les imports au classeur papier. */
+export function useBinderLocation(ammId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...binderKeys.all, 'locate', ammId ?? ''] as const,
+    queryFn: async () => (await api.get<BinderLocation>('/binders/locate', { params: { amm: ammId } })).data,
+    enabled: !!ammId,
+    retry: false,
+  });
 }

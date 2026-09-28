@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponse
 from django.utils import timezone
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -22,7 +22,7 @@ from apps.core.tasks import enqueue
 from apps.documents.views import open_stored_file
 
 from . import actions
-from .layout import binder_detail, get_binder, shelf
+from .layout import binder_detail, get_binder, locate, shelf
 from .models import BinderExport, BinderPresence
 from .pdf import binder_pdf
 from .serializers import (
@@ -30,6 +30,7 @@ from .serializers import (
     AddPageResultSerializer,
     BinderDetailSerializer,
     BinderExportSerializer,
+    BinderLocationSerializer,
     BinderSummarySerializer,
     CheckInputSerializer,
     ExtraPageInputSerializer,
@@ -47,6 +48,22 @@ class BinderViewSet(viewsets.ViewSet):
     @extend_schema(responses=BinderSummarySerializer(many=True))
     def list(self, request):
         return Response(BinderSummarySerializer(shelf(request.user), many=True).data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("amm", str, required=True, description="Identifiant de l'AMM")
+        ],
+        responses=BinderLocationSerializer,
+    )
+    @action(detail=False, methods=["get"])
+    def locate(self, request):
+        """Classeur et page d'une AMM (lien depuis la fiche AMM et les imports)."""
+        amm_id = request.query_params.get("amm", "")
+        try:
+            payload = locate(request.user, amm_id)
+        except (MarketingAuthorization.DoesNotExist, DjangoValidationError, ValueError):
+            raise Http404("AMM inconnue.")
+        return Response(BinderLocationSerializer(payload).data)
 
     @extend_schema(responses=BinderDetailSerializer)
     def retrieve(self, request, key=None):

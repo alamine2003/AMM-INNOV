@@ -65,6 +65,7 @@ export function TitleLeaf({
           <Tile value={binder.corrected} label="corrigées" />
           <Tile value={binder.absent} label="absentes" />
           <Tile value={binder.to_scan} label="à scanner" />
+          {binder.stale > 0 && <Tile value={binder.stale} label="à revérifier" />}
           <Tile value={binder.extras} label="en trop" />
         </Stack>
         <Box sx={{ mt: 2 }}>
@@ -97,7 +98,13 @@ export function TitleLeaf({
 }
 
 /** Intercalaire de gamme : carton de couleur avec l'avancement de la gamme. */
-export function DividerLeaf({ section, pages }: { section: BinderSectionSummary; pages: BinderPage[] }) {
+export function DividerLeaf({
+  section,
+  pages,
+}: {
+  section: BinderSectionSummary & { stale?: number };
+  pages: BinderPage[];
+}) {
   const progress = section.total ? (section.checked / section.total) * 100 : 0;
   return (
     <Box
@@ -136,6 +143,11 @@ export function DividerLeaf({ section, pages }: { section: BinderSectionSummary;
         {pages.length > 0 && (
           <Typography sx={{ fontSize: 13, color: MUTED, mt: 2 }}>
             de {pages[0].product_name} à {pages[pages.length - 1].product_name}
+          </Typography>
+        )}
+        {!!section.stale && (
+          <Typography sx={{ fontSize: 13, color: '#e65100', fontWeight: 700, mt: 1 }}>
+            {section.stale} page(s) modifiée(s) depuis leur vérification : à revérifier
           </Typography>
         )}
         {section.absent + section.to_scan > 0 && (

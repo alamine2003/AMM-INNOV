@@ -20,6 +20,7 @@ import type {
   BinderPageScanResult,
   BinderDetail,
   BinderExport,
+  BinderLocation,
   BinderResult,
   BinderSummary,
   Country,
@@ -70,6 +71,7 @@ export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderS
 export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;
 export type _BinderAddPage = Assert<Assignable<Schemas['AddPageResult'], BinderAddPageResult>>;
 export type _BinderPageScan = Assert<Assignable<Schemas['PageScanResult'], BinderPageScanResult>>;
+export type _BinderLocation = Assert<Assignable<Schemas['BinderLocation'], BinderLocation>>;
 export type _BinderExport = Assert<Assignable<Schemas['BinderExport'], BinderExport>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API

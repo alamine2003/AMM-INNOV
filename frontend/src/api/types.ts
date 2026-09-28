@@ -715,6 +715,14 @@ export interface BinderPage {
     checked_at: string;
   } | null;
   to_scan: boolean;
+  /** Valeurs changées (dashboard, import Excel ou de dossier) depuis le constat : à revérifier. */
+  changed_since_check: { slot: BinderSlot; field: BinderField; checked: unknown; now: unknown }[];
+  changed_by: string | null;
+  /** Derniers imports qui ont touché la fiche : ligne du Dashboard (Excel) et dossier importé. */
+  trace: {
+    excel: { batch_id: string; date: string; sheet: string; row: number; outcome: string } | null;
+    dossier: { batch_id: string; date: string; status: string; folder: string; auto_applied: boolean } | null;
+  };
 }
 
 export interface BinderExtraPage {
@@ -726,9 +734,22 @@ export interface BinderExtraPage {
 }
 
 export interface BinderDetail extends Omit<BinderSummary, 'sections'> {
-  sections: (BinderSectionSummary & { pages: BinderPage[] })[];
+  sections: (BinderSectionSummary & { pages: BinderPage[]; stale: number })[];
   extra_pages: BinderExtraPage[];
   resume_page: number;
+  /** Pages modifiées depuis leur vérification. */
+  stale: number;
+}
+
+/** Page d'une AMM dans les classeurs (GET /binders/locate?amm=). */
+export interface BinderLocation {
+  binder_key: string;
+  title: string;
+  country_name: string;
+  page: number;
+  total: number;
+  check: BinderPage['check'];
+  stale: boolean;
 }
 
 export interface BinderCorrection {

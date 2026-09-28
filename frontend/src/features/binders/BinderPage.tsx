@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
+  Chip,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -17,7 +18,7 @@ import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useSnackbar } from 'notistack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { useCurrentUser } from '@/api/hooks/useAuth';
@@ -85,6 +86,12 @@ interface Snapshot {
   filter: LeafFilter;
   leaves: Leaf[];
   source: BinderDetail;
+  /** Pages du classeur (ordre) : un import ou le dashboard peut en ajouter ou en retirer. */
+  signature: string;
+}
+
+function pageSignature(binder: BinderDetail): string {
+  return binder.sections.map((s) => `${s.code}:${s.pages.map((p) => p.amm_id).join(',')}`).join('|');
 }
 
 /** Épaisseur de pile réaliste : 1 à 7 feuilles visibles selon le nombre de pages. */
@@ -132,7 +139,12 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const [current, setCurrent] = useState(0);
   const [flip, setFlip] = useState<Flip | null>(null);
   const [jumped, setJumped] = useState(0);
-  const [pending, setPending] = useState<string | null>(null);
+  // Lien depuis la fiche AMM ou un import (`?amm=`) : le classeur s'ouvre sur sa page.
+  const [searchParams] = useSearchParams();
+  const [pending, setPending] = useState<string | null>(() => {
+    const amm = searchParams.get('amm');
+    return amm ? `page:${amm}` : null;
+  });
   const [adding, setAdding] = useState<{ prefill?: { product_name: string; extra_id: string } } | null>(null);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -141,7 +153,25 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
 
   // L'ordre des feuilles est figé par filtre : une page vérifiée ne disparaît pas sous les doigts.
   // Une page attendue (ajoutée, ou masquée par le filtre) : on relit le classeur jusqu'à la trouver.
+  const signature = pageSignature(binder);
   if (
+    snapshot &&
+    snapshot.key === binder.key &&
+    snapshot.filter === filter &&
+    !pending &&
+    snapshot.signature !== signature
+  ) {
+    // Pages ajoutées ou retirées pendant la lecture (import Excel, import de dossier, dashboard) :
+    // le classeur suit, en gardant la page ouverte et les pages déjà vues.
+    const seen = new Set(snapshot.leaves.map((leaf) => leaf.key));
+    const wanted = new Set(buildLeaves(binder, filter).map((leaf) => leaf.key));
+    const leaves = buildLeaves(binder, 'all').filter((leaf) => seen.has(leaf.key) || wanted.has(leaf.key));
+    const open = snapshot.leaves[Math.min(current, snapshot.leaves.length - 1)]?.key;
+    const keep = leaves.findIndex((leaf) => leaf.key === open);
+    setSnapshot({ key: binder.key, filter, leaves, source: binder, signature });
+    setCurrent(keep >= 0 ? keep : Math.min(current, leaves.length - 1));
+    setFlip(null);
+  } else if (
     !snapshot ||
     snapshot.key !== binder.key ||
     snapshot.filter !== filter ||
@@ -150,7 +180,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
     const leaves = buildLeaves(binder, filter);
     const target = pending ? leaves.findIndex((leaf) => leaf.key === pending) : -1;
     const fresh = !snapshot || snapshot.key !== binder.key || snapshot.filter !== filter;
-    setSnapshot({ key: binder.key, filter, leaves, source: binder });
+    setSnapshot({ key: binder.key, filter, leaves, source: binder, signature });
     if (target >= 0) {
       setCurrent(target);
       setPending(null);
@@ -329,6 +359,14 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             <Typography variant="body2" color="text.secondary">
               {binder.checked} / {total} vérifiées
             </Typography>
+            {binder.stale > 0 && (
+              <Chip
+                size="small"
+                color="warning"
+                label={`${binder.stale} à revérifier`}
+                onClick={() => setFilter('unchecked')}
+              />
+            )}
           </Stack>
         </Box>
         <TextField

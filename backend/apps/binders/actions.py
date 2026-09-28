@@ -15,7 +15,7 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.imports.dossier.application import _reconcile_after_commit, _save_with_actor
 from apps.imports.models import DossierReviewPoint
 
-from .layout import SLOT_FIELDS, Binder, ensure_in_binder, last_obtained
+from .layout import SLOT_FIELDS, Binder, ensure_in_binder, last_obtained, page_values
 from .models import BinderCheck, BinderExtraPage
 
 REASON = "Vérifié sur le classeur papier"
@@ -114,6 +114,8 @@ def record_check(binder: Binder, amm_id, *, result: str, corrections, note: str,
             check.result = BinderCheck.Result.CORRIGE if history else BinderCheck.Result.CONFORME
             _close_mismatches(amm, user)
         check.note = note
+        amm.refresh_from_db()
+        check.snapshot = page_values(amm, last_obtained(list(amm.renewals.all())))
         check.checked_by = user
         check.checked_at = timezone.now()
         check._history_user = user
