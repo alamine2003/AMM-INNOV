@@ -10,6 +10,7 @@ describe('menu par rôle', () => {
       'alerts',
       'documents',
       'dossier-imports',
+      'deposits',
       'binders',
       'products',
     ]);

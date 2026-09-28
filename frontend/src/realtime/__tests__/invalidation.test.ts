@@ -26,6 +26,9 @@ describe('table d’invalidation temps réel', () => {
     expect(keysToInvalidate({ type: 'notification.created' })).toEqual([queryKeys.notifications.all]);
     expect(keysToInvalidate({ type: 'dashboard.refresh' })).toContainEqual(queryKeys.analytics.all);
   });
+  it('deposit.updated rafraîchit les dossiers de dépôt, pas les classeurs', () => {
+    expect(keysToInvalidate({ type: 'deposit.updated', id: 'dep-1', country: 'SN' })).toEqual([['deposits']]);
+  });
   it('couvre tous les événements connus et ignore les inconnus', () => {
     for (const type of KNOWN_EVENTS) expect(keysToInvalidate({ type, id: 'x' }).length).toBeGreaterThan(0);
     expect(keysToInvalidate({ type: 'inconnu' as never })).toEqual([]);

@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "apps.analytics",
     "apps.imports",
     "apps.binders",
+    "apps.deposits",
 ]
 
 MIDDLEWARE = [
@@ -365,6 +366,9 @@ SPECTACULAR_SETTINGS = {
         "RangeCodeEnum": "apps.catalog.models.ProductRange.Code",
         "BinderResultEnum": "apps.binders.models.BinderCheck.Result",
         "BinderExportStatusEnum": "apps.binders.models.BinderExport.Status",
+        "DepositStageEnum": "apps.deposits.models.DepositDossier.Stage",
+        "DepositEventKindEnum": "apps.deposits.models.DepositEvent.Kind",
+        "DepositActivityKindEnum": "apps.deposits.models.DepositActivity.Kind",
     },
 }
 

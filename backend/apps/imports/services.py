@@ -289,10 +289,19 @@ def import_workbook(
     }
     try:
         with override_today(today):
-            parsed = parse_workbook(source)
-            summary["ignored_sheets"] = parsed.ignored
-            for sheet in parsed.sheets:
-                summary["sheets"][sheet.name.strip()] = _import_sheet(sheet, batch, today, dry_run)
+            from .registry import import_registry, is_registry
+
+            if is_registry(source):
+                # Registre GHPL (classement général des scans) : complète sans écraser.
+                summary["kind"] = "registry"
+                summary["sheets"] = import_registry(source, batch, dry_run)
+            else:
+                parsed = parse_workbook(source)
+                summary["ignored_sheets"] = parsed.ignored
+                for sheet in parsed.sheets:
+                    summary["sheets"][sheet.name.strip()] = _import_sheet(
+                        sheet, batch, today, dry_run
+                    )
         totals: dict[str, int] = {}
         for stats in summary["sheets"].values():
             for key, value in stats.items():

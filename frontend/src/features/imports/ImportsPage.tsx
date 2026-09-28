@@ -84,6 +84,9 @@ export default function ImportsPage() {
               file={file}
               disabled={start.isPending}
             />
+            <Typography variant="body2" color="text.secondary">
+              {t('admin.imports.dropzoneHint')}
+            </Typography>
             <FormControlLabel
               control={<Checkbox checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />}
               label={t('admin.imports.dryRun')}
@@ -137,6 +140,15 @@ export default function ImportsPage() {
                         <Chip size="small" label={b.status} color={statusColor(b.status)} />
                         {b.dry_run && (
                           <Chip size="small" label={t('admin.imports.dryRunChip')} sx={{ ml: 0.5 }} />
+                        )}
+                        {(b.summary as Record<string, unknown> | null)?.kind === 'registry' && (
+                          <Chip
+                            size="small"
+                            color="info"
+                            variant="outlined"
+                            label={t('admin.imports.registryChip')}
+                            sx={{ ml: 0.5 }}
+                          />
                         )}
                       </TableCell>
                       <TableCell>{s.created ?? '—'}</TableCell>

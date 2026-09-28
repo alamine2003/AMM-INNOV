@@ -23,6 +23,10 @@ import type {
   BinderLocation,
   BinderResult,
   BinderSummary,
+  DepositDetail,
+  DepositSuggestion,
+  DepositSummary,
+  PieceType,
   Country,
   DossierReviewPoint,
   Health,
@@ -73,10 +77,17 @@ export type _BinderAddPage = Assert<Assignable<Schemas['AddPageResult'], BinderA
 export type _BinderPageScan = Assert<Assignable<Schemas['PageScanResult'], BinderPageScanResult>>;
 export type _BinderLocation = Assert<Assignable<Schemas['BinderLocation'], BinderLocation>>;
 export type _BinderExport = Assert<Assignable<Schemas['BinderExport'], BinderExport>>;
+export type _DepositSummary = Assert<Assignable<Schemas['DepositSummary'], DepositSummary>>;
+export type _DepositDetail = Assert<Assignable<Schemas['DepositDetail'], DepositDetail>>;
+export type _DepositSuggestion = Assert<Assignable<Schemas['Suggestion'], DepositSuggestion>>;
+export type _PieceType = Assert<Assignable<Schemas['PieceType'], PieceType>>;
 
 // --- Corps envoyés par le frontend → schémas de requête de l'API
 type Sends<Payload, Request> = Payload extends Request ? true : false;
 export type _MergeRequest = Assert<Sends<{ duplicate_id: string }, Schemas['ProductMergeRequest']>>;
+export type _PieceTypeRequest = Assert<
+  Sends<Omit<PieceType, 'id' | 'active'> & { active?: boolean }, Schemas['PieceTypeRequest']>
+>;
 export type _LoginRequest = Assert<Sends<{ email: string; password: string }, Schemas['LoginRequest']>>;
 export type _TransitionRequest = Assert<
   Sends<

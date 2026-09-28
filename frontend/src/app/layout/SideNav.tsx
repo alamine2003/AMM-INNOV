@@ -20,6 +20,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import RuleIcon from '@mui/icons-material/Rule';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { NavLink, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -40,6 +41,7 @@ const ICONS: Record<NavItem['icon'], React.ReactNode> = {
   rules: <RuleIcon />,
   imports: <UploadFileIcon />,
   binders: <MenuBookIcon />,
+  deposits: <AssignmentTurnedInIcon />,
 };
 
 function NavList() {

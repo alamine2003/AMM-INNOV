@@ -685,6 +685,317 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/deposit-pieces/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Pièces demandées : liste de base et ajustements par pays (le siège les modifie). */
+        get: operations["v1_deposit_pieces_list"];
+        put?: never;
+        /** @description Pièces demandées : liste de base et ajustements par pays (le siège les modifie). */
+        post: operations["v1_deposit_pieces_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposit-pieces/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Pièces demandées : liste de base et ajustements par pays (le siège les modifie). */
+        put: operations["v1_deposit_pieces_update"];
+        post?: never;
+        /** @description Pièces demandées : liste de base et ajustements par pays (le siège les modifie). */
+        delete: operations["v1_deposit_pieces_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Pièces demandées : liste de base et ajustements par pays (le siège les modifie). */
+        patch: operations["v1_deposit_pieces_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/deposits/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_deposits_list"];
+        put?: never;
+        post: operations["v1_deposits_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_deposits_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/abandon/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_abandon_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Le dossier complet (ZIP) : bordereau puis pièces, dans l'ordre de la liste. */
+        get: operations["v1_deposits_archive_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/decision/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_decision_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/deposit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_deposit_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_events_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/events/{event_id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_deposits_events_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/pieces/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_pieces_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/pieces/{piece_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["v1_deposits_pieces_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/pieces/{piece_id}/file/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_deposits_pieces_file_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/samples/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_samples_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/samples-required/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_samples_required_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/samples/{sample_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["v1_deposits_samples_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/{id}/send/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_deposits_send_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deposits/suggestions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description AMM à renouveler dans l'année (ou expirées depuis moins d'un an), sans dossier. */
+        get: operations["v1_deposits_suggestions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/": {
         parameters: {
             query?: never;
@@ -1472,6 +1783,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AbandonRequest: {
+            reason: string;
+        };
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -1828,6 +2142,13 @@ export interface components {
          * @enum {string}
          */
         AmmStatusEnum: "VALIDE" | "A_RENOUVELER" | "EXPIRE" | "INDETERMINE";
+        Attestation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            document_date: string;
+            filename: string;
+        };
         BinderDetail: {
             total: number;
             checked: number;
@@ -1962,6 +2283,11 @@ export interface components {
             /** @default  */
             note: string;
         };
+        ChecklistItem: {
+            piece_type: components["schemas"]["PieceTypeRead"];
+            files: components["schemas"]["DepositPiece"][];
+            done: boolean;
+        };
         Correction: {
             slot: components["schemas"]["SlotEnum"];
             field: components["schemas"]["FieldEnum"];
@@ -1998,6 +2324,270 @@ export interface components {
             validity_years?: number;
             /** Fuseau horaire */
             timezone?: string;
+        };
+        DecisionInputRequest: {
+            result: components["schemas"]["DecisionInputResultEnum"];
+            /** Format: date */
+            decision_date: string;
+            number?: string;
+            /** Format: date */
+            start_date?: string | null;
+            note?: string;
+            /** Format: binary */
+            file?: string;
+        };
+        /**
+         * @description * `OBTENU` - Obtenu
+         *     * `REJETE` - Rejeté
+         * @enum {string}
+         */
+        DecisionInputResultEnum: "OBTENU" | "REJETE";
+        DepositActivity: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Type */
+            readonly kind: components["schemas"]["DepositActivityKindEnum"];
+            /** Détail */
+            readonly text: string;
+            readonly user: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `CREE` - Dossier ouvert
+         *     * `PIECE` - Pièce ajoutée
+         *     * `PIECE_RETIREE` - Pièce retirée
+         *     * `ECHANTILLON` - Échantillon noté
+         *     * `ENVOI` - Envoyé au pays
+         *     * `TELECHARGEMENT` - Dossier téléchargé
+         *     * `DEPOT` - Déposé à l'agence
+         *     * `SUIVI` - Suivi à l'agence
+         *     * `DECISION` - Décision
+         *     * `ABANDON` - Abandon
+         * @enum {string}
+         */
+        DepositActivityKindEnum: "CREE" | "PIECE" | "PIECE_RETIREE" | "ECHANTILLON" | "ENVOI" | "TELECHARGEMENT" | "DEPOT" | "SUIVI" | "DECISION" | "ABANDON";
+        DepositAmm: {
+            /** Format: uuid */
+            readonly id: string;
+            product_name: string;
+            readonly range_code: string | null;
+            country_iso2: string;
+            country_name: string;
+            authority: string;
+            /** N° AMM d'origine */
+            readonly original_number: string;
+            /** Statut */
+            readonly status: components["schemas"]["AmmStatusEnum"];
+            /** Urgence */
+            readonly urgency: components["schemas"]["UrgencyEnum"];
+            /**
+             * Date de fin effective
+             * Format: date
+             */
+            readonly effective_end_date: string | null;
+            /**
+             * Dépôt idéal
+             * Format: date
+             */
+            readonly ideal_filing_date: string | null;
+            /**
+             * Limite agence
+             * Format: date
+             */
+            readonly agency_filing_deadline: string | null;
+        };
+        DepositDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly stage: components["schemas"]["DepositStageEnum"];
+            readonly stage_label: string;
+            readonly amm: components["schemas"]["DepositAmm"];
+            readonly renewal: components["schemas"]["DepositRenewal"];
+            readonly pieces_done: number;
+            readonly pieces_required: number;
+            /** Échantillons demandés */
+            readonly samples_required: boolean;
+            readonly samples_count: number;
+            /**
+             * Envoyé au pays le
+             * Format: date-time
+             */
+            readonly sent_at: string | null;
+            readonly sent_by: string | null;
+            /**
+             * Attestation reçue le
+             * Format: date-time
+             */
+            readonly deposited_at: string | null;
+            readonly events_count: number;
+            readonly messages_count: number;
+            readonly last_message_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly send_note: string;
+            readonly checklist: components["schemas"]["ChecklistItem"][];
+            readonly other_pieces: components["schemas"]["DepositPiece"][];
+            readonly samples: components["schemas"]["DepositSample"][];
+            readonly events: components["schemas"]["DepositEvent"][];
+            readonly messages: components["schemas"]["DepositMessage"][];
+            readonly activities: components["schemas"]["DepositActivity"][];
+            readonly missing: string[];
+            readonly attestation: components["schemas"]["Attestation"] | null;
+            readonly downloads: components["schemas"]["Download"][];
+            readonly can: components["schemas"]["DepositPermissions"];
+        };
+        DepositEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Type */
+            readonly kind: components["schemas"]["DepositEventKindEnum"];
+            readonly kind_label: string;
+            /** Format: date */
+            readonly date: string;
+            /** Détail */
+            readonly note: string;
+            /** Nom du fichier */
+            readonly filename: string;
+            readonly has_file: boolean;
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `COMMISSION` - Passage en commission
+         *     * `NOTIFICATION` - Notification de l'agence
+         *     * `COMPLEMENT` - Demande de complément
+         *     * `AUTRE` - Autre
+         * @enum {string}
+         */
+        DepositEventKindEnum: "COMMISSION" | "NOTIFICATION" | "COMPLEMENT" | "AUTRE";
+        DepositInputRequest: {
+            /** Format: date */
+            filing_date: string;
+            /** Format: binary */
+            file: string;
+        };
+        DepositMessage: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly author: string | null;
+            readonly from_hq: boolean;
+            readonly mine: boolean;
+            /** Message */
+            readonly body: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        DepositPermissions: {
+            /** @description Siège : monter, envoyer, abandonner */
+            manage: boolean;
+            /** @description Enregistrer le dépôt et l'attestation */
+            deposit: boolean;
+            /** @description Noter commissions et notifications */
+            follow: boolean;
+            /** @description Enregistrer la décision */
+            decide: boolean;
+        };
+        DepositPiece: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Pièce (vide : autre pièce)
+             * Format: uuid
+             */
+            readonly piece_type: string | null;
+            /** Libellé */
+            readonly label: string;
+            /** Nom du fichier */
+            readonly filename: string;
+            /** Type MIME */
+            readonly content_type: string;
+            /** Taille */
+            readonly size_bytes: number;
+            readonly uploaded_by: string | null;
+            /** Format: date-time */
+            readonly uploaded_at: string;
+        };
+        DepositRenewal: {
+            /** Format: uuid */
+            readonly id: string;
+            /** N° d'ordre */
+            readonly sequence: number;
+            /** Statut du workflow */
+            readonly workflow_status: components["schemas"]["WorkflowStatusEnum"];
+            /**
+             * Date de dépôt
+             * Format: date
+             */
+            readonly filing_date: string | null;
+            /**
+             * Date de décision
+             * Format: date
+             */
+            readonly decision_date: string | null;
+            /** N° AMM */
+            readonly number: string;
+        };
+        DepositSample: {
+            /** Format: uuid */
+            readonly id: string;
+            /** N° de lot */
+            readonly batch_number: string;
+            /**
+             * Date de fabrication
+             * Format: date
+             */
+            readonly manufactured_on: string;
+            /**
+             * Date de péremption
+             * Format: date
+             */
+            readonly expires_on: string;
+            /** Quantité */
+            readonly quantity: number | null;
+            /** Remarque */
+            readonly note: string;
+        };
+        /**
+         * @description * `MONTAGE` - Montage du dossier
+         *     * `ENVOYE` - Envoyé au pays
+         *     * `DEPOSE` - Déposé à l'agence
+         *     * `COMMISSION` - En commission
+         *     * `OBTENU` - Renouvellement obtenu
+         *     * `REJETE` - Rejeté
+         *     * `ABANDONNE` - Abandonné
+         * @enum {string}
+         */
+        DepositStageEnum: "MONTAGE" | "ENVOYE" | "DEPOSE" | "COMMISSION" | "OBTENU" | "REJETE" | "ABANDONNE";
+        DepositSummary: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly stage: components["schemas"]["DepositStageEnum"];
+            readonly stage_label: string;
+            readonly amm: components["schemas"]["DepositAmm"];
+            readonly renewal: components["schemas"]["DepositRenewal"];
+            readonly pieces_done: number;
+            readonly pieces_required: number;
+            /** Échantillons demandés */
+            readonly samples_required: boolean;
+            readonly samples_count: number;
+            /**
+             * Envoyé au pays le
+             * Format: date-time
+             */
+            readonly sent_at: string | null;
+            readonly sent_by: string | null;
+            /**
+             * Attestation reçue le
+             * Format: date-time
+             */
+            readonly deposited_at: string | null;
+            readonly events_count: number;
+            readonly messages_count: number;
+            readonly last_message_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string;
         };
         Discrepancy: {
             slot: components["schemas"]["SlotEnum"];
@@ -2365,6 +2955,19 @@ export interface components {
             files?: string[];
             reused?: unknown;
         };
+        Download: {
+            user: string | null;
+            /** Format: date-time */
+            at: string;
+        };
+        EventInputRequest: {
+            kind: components["schemas"]["DepositEventKindEnum"];
+            /** Format: date */
+            date: string;
+            note?: string;
+            /** Format: binary */
+            file?: string;
+        };
         ExcelTrace: {
             /** Format: uuid */
             batch_id: string;
@@ -2524,6 +3127,9 @@ export interface components {
             /** @default false */
             dry_run: boolean;
         };
+        MessageInputRequest: {
+            body: string;
+        };
         Notification: {
             /** Format: uuid */
             readonly id: string;
@@ -2561,6 +3167,10 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        OpenDossierRequest: {
+            /** Format: uuid */
+            amm: string;
+        };
         Page: {
             /** Format: uuid */
             amm_id: string;
@@ -2865,6 +3475,20 @@ export interface components {
             /** Fuseau horaire */
             timezone?: string;
         };
+        PatchedPieceTypeRequest: {
+            /** Pièce */
+            label?: string;
+            /** Précision */
+            help_text?: string;
+            /** Obligatoire */
+            required?: boolean;
+            /** Ordre */
+            order?: number;
+            /** Code ISO */
+            country?: string | null;
+            excluded_countries?: string[];
+            active?: boolean;
+        };
         PatchedProductRangeRequest: {
             code?: components["schemas"]["RangeCodeEnum"];
             /** Libellé */
@@ -2936,6 +3560,59 @@ export interface components {
             workflow_label: string;
             /** Format: date */
             filing_date: string | null;
+        };
+        PieceType: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Pièce */
+            label: string;
+            /** Précision */
+            help_text?: string;
+            /** Obligatoire */
+            required?: boolean;
+            /** Ordre */
+            order?: number;
+            /** Code ISO */
+            country?: string | null;
+            excluded_countries?: string[];
+            active?: boolean;
+        };
+        PieceTypeRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Pièce */
+            readonly label: string;
+            /** Précision */
+            readonly help_text: string;
+            /** Obligatoire */
+            readonly required: boolean;
+            /** Ordre */
+            readonly order: number;
+            /** Code ISO */
+            readonly country: string | null;
+            readonly excluded_countries: string[];
+            readonly active: boolean;
+        };
+        PieceTypeRequest: {
+            /** Pièce */
+            label: string;
+            /** Précision */
+            help_text?: string;
+            /** Obligatoire */
+            required?: boolean;
+            /** Ordre */
+            order?: number;
+            /** Code ISO */
+            country?: string | null;
+            excluded_countries?: string[];
+            active?: boolean;
+        };
+        PieceUploadRequest: {
+            /** Format: binary */
+            file: string;
+            /** Format: uuid */
+            piece_type?: string | null;
+            label?: string;
         };
         Product: {
             /** Format: uuid */
@@ -3035,6 +3712,8 @@ export interface components {
             end_date_manual?: boolean;
             notes?: string;
             readonly allowed_transitions: string[];
+            /** @description Dossier de dépôt (rubrique « Dépôt AMM ») suivant ce renouvellement. */
+            readonly deposit_id: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -3099,6 +3778,18 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "CEO_ADMIN" | "HQ_REGULATORY" | "COUNTRY_REGULATORY";
+        SampleInputRequest: {
+            batch_number: string;
+            /** Format: date */
+            manufactured_on: string;
+            /** Format: date */
+            expires_on: string;
+            quantity?: number | null;
+            note?: string;
+        };
+        SamplesRequiredRequest: {
+            required: boolean;
+        };
         Scan: {
             /** Format: uuid */
             document_id: string;
@@ -3130,6 +3821,9 @@ export interface components {
             label: string;
             color: string;
         };
+        SendRequest: {
+            note?: string;
+        };
         /**
          * @description * `INFO` - Information
          *     * `WARNING` - Avertissement
@@ -3150,6 +3844,37 @@ export interface components {
          * @enum {string}
          */
         SlotEnum: "original" | "renewal";
+        Suggestion: {
+            /** Format: uuid */
+            readonly id: string;
+            product_name: string;
+            readonly range_code: string | null;
+            country_iso2: string;
+            country_name: string;
+            authority: string;
+            /** N° AMM d'origine */
+            readonly original_number: string;
+            /** Statut */
+            readonly status: components["schemas"]["AmmStatusEnum"];
+            /** Urgence */
+            readonly urgency: components["schemas"]["UrgencyEnum"];
+            /**
+             * Date de fin effective
+             * Format: date
+             */
+            readonly effective_end_date: string | null;
+            /**
+             * Dépôt idéal
+             * Format: date
+             */
+            readonly ideal_filing_date: string | null;
+            /**
+             * Limite agence
+             * Format: date
+             */
+            readonly agency_filing_deadline: string | null;
+            readonly renewal_status: (components["schemas"]["WorkflowStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -4589,6 +5314,563 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    v1_deposit_pieces_list: {
+        parameters: {
+            query?: {
+                /** @description Quel champ utiliser pour classer les résultats. */
+                ordering?: string;
+                /** @description Un terme de recherche. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PieceType"][];
+                };
+            };
+        };
+    };
+    v1_deposit_pieces_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PieceTypeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PieceTypeRequest"];
+                "multipart/form-data": components["schemas"]["PieceTypeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PieceType"];
+                };
+            };
+        };
+    };
+    v1_deposit_pieces_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de dépôt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PieceTypeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PieceTypeRequest"];
+                "multipart/form-data": components["schemas"]["PieceTypeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PieceType"];
+                };
+            };
+        };
+    };
+    v1_deposit_pieces_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de dépôt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposit_pieces_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de dépôt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPieceTypeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPieceTypeRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPieceTypeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PieceType"];
+                };
+            };
+        };
+    };
+    v1_deposits_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositSummary"][];
+                };
+            };
+        };
+    };
+    v1_deposits_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenDossierRequest"];
+                "multipart/form-data": components["schemas"]["OpenDossierRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpenDossierRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_abandon_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbandonRequest"];
+                "multipart/form-data": components["schemas"]["AbandonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AbandonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_archive_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dossier */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_decision_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionInputRequest"];
+                "multipart/form-data": components["schemas"]["DecisionInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecisionInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_deposit_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepositInputRequest"];
+                "multipart/form-data": components["schemas"]["DepositInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DepositInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_events_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventInputRequest"];
+                "multipart/form-data": components["schemas"]["EventInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EventInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_events_file_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pièce */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageInputRequest"];
+                "multipart/form-data": components["schemas"]["MessageInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MessageInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_pieces_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PieceUploadRequest"];
+                "multipart/form-data": components["schemas"]["PieceUploadRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PieceUploadRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_pieces_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                piece_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_pieces_file_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                piece_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pièce */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_samples_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleInputRequest"];
+                "multipart/form-data": components["schemas"]["SampleInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SampleInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_samples_required_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SamplesRequiredRequest"];
+                "multipart/form-data": components["schemas"]["SamplesRequiredRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SamplesRequiredRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_samples_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                sample_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_send_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SendRequest"];
+                "multipart/form-data": components["schemas"]["SendRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SendRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepositDetail"];
+                };
+            };
+        };
+    };
+    v1_deposits_suggestions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"][];
                 };
             };
         };

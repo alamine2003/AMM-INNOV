@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -15,6 +16,8 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { useParams } from 'react-router';
@@ -26,12 +29,26 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { statusColor } from './ImportsPage';
 
+const OUTCOMES = ['ERROR', 'WARNING', 'CREATED', 'UPDATED', 'SKIPPED'] as const;
+type Outcome = (typeof OUTCOMES)[number];
+const OUTCOME_COLOR: Record<Outcome, string> = {
+  ERROR: 'error.main',
+  WARNING: 'warning.dark',
+  CREATED: 'success.dark',
+  UPDATED: 'info.dark',
+  SKIPPED: 'text.secondary',
+};
+
 export default function ImportDetailPage() {
   const { id = '' } = useParams();
   const { t } = useTranslation();
   const batch = useImport(id, true);
   const [page, setPage] = useState(1);
-  const rows = useImportRows(id, 'ERROR', page, 25);
+  const [chosen, setOutcome] = useState<Outcome | null>(null);
+  const registry = (batch.data?.summary as Record<string, unknown> | undefined)?.kind === 'registry';
+  // Le registre n'a presque jamais d'erreur : ce qui compte, ce sont ses avertissements.
+  const outcome = chosen ?? (registry ? 'WARNING' : 'ERROR');
+  const rows = useImportRows(id, outcome, page, 25);
 
   if (batch.isPending) return <LoadingBlock />;
   if (batch.isError) return <ErrorBlock error={batch.error} onRetry={() => batch.refetch()} />;
@@ -51,18 +68,34 @@ export default function ImportDetailPage() {
           <>
             <Chip size="small" label={b.status} color={statusColor(b.status)} sx={{ mr: 1 }} />
             {b.dry_run && <Chip size="small" label={t('admin.imports.dryRunChip')} sx={{ mr: 1 }} />}
+            {registry && (
+              <Chip
+                size="small"
+                color="info"
+                variant="outlined"
+                label={t('admin.imports.registryChip')}
+                sx={{ mr: 1 }}
+              />
+            )}
             {formatDateTime(b.created_at)}
           </>
         }
       />
       {running && <LinearProgress sx={{ mb: 2 }} />}
+      {registry && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('admin.imports.registryHelp')}
+        </Alert>
+      )}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[
           ['created', t('admin.imports.created'), '#2e7d32'],
           ['updated', t('admin.imports.updated'), '#1565c0'],
           ['skipped', t('admin.imports.skipped'), '#757575'],
           ['errors', t('admin.imports.errorCount'), '#c62828'],
-          ['status_mismatch', t('admin.imports.warnings'), '#ef6c00'],
+          registry
+            ? ['warnings', t('admin.imports.registryWarnings'), '#ef6c00']
+            : ['status_mismatch', t('admin.imports.warnings'), '#ef6c00'],
         ].map(([key, label, color]) => (
           <Grid key={key} size={{ xs: 6, sm: 4, md: 2.4 }}>
             <KpiCard
@@ -83,6 +116,7 @@ export default function ImportDetailPage() {
                   <TableCell>{t('admin.imports.sheet')}</TableCell>
                   <TableCell align="right">{t('admin.imports.created')}</TableCell>
                   <TableCell align="right">{t('admin.imports.updated')}</TableCell>
+                  {registry && <TableCell align="right">{t('admin.imports.registryWarnings')}</TableCell>}
                   <TableCell align="right">{t('admin.imports.errorCount')}</TableCell>
                 </TableRow>
               </TableHead>
@@ -92,6 +126,7 @@ export default function ImportDetailPage() {
                     <TableCell>{name}</TableCell>
                     <TableCell align="right">{v.created ?? 0}</TableCell>
                     <TableCell align="right">{v.updated ?? 0}</TableCell>
+                    {registry && <TableCell align="right">{v.warnings ?? 0}</TableCell>}
                     <TableCell align="right">{v.errors ?? 0}</TableCell>
                   </TableRow>
                 ))}
@@ -100,12 +135,32 @@ export default function ImportDetailPage() {
           </CardContent>
         </Card>
       )}
-      <Typography variant="h6" gutterBottom>
-        {t('admin.imports.errors')}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 1 }}>
+        <Typography variant="h6">{t('admin.imports.rowsTitle')}</Typography>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={outcome}
+          onChange={(_e, value: Outcome | null) => {
+            if (value) {
+              setOutcome(value);
+              setPage(1);
+            }
+          }}
+          aria-label={t('admin.imports.rowsTitle')}
+        >
+          {OUTCOMES.map((value) => (
+            <ToggleButton key={value} value={value}>
+              {t(`admin.imports.outcome.${value}`)}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Box>
       <Paper variant="outlined">
         {rows.isPending && <LoadingBlock />}
-        {rows.data && rows.data.results.length === 0 && <EmptyBlock text={t('admin.imports.noErrors')} />}
+        {rows.data && rows.data.results.length === 0 && (
+          <EmptyBlock text={outcome === 'ERROR' ? t('admin.imports.noErrors') : t('admin.imports.noRows')} />
+        )}
         {rows.data && rows.data.results.length > 0 && (
           <>
             <TableContainer sx={{ overflowX: 'auto' }}>
@@ -123,7 +178,7 @@ export default function ImportDetailPage() {
                     <TableRow key={`${r.sheet}-${r.row_number}-${i}`}>
                       <TableCell>{r.sheet}</TableCell>
                       <TableCell>{r.row_number}</TableCell>
-                      <TableCell sx={{ color: 'error.main' }}>{r.message}</TableCell>
+                      <TableCell sx={{ color: OUTCOME_COLOR[outcome] }}>{r.message}</TableCell>
                       <TableCell>
                         <Typography
                           variant="caption"
