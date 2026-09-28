@@ -33,6 +33,12 @@ qui est reprise. Sinon le produit est créé, dans la gamme du registre.
 **Conseil** : lancer d'abord en **simulation**. La page du lot ouvre sur les avertissements, avec un
 filtre par résultat (erreurs, avertissements, créées, mises à jour, ignorées) et un résumé par pays.
 
+**Durée** : l'import charge une fois produits, alias et AMM, puis ne lit plus rien en base ligne par
+ligne. Il fait environ 2 000 requêtes au lieu de 9 000, et prend 7 s au lieu de 33 s en local
+(plus sur Render gratuit). La page du lot affiche l'avancement : « 450 / 1814 lignes traitées ».
+Un import coupé par un redémarrage du service passe en échec au bout de 45 min (« relancez-le ») au
+lieu de rester « en cours ».
+
 L'onglet « Parametres pays » (durées de validité, délais) n'est pas importé : ses valeurs sont des
 hypothèses non confirmées.
 

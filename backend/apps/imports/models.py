@@ -28,6 +28,7 @@ class ImportBatch(models.Model):
         related_name="imports",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField("démarré le", null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

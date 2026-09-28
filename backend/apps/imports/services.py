@@ -279,7 +279,8 @@ def import_workbook(
     if batch is not None:
         batch.status = ImportBatch.Status.RUNNING
         batch.reference_date = today
-        batch.save(update_fields=["status", "reference_date"])
+        batch.started_at = batch.started_at or timezone.now()
+        batch.save(update_fields=["status", "reference_date", "started_at"])
     summary: dict = {
         "today": today.isoformat(),
         "dry_run": dry_run,

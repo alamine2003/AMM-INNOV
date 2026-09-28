@@ -15,6 +15,7 @@ from datetime import timedelta
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.resilience import BROKER_BREAKER, DEGRADED
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 MAX_EMAIL_ATTEMPTS = 60
 EMAIL_RETRY_AFTER = timedelta(minutes=15)  # laisse finir les relances Celery (≈ 10 min)
 DOSSIER_PENDING_AFTER = timedelta(minutes=5)
+IMPORT_RUNNING_MAX = timedelta(minutes=45)
 DOSSIER_RUNNING_MAX = timedelta(minutes=25)  # soft_time_limit de l'analyse : 20 min
 PREVIEW_AFTER = timedelta(minutes=10)
 
@@ -107,6 +109,18 @@ def recover_pending_work() -> dict:
     for pk in imports.values_list("pk", flat=True)[:20]:
         run_import.delay(str(pk))  # prise en charge exclusive dans la tâche : pas de doublon
         report["imports_republished"] += 1
+
+    # Import coupé en route (redémarrage du service, mémoire) : il resterait « en cours » pour
+    # toujours. Rien n'a été écrit (transaction annulée) : on le marque en échec, à relancer.
+    limit = now - IMPORT_RUNNING_MAX
+    stuck = ImportBatch.objects.filter(status=ImportBatch.Status.RUNNING).filter(
+        Q(started_at__lt=limit) | Q(started_at__isnull=True, created_at__lt=limit)
+    )
+    report["imports_failed"] = stuck.update(
+        status=ImportBatch.Status.FAILED,
+        finished_at=now,
+        summary={"error": "Import interrompu (redémarrage du service) : relancez-le."},
+    )
 
     previews = Document.objects.filter(
         page_count__isnull=True,

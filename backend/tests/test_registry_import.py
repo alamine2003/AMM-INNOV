@@ -211,3 +211,50 @@ def test_dry_run_changes_nothing(tmp_path, make_amm, batch):
     assert not amm.renewals.exists()
     assert not Product.objects.filter(name="NOUVEAU 5MG CPR B/30").exists()
     assert ImportRow.objects.filter(batch=batch, amm__isnull=True).count() == 2
+
+
+def test_progress_is_readable_while_running(tmp_path, batch):
+    from apps.imports.progress import get_progress, set_progress
+    from apps.imports.serializers import ImportBatchSerializer
+
+    source = registry(
+        tmp_path, [row(Presentation="NOUVEAU 5MG CPR B/30", Source="Classement seul")]
+    )
+    import_workbook(source, batch=batch, dry_run=True)
+    assert get_progress(batch.pk) == {"done": 1, "total": 1}
+    batch.status = ImportBatch.Status.RUNNING
+    set_progress(batch.pk, 50, 1814)
+    assert ImportBatchSerializer(batch).data["progress"] == {"done": 50, "total": 1814}
+    batch.status = ImportBatch.Status.DONE
+    assert ImportBatchSerializer(batch).data["progress"] is None
+
+
+def test_interrupted_import_is_marked_failed(batch):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.core.tasks import recover_pending_work
+
+    ImportBatch.objects.filter(pk=batch.pk).update(
+        status=ImportBatch.Status.RUNNING, started_at=timezone.now() - timedelta(hours=2)
+    )
+    report = recover_pending_work()
+    batch.refresh_from_db()
+    assert report["imports_failed"] == 1
+    assert batch.status == ImportBatch.Status.FAILED
+    assert "relancez" in batch.summary["error"]
+
+
+def test_matching_scales_without_queries_per_row(
+    tmp_path, make_amm, ranges, batch, django_assert_max_num_queries
+):
+    for index in range(30):
+        make_amm("SN", product_obj=Product.objects.create(name=f"PRODUIT{index:02d} 5MG CPR B/30"))
+    records = [row(Presentation=f"PRODUIT{index:02d} 5MG CPR B30") for index in range(30)]
+    source = registry(tmp_path, records)
+    with django_assert_max_num_queries(20):
+        from apps.imports.registry import import_registry
+
+        counters = import_registry(source, None, dry_run=True)
+    assert counters["Registre GHPL — SENEGAL"]["skipped"] == 30

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def run_import(batch_id: str, today: str | None = None) -> dict:
     # Prise en charge exclusive : la tâche peut être redistribuée (acks tardifs) ou republiée.
     claimed = ImportBatch.objects.filter(pk=batch_id, status=ImportBatch.Status.PENDING).update(
-        status=ImportBatch.Status.RUNNING
+        status=ImportBatch.Status.RUNNING, started_at=timezone.now()
     )
     if not claimed:
         return {"status": "skipped"}

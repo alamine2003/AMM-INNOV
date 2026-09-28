@@ -7249,6 +7249,11 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/ImportProgress'
+          nullable: true
+          readOnly: true
       required:
       - created_at
       - created_by
@@ -7257,6 +7262,7 @@ components:
       - filename
       - finished_at
       - id
+      - progress
       - reference_date
       - status
       - summary
@@ -7274,6 +7280,16 @@ components:
         * `SKIPPED` - Inchangée
         * `ERROR` - Erreur
         * `WARNING` - Avertissement
+    ImportProgress:
+      type: object
+      properties:
+        done:
+          type: integer
+        total:
+          type: integer
+      required:
+      - done
+      - total
     ImportRow:
       type: object
       properties:

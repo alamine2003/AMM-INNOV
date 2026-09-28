@@ -3059,6 +3059,7 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly finished_at: string | null;
+            readonly progress: components["schemas"]["ImportProgress"] | null;
         };
         /**
          * @description * `CREATED` - Créée
@@ -3069,6 +3070,10 @@ export interface components {
          * @enum {string}
          */
         ImportOutcomeEnum: "CREATED" | "UPDATED" | "SKIPPED" | "ERROR" | "WARNING";
+        ImportProgress: {
+            done: number;
+            total: number;
+        };
         ImportRow: {
             /** Format: uuid */
             readonly id: string;

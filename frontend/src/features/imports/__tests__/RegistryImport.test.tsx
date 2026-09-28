@@ -63,4 +63,24 @@ describe('Import du registre GHPL', () => {
     expect(await screen.findByText(/Produit du catalogue repris/)).toBeInTheDocument();
     expect(screen.queryByText(/plus récent que le Dashboard/)).not.toBeInTheDocument();
   });
+
+  it('montre l’avancement pendant que le registre est importé', async () => {
+    loginAs('u-hq');
+    server.use(
+      http.get('/api/v1/imports/reg-2', () =>
+        HttpResponse.json({
+          ...batch,
+          id: 'reg-2',
+          status: 'RUNNING',
+          summary: {},
+          progress: { done: 450, total: 1814 },
+        }),
+      ),
+      http.get('/api/v1/imports/reg-2/rows', () =>
+        HttpResponse.json({ count: 0, next: null, previous: null, results: [] }),
+      ),
+    );
+    renderApp('/admin/imports/reg-2');
+    expect(await screen.findByText('450 / 1814 lignes traitées')).toBeInTheDocument();
+  });
 });

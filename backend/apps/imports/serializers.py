@@ -1,6 +1,13 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import ImportBatch, ImportRow
+from .progress import get_progress
+
+
+class ImportProgressSerializer(serializers.Serializer):
+    done = serializers.IntegerField()
+    total = serializers.IntegerField()
 
 
 class ImportBatchSerializer(serializers.ModelSerializer):
@@ -9,6 +16,7 @@ class ImportBatchSerializer(serializers.ModelSerializer):
     )
     filename = serializers.SerializerMethodField()
     summary = serializers.DictField(read_only=True)
+    progress = serializers.SerializerMethodField()
 
     class Meta:
         model = ImportBatch
@@ -23,8 +31,16 @@ class ImportBatchSerializer(serializers.ModelSerializer):
             "created_by_email",
             "created_at",
             "finished_at",
+            "progress",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(ImportProgressSerializer(allow_null=True))
+    def get_progress(self, obj):
+        """Lignes traitées pendant que l'import tourne (registre GHPL)."""
+        if obj.status != ImportBatch.Status.RUNNING:
+            return None
+        return get_progress(obj.pk)
 
     def get_filename(self, obj) -> str:
         return obj.file.name.rsplit("/", 1)[-1] if obj.file else ""
