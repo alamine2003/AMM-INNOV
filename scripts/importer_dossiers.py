@@ -158,6 +158,7 @@ class Client:
     def _send(self, method, path, body=None, content_type="application/json", timeout=300):
         request = urllib.request.Request(self.api + path, data=body, method=method)
         request.add_header("Accept", "application/json")
+        request.add_header("User-Agent", "AMM-GH-importer/1.1 (import de dossiers AMM)")
         if body is not None:
             request.add_header("Content-Type", content_type)
         if self.access:
@@ -184,10 +185,20 @@ class Client:
                 if exc.code == 401 and attempt < 7:
                     self.refresh()
                     continue
+                if exc.code == 429:
+                    # Protection anti-robots de l'hébergeur : on se fait oublier un moment.
+                    if attempt >= 5:
+                        raise RuntimeError("trop de requêtes (429) : réessayez plus tard") from None
+                    print("      … l'hébergeur demande de ralentir (429) : pause de 10 minutes")
+                    time.sleep(600)
+                    continue
                 if exc.code in (502, 503, 504) and attempt < 7:
                     wait(attempt, f"serveur indisponible ({exc.code})")
                     continue
-                detail = exc.read().decode(errors="replace")[:500]
+                detail = exc.read().decode(errors="replace")
+                if detail.lstrip().startswith("<"):
+                    detail = "page HTML de l'hébergeur (service indisponible)"
+                detail = detail[:500]
                 raise RuntimeError(f"{exc.code} : {detail}") from None
             except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
                 if attempt < 7:
@@ -252,6 +263,29 @@ def upload(client: Client, group: dict) -> dict:
     return {"id": batch.get("id"), "sent": len(sent), "reused": len(reused)}
 
 
+BUSY = {"PENDING", "RUNNING"}
+
+
+def wait_done(client: Client, batch_ids: list, keep: int) -> None:
+    """Attend que le serveur ait analysé les envois précédents (au plus `keep` en cours).
+
+    Render gratuit analyse un dossier à la fois : envoyer plus vite que l'analyse le sature
+    (mémoire, redémarrages) et déclenche la protection anti-robots (429).
+    """
+    started = time.time()
+    while len(batch_ids) > keep:
+        oldest = batch_ids[0]
+        try:
+            status = client.call("GET", f"/dossier-imports/{oldest}").get("status")
+        except RuntimeError:
+            status = None
+        if status not in BUSY or time.time() - started > 900:
+            batch_ids.pop(0)
+            started = time.time()
+            continue
+        time.sleep(20)
+
+
 # --- Programme -----------------------------------------------------------------------------
 
 
@@ -274,7 +308,10 @@ def main() -> int:
     parser.add_argument("--email", help="adresse de connexion à AMM GH")
     parser.add_argument("--api", default=API)
     parser.add_argument("--liste", action="store_true", help="afficher le plan sans rien envoyer")
-    parser.add_argument("--pause", type=float, default=2.0, help="secondes entre deux produits")
+    parser.add_argument("--pause", type=float, default=10.0, help="secondes entre deux produits")
+    parser.add_argument(
+        "--en-cours", type=int, default=1, help="analyses en attente tolérées avant l'envoi suivant"
+    )
     args = parser.parse_args()
 
     plan = []
@@ -297,6 +334,7 @@ def main() -> int:
         print("Connecté.\n")
 
     totals = {"produits": 0, "fichiers": 0, "deja": 0, "erreurs": 0}
+    in_flight: list = []
     for number, folder in enumerate(plan, start=1):
         files, ignored = folder_files(folder)
         groups = split_by_product(files)
@@ -317,6 +355,7 @@ def main() -> int:
             if args.liste:
                 print(f"   · {group['name']} ({len(group['files'])} fichiers, {size >> 20} Mo)")
                 continue
+            wait_done(client, in_flight, args.en_cours)
             try:
                 result = upload(client, group)
             except Exception as exc:  # noqa: BLE001 - on continue avec les autres produits
@@ -325,6 +364,8 @@ def main() -> int:
                 continue
             state["done"][key] = result["id"]
             save_state(state)
+            if result["id"]:
+                in_flight.append(result["id"])
             totals["produits"] += 1
             totals["fichiers"] += result["sent"]
             totals["deja"] += result["reused"]
