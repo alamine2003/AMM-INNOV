@@ -361,6 +361,8 @@ export interface ImportBatch {
   reference_date?: string | null;
   created_by_email?: string | null;
   filename?: string;
+  /** Lignes traitées pendant que l'import tourne (null sinon). */
+  progress?: { done: number; total: number } | null;
 }
 
 export interface ImportRow {

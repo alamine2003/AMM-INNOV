@@ -18,6 +18,7 @@ import logging
 import re
 import unicodedata
 from datetime import date, datetime
+from difflib import SequenceMatcher
 
 from django.db import transaction
 from openpyxl import load_workbook
@@ -26,14 +27,24 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.catalog.models import Country, Product, ProductAlias, ProductRange
 from apps.catalog.normalize import normalize_product_name, product_key
 
-from .dossier.matching import _country_candidates, _strengths
+from .dossier.matching import (
+    _UNITS,
+    _distinctive,
+    _forms,
+    _parts,
+    _strengths,
+    _strengths_fit,
+    _words_fit,
+)
 from .excel_parser import SHEET_COUNTRIES
 from .models import ImportBatch, ImportRow
+from .progress import set_progress
 
 logger = logging.getLogger(__name__)
 
 REGISTRY_SHEETS = {"_Consolidation", "_Docs"}
 SHEET = "Registre GHPL"
+PROGRESS_EVERY = 50
 COUNTER_KEYS = ("rows", "created", "updated", "skipped", "warnings", "errors")
 NOTE = "Complété depuis le registre GHPL (classement général des scans)."
 
@@ -81,28 +92,83 @@ DASHBOARD_MISSING = "AMM du Dashboard introuvable dans AMM GH (importer le Dashb
 
 
 class _Catalog:
-    """Produits du catalogue et produits suivis par pays, chargés une fois pour tout le registre."""
+    """Tout ce que l'import consulte, chargé une fois : produits, alias, AMM, dépôts en cours.
+
+    Sur Render gratuit (0,1 CPU), l'import faisait ~10 000 requêtes et comparait chaque libellé à
+    tout le catalogue : plus de dix minutes, le service figé. Ici chaque ligne ne lit plus rien en
+    base, et le rapprochement ne compare que les produits de la même marque (mêmes deux premières
+    lettres), dont les caractéristiques sont calculées une seule fois.
+    """
 
     def __init__(self):
-        self.products = list(Product.objects.all())
-        self.by_country: dict[str, set] = {}
-        for country_id, product_id in MarketingAuthorization.objects.values_list(
-            "country_id", "product_id"
-        ):
-            self.by_country.setdefault(country_id, set()).add(product_id)
+        self.products: dict = {}
+        self.by_name: dict[str, Product] = {}
+        self.by_key: dict[str, Product] = {}
+        self._features: dict = {}
+        self._brands: dict[str, list] = {}
+        for product in Product.objects.order_by("pk"):
+            self._remember(product)
+        self.aliases = {
+            raw: self.products.get(product_id)
+            for raw, product_id in ProductAlias.objects.values_list("raw_name", "product_id")
+        }
+        self.amms: dict[tuple, MarketingAuthorization] = {}
+        self.by_country: dict = {}
+        for amm in MarketingAuthorization.objects.order_by("pk"):
+            self.amms.setdefault((amm.product_id, amm.country_id), amm)
+            self.by_country.setdefault(amm.country_id, set()).add(amm.product_id)
+        self.pending = set(
+            Renewal.objects.filter(workflow_status__in=Renewal.PENDING_STATUSES).values_list(
+                "amm_id", flat=True
+            )
+        )
 
-    def add(self, product: Product, country) -> None:
-        if all(known.pk != product.pk for known in self.products):
-            self.products.append(product)
-        self.by_country.setdefault(country.pk, set()).add(product.pk)
+    def _remember(self, product: Product) -> None:
+        if product.pk in self.products:
+            return
+        self.products[product.pk] = product
+        self.by_name.setdefault(product.name, product)
+        if product.key:
+            self.by_key.setdefault(product.key, product)
+        features = _features(product.name)
+        self._features[product.pk] = features
+        if features:
+            self._brands.setdefault(features[0][:2], []).append(product.pk)
+
+    def add(self, amm: MarketingAuthorization) -> None:
+        self._remember(amm.product)
+        self.amms[(amm.product_id, amm.country_id)] = amm
+        self.by_country.setdefault(amm.country_id, set()).add(amm.product_id)
+
+    def amm(self, product, country) -> MarketingAuthorization | None:
+        return self.amms.get((product.pk, country.pk)) if product else None
 
     def _usage(self, product: Product) -> int:
         return sum(1 for ids in self.by_country.values() if product.pk in ids)
 
-    def _pick(self, name: str, pool: set) -> Product | None:
-        marketed = [product for product in self.products if product.pk in pool]
-        found = _country_candidates(name, marketed)
-        candidates = list({product.pk: (product, pack) for product, pack in found}.values())
+    def _candidates(self, name: str, pool: set | None) -> list[tuple]:
+        label = _features(name)
+        if not label:
+            return []
+        brand, forms, strengths, _pack, distinctive = label
+        found = []
+        for pk in self._brands.get(brand[:2], []):
+            if pool is not None and pk not in pool:
+                continue
+            other = self._features[pk]
+            if SequenceMatcher(None, brand, other[0]).ratio() < 0.85:
+                continue
+            if forms and other[1] and not forms & other[1]:
+                continue
+            if not _strengths_fit(strengths, other[2]):
+                continue
+            if not _words_fit(distinctive, other[4]):
+                continue
+            found.append((self.products[pk], other[3]))
+        return found
+
+    def _pick(self, name: str, pool: set | None) -> Product | None:
+        candidates = self._candidates(name, pool)
         _, pack = _strengths(name)
         if len(candidates) > 1 and pack:
             candidates = [item for item in candidates if item[1] == pack] or candidates
@@ -111,11 +177,22 @@ class _Catalog:
         # Doublons du catalogue (« GENSIL SIROP FL/100ML » et « GENSIL SP F/100ML ») : mêmes
         # dosages et même boîte, c'est la même présentation ; on garde la plus utilisée.
         shapes = {
-            (tuple(sorted(_strengths(product.name)[0])), product_pack)
+            (tuple(sorted(self._features[product.pk][2])), product_pack)
             for product, product_pack in candidates
         }
         if len(candidates) > 1 and len(shapes) == 1:
             return max(candidates, key=lambda item: (self._usage(item[0]), item[0].name))[0]
+        return None
+
+    def exact(self, labels: list[str]) -> Product | None:
+        for label in labels:
+            name = normalize_product_name(label)
+            if not name:
+                continue
+            product = self.aliases.get(name) or self.by_name.get(name)
+            product = product or self.by_key.get(product_key(name))
+            if product:
+                return product
         return None
 
     def find(self, labels: list[str], country) -> Product | None:
@@ -126,12 +203,11 @@ class _Catalog:
         d'abord parmi les produits suivis dans le pays, puis dans tout le catalogue ; il faut une
         seule réponse (ou des doublons du catalogue), sinon le produit est considéré comme nouveau.
         """
-        exact = _find_product(labels)
+        exact = self.exact(labels)
         if exact:
             return exact
         names = [label for label in labels if label]
-        everywhere = {product.pk for product in self.products}
-        for scope in (self.by_country.get(country.pk, set()), everywhere):
+        for scope in (self.by_country.get(country.pk, set()), None):
             for name in names:
                 found = self._pick(name, scope)
                 if found:
@@ -139,21 +215,14 @@ class _Catalog:
         return None
 
 
-def _find_product(labels: list[str]) -> Product | None:
-    for label in labels:
-        name = normalize_product_name(label)
-        if not name:
-            continue
-        alias = ProductAlias.objects.filter(raw_name=name).select_related("product").first()
-        if alias:
-            return alias.product
-        product = (
-            Product.objects.filter(name=name).first()
-            or Product.objects.filter(key=product_key(name)).first()
-        )
-        if product:
-            return product
-    return None
+def _features(name: str) -> tuple | None:
+    """Marque, formes, dosages, boîte et mots distinctifs (comme `_country_candidates`)."""
+    words, _ = _parts(name)
+    words = [word for word in words if word not in _UNITS]
+    if not words or len(words[0]) < 4:
+        return None
+    strengths, pack = _strengths(name)
+    return words[0], _forms(words), strengths, pack, _distinctive(words)
 
 
 def _deposits(docs: list[dict]) -> dict[str, date]:
@@ -186,22 +255,37 @@ def _apply(
         return "WARNING", f"Pays non suivi dans AMM GH : {record.get('Pays')}.", None
     if UNIDENTIFIED in _plain(presentation):
         return "SKIPPED", "Présentation non identifiée dans le classement : rien n'est créé.", None
-    control = str(record.get("Controle") or "")
     labels = [presentation, str(record.get("Referentiel") or "").strip()]
     product = catalog.find(labels, country)
-    amm = (
-        MarketingAuthorization.objects.filter(product=product, country=country).first()
-        if product
-        else None
-    )
+    amm = catalog.amm(product, country)
+    if amm is None and record.get("Source") != "Classement seul":
+        return "WARNING", DASHBOARD_MISSING, None
+    args = (record, deposits, ranges, catalog, country, presentation, product, amm)
+    if not _writes(record, catalog, amm):
+        return _write(*args)
+    with transaction.atomic():  # une ligne en erreur n'emporte qu'elle
+        return _write(*args)
+
+
+def _writes(record, catalog, amm) -> bool:
+    """La ligne modifie-t-elle la base ? (sinon, pas de point de sauvegarde à poser)"""
+    if amm is None:
+        return True
+    if str(record.get("N° AMM origine") or "").strip() and not amm.original_number:
+        return True
+    if _date(record.get("Date origine")) and not amm.original_start_date:
+        return True
+    deposited = str(record.get("Statut dossier") or "").startswith("Depos")
+    return deposited and amm.pk not in catalog.pending
+
+
+def _write(record, deposits, ranges, catalog, country, presentation, product, amm):
+    control = str(record.get("Controle") or "")
     number = str(record.get("N° AMM origine") or "").strip()
     origin = _date(record.get("Date origine"))
     lines: list[str] = []
     outcome = "SKIPPED"
-
     if amm is None:
-        if record.get("Source") != "Classement seul":
-            return "WARNING", DASHBOARD_MISSING, None
         # Présentation connue par les scans seulement : l'AMM est créée avec ce qu'ils disent.
         if product is None:
             product = Product.objects.create(
@@ -236,13 +320,14 @@ def _apply(
     if str(record.get("Statut dossier") or "").startswith("Depos"):
         key = f"{_plain(record.get('Pays'))}|{_plain(record.get('Referentiel') or presentation)}"
         filed = deposits.get(key)
-        if not amm.renewals.filter(workflow_status__in=Renewal.PENDING_STATUSES).exists():
+        if amm.pk not in catalog.pending:
             Renewal.objects.create(
                 amm=amm,
                 workflow_status=Renewal.WorkflowStatus.DEPOSE,
                 filing_date=filed,
                 notes=f"Déposé selon le registre GHPL{' (attestation classée)' if filed else ''}.",
             )
+            catalog.pending.add(amm.pk)
             outcome = "UPDATED" if outcome == "SKIPPED" else outcome
             lines.append(
                 "renouvellement déposé ouvert"
@@ -290,15 +375,17 @@ def import_registry(source, batch: ImportBatch | None, dry_run: bool) -> dict[st
             countries = {c.iso2: c for c in Country.objects.all()}
             ranges = {r.code: r for r in ProductRange.objects.all()}
             catalog = _Catalog()
+            total = len(records)
             for number, record in enumerate(records, start=2):
+                if batch is not None and (number - 2) % PROGRESS_EVERY == 0:
+                    set_progress(batch.pk, number - 2, total)
                 sheet = f"{SHEET} — {record.get('Pays') or '?'}"
                 counters = sheets.setdefault(sheet, dict.fromkeys(COUNTER_KEYS, 0))
                 counters["rows"] += 1
                 try:
-                    with transaction.atomic():
-                        outcome, message, amm = _apply(record, deposits, countries, ranges, catalog)
+                    outcome, message, amm = _apply(record, deposits, countries, ranges, catalog)
                     if outcome == "CREATED":
-                        catalog.add(amm.product, amm.country)
+                        catalog.add(amm)
                 except Exception as exc:
                     logger.exception("Registre GHPL, ligne %s", number)
                     outcome, message, amm = "ERROR", f"erreur inattendue : {exc}", None
@@ -326,4 +413,6 @@ def import_registry(source, batch: ImportBatch | None, dry_run: bool) -> dict[st
         pass
     if rows:
         ImportRow.objects.bulk_create(rows, batch_size=500)
+    if batch is not None:
+        set_progress(batch.pk, len(records), len(records))
     return sheets

@@ -81,7 +81,25 @@ export default function ImportDetailPage() {
           </>
         }
       />
-      {running && <LinearProgress sx={{ mb: 2 }} />}
+      {running && (
+        <Box sx={{ mb: 2 }} data-testid="import-progress">
+          {b.progress && b.progress.total > 0 ? (
+            <>
+              <LinearProgress variant="determinate" value={(100 * b.progress.done) / b.progress.total} />
+              <Typography variant="caption" color="text.secondary">
+                {b.progress.done} / {b.progress.total} lignes traitées
+              </Typography>
+            </>
+          ) : (
+            <>
+              <LinearProgress />
+              <Typography variant="caption" color="text.secondary">
+                {b.status === 'PENDING' ? 'En attente de traitement…' : 'Lecture du classeur…'}
+              </Typography>
+            </>
+          )}
+        </Box>
+      )}
       {registry && (
         <Alert severity="info" sx={{ mb: 2 }}>
           {t('admin.imports.registryHelp')}
