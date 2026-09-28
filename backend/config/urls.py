@@ -22,6 +22,7 @@ from apps.amm.views import AmmViewSet, RenewalViewSet
 from apps.analytics.views import AfricaView, CountryView, ExportView, ProductCoverageView
 from apps.binders.views import BinderViewSet
 from apps.catalog.views import CountryViewSet, ProductRangeViewSet, ProductViewSet
+from apps.deposits.views import DepositViewSet, PieceTypeViewSet
 from apps.documents.views import DocumentViewSet
 from apps.imports.dossier_views import DossierImportViewSet, DossierReviewPointViewSet
 from apps.imports.views import ImportViewSet
@@ -42,9 +43,9 @@ router.register("notifications", NotificationViewSet, basename="notification")
 router.register("imports", ImportViewSet, basename="import")
 router.register("dossier-imports", DossierImportViewSet, basename="dossier-import")
 router.register("binders", BinderViewSet, basename="binder")
-router.register(
-    "dossier-review-points", DossierReviewPointViewSet, basename="dossier-review-point"
-)
+router.register("deposit-pieces", PieceTypeViewSet, basename="deposit-piece")
+router.register("deposits", DepositViewSet, basename="deposit")
+router.register("dossier-review-points", DossierReviewPointViewSet, basename="dossier-review-point")
 
 api_v1 = [
     re_path(r"^auth/login/?$", LoginView.as_view(), name="auth-login"),
@@ -67,7 +68,6 @@ api_v1 = [
     re_path(r"^analytics/export/?$", ExportView.as_view(), name="analytics-export"),
     *router.urls,
 ]
-
 
 
 def metrics(request):

@@ -167,6 +167,8 @@ export interface Renewal {
   end_date: string | null;
   end_date_manual: boolean;
   notes: string;
+  /** Dossier de dépôt (rubrique « Dépôts AMM ») qui suit ce renouvellement. */
+  deposit_id?: string | null;
   created_at: string;
 }
 
@@ -623,7 +625,8 @@ export type RealtimeEventType =
   | 'alert.updated'
   | 'notification.created'
   | 'document.created'
-  | 'dashboard.refresh';
+  | 'dashboard.refresh'
+  | 'deposit.updated';
 
 export interface RealtimeEvent {
   type: RealtimeEventType;
@@ -791,4 +794,132 @@ export interface BinderAddPageResult {
 export interface BinderPageScanResult {
   batch_id: string;
   status: string;
+}
+
+// --- Dépôt des AMM -------------------------------------------------------------------------
+
+export type DepositStage = 'MONTAGE' | 'ENVOYE' | 'DEPOSE' | 'COMMISSION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
+
+export type DepositEventKind = 'COMMISSION' | 'NOTIFICATION' | 'COMPLEMENT' | 'AUTRE';
+
+/** Pièce demandée : sans pays, liste de base ; avec un pays, pièce propre à ce pays. */
+export interface PieceType {
+  id: string;
+  label: string;
+  help_text: string;
+  required: boolean;
+  order: number;
+  country: string | null;
+  excluded_countries: string[];
+  active: boolean;
+}
+
+export interface DepositPiece {
+  id: string;
+  piece_type: string | null;
+  label: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+export interface DepositSample {
+  id: string;
+  batch_number: string;
+  manufactured_on: string;
+  expires_on: string;
+  quantity: number | null;
+  note: string;
+}
+
+export interface DepositEvent {
+  id: string;
+  kind: DepositEventKind;
+  kind_label: string;
+  date: string;
+  note: string;
+  filename: string;
+  has_file: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface DepositMessage {
+  id: string;
+  author: string | null;
+  from_hq: boolean;
+  mine: boolean;
+  body: string;
+  created_at: string;
+}
+
+export interface DepositActivity {
+  id: string;
+  kind: string;
+  text: string;
+  user: string | null;
+  created_at: string;
+}
+
+export interface DepositAmm {
+  id: string;
+  product_name: string;
+  range_code: string | null;
+  country_iso2: string;
+  country_name: string;
+  authority: string;
+  original_number: string;
+  status: AmmStatus;
+  urgency: string;
+  effective_end_date: string | null;
+  ideal_filing_date: string | null;
+  agency_filing_deadline: string | null;
+}
+
+export interface DepositSummary {
+  id: string;
+  stage: DepositStage;
+  stage_label: string;
+  amm: DepositAmm;
+  renewal: {
+    id: string;
+    sequence: number;
+    workflow_status: WorkflowStatus;
+    filing_date: string | null;
+    decision_date: string | null;
+    number: string;
+  };
+  pieces_done: number;
+  pieces_required: number;
+  samples_required: boolean;
+  samples_count: number;
+  sent_at: string | null;
+  sent_by: string | null;
+  deposited_at: string | null;
+  events_count: number;
+  messages_count: number;
+  last_message_at: string | null;
+  updated_at: string;
+}
+
+export interface DepositDetail extends DepositSummary {
+  send_note: string;
+  checklist: { piece_type: PieceType; files: DepositPiece[]; done: boolean }[];
+  other_pieces: DepositPiece[];
+  samples: DepositSample[];
+  events: DepositEvent[];
+  messages: DepositMessage[];
+  activities: DepositActivity[];
+  /** Ce qui manque pour envoyer le dossier au pays. */
+  missing: string[];
+  attestation: { id: string; document_date: string; filename: string } | null;
+  downloads: { user: string | null; at: string }[];
+  can: { manage: boolean; deposit: boolean; follow: boolean; decide: boolean };
+}
+
+/** AMM à renouveler dans l'année sans dossier de dépôt en cours. */
+export interface DepositSuggestion extends DepositAmm {
+  renewal_status: WorkflowStatus | null;
 }

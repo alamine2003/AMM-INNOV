@@ -10,6 +10,7 @@ recompression : un PDF scanné est déjà compressé.
 """
 
 import io
+import time
 import zipfile
 
 from asgiref.sync import sync_to_async
@@ -51,17 +52,24 @@ def _named(documents):
 
 def iter_archive(documents):
     """Blocs successifs du ZIP ; la mémoire reste bornée à quelques blocs."""
+    return iter_zip((name, document.file) for name, document in _named(documents))
+
+
+def iter_zip(entries):
+    """ZIP en flux de fichiers `(nom dans l'archive, fichier Django)`, lus bloc par bloc."""
     outbox = _Outbox()
     with zipfile.ZipFile(outbox, "w", compression=zipfile.ZIP_STORED) as archive:
-        for name, document in _named(documents):
-            document.file.open("rb")
+        for name, field_file in entries:
+            field_file.open("rb")
             try:
-                with archive.open(name, "w", force_zip64=True) as entry:
-                    while chunk := document.file.read(CHUNK):
+                # Date du jour sur chaque fichier (sinon 01/01/1980 à l'ouverture de l'archive).
+                info = zipfile.ZipInfo(name, date_time=time.localtime()[:6])
+                with archive.open(info, "w", force_zip64=True) as entry:
+                    while chunk := field_file.read(CHUNK):
                         entry.write(chunk)
                         yield outbox.drain()
             finally:
-                document.file.close()
+                field_file.close()
     yield outbox.drain()
 
 

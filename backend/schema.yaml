@@ -1839,6 +1839,628 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/deposit-pieces/:
+    get:
+      operationId: v1_deposit_pieces_list
+      description: 'Pièces demandées : liste de base et ajustements par pays (le siège
+        les modifie).'
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PieceType'
+          description: ''
+    post:
+      operationId: v1_deposit_pieces_create
+      description: 'Pièces demandées : liste de base et ajustements par pays (le siège
+        les modifie).'
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PieceType'
+          description: ''
+  /api/v1/deposit-pieces/{id}/:
+    put:
+      operationId: v1_deposit_pieces_update
+      description: 'Pièces demandées : liste de base et ajustements par pays (le siège
+        les modifie).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de
+          dépôt.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PieceTypeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PieceType'
+          description: ''
+    patch:
+      operationId: v1_deposit_pieces_partial_update
+      description: 'Pièces demandées : liste de base et ajustements par pays (le siège
+        les modifie).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de
+          dépôt.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPieceTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPieceTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPieceTypeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PieceType'
+          description: ''
+    delete:
+      operationId: v1_deposit_pieces_destroy
+      description: 'Pièces demandées : liste de base et ajustements par pays (le siège
+        les modifie).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) pièce du dossier de
+          dépôt.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/deposits/:
+    get:
+      operationId: v1_deposits_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DepositSummary'
+          description: ''
+    post:
+      operationId: v1_deposits_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenDossierRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpenDossierRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpenDossierRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/:
+    get:
+      operationId: v1_deposits_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/abandon/:
+    post:
+      operationId: v1_deposits_abandon_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbandonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AbandonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AbandonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/archive/:
+    get:
+      operationId: v1_deposits_archive_retrieve
+      description: 'Le dossier complet (ZIP) : bordereau puis pièces, dans l''ordre
+        de la liste.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Dossier
+  /api/v1/deposits/{id}/decision/:
+    post:
+      operationId: v1_deposits_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecisionInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecisionInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/deposit/:
+    post:
+      operationId: v1_deposits_deposit_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DepositInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DepositInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/events/:
+    post:
+      operationId: v1_deposits_events_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/events/{event_id}/file/:
+    get:
+      operationId: v1_deposits_events_file_retrieve
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Pièce
+  /api/v1/deposits/{id}/messages/:
+    post:
+      operationId: v1_deposits_messages_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/pieces/:
+    post:
+      operationId: v1_deposits_pieces_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PieceUploadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PieceUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PieceUploadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/pieces/{piece_id}/:
+    delete:
+      operationId: v1_deposits_pieces_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: piece_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/deposits/{id}/pieces/{piece_id}/file/:
+    get:
+      operationId: v1_deposits_pieces_file_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: piece_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Pièce
+  /api/v1/deposits/{id}/samples/:
+    post:
+      operationId: v1_deposits_samples_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SampleInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SampleInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SampleInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/samples-required/:
+    post:
+      operationId: v1_deposits_samples_required_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SamplesRequiredRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SamplesRequiredRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SamplesRequiredRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/{id}/samples/{sample_id}/:
+    delete:
+      operationId: v1_deposits_samples_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: sample_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/deposits/{id}/send/:
+    post:
+      operationId: v1_deposits_send_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositDetail'
+          description: ''
+  /api/v1/deposits/suggestions/:
+    get:
+      operationId: v1_deposits_suggestions_list
+      description: AMM à renouveler dans l'année (ou expirées depuis moins d'un an),
+        sans dossier.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Suggestion'
+          description: ''
   /api/v1/documents/:
     get:
       operationId: v1_documents_list
@@ -3704,6 +4326,14 @@ paths:
           description: No response body
 components:
   schemas:
+    AbandonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+      required:
+      - reason
     AddPageInputRequest:
       type: object
       properties:
@@ -4374,6 +5004,21 @@ components:
         * `A_RENOUVELER` - À renouveler
         * `EXPIRE` - Expirée
         * `INDETERMINE` - Échéance inconnue
+    Attestation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document_date:
+          type: string
+          format: date
+        filename:
+          type: string
+      required:
+      - document_date
+      - filename
+      - id
     BinderDetail:
       type: object
       properties:
@@ -4706,6 +5351,21 @@ components:
       required:
       - amm
       - result
+    ChecklistItem:
+      type: object
+      properties:
+        piece_type:
+          $ref: '#/components/schemas/PieceTypeRead'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositPiece'
+        done:
+          type: boolean
+      required:
+      - done
+      - files
+      - piece_type
     Correction:
       type: object
       properties:
@@ -4799,6 +5459,646 @@ components:
       required:
       - iso2
       - name
+    DecisionInputRequest:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/DecisionInputResultEnum'
+        decision_date:
+          type: string
+          format: date
+        number:
+          type: string
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+        file:
+          type: string
+          format: binary
+      required:
+      - decision_date
+      - result
+    DecisionInputResultEnum:
+      enum:
+      - OBTENU
+      - REJETE
+      type: string
+      description: |-
+        * `OBTENU` - Obtenu
+        * `REJETE` - Rejeté
+    DepositActivity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DepositActivityKindEnum'
+          readOnly: true
+          title: Type
+        text:
+          type: string
+          readOnly: true
+          title: Détail
+        user:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - kind
+      - text
+      - user
+    DepositActivityKindEnum:
+      enum:
+      - CREE
+      - PIECE
+      - PIECE_RETIREE
+      - ECHANTILLON
+      - ENVOI
+      - TELECHARGEMENT
+      - DEPOT
+      - SUIVI
+      - DECISION
+      - ABANDON
+      type: string
+      description: |-
+        * `CREE` - Dossier ouvert
+        * `PIECE` - Pièce ajoutée
+        * `PIECE_RETIREE` - Pièce retirée
+        * `ECHANTILLON` - Échantillon noté
+        * `ENVOI` - Envoyé au pays
+        * `TELECHARGEMENT` - Dossier téléchargé
+        * `DEPOT` - Déposé à l'agence
+        * `SUIVI` - Suivi à l'agence
+        * `DECISION` - Décision
+        * `ABANDON` - Abandon
+    DepositAmm:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_name:
+          type: string
+        range_code:
+          type: string
+          nullable: true
+          readOnly: true
+        country_iso2:
+          type: string
+        country_name:
+          type: string
+        authority:
+          type: string
+        original_number:
+          type: string
+          readOnly: true
+          title: N° AMM d'origine
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AmmStatusEnum'
+          readOnly: true
+          title: Statut
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          readOnly: true
+          title: Urgence
+        effective_end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de fin effective
+        ideal_filing_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
+      required:
+      - agency_filing_deadline
+      - authority
+      - country_iso2
+      - country_name
+      - effective_end_date
+      - id
+      - ideal_filing_date
+      - original_number
+      - product_name
+      - range_code
+      - status
+      - urgency
+    DepositDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        stage:
+          allOf:
+          - $ref: '#/components/schemas/DepositStageEnum'
+          readOnly: true
+        stage_label:
+          type: string
+          readOnly: true
+        amm:
+          allOf:
+          - $ref: '#/components/schemas/DepositAmm'
+          readOnly: true
+        renewal:
+          allOf:
+          - $ref: '#/components/schemas/DepositRenewal'
+          readOnly: true
+        pieces_done:
+          type: integer
+          readOnly: true
+        pieces_required:
+          type: integer
+          readOnly: true
+        samples_required:
+          type: boolean
+          readOnly: true
+          title: Échantillons demandés
+        samples_count:
+          type: integer
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Envoyé au pays le
+        sent_by:
+          type: string
+          nullable: true
+          readOnly: true
+        deposited_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Attestation reçue le
+        events_count:
+          type: integer
+          readOnly: true
+        messages_count:
+          type: integer
+          readOnly: true
+        last_message_at:
+          type: string
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        send_note:
+          type: string
+          readOnly: true
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChecklistItem'
+          readOnly: true
+        other_pieces:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositPiece'
+          readOnly: true
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositSample'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositEvent'
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositMessage'
+          readOnly: true
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepositActivity'
+          readOnly: true
+        missing:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        attestation:
+          allOf:
+          - $ref: '#/components/schemas/Attestation'
+          nullable: true
+          readOnly: true
+        downloads:
+          type: array
+          items:
+            $ref: '#/components/schemas/Download'
+          readOnly: true
+        can:
+          allOf:
+          - $ref: '#/components/schemas/DepositPermissions'
+          readOnly: true
+      required:
+      - activities
+      - amm
+      - attestation
+      - can
+      - checklist
+      - deposited_at
+      - downloads
+      - events
+      - events_count
+      - id
+      - last_message_at
+      - messages
+      - messages_count
+      - missing
+      - other_pieces
+      - pieces_done
+      - pieces_required
+      - renewal
+      - samples
+      - samples_count
+      - samples_required
+      - send_note
+      - sent_at
+      - sent_by
+      - stage
+      - stage_label
+      - updated_at
+    DepositEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DepositEventKindEnum'
+          readOnly: true
+          title: Type
+        kind_label:
+          type: string
+          readOnly: true
+        date:
+          type: string
+          format: date
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+          title: Détail
+        filename:
+          type: string
+          readOnly: true
+          title: Nom du fichier
+        has_file:
+          type: boolean
+          readOnly: true
+        created_by:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - date
+      - filename
+      - has_file
+      - id
+      - kind
+      - kind_label
+      - note
+    DepositEventKindEnum:
+      enum:
+      - COMMISSION
+      - NOTIFICATION
+      - COMPLEMENT
+      - AUTRE
+      type: string
+      description: |-
+        * `COMMISSION` - Passage en commission
+        * `NOTIFICATION` - Notification de l'agence
+        * `COMPLEMENT` - Demande de complément
+        * `AUTRE` - Autre
+    DepositInputRequest:
+      type: object
+      properties:
+        filing_date:
+          type: string
+          format: date
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+      - filing_date
+    DepositMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        author:
+          type: string
+          nullable: true
+          readOnly: true
+        from_hq:
+          type: boolean
+          readOnly: true
+        mine:
+          type: boolean
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+          title: Message
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - body
+      - created_at
+      - from_hq
+      - id
+      - mine
+    DepositPermissions:
+      type: object
+      properties:
+        manage:
+          type: boolean
+          description: 'Siège : monter, envoyer, abandonner'
+        deposit:
+          type: boolean
+          description: Enregistrer le dépôt et l'attestation
+        follow:
+          type: boolean
+          description: Noter commissions et notifications
+        decide:
+          type: boolean
+          description: Enregistrer la décision
+      required:
+      - decide
+      - deposit
+      - follow
+      - manage
+    DepositPiece:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        piece_type:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: 'Pièce (vide : autre pièce)'
+        label:
+          type: string
+          readOnly: true
+          title: Libellé
+        filename:
+          type: string
+          readOnly: true
+          title: Nom du fichier
+        content_type:
+          type: string
+          readOnly: true
+          title: Type MIME
+        size_bytes:
+          type: integer
+          readOnly: true
+          title: Taille
+        uploaded_by:
+          type: string
+          nullable: true
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content_type
+      - filename
+      - id
+      - label
+      - piece_type
+      - size_bytes
+      - uploaded_at
+      - uploaded_by
+    DepositRenewal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sequence:
+          type: integer
+          readOnly: true
+          title: N° d'ordre
+        workflow_status:
+          allOf:
+          - $ref: '#/components/schemas/WorkflowStatusEnum'
+          readOnly: true
+          title: Statut du workflow
+        filing_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de dépôt
+        decision_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de décision
+        number:
+          type: string
+          readOnly: true
+          title: N° AMM
+      required:
+      - decision_date
+      - filing_date
+      - id
+      - number
+      - sequence
+      - workflow_status
+    DepositSample:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        batch_number:
+          type: string
+          readOnly: true
+          title: N° de lot
+        manufactured_on:
+          type: string
+          format: date
+          readOnly: true
+          title: Date de fabrication
+        expires_on:
+          type: string
+          format: date
+          readOnly: true
+          title: Date de péremption
+        quantity:
+          type: integer
+          readOnly: true
+          nullable: true
+          title: Quantité
+        note:
+          type: string
+          readOnly: true
+          title: Remarque
+      required:
+      - batch_number
+      - expires_on
+      - id
+      - manufactured_on
+      - note
+      - quantity
+    DepositStageEnum:
+      enum:
+      - MONTAGE
+      - ENVOYE
+      - DEPOSE
+      - COMMISSION
+      - OBTENU
+      - REJETE
+      - ABANDONNE
+      type: string
+      description: |-
+        * `MONTAGE` - Montage du dossier
+        * `ENVOYE` - Envoyé au pays
+        * `DEPOSE` - Déposé à l'agence
+        * `COMMISSION` - En commission
+        * `OBTENU` - Renouvellement obtenu
+        * `REJETE` - Rejeté
+        * `ABANDONNE` - Abandonné
+    DepositSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        stage:
+          allOf:
+          - $ref: '#/components/schemas/DepositStageEnum'
+          readOnly: true
+        stage_label:
+          type: string
+          readOnly: true
+        amm:
+          allOf:
+          - $ref: '#/components/schemas/DepositAmm'
+          readOnly: true
+        renewal:
+          allOf:
+          - $ref: '#/components/schemas/DepositRenewal'
+          readOnly: true
+        pieces_done:
+          type: integer
+          readOnly: true
+        pieces_required:
+          type: integer
+          readOnly: true
+        samples_required:
+          type: boolean
+          readOnly: true
+          title: Échantillons demandés
+        samples_count:
+          type: integer
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Envoyé au pays le
+        sent_by:
+          type: string
+          nullable: true
+          readOnly: true
+        deposited_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Attestation reçue le
+        events_count:
+          type: integer
+          readOnly: true
+        messages_count:
+          type: integer
+          readOnly: true
+        last_message_at:
+          type: string
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amm
+      - deposited_at
+      - events_count
+      - id
+      - last_message_at
+      - messages_count
+      - pieces_done
+      - pieces_required
+      - renewal
+      - samples_count
+      - samples_required
+      - sent_at
+      - sent_by
+      - stage
+      - stage_label
+      - updated_at
     Discrepancy:
       type: object
       properties:
@@ -5724,6 +7024,34 @@ components:
       required:
       - paths
       - root_name
+    Download:
+      type: object
+      properties:
+        user:
+          type: string
+          nullable: true
+        at:
+          type: string
+          format: date-time
+      required:
+      - at
+      - user
+    EventInputRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/DepositEventKindEnum'
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+        file:
+          type: string
+          format: binary
+      required:
+      - date
+      - kind
     ExcelTrace:
       type: object
       properties:
@@ -6073,6 +7401,14 @@ components:
         dry_run:
           type: boolean
           default: false
+    MessageInputRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+      required:
+      - body
     Notification:
       type: object
       properties:
@@ -6152,6 +7488,14 @@ components:
     NullEnum:
       enum:
       - null
+    OpenDossierRequest:
+      type: object
+      properties:
+        amm:
+          type: string
+          format: uuid
+      required:
+      - amm
     Page:
       type: object
       properties:
@@ -6673,6 +8017,39 @@ components:
           minLength: 1
           title: Fuseau horaire
           maxLength: 64
+    PatchedPieceTypeRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          title: Pièce
+          maxLength: 200
+        help_text:
+          type: string
+          title: Précision
+          maxLength: 500
+        required:
+          type: boolean
+          title: Obligatoire
+        order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Ordre
+        country:
+          type: string
+          minLength: 1
+          title: Code ISO
+          nullable: true
+        excluded_countries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            title: Code ISO
+        active:
+          type: boolean
     PatchedProductRangeRequest:
       type: object
       properties:
@@ -6803,6 +8180,139 @@ components:
       - filing_date
       - workflow_label
       - workflow_status
+    PieceType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          title: Pièce
+          maxLength: 200
+        help_text:
+          type: string
+          title: Précision
+          maxLength: 500
+        required:
+          type: boolean
+          title: Obligatoire
+        order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Ordre
+        country:
+          type: string
+          title: Code ISO
+          nullable: true
+        excluded_countries:
+          type: array
+          items:
+            type: string
+            title: Code ISO
+        active:
+          type: boolean
+      required:
+      - id
+      - label
+    PieceTypeRead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+          title: Pièce
+        help_text:
+          type: string
+          readOnly: true
+          title: Précision
+        required:
+          type: boolean
+          readOnly: true
+          title: Obligatoire
+        order:
+          type: integer
+          readOnly: true
+          title: Ordre
+        country:
+          type: string
+          title: Code ISO
+          readOnly: true
+          nullable: true
+        excluded_countries:
+          type: array
+          items:
+            type: string
+            title: Code ISO
+          readOnly: true
+        active:
+          type: boolean
+          readOnly: true
+      required:
+      - active
+      - country
+      - excluded_countries
+      - help_text
+      - id
+      - label
+      - order
+      - required
+    PieceTypeRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          title: Pièce
+          maxLength: 200
+        help_text:
+          type: string
+          title: Précision
+          maxLength: 500
+        required:
+          type: boolean
+          title: Obligatoire
+        order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          title: Ordre
+        country:
+          type: string
+          minLength: 1
+          title: Code ISO
+          nullable: true
+        excluded_countries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            title: Code ISO
+        active:
+          type: boolean
+      required:
+      - label
+    PieceUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        piece_type:
+          type: string
+          format: uuid
+          nullable: true
+        label:
+          type: string
+          maxLength: 200
+      required:
+      - file
     Product:
       type: object
       properties:
@@ -6991,6 +8501,11 @@ components:
           items:
             type: string
           readOnly: true
+        deposit_id:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Dossier de dépôt (rubrique « Dépôt AMM ») suivant ce renouvellement.
         created_at:
           type: string
           format: date-time
@@ -7003,6 +8518,7 @@ components:
       - allowed_transitions
       - amm_id
       - created_at
+      - deposit_id
       - id
       - sequence
       - updated_at
@@ -7104,6 +8620,37 @@ components:
         * `CEO_ADMIN` - CEO / administrateur
         * `HQ_REGULATORY` - Réglementaire siège
         * `COUNTRY_REGULATORY` - Réglementaire pays
+    SampleInputRequest:
+      type: object
+      properties:
+        batch_number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        manufactured_on:
+          type: string
+          format: date
+        expires_on:
+          type: string
+          format: date
+        quantity:
+          type: integer
+          minimum: 1
+          nullable: true
+        note:
+          type: string
+          maxLength: 500
+      required:
+      - batch_number
+      - expires_on
+      - manufactured_on
+    SamplesRequiredRequest:
+      type: object
+      properties:
+        required:
+          type: boolean
+      required:
+      - required
     Scan:
       type: object
       properties:
@@ -7190,6 +8737,11 @@ components:
       - label
       - to_scan
       - total
+    SendRequest:
+      type: object
+      properties:
+        note:
+          type: string
     SeverityEnum:
       enum:
       - INFO
@@ -7225,6 +8777,77 @@ components:
       description: |-
         * `original` - AMM d'origine
         * `renewal` - Dernier renouvellement
+    Suggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product_name:
+          type: string
+        range_code:
+          type: string
+          nullable: true
+          readOnly: true
+        country_iso2:
+          type: string
+        country_name:
+          type: string
+        authority:
+          type: string
+        original_number:
+          type: string
+          readOnly: true
+          title: N° AMM d'origine
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AmmStatusEnum'
+          readOnly: true
+          title: Statut
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          readOnly: true
+          title: Urgence
+        effective_end_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Date de fin effective
+        ideal_filing_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Dépôt idéal
+        agency_filing_deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Limite agence
+        renewal_status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/WorkflowStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - agency_filing_deadline
+      - authority
+      - country_iso2
+      - country_name
+      - effective_end_date
+      - id
+      - ideal_filing_date
+      - original_number
+      - product_name
+      - range_code
+      - renewal_status
+      - status
+      - urgency
     TokenRefresh:
       type: object
       properties:

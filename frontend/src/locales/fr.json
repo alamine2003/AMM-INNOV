@@ -55,7 +55,8 @@
     "logout": "Se déconnecter",
     "profile": "Mon profil",
     "grafana": "Grafana",
-    "openMenu": "Ouvrir le menu"
+    "openMenu": "Ouvrir le menu",
+    "deposits": "Dépôts AMM"
   },
   "auth": {
     "title": "Connexion",

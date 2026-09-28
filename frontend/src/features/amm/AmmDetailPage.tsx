@@ -9,6 +9,7 @@ import { ReviewPointsList } from '@/features/dossier-imports/ReviewPointsList';
 import { api } from '@/api/client';
 import { PageHeader } from '@/components/PageHeader';
 import { BinderLink } from '@/features/binders/BinderLink';
+import { DepositLink } from '@/features/deposits/DepositLink';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { DossierChip, StatusChip, UrgencyChip } from '@/components/chips';
 import { FilingDates } from '@/components/FilingDates';
@@ -77,7 +78,12 @@ export default function AmmDetailPage() {
             <FilingDates ideal={data.ideal_filing_date} agency={data.agency_filing_deadline} />
           </Stack>
         }
-        actions={<BinderLink ammId={data.id} />}
+        actions={
+          <>
+            <DepositLink ammId={data.id} status={data.status} />
+            <BinderLink ammId={data.id} />
+          </>
+        }
       />
       {!editable && (
         <Typography variant="body2" color="warning.main" sx={{ mb: 1 }}>

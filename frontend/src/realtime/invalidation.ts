@@ -3,6 +3,7 @@ import { queryKeys } from '@/api/queryKeys';
 import type { RealtimeEvent, RealtimeEventType } from '@/api/types';
 
 const BINDERS: QueryKey = ['binders'];
+const DEPOSITS: QueryKey = ['deposits'];
 
 /**
  * Table événement → clés de requêtes à invalider.
@@ -29,6 +30,7 @@ export function keysToInvalidate(event: RealtimeEvent): QueryKey[] {
       queryKeys.amms.list(),
       queryKeys.alerts.all,
       queryKeys.analytics.all,
+      DEPOSITS,
     ],
     'alert.created': () => [queryKeys.alerts.all, ...(ammId ? [queryKeys.amms.alerts(ammId)] : [])],
     'alert.updated': () => [queryKeys.alerts.all, ...(ammId ? [queryKeys.amms.alerts(ammId)] : [])],
@@ -43,11 +45,15 @@ export function keysToInvalidate(event: RealtimeEvent): QueryKey[] {
       queryKeys.products.all,
     ],
     'dashboard.refresh': () => [queryKeys.analytics.all, queryKeys.amms.list()],
+    // Dépôt AMM : pièces, envoi, attestation, commission, message du siège ou du pays.
+    'deposit.updated': () => [DEPOSITS],
   };
   const resolver = table[type];
   if (!resolver) return [];
   // Les classeurs se déduisent des AMM : toute évolution du dashboard ou d'un import les rafraîchit.
-  return type === 'notification.created' || type.startsWith('alert.') ? resolver() : [...resolver(), BINDERS];
+  const withoutBinders =
+    type === 'notification.created' || type === 'deposit.updated' || type.startsWith('alert.');
+  return withoutBinders ? resolver() : [...resolver(), BINDERS];
 }
 
 export const KNOWN_EVENTS: RealtimeEventType[] = [
@@ -59,4 +65,5 @@ export const KNOWN_EVENTS: RealtimeEventType[] = [
   'notification.created',
   'document.created',
   'dashboard.refresh',
+  'deposit.updated',
 ];

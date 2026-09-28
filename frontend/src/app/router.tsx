@@ -23,6 +23,9 @@ const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'
 const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
 const BindersShelfPage = lazy(() => import('@/features/binders/BindersShelfPage'));
 const BinderPage = lazy(() => import('@/features/binders/BinderPage'));
+const DepositsPage = lazy(() => import('@/features/deposits/DepositsPage'));
+const DepositDetailPage = lazy(() => import('@/features/deposits/DepositDetailPage'));
+const PieceTypesPage = lazy(() => import('@/features/deposits/PieceTypesPage'));
 const DossierImportDetailPage = lazy(() => import('@/features/dossier-imports/DossierImportDetailPage'));
 
 const Fallback = () => (
@@ -52,6 +55,13 @@ export const routes: RouteObject[] = [
           { path: 'dossier-imports/:id', element: page(<DossierImportDetailPage />) },
           { path: 'classeurs', element: page(<BindersShelfPage />) },
           { path: 'classeurs/:binderKey', element: page(<BinderPage />) },
+          { path: 'depots', element: page(<DepositsPage />) },
+          {
+            path: 'depots/pieces',
+            element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
+            children: [{ index: true, element: page(<PieceTypesPage />) }],
+          },
+          { path: 'depots/:id', element: page(<DepositDetailPage />) },
           { path: 'products', element: page(<ProductsPage />) },
           { path: 'products/:id', element: page(<ProductDetailPage />) },
           {

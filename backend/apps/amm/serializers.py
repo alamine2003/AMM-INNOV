@@ -12,6 +12,9 @@ from .services import workflow
 class RenewalSerializer(serializers.ModelSerializer):
     allowed_transitions = serializers.SerializerMethodField()
     amm_id = serializers.UUIDField(source="amm.id", read_only=True)
+    deposit_id = serializers.SerializerMethodField(
+        help_text="Dossier de dépôt (rubrique « Dépôt AMM ») suivant ce renouvellement."
+    )
 
     class Meta:
         model = Renewal
@@ -28,6 +31,7 @@ class RenewalSerializer(serializers.ModelSerializer):
             "end_date_manual",
             "notes",
             "allowed_transitions",
+            "deposit_id",
             "created_at",
             "updated_at",
         ]
@@ -35,6 +39,14 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     def get_allowed_transitions(self, obj) -> list[str]:
         return sorted(workflow.allowed_transitions(obj))
+
+    def get_deposit_id(self, obj) -> str | None:
+        from apps.deposits.models import DepositDossier
+
+        try:
+            return str(obj.deposit.pk)
+        except DepositDossier.DoesNotExist:
+            return None
 
     # À la création : soit on démarre le workflow, soit on enregistre une décision déjà obtenue.
     CREATABLE_STATUSES = (Renewal.WorkflowStatus.PLANIFIE, Renewal.WorkflowStatus.OBTENU)
