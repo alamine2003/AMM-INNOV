@@ -81,7 +81,7 @@ aussi « Monter le dossier de dépôt », ou le lien vers le dossier existant.
 
 **Pièces demandées** (siège, `/depots/pieces`) :
 
-- **liste de base** : lettre de demande, certificat de PGHT, formulaires, RCP, certificats
+- **liste de base** : lettre de demande, certificat de PGHT (prix grossiste hors taxe), formulaires, RCP, certificats
   d'analyse et pièces réglementaires (facultatives) ;
 - **par pays** : décocher une pièce de base que le pays ne demande pas, ou ajouter une pièce propre
   au pays ;

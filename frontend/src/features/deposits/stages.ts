@@ -18,7 +18,7 @@ export const PROCEDURE = [
   {
     title: 'Montage du dossier',
     who: 'Siège',
-    text: 'Lettre de demande de renouvellement, certificat de PGHT, formulaires, RCP, certificats d’analyse, pièces réglementaires du pays.',
+    text: 'Lettre de demande de renouvellement, certificat de PGHT (prix grossiste hors taxe), formulaires, RCP, certificats d’analyse, pièces réglementaires du pays.',
   },
   {
     title: 'Échantillons',

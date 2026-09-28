@@ -4,7 +4,7 @@ from django.db import migrations
 
 BASE = [
     ("Lettre de demande de renouvellement", "Adressée à l'agence de régulation, signée.", True),
-    ("Certificat de PGHT", "", True),
+    ("Certificat de PGHT", "Prix grossiste hors taxe.", True),
     ("Formulaires", "Formulaires de demande de l'agence, remplis.", True),
     ("RCP", "Résumé des caractéristiques du produit, à jour.", True),
     ("Certificats d'analyse", "Des lots fournis en échantillons.", True),
