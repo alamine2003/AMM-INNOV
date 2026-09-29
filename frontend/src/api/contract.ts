@@ -28,6 +28,7 @@ import type {
   DepositSummary,
   PieceType,
   Country,
+  DossierCounts,
   DossierReviewPoint,
   Health,
   HistoryEntry,
@@ -70,6 +71,7 @@ export type _User = Assert<Assignable<Schemas['User'], User>>;
 export type _ImportBatch = Assert<Assignable<Schemas['ImportBatch'], ImportBatch>>;
 export type _ImportRow = Assert<Assignable<Schemas['ImportRow'], ImportRow>>;
 export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEntry>>;
+export type _DossierCounts = Assert<Assignable<Schemas['DossierCounts'], DossierCounts>>;
 export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
 export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderSummary>>;
 export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;

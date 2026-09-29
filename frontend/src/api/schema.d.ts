@@ -1182,6 +1182,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dossier-imports/counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Nombre de dossiers par groupe, pour les onglets de l'historique. */
+        get: operations["v1_dossier_imports_counts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dossier-imports/known-files/": {
         parameters: {
             query?: never;
@@ -2761,6 +2778,12 @@ export interface components {
             preview_token: string;
             /** @default false */
             create_amm: boolean;
+        };
+        DossierCounts: {
+            a_traiter: number;
+            en_cours: number;
+            ranges: number;
+            tous: number;
         };
         DossierFile: {
             /** Format: uuid */
@@ -6019,6 +6042,8 @@ export interface operations {
     v1_dossier_imports_list: {
         parameters: {
             query?: {
+                /** @description a_traiter (question, échec, non rangé), en_cours, ranges. */
+                group?: "a_traiter" | "en_cours" | "ranges";
                 /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
                 /** @description Un numéro de page de l'ensemble des résultats. */
@@ -6203,6 +6228,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    v1_dossier_imports_counts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DossierCounts"];
+                };
             };
         };
     };

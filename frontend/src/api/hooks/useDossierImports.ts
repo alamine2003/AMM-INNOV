@@ -1,6 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
-import type { DossierImportBatch, DossierReport, DossierReviewPoint, Paginated } from '@/api/types';
+import type {
+  DossierCounts,
+  DossierGroup,
+  DossierImportBatch,
+  DossierReport,
+  DossierReviewPoint,
+  Paginated,
+} from '@/api/types';
 import { createFolderFormData, fileDigest, type FolderFile } from '@/features/dossier-imports/folderUpload';
 
 /**
@@ -15,20 +22,46 @@ export function withPreview(batch: DossierImportBatch): DossierImportBatch {
 
 export const dossierImportKeys = {
   all: ['dossier-imports'] as const,
-  list: (page: number) => ['dossier-imports', 'list', page] as const,
+  list: (filters: DossierListFilters) => ['dossier-imports', 'list', filters] as const,
+  counts: ['dossier-imports', 'counts'] as const,
   detail: (id: string) => ['dossier-imports', 'detail', id] as const,
 };
 
-export function useDossierImports(page: number) {
+export interface DossierListFilters {
+  page: number;
+  group: DossierGroup;
+  search: string;
+}
+
+export const DOSSIER_PAGE_SIZE = 10;
+
+/** Historique par onglet (à traiter, en cours, rangés, tous) avec recherche sur le nom du dossier. */
+export function useDossierImports(filters: DossierListFilters, enabled = true) {
   return useQuery({
-    queryKey: dossierImportKeys.list(page),
+    queryKey: dossierImportKeys.list(filters),
     queryFn: async () => {
-      const data = (
-        await api.get<Paginated<DossierImportBatch>>('/dossier-imports', { params: { page, page_size: 20 } })
-      ).data;
+      const params = {
+        page: filters.page,
+        page_size: DOSSIER_PAGE_SIZE,
+        ...(filters.group !== 'tous' && { group: filters.group }),
+        ...(filters.search && { search: filters.search }),
+      };
+      const data = (await api.get<Paginated<DossierImportBatch>>('/dossier-imports', { params })).data;
       return { ...data, results: data.results.map(withPreview) };
     },
     placeholderData: keepPreviousData,
+    enabled,
+    refetchInterval: (query) =>
+      query.state.data?.results.some((batch) => ['PENDING', 'RUNNING'].includes(batch.status)) ? 5000 : false,
+  });
+}
+
+/** Compteurs des onglets de l'historique ; rafraîchis tant que des dossiers sont en analyse. */
+export function useDossierCounts() {
+  return useQuery({
+    queryKey: dossierImportKeys.counts,
+    queryFn: async () => (await api.get<DossierCounts>('/dossier-imports/counts')).data,
+    refetchInterval: (query) => ((query.state.data?.en_cours ?? 0) > 0 ? 5000 : false),
   });
 }
 

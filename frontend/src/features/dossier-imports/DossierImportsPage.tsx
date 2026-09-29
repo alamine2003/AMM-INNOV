@@ -5,31 +5,20 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
+  Collapse,
   LinearProgress,
-  Link as MuiLink,
-  Pagination,
-  Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { extractErrorMessage } from '@/api/client';
-import { useDossierImports, useUploadDossier } from '@/api/hooks/useDossierImports';
-import { hasSummary } from '@/api/types';
+import { useUploadDossier } from '@/api/hooks/useDossierImports';
 import { PageHeader } from '@/components/PageHeader';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
-import { formatDateTime } from '@/lib/dates';
 import { formatBytes } from '@/lib/download';
+import { CappedList, plural } from './CappedList';
+import { DossierHistory } from './DossierHistory';
 import { DossierImportReport } from './DossierImportReport';
-import { batchState } from './dossierReview';
 import {
   filesFromDrop,
   filesFromPicker,
@@ -42,25 +31,42 @@ import {
 
 const PARALLEL_UPLOADS = 3;
 
+interface Run {
+  total: number;
+  done: number;
+  created: number;
+  failed: { group: ProductGroup; reason: string }[];
+}
+
+/** Échecs regroupés par motif : « 18 × Serveur injoignable » plutôt que 18 lignes. */
+function byReason(failed: Run['failed']) {
+  const groups = new Map<string, string[]>();
+  for (const { group, reason } of failed) groups.set(reason, [...(groups.get(reason) ?? []), group.name]);
+  return [...groups.entries()].map(([reason, names]) => ({ reason, names }));
+}
+
 export default function DossierImportsPage() {
   const navigate = useNavigate();
   const picker = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FolderFile[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [ignored, setIgnored] = useState<string[]>([]);
+  const [groups, setGroups] = useState<ProductGroup[]>([]);
   const [progress, setProgress] = useState(0);
   const [reading, setReading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [page, setPage] = useState(1);
-  const batches = useDossierImports(page);
+  const [showFiles, setShowFiles] = useState(false);
+  const [showIgnored, setShowIgnored] = useState(false);
+  const [run, setRun] = useState<Run | null>(null);
   const upload = useUploadDossier();
-  const [groups, setGroups] = useState<ProductGroup[]>([]);
-  const [batchRun, setBatchRun] = useState<{ done: number; created: number; failed: string[] } | null>(null);
-  const running = batchRun !== null && batchRun.done < groups.length;
+  const running = run !== null && run.done < run.total;
   const busy = reading || upload.isPending || running;
-  const [ignored, setIgnored] = useState<string[]>([]);
+
   const select = (selection: FolderFile[]) => {
     upload.reset();
-    setBatchRun(null);
+    setRun(null);
+    setShowFiles(false);
+    setShowIgnored(false);
     const { kept: next, ignored: aside } = setAside(selection);
     setIgnored(aside);
     const split = splitByProduct(next);
@@ -74,22 +80,23 @@ export default function DossierImportsPage() {
     );
     setProgress(0);
   };
-  const analyzeAll = async () => {
-    const run = { done: 0, created: 0, failed: [] as string[] };
-    setBatchRun({ ...run });
+
+  const sendAll = async (targets: ProductGroup[]) => {
+    const state: Run = { total: targets.length, done: 0, created: 0, failed: [] };
+    setRun({ ...state });
     const sendOne = async (group: ProductGroup) => {
       try {
         await upload.mutateAsync({ files: group.files, onProgress: setProgress });
-        run.created += 1;
+        state.created += 1;
       } catch (error) {
-        run.failed.push(`${group.name} : ${extractErrorMessage(error)}`);
+        state.failed.push({ group, reason: extractErrorMessage(error) });
       }
-      run.done += 1;
-      setBatchRun({ ...run });
+      state.done += 1;
+      setRun({ ...state, failed: [...state.failed] });
     };
     // Le premier produit part seul : les documents communs du dossier pays ne sont envoyés
     // qu'une fois. Les suivants partent trois par trois.
-    const [first, ...rest] = groups;
+    const [first, ...rest] = targets;
     if (first) await sendOne(first);
     const queue = [...rest];
     await Promise.all(
@@ -99,17 +106,21 @@ export default function DossierImportsPage() {
     );
     setFiles([]);
     setGroups([]);
+    setIgnored([]);
   };
+
+  const size = files.reduce((total, { file }) => total + file.size, 0);
+  const folder = files[0]?.path.split('/')[0];
 
   return (
     <Box>
       <PageHeader
-        title="Import intelligent de dossiers AMM"
-        subtitle="Déposez un dossier produit, pays ou gamme : l’application trouve chaque AMM, range chaque scan à sa période, corrige la fiche d’après les décisions officielles et crée les fiches manquantes, sans rien vous demander. Le récapitulatif ci-dessous montre ce qui a été fait et seulement ce qui demande votre intervention."
+        title="Import de dossiers AMM"
+        subtitle="Déposez un dossier : chaque scan est rangé sur la bonne AMM. Seul ce qui demande votre intervention vous est montré."
       />
-      <Card variant="outlined" sx={{ mb: 3 }}>
-        <CardContent>
-          <Stack spacing={2}>
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent sx={{ '&:last-child': { pb: 2 } }}>
+          <Stack spacing={1.5}>
             <Box
               onDragOver={(event) => {
                 event.preventDefault();
@@ -131,19 +142,27 @@ export default function DossierImportsPage() {
                 }
               }}
               sx={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2,
                 border: '2px dashed',
                 borderColor: dragging ? 'primary.main' : 'divider',
                 bgcolor: dragging ? 'action.hover' : 'background.default',
                 borderRadius: 2,
-                p: 4,
-                textAlign: 'center',
+                px: 2,
+                py: 1.5,
               }}
             >
-              <CreateNewFolderIcon color="primary" sx={{ fontSize: 36, mb: 1 }} />
-              <Typography variant="h6">Déposez votre dossier AMM ici</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>
-                Dossier produit, pays ou gamme · PDF, JPEG et PNG · 200 fichiers maximum par produit
-              </Typography>
+              <CreateNewFolderIcon color="primary" sx={{ fontSize: 32 }} />
+              <Box sx={{ flex: '1 1 240px', minWidth: 0 }}>
+                <Typography variant="subtitle1" component="p">
+                  Glissez un dossier produit, pays ou gamme ici
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  PDF, JPEG, PNG · 25 Mo par fichier · 200 fichiers et 250 Mo par produit
+                </Typography>
+              </Box>
               <Button variant="outlined" disabled={busy} onClick={() => picker.current?.click()}>
                 Choisir un dossier
               </Button>
@@ -159,199 +178,160 @@ export default function DossierImportsPage() {
                   event.target.value = '';
                 }}
               />
-              <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
-                25 Mo par fichier, 250 Mo par dossier. Utilisez le bouton si le glisser-déposer n’est pas pris
-                en charge.
-              </Typography>
             </Box>
             {reading && <LinearProgress aria-label="Lecture du dossier" />}
-            {files.length > 0 && (
+
+            {files.length > 0 && !running && (
               <Box>
-                <Typography variant="subtitle1">
-                  {files[0].path.split('/')[0]} — {files.length} fichiers ·{' '}
-                  {formatBytes(files.reduce((total, { file }) => total + file.size, 0))}
-                </Typography>
-                <Box
-                  component="ul"
-                  aria-label="Fichiers sélectionnés"
-                  sx={{ maxHeight: 220, overflow: 'auto', my: 1, pl: 3 }}
-                >
-                  {files.map(({ path }, index) => (
-                    <Typography
-                      component="li"
-                      key={`${path}-${index}`}
-                      variant="body2"
-                      sx={{ overflowWrap: 'anywhere' }}
-                    >
-                      {path}
-                    </Typography>
-                  ))}
-                </Box>
-              </Box>
-            )}
-            {errors.length > 0 && (
-              <Alert severity="error">
-                <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                  {errors.slice(0, 12).map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                  {errors.length > 12 && <li>{errors.length - 12} autres fichiers à vérifier.</li>}
-                </Box>
-              </Alert>
-            )}
-            {ignored.length > 0 && (
-              <Alert severity="warning">
-                {ignored.length} fichier{ignored.length > 1 ? 's' : ''} mis de côté (seuls les PDF, JPEG et
-                PNG de 25 Mo au plus sont lus) ; le reste du dossier est envoyé :
-                <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                  {ignored.slice(0, 8).map((name) => (
-                    <li key={name}>{name}</li>
-                  ))}
-                  {ignored.length > 8 && <li>… et {ignored.length - 8} autres.</li>}
-                </Box>
-              </Alert>
-            )}
-            {groups.length > 0 && (
-              <Alert severity="info">
-                Ce dossier regroupe {groups.length} produits : chacun est analysé et rangé automatiquement. Le
-                récapitulatif ci-dessous se met à jour au fil du classement.
-              </Alert>
-            )}
-            {batchRun && (
-              <Alert severity={batchRun.failed.length ? 'warning' : 'success'}>
-                {running
-                  ? `Envoi des produits : ${batchRun.done + 1} / ${groups.length}…`
-                  : `${batchRun.created} produit(s) envoyé(s) : le classement se poursuit tout seul, voir le récapitulatif.`}
-                {batchRun.failed.length > 0 && (
-                  <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                    {batchRun.failed.map((failure) => (
-                      <li key={failure}>{failure}</li>
+                <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {folder}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" data-testid="selection-summary">
+                    {plural(files.length, 'fichier', 'fichiers')}
+                    {groups.length > 0 && ` · ${plural(groups.length, 'produit', 'produits')}`} ·{' '}
+                    {formatBytes(size)}
+                  </Typography>
+                  <Button size="small" onClick={() => setShowFiles(!showFiles)}>
+                    {showFiles ? 'Masquer les fichiers' : 'Voir les fichiers'}
+                  </Button>
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Button
+                    variant="contained"
+                    disabled={errors.length > 0 || busy}
+                    onClick={() =>
+                      groups.length
+                        ? void sendAll(groups)
+                        : upload.mutate(
+                            { files, onProgress: setProgress },
+                            { onSuccess: (batch) => navigate(`/dossier-imports/${batch.id}`) },
+                          )
+                    }
+                  >
+                    {groups.length ? `Analyser les ${groups.length} produits` : 'Analyser le dossier'}
+                  </Button>
+                </Stack>
+                <Collapse in={showFiles} unmountOnExit>
+                  <Box
+                    component="ul"
+                    aria-label="Fichiers sélectionnés"
+                    sx={{ maxHeight: 180, overflow: 'auto', my: 1, pl: 3 }}
+                  >
+                    {files.map(({ path }, index) => (
+                      <Typography
+                        component="li"
+                        key={`${path}-${index}`}
+                        variant="caption"
+                        display="list-item"
+                        sx={{ overflowWrap: 'anywhere' }}
+                      >
+                        {path.split('/').slice(1).join('/')}
+                      </Typography>
                     ))}
                   </Box>
-                )}
+                </Collapse>
+              </Box>
+            )}
+
+            {errors.length > 0 && (
+              <Alert severity="error">
+                <Typography variant="subtitle2">
+                  {plural(errors.length, 'point à corriger', 'points à corriger')} avant l’envoi
+                </Typography>
+                <CappedList
+                  items={errors}
+                  limit={3}
+                  itemKey={(_, index) => String(index)}
+                  render={(e) => e}
+                />
               </Alert>
             )}
-            {upload.isError && !groups.length && !batchRun && (
-              <Alert severity="error">{extractErrorMessage(upload.error)}</Alert>
+            {ignored.length > 0 && !running && (
+              <Alert
+                severity="info"
+                sx={{ py: 0 }}
+                action={
+                  <Button size="small" color="inherit" onClick={() => setShowIgnored(!showIgnored)}>
+                    {showIgnored ? 'Masquer' : 'Voir'}
+                  </Button>
+                }
+              >
+                {plural(ignored.length, 'fichier mis de côté', 'fichiers mis de côté')} (format non lu ou plus
+                de 25 Mo) ; le reste est envoyé.
+                <Collapse in={showIgnored} unmountOnExit>
+                  <CappedList items={ignored} limit={10} itemKey={(name) => name} render={(name) => name} />
+                </Collapse>
+              </Alert>
             )}
-            {upload.isPending && (
+
+            {upload.isPending && !run && (
               <Box>
                 <LinearProgress variant="determinate" value={progress} />
                 <Typography variant="caption">Envoi des documents : {progress} %</Typography>
               </Box>
             )}
-            <Box>
-              <Button
-                variant="contained"
-                disabled={!files.length || errors.length > 0 || busy}
-                onClick={() =>
-                  groups.length
-                    ? void analyzeAll()
-                    : upload.mutate(
-                        { files, onProgress: setProgress },
-                        { onSuccess: (batch) => navigate(`/dossier-imports/${batch.id}`) },
-                      )
-                }
-              >
-                {groups.length ? `Analyser les ${groups.length} produits` : 'Analyser le dossier'}
-              </Button>
-            </Box>
+            {upload.isError && !run && <Alert severity="error">{extractErrorMessage(upload.error)}</Alert>}
+            {run && (
+              <RunStatus
+                run={run}
+                running={running}
+                onRetry={() => void sendAll(run.failed.map((f) => f.group))}
+              />
+            )}
           </Stack>
         </CardContent>
       </Card>
+
       <DossierImportReport />
-      <Typography variant="h6" gutterBottom>
-        Historique des dossiers importés
-      </Typography>
-      {batches.isPending ? (
-        <LoadingBlock />
-      ) : batches.isError ? (
-        <ErrorBlock error={batches.error} onRetry={() => batches.refetch()} />
-      ) : (
-        <Paper variant="outlined">
-          {!batches.data.results.length ? (
-            <EmptyBlock text="Aucun dossier importé." />
-          ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Dossier</TableCell>
-                    <TableCell>AMM</TableCell>
-                    <TableCell>Résultat</TableCell>
-                    <TableCell align="right">Points à vérifier</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {batches.data.results.map((batch) => {
-                    const state = batchState(batch);
-                    const ammId = hasSummary(batch.summary) ? batch.summary.amm_id : batch.amm_id;
-                    const ammLabel = hasSummary(batch.summary)
-                      ? `${batch.summary.product} (${batch.summary.country_iso2})`
-                      : batch.preview?.amm?.product_name
-                        ? `${batch.preview.amm.product_name}${batch.preview.amm.country_iso2 ? ` (${batch.preview.amm.country_iso2})` : ''}`
-                        : '—';
-                    return (
-                      <TableRow key={batch.id}>
-                        <TableCell>
-                          <MuiLink component={Link} to={`/dossier-imports/${batch.id}`}>
-                            {batch.root_name}
-                          </MuiLink>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {formatDateTime(batch.created_at)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {ammId && batch.status === 'APPLIED' ? (
-                            <MuiLink component={Link} to={`/amms/${ammId}`}>
-                              {ammLabel}
-                            </MuiLink>
-                          ) : batch.status === 'QUESTION' ? (
-                            <Typography variant="body2" color="text.secondary">
-                              À préciser
-                            </Typography>
-                          ) : (
-                            ammLabel
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            label={state.label}
-                            color={state.tone}
-                            variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          {batch.open_points_count ? (
-                            <Chip
-                              size="small"
-                              color="warning"
-                              variant="outlined"
-                              label={batch.open_points_count}
-                              aria-label={`${batch.open_points_count} point(s) à vérifier`}
-                            />
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-          {batches.data.count > 20 && (
-            <Pagination
-              page={page}
-              count={Math.ceil(batches.data.count / 20)}
-              onChange={(_, value) => setPage(value)}
-              sx={{ p: 2 }}
-            />
-          )}
-        </Paper>
-      )}
+      <DossierHistory />
     </Box>
+  );
+}
+
+/** Une barre pendant l'envoi ; à la fin, une ligne de bilan et les échecs regroupés par motif. */
+function RunStatus({ run, running, onRetry }: { run: Run; running: boolean; onRetry: () => void }) {
+  if (running) {
+    return (
+      <Box>
+        <LinearProgress
+          variant="determinate"
+          value={Math.round((run.done / run.total) * 100)}
+          aria-label="Envoi des produits"
+        />
+        <Typography variant="caption" color="text.secondary">
+          Envoi des produits : {run.done} / {run.total}
+          {run.failed.length > 0 && ` · ${run.failed.length} en échec`}
+        </Typography>
+      </Box>
+    );
+  }
+  return (
+    <Stack spacing={1}>
+      {run.created > 0 && (
+        <Alert severity="success" sx={{ py: 0 }}>
+          {plural(run.created, 'produit envoyé', 'produits envoyés')} : le classement se poursuit tout seul.
+        </Alert>
+      )}
+      {run.failed.length > 0 && (
+        <Alert
+          severity="warning"
+          action={
+            <Button size="small" color="inherit" onClick={onRetry}>
+              Réessayer
+            </Button>
+          }
+        >
+          <Typography variant="subtitle2">
+            {plural(run.failed.length, 'produit non envoyé', 'produits non envoyés')}
+          </Typography>
+          {byReason(run.failed).map(({ reason, names }) => (
+            <Typography key={reason} variant="body2" title={names.join('\n')}>
+              {names.length} × {reason}
+              {names.length <= 3 && ` (${names.join(', ')})`}
+            </Typography>
+          ))}
+        </Alert>
+      )}
+    </Stack>
   );
 }

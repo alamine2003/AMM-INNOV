@@ -511,6 +511,11 @@ export interface DossierImportAudit {
 export type DossierImportStatus = 'PENDING' | 'RUNNING' | 'READY' | 'QUESTION' | 'APPLIED' | 'FAILED';
 
 /** Point à vérifier plus tard, enregistré sur la fiche AMM : appliquer la valeur du scan ou ignorer. */
+/** Onglets de l'historique des dossiers importés. */
+export type DossierGroup = 'a_traiter' | 'en_cours' | 'ranges' | 'tous';
+
+export type DossierCounts = Record<DossierGroup, number>;
+
 export interface DossierReviewPoint {
   id: string;
   batch_id: string;
