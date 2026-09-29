@@ -5,7 +5,7 @@ import logging
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -35,6 +35,7 @@ from .dossier_serializers import (
     DossierAnalyzeSerializer,
     DossierChooseAmmSerializer,
     DossierConfirmSerializer,
+    DossierCountsSerializer,
     DossierFileRequestSerializer,
     DossierImportSerializer,
     DossierKnownFilesSerializer,
@@ -46,6 +47,17 @@ from .models import DossierImport, DossierReviewPoint
 from .tasks import analyze_dossier
 
 logger = logging.getLogger(__name__)
+
+# Onglets de l'historique : ce qui attend l'utilisateur, ce qui tourne, ce qui est rangé.
+STATUS_GROUPS = {
+    "a_traiter": (
+        DossierImport.Status.QUESTION,
+        DossierImport.Status.FAILED,
+        DossierImport.Status.READY,
+    ),
+    "en_cours": (DossierImport.Status.PENDING, DossierImport.Status.RUNNING),
+    "ranges": (DossierImport.Status.APPLIED,),
+}
 
 
 def _enqueue_analysis(batch):
@@ -102,6 +114,7 @@ class DossierImportViewSet(
     serializer_class = DossierImportSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    search_fields = ("root_name",)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -111,6 +124,43 @@ class DossierImportViewSet(
                 Q(country__isnull=True) | Q(country__in=user.countries.all())
             )
         return queryset
+
+    def filter_queryset(self, queryset):
+        """Onglet `group` (a_traiter, en_cours, ranges) ; `search` cherche dans le nom."""
+        queryset = super().filter_queryset(queryset)
+        if self.action != "list":
+            return queryset
+        group = self.request.query_params.get("group")
+        if group in STATUS_GROUPS:
+            queryset = queryset.filter(status__in=STATUS_GROUPS[group])
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "group",
+                str,
+                enum=list(STATUS_GROUPS),
+                required=False,
+                description="a_traiter (question, échec, non rangé), en_cours, ranges.",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(responses={200: DossierCountsSerializer})
+    @action(detail=False, methods=["get"])
+    def counts(self, request):
+        """Nombre de dossiers par groupe, pour les onglets de l'historique."""
+        rows = self.get_queryset().order_by().values("status").annotate(total=Count("pk"))
+        by_status = {row["status"]: row["total"] for row in rows}
+        payload = {
+            group: sum(by_status.get(code, 0) for code in codes)
+            for group, codes in STATUS_GROUPS.items()
+        }
+        payload["tous"] = sum(by_status.values())
+        return Response(payload)
 
     @extend_schema(request=DossierUploadSerializer, responses={202: DossierImportSerializer})
     def create(self, request):

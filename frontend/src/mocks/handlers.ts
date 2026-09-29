@@ -425,6 +425,11 @@ export const handlers = [
     url('/dossier-review-points'),
     withAuth(() => HttpResponse.json([])),
   ),
+  // Onglets de l'historique des dossiers importés : aucun import dans les données de démonstration.
+  http.get(
+    url('/dossier-imports/counts'),
+    withAuth(() => HttpResponse.json({ a_traiter: 0, en_cours: 0, ranges: 0, tous: 0 })),
+  ),
   // Récapitulatif du classement automatique : aucun import dans les données de démonstration.
   http.get(
     url('/dossier-imports/report'),

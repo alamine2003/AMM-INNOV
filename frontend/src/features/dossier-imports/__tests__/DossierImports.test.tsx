@@ -278,10 +278,14 @@ describe('récapitulatif du classement automatique', () => {
     expect(attention).toHaveTextContent('À traiter par vous (1)');
     expect(attention).toHaveTextContent('Analyse échouée');
     expect(attention).toHaveTextContent('Scan illisible');
-    expect(screen.getByText('valeurs corrigées')).toBeVisible();
-    await userEvent.click(screen.getByText('Valeurs corrigées d’après les décisions officielles (1)'));
+    // Les détails sont repliés : chaque chiffre ouvre sa liste, une seule à la fois.
+    expect(screen.queryByText('12380213')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: '1 valeur corrigée' }));
     expect(await screen.findByText('12380213')).toBeVisible();
-    expect(screen.getByText('Fiches créées (1)')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '1 fiche créée' }));
+    expect(await screen.findByText(/n° à compléter/)).toBeVisible();
+    expect(screen.queryByText('12380213')).toBeNull();
+    expect(screen.getByText(/5 documents rangés/)).toBeVisible();
   });
 });
 
@@ -435,6 +439,68 @@ describe('import automatique de dossiers AMM', () => {
     renderApp('/dossier-imports');
     expect(await screen.findByText('CAMEROUN - GRIPEX')).toBeVisible();
     expect(screen.queryByText(/Unexpected Application Error/)).toBeNull();
+  });
+
+  it('ouvre l’historique sur « À traiter » quand un dossier attend, avec recherche', async () => {
+    const lists: URLSearchParams[] = [];
+    server.use(
+      http.get(`${endpoint}/counts`, () =>
+        HttpResponse.json({ a_traiter: 1, en_cours: 0, ranges: 1, tous: 2 }),
+      ),
+      http.get(endpoint, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        lists.push(params);
+        const results =
+          params.get('group') === 'a_traiter' ? [questionFixture()] : [fixture(), questionFixture()];
+        return HttpResponse.json({ count: results.length, next: null, previous: null, results });
+      }),
+    );
+    loginAs('u-sn');
+    renderApp('/dossier-imports');
+    expect(await screen.findByText('DOSSIER RECU')).toBeVisible();
+    expect(screen.getByRole('tab', { name: /À traiter/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('AMM Produit X')).toBeNull();
+    expect(lists[0].get('group')).toBe('a_traiter');
+    expect(lists[0].get('page_size')).toBe('10');
+    await userEvent.click(screen.getByRole('tab', { name: /Tous/ }));
+    expect(await screen.findByText('AMM Produit X')).toBeVisible();
+    expect(lists.at(-1)?.get('group')).toBeNull();
+    await userEvent.type(screen.getByLabelText('Rechercher un dossier'), 'recu');
+    await waitFor(() => expect(lists.at(-1)?.get('search')).toBe('recu'));
+  });
+
+  it('regroupe les produits non envoyés par motif et propose de réessayer', async () => {
+    let fail = true;
+    server.use(
+      http.get(endpoint, () => HttpResponse.json({ count: 0, next: null, previous: null, results: [] })),
+      http.post(endpoint, () =>
+        fail
+          ? HttpResponse.json({ detail: 'Quota d’envoi atteint.' }, { status: 400 })
+          : HttpResponse.json({ ...fixture(), status: 'PENDING' }, { status: 202 }),
+      ),
+    );
+    loginAs('u-sn');
+    renderApp('/dossier-imports');
+    const picker = await screen.findByLabelText('Dossier AMM');
+    const pdf = (path: string) => {
+      const upload = new File(['%PDF-1.7'], path.split('/').at(-1)!, { type: 'application/pdf' });
+      Object.defineProperty(upload, 'webkitRelativePath', { value: path });
+      return upload;
+    };
+    fireEvent.change(picker, {
+      target: {
+        files: [pdf('MALI/DOLEX 500MG CPR B20/AMM.pdf'), pdf('MALI/GRIPEX CPR B10/AMM.pdf')],
+      },
+    });
+    expect(screen.getByTestId('selection-summary')).toHaveTextContent('2 fichiers · 2 produits');
+    expect(screen.queryByLabelText('Fichiers sélectionnés')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Analyser les 2 produits' }));
+    expect(await screen.findByText('2 produits non envoyés')).toBeVisible();
+    expect(screen.getByText(/2 × Quota d’envoi atteint\./)).toBeVisible();
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByText(/2 produits envoyés/)).toBeVisible();
+    expect(screen.queryByText('2 produits non envoyés')).toBeNull();
   });
 
   it('dit clairement qu’un scan est perdu au lieu d’une erreur serveur', async () => {

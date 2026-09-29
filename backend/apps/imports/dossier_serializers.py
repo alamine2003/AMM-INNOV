@@ -140,6 +140,13 @@ class DossierUploadSerializer(serializers.Serializer):
     reused = serializers.JSONField(required=False, default=list)
 
 
+class DossierCountsSerializer(serializers.Serializer):
+    a_traiter = serializers.IntegerField()
+    en_cours = serializers.IntegerField()
+    ranges = serializers.IntegerField()
+    tous = serializers.IntegerField()
+
+
 class DossierKnownFilesSerializer(serializers.Serializer):
     sha256 = serializers.ListField(
         child=serializers.RegexField(r"^[0-9a-f]{64}$"), max_length=1000, allow_empty=True

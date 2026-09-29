@@ -2673,6 +2673,15 @@ paths:
     get:
       operationId: v1_dossier_imports_list
       parameters:
+      - in: query
+        name: group
+        schema:
+          type: string
+          enum:
+          - a_traiter
+          - en_cours
+          - ranges
+        description: a_traiter (question, échec, non rangé), en_cours, ranges.
       - name: ordering
         required: false
         in: query
@@ -2889,6 +2898,21 @@ paths:
           description: ''
         '410':
           description: No response body
+  /api/v1/dossier-imports/counts/:
+    get:
+      operationId: v1_dossier_imports_counts_retrieve
+      description: Nombre de dossiers par groupe, pour les onglets de l'historique.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierCounts'
+          description: ''
   /api/v1/dossier-imports/known-files/:
     post:
       operationId: v1_dossier_imports_known_files_create
@@ -6494,6 +6518,22 @@ components:
           default: false
       required:
       - preview_token
+    DossierCounts:
+      type: object
+      properties:
+        a_traiter:
+          type: integer
+        en_cours:
+          type: integer
+        ranges:
+          type: integer
+        tous:
+          type: integer
+      required:
+      - a_traiter
+      - en_cours
+      - ranges
+      - tous
     DossierFile:
       type: object
       properties:

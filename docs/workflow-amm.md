@@ -244,6 +244,15 @@ périmètre, analyse échouée, fiche créée sans n° ni date d'origine, fiche 
 sans décision lisible. Les rangements automatiques ne créent plus une notification par produit :
 le récapitulatif les regroupe.
 
+**Page sans long défilement** : la zone de dépôt tient sur une ligne ; après sélection, une seule
+ligne résume le dossier (« 120 fichiers · 12 produits · 45 Mo »), la liste des fichiers reste
+repliée. Pendant l'envoi, une barre ; les échecs sont regroupés par motif (« 18 × Serveur
+injoignable ») avec **Réessayer**. Le récapitulatif montre au plus 5 dossiers « À traiter »
+(filtrables par motif, « Voir tout ») puis une ligne de chiffres (« 40 dossiers rangés »,
+« 12 fiches créées »…) : chaque chiffre ouvre son détail. L'historique a des onglets **À traiter /
+En cours / Rangés / Tous** avec leur compteur (`GET /dossier-imports/counts`), une recherche sur le
+nom (`search`), 10 lignes par page ; il s'ouvre sur « À traiter » quand un dossier attend.
+
 Vitesse : dans le dossier d'un produit, l'OCR ne lit que les 6 premières pages d'un long scan
 (`DOSSIER_OCR_MAX_PAGES`) ; les recueils des « Documents communs » sont lus en entier. Le
 navigateur envoie les produits trois par trois. Mesure sur 300 dossiers réels du corpus : tous
