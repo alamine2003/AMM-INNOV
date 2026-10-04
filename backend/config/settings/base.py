@@ -48,7 +48,18 @@ def clean_app_version(raw: str | None) -> str:
     return value if _APP_VERSION_RE.fullmatch(value) else "dev"
 
 
-APP_VERSION = clean_app_version(env("APP_VERSION"))
+def read_version_file(path: Path) -> str | None:
+    """Numéro publié, écrit dans `backend/VERSION` par `scripts/release.py`."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+# La variable d'environnement prime (image marquée par la CI) ; sinon le fichier VERSION du dépôt.
+APP_VERSION = clean_app_version(
+    (env("APP_VERSION") or "").strip() or read_version_file(BASE_DIR / "VERSION")
+)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", False)
