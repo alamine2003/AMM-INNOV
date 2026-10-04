@@ -185,7 +185,7 @@ describe('ApiHealthBadge', () => {
     await badge();
   });
 
-  it("n'affiche aucun badge et ne sonde pas /health sur /login sans session", async () => {
+  it("n'affiche aucun badge sur /login sans session : un seul appel, celui qui réveille le service", async () => {
     let calls = 0;
     server.use(
       http.get(HEALTH_URL, () => {
@@ -201,6 +201,9 @@ describe('ApiHealthBadge', () => {
     renderApp('/login');
     await screen.findByLabelText(/adresse e-mail/i);
     expect(screen.queryByTestId('api-health-badge')).not.toBeInTheDocument();
-    expect(calls).toBe(0);
+    // La page de connexion réveille l'API une fois (useWakeService) ; le badge, lui, ne sonde pas.
+    await waitFor(() => expect(calls).toBe(1));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(calls).toBe(1);
   });
 });
