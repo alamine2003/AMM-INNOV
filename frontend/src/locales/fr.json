@@ -78,6 +78,9 @@
     "submit": "Se connecter",
     "invalidEmail": "Adresse e-mail invalide",
     "failed": "Identifiants incorrects",
+    "starting": "Connexion au service en cours",
+    "startingDetail": "Le démarrage peut prendre jusqu'à une minute. Votre demande sera transmise automatiquement.",
+    "unavailable": "Le service est momentanément indisponible. Veuillez réessayer dans quelques instants.",
     "sessionExpired": "Votre session a expiré, veuillez vous reconnecter.",
     "loggedOut": "Vous êtes déconnecté."
   },

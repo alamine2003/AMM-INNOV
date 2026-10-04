@@ -5,6 +5,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.2] — 2026-10-04
+
+### Corrigé
+- **Connexion pendant le démarrage du service** : après une période sans visite, l'API est en
+  veille et la première connexion échouait (« Serveur injoignable »). La demande est maintenant
+  retentée d'elle-même pendant deux minutes au plus, avec le message « Connexion au service en
+  cours ». La page de connexion réveille aussi le service dès son affichage. Si le service ne
+  revient pas : « Le service est momentanément indisponible. Veuillez réessayer dans quelques
+  instants. » Un refus (identifiants incorrects) n'est pas retenté.
+
+### Sécurité
+- CI : audit des dépendances à chaque pull request (`pip-audit` pour Python, `npm audit` pour les
+  dépendances livrées de l'interface). Étape 4 du cycle de publication (`docs/versionnement.md`).
+
 ## [1.0.1] — 2026-10-04
 
 Première version numérotée selon `docs/versionnement.md`. Elle regroupe tout ce qui a été mis en

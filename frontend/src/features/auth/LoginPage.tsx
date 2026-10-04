@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, LinearProgress, Stack, TextField, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useLogin } from '@/api/hooks/useAuth';
+import { isServiceStarting, useLogin, useWakeService } from '@/api/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/authStore';
 import { extractErrorMessage } from '@/api/client';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -24,6 +24,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
+  useWakeService();
+  // Le service redémarre : la demande est retentée d'elle-même, on le dit au lieu d'une erreur.
+  const starting = login.isPending && login.failureCount > 0;
   const user = useAuthStore((s) => s.user);
   const access = useAuthStore((s) => s.access);
   const { register, handleSubmit, formState } = useForm<FormValues>({
@@ -141,11 +144,20 @@ export default function LoginPage() {
                 error={!!formState.errors.password}
                 helperText={formState.errors.password ? t('app.required') : undefined}
               />
+              {starting && (
+                <Alert severity="info" icon={false} role="status" data-testid="login-starting">
+                  <AlertTitle>{t('auth.starting')}</AlertTitle>
+                  {t('auth.startingDetail')}
+                  <LinearProgress sx={{ mt: 1.5 }} aria-label={t('auth.starting')} />
+                </Alert>
+              )}
               {login.isError && (
                 <Alert severity="error" data-testid="login-error">
-                  {login.error && (login.error as { response?: { status?: number } }).response?.status === 401
+                  {(login.error as { response?: { status?: number } }).response?.status === 401
                     ? t('auth.failed')
-                    : extractErrorMessage(login.error, t('auth.failed'))}
+                    : isServiceStarting(login.error)
+                      ? t('auth.unavailable')
+                      : extractErrorMessage(login.error, t('auth.failed'))}
                 </Alert>
               )}
               <Button type="submit" variant="contained" size="large" disabled={login.isPending}>

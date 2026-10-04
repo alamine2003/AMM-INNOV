@@ -14,8 +14,8 @@ correctives**, puis un **palier**.
 
 « La version 1.1 » s'écrit `1.1.0` : c'est le numéro du palier lui-même, avant ses neuf correctifs.
 
-Où nous en sommes : **1.0.1**, publiée le 4 octobre 2026. Elle regroupe tout ce qui a été mis en
-ligne depuis la 1.0.0 du 5 septembre 2026. La suivante est la 1.0.2.
+Le numéro en cours est dans `backend/VERSION` ; l'historique est dans `CHANGELOG.md`. La 1.0.1
+(4 octobre 2026) regroupe tout ce qui a été mis en ligne depuis la 1.0.0 du 5 septembre 2026.
 
 ## 2. Ce que contient chaque type de version
 
@@ -59,7 +59,7 @@ aujourd'hui dans AMM GH.
 | 1 | Identification et priorisation des bugs | Liste des points retenus pour la version |
 | 2 | Développement des corrections et améliorations | Une branche par sujet |
 | 3 | Révision du code | Pull request sur GitHub, relue avant fusion |
-| 4 | Contrôles de sécurité | Dependabot signale les dépendances vulnérables ; relecture des droits et des entrées dans la pull request. **Pas d'audit automatique dans la CI** |
+| 4 | Contrôles de sécurité | CI : `pip-audit` (dépendances Python) et `npm audit` (dépendances livrées, niveau élevé) ; Dependabot ; relecture des droits et des entrées dans la pull request |
 | 5 | Tests automatisés et manuels | CI (pytest, vitest) et essai à la main des écrans touchés |
 | 6 | Tests de non-régression | Toute la suite de tests passe, pas seulement les nouveaux |
 | 7 | Validation en préproduction | **Pas encore de préproduction** : CI au vert et essai sur une copie locale |
@@ -68,8 +68,9 @@ aujourd'hui dans AMM GH.
 | 10 | Surveillance après déploiement | `/api/v1/health` affiche le nouveau numéro ; pastille « API en ligne » ; un essai de connexion |
 | 11 | Publication du journal des modifications | `CHANGELOG.md`, section de la version |
 
-L'étape 4 repose aujourd'hui sur Dependabot et la relecture : un audit automatique des
-dépendances (`pip-audit`, `npm audit`) reste à ajouter à la CI.
+Étape 4 : si un audit échoue, une vulnérabilité vient d'être publiée sur une dépendance. Mettre
+la dépendance à jour dans une version corrective. S'il n'existe pas encore de correctif, l'exception
+se note dans la CI (`pip-audit --ignore-vuln <identifiant>`) avec la raison et une date de revue.
 
 L'étape 7 sera remplie par une vraie préproduction quand l'hébergement sera pris en charge par
 l'entreprise. D'ici là, on ne coche pas « préproduction » : on note « CI + essai local ».
@@ -90,12 +91,18 @@ verrouillage portent le même numéro.
    Le script calcule le numéro suivant selon le tableau de la section 1, met à jour les trois
    fichiers et date la section du journal. Il refuse de publier si « Non publié » est vide.
 3. Ouvrir la pull request, attendre la CI, fusionner.
-4. Poser l'étiquette sur la version publiée :
+4. Poser l'étiquette sur la version publiée, une ligne à la fois :
 
    ```
-   git checkout main && git pull
-   git tag v1.0.2 && git push origin v1.0.2
+   git checkout main
+   git pull
+   cat backend/VERSION
+   git tag v1.0.2
+   git push origin v1.0.2
    ```
+
+   `cat` doit afficher le numéro publié. Sinon la copie locale n'est pas à jour : ne pas poser
+   l'étiquette.
 
 Autres commandes :
 

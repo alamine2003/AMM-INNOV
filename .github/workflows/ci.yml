@@ -80,6 +80,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: "Sécurité : dépendances Python sans vulnérabilité connue (pip-audit)"
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+
       - name: "Outils système (qpdf : classeurs avec décisions officielles)"
         run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends qpdf
 
@@ -126,6 +131,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: "Sécurité : dépendances livrées sans vulnérabilité élevée (npm audit)"
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint

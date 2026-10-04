@@ -135,8 +135,12 @@ def publish() -> int:
     print(f"AMM GH passe à la version {version} ({kind(version)}).")
     if kind(version) != "mise à jour corrective":
         print("Changement de palier : suivez la liste « Palier » de docs/versionnement.md.")
-    print("Suite : relisez CHANGELOG.md, ouvrez la PR, puis après la fusion :")
-    print(f"  git tag v{version} && git push origin v{version}")
+    print("Suite : relisez CHANGELOG.md, ouvrez la PR, puis après la fusion, ligne par ligne :")
+    print("  git checkout main")
+    print("  git pull")
+    print(f"  cat backend/VERSION        (doit afficher {version})")
+    print(f"  git tag v{version}")
+    print(f"  git push origin v{version}")
     return 0
 
 
