@@ -5,6 +5,23 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.1] — 2026-10-04
+
+Première version numérotée selon `docs/versionnement.md`. Elle regroupe tout ce qui a été mis en
+ligne depuis la 1.0.0 (47 PR), désormais affiché comme « 1.0.1 » dans l'application.
+
+### En bref
+- **Classeurs d'archivage** : jumeau à l'écran de chaque classeur papier, constats Conforme /
+  Corriger / Absent, ajout de page, import du scan depuis une page, PDF avec les décisions
+  officielles (`docs/classeurs-archivage.md`).
+- **Dépôts AMM** : dossier de renouvellement suivi du siège au pays (pièces, échantillons, envoi,
+  dépôt, commission, décision), avec messages et ZIP du dossier (`docs/depot-amm.md`).
+- **Registre GHPL** : import prudent du classement général des scans, avec avancement visible et
+  reprise d'un import coupé (`docs/depot-amm.md`, section 1).
+- **Import de dossiers** : rangement automatique, récapitulatif, page compacte avec onglets
+  À traiter / En cours / Rangés / Tous et recherche (`docs/workflow-amm.md`, section 8).
+- **Version affichée** : le numéro vient de `backend/VERSION` ; l'application n'affiche plus « dev ».
+
 ### Import de dossiers : on dépose, c'est rangé (`docs/workflow-amm.md`, section 8)
 - **Rangement automatique dès que l'AMM (produit + pays) est identifiée**, sans seuil de
   fiabilité : chaque scan va à sa période (origine ou renouvellement n), les renouvellements

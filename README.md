@@ -213,6 +213,13 @@ compressé et une archive des médias dans `./backups`, rétention `BACKUP_RETEN
 Restauration : `docker compose -f docker-compose.prod.yml run --rm backup /scripts/restore.sh /backups/<fichier>.sql.gz`.
 Copier `backups/` hors du serveur (rsync, restic, `mc mirror`) pour une sauvegarde externalisée.
 
+## Versions
+
+AMM GH suit un versionnement progressif : neuf mises à jour correctives par cycle, puis un palier
+(1.0.1 … 1.0.9, puis 1.1.0), jusqu'à la 2.0.0. Le numéro en cours est dans `backend/VERSION` et
+s'affiche dans l'application. Règles, cycle de publication et commandes :
+[docs/versionnement.md](docs/versionnement.md). Journal : [CHANGELOG.md](CHANGELOG.md).
+
 ## Structure du dépôt
 
 ```
