@@ -5,6 +5,26 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.3] — 2026-10-19
+
+### Ajouté
+- **Import des scans classés (classement AMM GHPL)** : troisième étape, après le Dashboard et le
+  registre. Le manifeste « manifeste_scans_amm_gh.csv » s'importe dans Imports Excel (simulation
+  comprise) ; chaque pièce principale est rapprochée de son AMM et de sa période :
+  - AMM et produit créés s'ils manquent ; renouvellements obtenus manquants créés ; un dossier
+    déposé sans décision est conclu par la décision classée qui le suit ;
+  - le classement fait foi pour les dates sûres (date du dossier « RENOUVELLEMENT n - AAAA-MM-JJ »,
+    date d'origine « haute » ou « lecture visuelle » de l'année du dossier d'origine) ; une
+    correction qui avancerait l'échéance de l'AMM n'est pas appliquée et devient un
+    avertissement ; les n° du classement ne font que compléter un n° absent ;
+  - récépissés rangés avec le renouvellement qu'ils ont précédé (date de dépôt complétée),
+    variations sur la période en vigueur ;
+  - renouvellements renumérotés dans l'ordre des dates (une décision ancienne ajoutée après coup
+    ne devient pas « la dernière »).
+- `scripts/importer_scans_classement.py` (Mac, Python standard) : envoie ensuite chaque fichier à
+  sa place, vérifie son SHA-256, reprend là où il s'est arrêté, réessaie quand Render se réveille,
+  et écrit un rapport CSV.
+
 ## [1.0.2] — 2026-10-04
 
 ### Corrigé

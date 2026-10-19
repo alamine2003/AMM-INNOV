@@ -291,8 +291,13 @@ def import_workbook(
     try:
         with override_today(today):
             from .registry import import_registry, is_registry
+            from .scans import import_scan_manifest, is_scan_manifest
 
-            if is_registry(source):
+            if is_scan_manifest(source):
+                # Manifeste des scans classés : rapproche chaque pièce de son AMM et de sa période.
+                summary["kind"] = "scans"
+                summary["sheets"] = import_scan_manifest(source, batch, dry_run)
+            elif is_registry(source):
                 # Registre GHPL (classement général des scans) : complète sans écraser.
                 summary["kind"] = "registry"
                 summary["sheets"] = import_registry(source, batch, dry_run)
