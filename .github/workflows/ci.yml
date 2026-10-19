@@ -83,7 +83,10 @@ jobs:
       - name: "Sécurité : dépendances Python sans vulnérabilité connue (pip-audit)"
         run: |
           pip install pip-audit
-          pip-audit -r requirements.txt
+          # CVE-2026-106454 (GHSA-8pqf-f4m5-798g) : serveur IMAP de Twisted (twisted.mail), que
+          # AMM GH n'utilise pas (daphne ne sert que HTTP/WebSocket) ; aucune version corrigée au
+          # 19/10/2026. À retirer dès qu'un correctif paraît.
+          pip-audit -r requirements.txt --ignore-vuln CVE-2026-106454
 
       - name: "Outils système (qpdf : classeurs avec décisions officielles)"
         run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends qpdf

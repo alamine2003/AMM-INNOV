@@ -25,6 +25,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   sa place, vérifie son SHA-256, reprend là où il s'est arrêté, réessaie quand Render se réveille,
   et écrit un rapport CSV.
 
+### Sécurité
+- CI : la faille CVE-2026-106454 de Twisted (serveur IMAP `twisted.mail`, non utilisé par AMM GH)
+  est ignorée par `pip-audit` tant qu'aucune version corrigée n'existe.
+
 ## [1.0.2] — 2026-10-04
 
 ### Corrigé
