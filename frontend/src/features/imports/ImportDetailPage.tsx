@@ -207,7 +207,10 @@ export default function ImportDetailPage() {
                           sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
                         >
                           {Object.entries(r.raw)
-                            .map(([k, v]) => `${k}: ${String(v ?? '')}`)
+                            .map(
+                              ([k, v]) =>
+                                `${k}: ${v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v ?? '')}`,
+                            )
                             .join('\n')}
                         </Typography>
                       </TableCell>

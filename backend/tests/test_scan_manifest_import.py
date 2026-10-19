@@ -326,6 +326,24 @@ def test_correction_that_would_shorten_validity_is_left_for_review(tmp_path, mak
     assert row.raw["placement"]["amm"] == str(amm.pk)
 
 
+def test_more_exact_date_a_few_days_earlier_is_applied(tmp_path, make_amm, batch):
+    # Bénin : le Dashboard porte le 16/04/2019, la décision classée est du 06/04/2019.
+    amm = make_amm(
+        "SN",
+        product_obj=Product.objects.create(name="AMLO VH 10MG CPR B/30"),
+        original_number="2019-4848",
+        original_start_date=date(2019, 4, 16),
+    )
+    source = manifest(
+        tmp_path,
+        [piece("AMLO VH 10MG CPR B/30", "ORIGINE", when="2019-04-06", numero="2019-4848")],
+    )
+    import_workbook(source, batch=batch)
+    amm.refresh_from_db()
+    assert amm.original_start_date == date(2019, 4, 6)
+    assert ImportRow.objects.get(batch=batch).outcome == "UPDATED"
+
+
 def test_date_wins_over_a_reused_number(tmp_path, amm, make_renewal, batch):
     # Le Dashboard porte le n° de 2018 sur la décision de 2022 (Congo).
     dashboard = make_renewal(

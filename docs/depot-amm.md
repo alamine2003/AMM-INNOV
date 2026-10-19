@@ -67,9 +67,10 @@ métadonnées : chaque pièce reçoit sa place, et les fiches sont complétées.
 | RCP, annexes | sur l'AMM |
 | n° du classement | complète un n° vide, jamais plus (noms de dossiers, n° de décision, plages « 0139 a 0143 ») |
 
-Garde-fou : si les corrections d'une AMM avançaient son échéance (ex. le Dashboard porte en
+Garde-fou : si les corrections d'une AMM avançaient son échéance de plus de six mois (ex. le Dashboard porte en
 « origine » la décision de 2019, le classement n'a que l'AMM de 2009), elles ne sont pas appliquées ;
-l'AMM est seulement complétée et un avertissement les liste. Les renouvellements sont renumérotés
+l'AMM est seulement complétée et un avertissement les liste. Une date plus exacte de quelques
+jours ou de quelques mois s'applique ; un changement de statut de l'AMM est signalé. Les renouvellements sont renumérotés
 dans l'ordre des dates : le dernier obtenu reste celui qui fixe l'échéance.
 
 Répétition locale (Dashboard 13/10, registre, manifeste 13/10) : 3 608 pièces placées sur 3 628,
