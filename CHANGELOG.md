@@ -5,6 +5,17 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.4] — 2026-10-19
+
+### Corrigé
+- **Import des scans classés** : une date plus exacte du classement (décision du 06/04 au lieu du
+  16/04 dans le Dashboard) s'applique désormais, même si elle avance un peu l'échéance. Seul un
+  recul de plus de six mois (une autre décision, par exemple l'AMM de 2009 au lieu du
+  renouvellement de 2019) attend une vérification. Un changement de statut de l'AMM causé par le
+  classement est signalé en avertissement. Simulation en production du 19/10 : 589
+  avertissements, la plupart des corrections de quelques jours écartées à tort.
+- Page d'un import : le placement d'une pièce s'affiche en clair (au lieu de « [object Object] »).
+
 ## [1.0.3] — 2026-10-19
 
 ### Ajouté

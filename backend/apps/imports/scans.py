@@ -56,6 +56,7 @@ HEADER_MARKERS = ("Presentation (classement)", "Exemplaire principal", "SHA-256"
 STRONG = {"haute", "lecture visuelle"}
 FILL = {"moyenne", "dashboard (n° amm)", "nom de fichier"}
 NEAR = timedelta(days=120)
+MAX_ADVANCE = timedelta(days=183)  # recul d'échéance au-delà duquel les corrections attendent
 EXTRA_COUNTERS = (
     "amms_created",
     "renewals_created",
@@ -278,6 +279,7 @@ class _Group:
         self.amm: MarketingAuthorization | None = None
         self.renewals: list[Renewal] = []
         self.end_before: date | None = None
+        self.status_before = ""
         self.end_after: date | None = None
 
     @property
@@ -285,11 +287,13 @@ class _Group:
         """Les corrections avanceraient l'échéance de l'AMM : on ne les applique pas seules.
 
         Ex. : le Dashboard porte en « origine » la dernière décision (2019) et le classement n'a
-        que l'AMM de 2009 ; corriger l'origine ferait passer l'AMM pour expirée.
+        que l'AMM de 2009 ; corriger l'origine ferait passer l'AMM pour expirée. Une date plus
+        exacte de quelques jours ou de quelques mois (16/04 → 06/04) s'applique : le classement
+        fait foi ; seul un recul de plus de six mois est tenu pour une autre décision.
         """
         if self.end_before is None:
             return False
-        return self.end_after is None or self.end_after < self.end_before
+        return self.end_after is None or self.end_before - self.end_after > MAX_ADVANCE
 
     # -- helpers ---------------------------------------------------------------------------
     def _save(self, obj, **kwargs):
@@ -337,7 +341,8 @@ class _Group:
         if self.amm is None:
             self._create_amm(product, country, origin)
         else:
-            self.end_before = compute_amm_state(self.amm).effective_end_date
+            state = compute_amm_state(self.amm)
+            self.end_before, self.status_before = state.effective_end_date, state.status
             self._origin(origin)
         self.renewals = list(Renewal.objects.filter(amm=self.amm).order_by("sequence"))
         periods = defaultdict(list)
@@ -371,6 +376,12 @@ class _Group:
             self.amm._history_user = self.user
         self.amm.save()  # état recalculé depuis les renouvellements, alertes réconciliées
         self.end_after = self.amm.effective_end_date
+        if self.status_before and self.amm.status != self.status_before:
+            self.warn(
+                self.pieces,
+                f"statut de l'AMM {self.status_before} → {self.amm.status} d'après le classement "
+                f"(échéance {_fmt(self.end_before)} → {_fmt(self.end_after)})",
+            )
 
     def _create_amm(self, product, country, origin):
         first = self.pieces[0].row
