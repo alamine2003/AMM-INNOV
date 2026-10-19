@@ -42,8 +42,50 @@ lieu de rester « en cours ».
 L'onglet « Parametres pays » (durées de validité, délais) n'est pas importé : ses valeurs sont des
 hypothèses non confirmées.
 
-Les scans du classement (plus de 3 600 documents) s'importeront ensuite par « Import de dossiers
-AMM », une fois synchronisés depuis Nextcloud.
+Les scans du classement s'importent ensuite avec leur manifeste (section 1 bis).
+
+## 1 bis. Import des scans classés (manifeste du classement)
+
+Ordre : **Dashboard « version import AMM GH »**, puis **registre**, puis **scans**. Le dossier
+`EXPORT AMM GH (application)` du classement contient `manifeste_scans_amm_gh.csv` : une ligne par
+pièce (pays, présentation, période, type, date et sa fiabilité, n°, chemin, SHA-256). Seules les
+3 628 pièces « Exemplaire principal = oui » sont prises (pas les doublons ni les pages séparées).
+
+**Avant** : Administration > Pays, régler le Congo sur 4 ans (durée écrite sur les décisions) : les
+renouvellements créés par l'import en dépendent. Les fiches existantes ne changent pas.
+
+**1. Le manifeste dans Imports Excel** (simulation d'abord, puis pour de bon). Rien que des
+métadonnées : chaque pièce reçoit sa place, et les fiches sont complétées.
+
+| Pièce du classement | Ce que fait l'import |
+| --- | --- |
+| AMM introuvable | crée le produit (s'il manque) et l'AMM, avec le n° et la date d'origine |
+| `1_AMM ORIGINE - AAAA` | date « haute » ou « lecture visuelle » de l'année AAAA : corrige la date d'origine ; autre date : complète seulement un champ vide ; les pièces d'autres années du dossier (courriers, attestations) ne comptent pas |
+| `RENOUVELLEMENT n - AAAA-MM-JJ` | rapproché d'un renouvellement existant (même date, puis même n°, puis date à moins de 120 jours) et sa date corrigée ; sinon un dossier déposé sans décision est conclu ; sinon un renouvellement **obtenu** est créé |
+| Dépôt, récépissé | avec le dossier en cours, ou le renouvellement qu'il a précédé (date de dépôt complétée) ; avant l'AMM d'origine : la demande d'origine ; sinon sur l'AMM (avertissement). Aucun dossier « déposé » n'est ouvert d'après un scan |
+| Variation, rectificatif | période en vigueur à sa date |
+| RCP, annexes | sur l'AMM |
+| n° du classement | complète un n° vide, jamais plus (noms de dossiers, n° de décision, plages « 0139 a 0143 ») |
+
+Garde-fou : si les corrections d'une AMM avançaient son échéance (ex. le Dashboard porte en
+« origine » la décision de 2019, le classement n'a que l'AMM de 2009), elles ne sont pas appliquées ;
+l'AMM est seulement complétée et un avertissement les liste. Les renouvellements sont renumérotés
+dans l'ordre des dates : le dernier obtenu reste celui qui fixe l'échéance.
+
+Répétition locale (Dashboard 13/10, registre, manifeste 13/10) : 3 608 pièces placées sur 3 628,
+aucune erreur, 180 renouvellements créés, aucune échéance avancée, 43 échéances repoussées de
+quelques jours à quelques mois par une date plus exacte. Restent à part : RDC et Mauritanie (pays
+non suivis) et 5 pièces « présentation non identifiée ».
+
+**2. Les fichiers**, depuis le Mac qui a le classement :
+
+    python3 scripts/importer_scans_classement.py --classement "<…>/AMM GHPL - CLASSEMENT GENERAL"
+
+Le script lit les places du dernier import du manifeste, vérifie le SHA-256 de chaque fichier et
+l'envoie à sa fiche (`POST /amms/{id}/documents`). Il peut être arrêté et relancé
+(`importer_scans_etat.json`). Laissés de côté et listés dans le rapport CSV : les fichiers modifiés
+depuis le manifeste, les `.docx` sans LibreOffice, les fichiers de plus de 25 Mo (4) et les formats
+refusés. Les aperçus sont générés ensuite, un par un, par le service.
 
 ## 2. Rubrique « Dépôts AMM » : le renouvellement du siège au pays
 

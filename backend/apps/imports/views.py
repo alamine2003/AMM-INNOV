@@ -32,8 +32,24 @@ class ImportViewSet(
         serializer = ImportUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         upload = serializer.validated_data["file"]
-        if not upload.name.lower().endswith((".xlsx", ".xlsm")):
-            return Response({"file": ["Seuls les classeurs .xlsx sont acceptés."]}, status=400)
+        name = upload.name.lower()
+        if name.endswith(".csv"):
+            from .scans import is_scan_manifest
+
+            if not is_scan_manifest(upload):
+                return Response(
+                    {"file": ["Seul le manifeste des scans classés est accepté en .csv."]},
+                    status=400,
+                )
+        elif not name.endswith((".xlsx", ".xlsm")):
+            return Response(
+                {
+                    "file": [
+                        "Seuls les classeurs .xlsx et le manifeste des scans (.csv) sont acceptés."
+                    ]
+                },
+                status=400,
+            )
         batch = ImportBatch.objects.create(
             file=upload,
             created_by=request.user,

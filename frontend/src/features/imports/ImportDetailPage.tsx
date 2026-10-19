@@ -45,7 +45,10 @@ export default function ImportDetailPage() {
   const batch = useImport(id, true);
   const [page, setPage] = useState(1);
   const [chosen, setOutcome] = useState<Outcome | null>(null);
-  const registry = (batch.data?.summary as Record<string, unknown> | undefined)?.kind === 'registry';
+  const kind = (batch.data?.summary as Record<string, unknown> | undefined)?.kind;
+  const scans = kind === 'scans';
+  // Registre et scans classés : ce qui compte, ce sont les avertissements (à vérifier).
+  const registry = kind === 'registry' || scans;
   // Le registre n'a presque jamais d'erreur : ce qui compte, ce sont ses avertissements.
   const outcome = chosen ?? (registry ? 'WARNING' : 'ERROR');
   const rows = useImportRows(id, outcome, page, 25);
@@ -73,7 +76,7 @@ export default function ImportDetailPage() {
                 size="small"
                 color="info"
                 variant="outlined"
-                label={t('admin.imports.registryChip')}
+                label={t(scans ? 'admin.imports.scansChip' : 'admin.imports.registryChip')}
                 sx={{ mr: 1 }}
               />
             )}
@@ -102,7 +105,7 @@ export default function ImportDetailPage() {
       )}
       {registry && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          {t('admin.imports.registryHelp')}
+          {t(scans ? 'admin.imports.scansHelp' : 'admin.imports.registryHelp')}
         </Alert>
       )}
       <Grid container spacing={2} sx={{ mb: 3 }}>

@@ -522,10 +522,12 @@
       "warnings": "Divergences",
       "dryRun": "Simulation : produire le rapport sans rien modifier",
       "dryRunChip": "Simulation",
-      "dropzoneHint": "Accepte le Dashboard AMM Afrique et le registre GHPL « 0_REGISTRE AMM GHPL.xlsx » (classement général des scans) : le registre complète les fiches sans rien écraser.",
+      "dropzoneHint": "Accepte, dans cet ordre : le Dashboard AMM Afrique, le registre GHPL « 0_REGISTRE AMM GHPL.xlsx », puis le manifeste des scans classés « manifeste_scans_amm_gh.csv ».",
       "registryChip": "Registre GHPL",
       "registryHelp": "Registre GHPL : les fiches sont complétées sans rien écraser (n° et date d'origine manquants), un dossier déposé ouvre un renouvellement « déposé », et les présentations connues seulement par les scans sont créées. Les avertissements signalent les AMM introuvables et les actes classés plus récents que le Dashboard.",
       "registryWarnings": "Avertissements",
+      "scansChip": "Scans classés",
+      "scansHelp": "Scans classés : chaque pièce principale du classement est rapprochée de son AMM et de sa période. Les renouvellements manquants sont créés, les dates fiables du classement corrigent la fiche (sauf si cela avançait l'échéance de l'AMM : avertissement), les n° ne font que compléter. Les fichiers eux-mêmes sont envoyés ensuite par le script « importer_scans_classement.py ».",
       "rowsTitle": "Lignes",
       "noRows": "Aucune ligne",
       "outcome": {

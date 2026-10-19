@@ -79,7 +79,7 @@ export default function ImportsPage() {
           <Stack spacing={2}>
             <FileDropzone
               onFile={setFile}
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
               label={t('admin.imports.dropzone')}
               file={file}
               disabled={start.isPending}
@@ -147,6 +147,15 @@ export default function ImportsPage() {
                             color="info"
                             variant="outlined"
                             label={t('admin.imports.registryChip')}
+                            sx={{ ml: 0.5 }}
+                          />
+                        )}
+                        {(b.summary as Record<string, unknown> | null)?.kind === 'scans' && (
+                          <Chip
+                            size="small"
+                            color="info"
+                            variant="outlined"
+                            label={t('admin.imports.scansChip')}
                             sx={{ ml: 0.5 }}
                           />
                         )}
