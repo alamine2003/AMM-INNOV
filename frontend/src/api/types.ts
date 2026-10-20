@@ -695,6 +695,34 @@ export interface BinderSlotValues {
   end_date: string | null;
 }
 
+export interface BinderChronologyDocument {
+  document_id: string;
+  kind: string;
+  kind_label: string;
+  document_date: string;
+  title: string;
+  page_count: number | null;
+}
+
+export type BinderChronologyIssueCode = 'no_scan' | 'no_date' | 'no_number' | 'no_receipt' | 'gap';
+
+export interface BinderChronologyEntry {
+  /** pending : dossier déposé ; renewal / origin : décision obtenue ; closed : rejeté ou abandonné ; gap : trou de validité. */
+  kind: 'pending' | 'renewal' | 'closed' | 'origin' | 'gap';
+  label: string;
+  renewal_id?: string | null;
+  sequence?: number;
+  workflow_status?: string | null;
+  workflow_label?: string | null;
+  number?: string;
+  start_date: string | null;
+  end_date: string | null;
+  filing_date?: string | null;
+  decisions?: BinderChronologyDocument[];
+  others?: BinderChronologyDocument[];
+  issues: { code: BinderChronologyIssueCode; message: string }[];
+}
+
 export interface BinderPage {
   amm_id: string;
   page: number;
@@ -710,6 +738,10 @@ export interface BinderPage {
   status_label: string;
   dossier_state: DossierState;
   scan: { document_id: string; document_date: string; page_count: number | null } | null;
+  /** Décisions scannées de l'AMM (origine et renouvellements) : la pile agrafée sur la page. */
+  decision_count: number;
+  /** De la décision la plus récente à l'AMM d'origine, avec les pièces et les manques. */
+  chronology: BinderChronologyEntry[];
   discrepancies: {
     slot: BinderSlot;
     field: BinderField;

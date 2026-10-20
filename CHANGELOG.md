@@ -5,6 +5,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.5] — 2026-10-20
+
+### Ajouté
+- **Classeurs : pile des décisions et chronologie de l'AMM** (`docs/classeurs-archivage.md`). Toutes
+  les décisions scannées, de l'origine au dernier renouvellement, sont agrafées en pile sur la page,
+  la plus récente au-dessus. Un clic ouvre la chronologie, de la dernière décision à l'AMM d'origine :
+  pièces de chaque période et manques (décision non scannée, date ou n° inconnus, interruption de
+  validité, récépissé absent), avec le moyen de les régler (importer le scan depuis la fenêtre).
+
 ## [1.0.4] — 2026-10-19
 
 ### Corrigé

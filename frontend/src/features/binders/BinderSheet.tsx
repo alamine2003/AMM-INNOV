@@ -18,6 +18,7 @@ import type {
 } from '@/api/types';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
+import { ChronologyDialog, chronologyIssues } from './ChronologyDialog';
 import { ScanThumbnail } from './ScanThumbnail';
 import { Holes, INK, LINE, MUTED, Pill, STATUS_COLORS, Stamp, paperSx } from './paper';
 
@@ -248,6 +249,8 @@ export function BinderSheet({
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const scanImport = usePageScanImport(binder.key, page.amm_id);
+  const [chronologyOpen, setChronologyOpen] = useState(false);
+  const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending;
 
   const send = (result: BinderResult, corrections: BinderCorrection[] = []) => {
@@ -429,7 +432,19 @@ export function BinderSheet({
                 ? `Décision scannée du ${formatDate(scan.document_date)}${scan.page_count ? ` · ${scan.page_count} p.` : ''}`
                 : 'Aucun scan dans AMM GH'}
             </Typography>
-            <ScanImportButton scanImport={scanImport} hasScan={!!scan} />
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <ScanImportButton scanImport={scanImport} hasScan={!!scan} />
+              <Button
+                size="small"
+                color={missing ? 'warning' : 'primary'}
+                onClick={() => setChronologyOpen(true)}
+                sx={{ mt: 1 }}
+                data-testid="open-chronology"
+              >
+                Chronologie
+                {missing ? ` · ${missing} manque${missing > 1 ? 's' : ''}` : ''}
+              </Button>
+            </Stack>
           </Box>
           {scan && (
             <ScanThumbnail
@@ -437,8 +452,17 @@ export function BinderSheet({
               documentDate={scan.document_date}
               title={`${page.product_name} — décision du ${formatDate(scan.document_date)}`}
               width={96}
+              stack={Math.max(page.decision_count - 1, 0)}
+              onOpen={() => setChronologyOpen(true)}
+              label={`Chronologie des ${page.decision_count} décisions de ${page.product_name}`}
             />
           )}
+          <ChronologyDialog
+            page={page}
+            open={chronologyOpen}
+            onClose={() => setChronologyOpen(false)}
+            scanImport={scanImport}
+          />
         </Stack>
 
         <ScanImportStatus scanImport={scanImport} />

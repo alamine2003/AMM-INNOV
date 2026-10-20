@@ -57,6 +57,23 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   encore vérifiée porte un cadre de constat à cocher à la main, pour vérifier aussi sur papier. Il faut
   compter environ 0,4 s pour les 207 pages de la Guinée.
 
+## Pile des décisions et chronologie de l'AMM
+
+- **Pile agrafée** : toutes les décisions scannées de l'AMM (origine, puis chaque renouvellement) sont
+  agrafées ensemble sur la page ; la plus récente est au-dessus et visible, les plus anciennes dépassent
+  dessous, et une pastille donne leur nombre.
+- **Chronologie** (clic sur la pile, ou bouton « Chronologie » quand il n'y a encore aucun scan) : de la
+  décision la plus récente à l'AMM d'origine, chaque période avec son n°, ses dates, ses décisions
+  scannées et ses autres pièces (récépissés, courriers), que l'on ouvre d'un clic.
+- **Ce qui manque**, signalé sur la période concernée, avec le moyen de le régler :
+  - décision non scannée → importer le scan (bouton dans la fenêtre : il est lu et rangé sur la bonne
+    période) ;
+  - date de début ou n° inconnus → les relever sur la décision papier (« Corriger ») ;
+  - interruption de validité entre deux décisions (plus d'un mois) → un renouvellement manque : importer
+    sa décision, ou le saisir sur le classeur papier ;
+  - dossier déposé sans récépissé scanné → l'importer sur la fiche AMM.
+- Le bouton « Chronologie » indique le nombre de manques de la page (« Chronologie · 2 manques »).
+
 ## Ajouter une page, importer un scan depuis une page
 
 - **Ajouter une page** (en haut du classeur, ou « Créer la page » sur une page en trop du bilan) : un dossier

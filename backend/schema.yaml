@@ -5390,6 +5390,122 @@ components:
       - done
       - files
       - piece_type
+    ChronologyDocument:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        kind_label:
+          type: string
+        document_date:
+          type: string
+          format: date
+        title:
+          type: string
+        page_count:
+          type: integer
+          nullable: true
+      required:
+      - document_date
+      - document_id
+      - kind
+      - kind_label
+      - page_count
+      - title
+    ChronologyEntry:
+      type: object
+      description: Une période de l'AMM (de la plus récente à l'origine), ou une interruption
+        de validité.
+      properties:
+        kind:
+          $ref: '#/components/schemas/ChronologyEntryKindEnum'
+        label:
+          type: string
+        renewal_id:
+          type: string
+          format: uuid
+          nullable: true
+        sequence:
+          type: integer
+        workflow_status:
+          type: string
+          nullable: true
+        workflow_label:
+          type: string
+          nullable: true
+        number:
+          type: string
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChronologyDocument'
+        others:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChronologyDocument'
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChronologyIssue'
+      required:
+      - end_date
+      - issues
+      - kind
+      - label
+      - start_date
+    ChronologyEntryKindEnum:
+      enum:
+      - pending
+      - renewal
+      - closed
+      - origin
+      - gap
+      type: string
+      description: |-
+        * `pending` - pending
+        * `renewal` - renewal
+        * `closed` - closed
+        * `origin` - origin
+        * `gap` - gap
+    ChronologyIssue:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ChronologyIssueCodeEnum'
+        message:
+          type: string
+      required:
+      - code
+      - message
+    ChronologyIssueCodeEnum:
+      enum:
+      - no_scan
+      - no_date
+      - no_number
+      - no_receipt
+      - gap
+      type: string
+      description: |-
+        * `no_scan` - no_scan
+        * `no_date` - no_date
+        * `no_number` - no_number
+        * `no_receipt` - no_receipt
+        * `gap` - gap
     Correction:
       type: object
       properties:
@@ -7588,6 +7704,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/Scan'
           nullable: true
+        decision_count:
+          type: integer
+        chronology:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChronologyEntry'
         discrepancies:
           type: array
           items:
@@ -7612,6 +7734,8 @@ components:
       - changed_by
       - changed_since_check
       - check
+      - chronology
+      - decision_count
       - discrepancies
       - dossier_state
       - original
