@@ -26,6 +26,8 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     status_label: 'Valide',
     dossier_state: 'COMPLET',
     scan: null,
+    decision_count: 0,
+    chronology: [],
     discrepancies: [],
     check: null,
     to_scan: false,
@@ -184,6 +186,79 @@ describe('Classeurs', () => {
     await userEvent.click(within(current).getByRole('button', { name: /Conforme/ }));
     await waitFor(() => expect(sent).toMatchObject({ amm: 'amm-1', result: 'CONFORME' }));
     expect(await within(book).findAllByTestId('binder-stamp')).not.toHaveLength(0);
+  });
+
+  it('empile les décisions et ouvre la chronologie avec ce qui manque', async () => {
+    loginAs('u-sn');
+    const doc = (id: string, date: string) => ({
+      document_id: id,
+      kind: 'AMM',
+      kind_label: 'AMM',
+      document_date: date,
+      title: `Décision ${date}`,
+      page_count: 2,
+    });
+    const stacked = page({
+      decision_count: 2,
+      scan: { document_id: 'doc-r2', document_date: '2024-01-10', page_count: 2 },
+      chronology: [
+        {
+          kind: 'renewal',
+          label: 'Renouvellement 2',
+          renewal_id: 'r2',
+          number: 'R2',
+          start_date: '2024-01-10',
+          end_date: '2029-01-10',
+          decisions: [doc('doc-r2', '2024-01-10')],
+          others: [],
+          issues: [],
+        },
+        {
+          kind: 'gap',
+          label: 'Interruption de validité',
+          start_date: '2022-03-01',
+          end_date: '2024-01-10',
+          issues: [{ code: 'gap', message: 'Aucune décision ne couvre cette période.' }],
+        },
+        {
+          kind: 'renewal',
+          label: 'Renouvellement 1',
+          renewal_id: 'r1',
+          number: 'R1',
+          start_date: '2017-03-01',
+          end_date: '2022-03-01',
+          decisions: [],
+          others: [],
+          issues: [{ code: 'no_scan', message: 'Décision non scannée.' }],
+        },
+        {
+          kind: 'origin',
+          label: "AMM d'origine",
+          number: 'AMM/SN/2010/0152',
+          start_date: '2012-03-01',
+          end_date: '2017-03-01',
+          decisions: [doc('doc-o', '2012-03-01')],
+          others: [],
+          issues: [],
+        },
+      ],
+    });
+    server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, stacked]))));
+    renderApp('/classeurs/SN-cardio');
+    const book = await screen.findByTestId('binder-book');
+    const current = within(book).getAllByTestId('binder-sheet')[0];
+    expect(within(current).getAllByTestId('scan-stack-sheet')).toHaveLength(1);
+    expect(within(current).getByTestId('open-chronology')).toHaveTextContent('2 manques');
+    await userEvent.click(within(current).getByRole('button', { name: /Chronologie des 2 décisions/ }));
+    const dialog = await screen.findByTestId('chronology-dialog');
+    expect(
+      within(dialog)
+        .getAllByTestId(/^chronology-/)
+        .map((el) => el.dataset.testid),
+    ).toEqual(['chronology-renewal', 'chronology-gap', 'chronology-renewal', 'chronology-origin']);
+    expect(within(dialog).getByTestId('issue-gap')).toBeInTheDocument();
+    expect(within(dialog).getByTestId('issue-no_scan')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Décision du 10\/01\/2024/)).toBeInTheDocument();
   });
 
   it("ajoute la page d'un produit oublié et l'ouvre", async () => {

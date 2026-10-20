@@ -2305,6 +2305,58 @@ export interface components {
             files: components["schemas"]["DepositPiece"][];
             done: boolean;
         };
+        ChronologyDocument: {
+            /** Format: uuid */
+            document_id: string;
+            kind: string;
+            kind_label: string;
+            /** Format: date */
+            document_date: string;
+            title: string;
+            page_count: number | null;
+        };
+        /** @description Une période de l'AMM (de la plus récente à l'origine), ou une interruption de validité. */
+        ChronologyEntry: {
+            kind: components["schemas"]["ChronologyEntryKindEnum"];
+            label: string;
+            /** Format: uuid */
+            renewal_id?: string | null;
+            sequence?: number;
+            workflow_status?: string | null;
+            workflow_label?: string | null;
+            number?: string;
+            /** Format: date */
+            start_date: string | null;
+            /** Format: date */
+            end_date: string | null;
+            /** Format: date */
+            filing_date?: string | null;
+            decisions?: components["schemas"]["ChronologyDocument"][];
+            others?: components["schemas"]["ChronologyDocument"][];
+            issues: components["schemas"]["ChronologyIssue"][];
+        };
+        /**
+         * @description * `pending` - pending
+         *     * `renewal` - renewal
+         *     * `closed` - closed
+         *     * `origin` - origin
+         *     * `gap` - gap
+         * @enum {string}
+         */
+        ChronologyEntryKindEnum: "pending" | "renewal" | "closed" | "origin" | "gap";
+        ChronologyIssue: {
+            code: components["schemas"]["ChronologyIssueCodeEnum"];
+            message: string;
+        };
+        /**
+         * @description * `no_scan` - no_scan
+         *     * `no_date` - no_date
+         *     * `no_number` - no_number
+         *     * `no_receipt` - no_receipt
+         *     * `gap` - gap
+         * @enum {string}
+         */
+        ChronologyIssueCodeEnum: "no_scan" | "no_date" | "no_number" | "no_receipt" | "gap";
         Correction: {
             slot: components["schemas"]["SlotEnum"];
             field: components["schemas"]["FieldEnum"];
@@ -3214,6 +3266,8 @@ export interface components {
             status_label: string;
             dossier_state: components["schemas"]["DossierStateEnum"];
             scan: components["schemas"]["Scan"] | null;
+            decision_count: number;
+            chronology: components["schemas"]["ChronologyEntry"][];
             discrepancies: components["schemas"]["Discrepancy"][];
             check: components["schemas"]["Check"] | null;
             changed_since_check: components["schemas"]["ChangeSinceCheck"][];

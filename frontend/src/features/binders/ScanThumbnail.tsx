@@ -23,17 +23,29 @@ async function loadScan(documentId: string): Promise<Scan> {
   return { kind: 'image', src };
 }
 
-/** Miniature de la décision scannée (première page) ; un clic l'ouvre en grand. */
+/**
+ * Miniature de la décision scannée (première page) ; un clic l'ouvre en grand.
+ *
+ * `stack` : nombre de décisions plus anciennes agrafées dessous (origine → renouvellements), dessinées
+ * en feuilles décalées ; la plus récente reste visible en haut. `onOpen` remplace l'ouverture du scan
+ * (la page ouvre alors la chronologie de l'AMM).
+ */
 export function ScanThumbnail({
   documentId,
   documentDate,
   title,
   width = 118,
+  stack = 0,
+  onOpen,
+  label,
 }: {
   documentId: string;
   documentDate: string;
   title: string;
   width?: number;
+  stack?: number;
+  onOpen?: () => void;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const blob = useQuery({
@@ -45,8 +57,27 @@ export function ScanThumbnail({
   const height = Math.round(width * 1.414);
   const scan = blob.data;
 
+  const behind = Math.min(stack, 3);
   return (
-    <Box sx={{ position: 'relative', flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', flexShrink: 0, mr: `${behind * 4}px`, mb: `${behind * 3}px` }}>
+      {/* Décisions plus anciennes, agrafées sous la plus récente. */}
+      {Array.from({ length: behind }, (_, i) => behind - i).map((depth) => (
+        <Box
+          key={depth}
+          aria-hidden
+          data-testid="scan-stack-sheet"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width,
+            height,
+            bgcolor: '#fbfaf6',
+            border: `1px solid ${LINE}`,
+            boxShadow: '1px 2px 4px rgba(0,0,0,0.12)',
+            transform: `translate(${depth * 4}px, ${depth * 3}px) rotate(${depth % 2 ? -2 : 3}deg)`,
+          }}
+        />
+      ))}
       {/* Trombone : le scan est agrafé à la fiche, comme dans le classeur. */}
       <AttachFileIcon
         aria-hidden
@@ -62,9 +93,10 @@ export function ScanThumbnail({
         }}
       />
       <ButtonBase
-        onClick={() => setOpen(true)}
-        aria-label={`Ouvrir le scan du ${formatDate(documentDate)}`}
+        onClick={() => (onOpen ? onOpen() : setOpen(true))}
+        aria-label={label ?? `Ouvrir le scan du ${formatDate(documentDate)}`}
         sx={{
+          position: 'relative',
           width,
           height,
           flexShrink: 0,
@@ -99,6 +131,30 @@ export function ScanThumbnail({
           </Document>
         )}
       </ButtonBase>
+      {stack > 0 && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            right: -8,
+            bottom: -8,
+            zIndex: 2,
+            minWidth: 22,
+            height: 22,
+            px: 0.5,
+            borderRadius: 11,
+            bgcolor: '#37474f',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {stack + 1}
+        </Box>
+      )}
       <PdfViewerDialog doc={{ id: documentId, title }} open={open} onClose={() => setOpen(false)} />
     </Box>
   );

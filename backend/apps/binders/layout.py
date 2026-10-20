@@ -168,9 +168,9 @@ def binder_amms(binder: Binder) -> list:
             Prefetch(
                 "documents",
                 queryset=Document.objects.filter(
-                    kind=Document.Kind.AMM, is_current=True, archived_at__isnull=True
-                ),
-                to_attr="decision_scans",
+                    is_current=True, archived_at__isnull=True
+                ).order_by("document_date", "uploaded_at"),
+                to_attr="current_documents",
             ),
             Prefetch(
                 "review_points",
@@ -329,11 +329,16 @@ def page_payload(amm, trace: dict | None = None) -> dict:
     renewals = list(amm.renewals.all())
     renewal = last_obtained(renewals)
     filed = pending_renewal(renewals)
-    scans = getattr(amm, "decision_scans", None)
-    if scans is None:
-        scans = list(
-            amm.documents.filter(kind=Document.Kind.AMM, is_current=True, archived_at__isnull=True)
+    documents = getattr(amm, "current_documents", None)
+    if documents is None:
+        documents = list(
+            amm.documents.filter(is_current=True, archived_at__isnull=True).order_by(
+                "document_date", "uploaded_at"
+            )
         )
+    scans = [doc for doc in documents if doc.kind == Document.Kind.AMM]
+    # La décision la plus récente en haut de la pile agrafée.
+    scans.sort(key=lambda doc: doc.document_date, reverse=True)
     wanted = renewal.pk if renewal else None
     scan = next((doc for doc in scans if doc.renewal_id == wanted), None) or (
         scans[0] if scans else None
@@ -400,6 +405,8 @@ def page_payload(amm, trace: dict | None = None) -> dict:
             if scan
             else None
         ),
+        "decision_count": len(scans),
+        "chronology": chronology(amm, renewals, documents),
         "discrepancies": discrepancies,
         "check": check_payload(check),
         # Le dashboard ou un import a changé la fiche depuis le constat : à revérifier.
@@ -413,6 +420,130 @@ def page_payload(amm, trace: dict | None = None) -> dict:
             and amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
         ),
     }
+
+
+# Au-delà, deux périodes qui ne se suivent pas laissent un trou dans la validité.
+GAP_TOLERANCE = timedelta(days=31)
+
+
+def _document(doc) -> dict:
+    return {
+        "document_id": str(doc.pk),
+        "kind": doc.kind,
+        "kind_label": doc.get_kind_display(),
+        "document_date": doc.document_date,
+        "title": doc.title,
+        "page_count": doc.page_count,
+    }
+
+
+def chronology(amm, renewals, documents) -> list[dict]:
+    """De la décision la plus récente à l'AMM d'origine : pièces de chaque période et manques.
+
+    Chaque période porte ses décisions scannées et ses autres pièces (récépissés, courriers) ;
+    `issues` dit ce qui manque et comment le régler. Entre deux périodes obtenues qui ne se
+    suivent pas, une entrée « gap » signale une interruption de validité (renouvellement absent
+    de l'application, ou décision non classée).
+    """
+    by_period: dict = {}
+    for doc in documents:
+        by_period.setdefault(doc.renewal_id, []).append(doc)
+
+    def entry(kind, label, renewal=None) -> dict:
+        docs = by_period.get(renewal.pk if renewal else None, [])
+        decisions = [d for d in docs if d.kind == Document.Kind.AMM]
+        others = [d for d in docs if d.kind != Document.Kind.AMM]
+        start = renewal.start_date if renewal else amm.original_start_date
+        end = renewal.end_date if renewal else amm.original_end_date
+        number = renewal.number if renewal else amm.original_number
+        issues = []
+        if kind == "pending":
+            if not any(d.kind == Document.Kind.RECEPISSE for d in docs):
+                issues.append(
+                    {
+                        "code": "no_receipt",
+                        "message": "Récépissé de dépôt non scanné : importez-le sur la fiche AMM.",
+                    }
+                )
+        else:
+            if not decisions:
+                issues.append(
+                    {
+                        "code": "no_scan",
+                        "message": "Décision non scannée : importez le scan de cette décision.",
+                    }
+                )
+            if not start:
+                issues.append(
+                    {
+                        "code": "no_date",
+                        "message": "Date de début inconnue : relevez-la sur la décision papier.",
+                    }
+                )
+            if not number:
+                issues.append(
+                    {
+                        "code": "no_number",
+                        "message": "N° d'AMM inconnu : relevez-le sur la décision.",
+                    }
+                )
+        return {
+            "kind": kind,
+            "label": label,
+            "renewal_id": str(renewal.pk) if renewal else None,
+            "sequence": renewal.sequence if renewal else 0,
+            "workflow_status": renewal.workflow_status if renewal else None,
+            "workflow_label": renewal.get_workflow_status_display() if renewal else None,
+            "number": number,
+            "start_date": start,
+            "end_date": end,
+            "filing_date": renewal.filing_date if renewal else None,
+            "decisions": [_document(d) for d in sorted(decisions, key=lambda d: d.document_date)],
+            "others": [_document(d) for d in others],
+            "issues": issues,
+        }
+
+    periods = [entry("origin", "AMM d'origine")]
+    pending = []
+    for renewal in sorted(renewals, key=lambda r: r.sequence):
+        if renewal.workflow_status == "OBTENU":
+            periods.append(entry("renewal", f"Renouvellement {renewal.sequence}", renewal))
+        elif renewal.is_pending:
+            pending.append(entry("pending", f"Renouvellement {renewal.sequence} en cours", renewal))
+        elif renewal.workflow_status in ("REJETE", "ABANDONNE"):
+            periods.append(entry("closed", f"Renouvellement {renewal.sequence}", renewal))
+    # Interruptions de validité entre deux décisions obtenues successives.
+    timeline: list[dict] = []
+    previous = None
+    for period in periods:
+        if period["kind"] == "closed":
+            timeline.append(period)
+            continue
+        if previous and previous["end_date"] and period["start_date"]:
+            if period["start_date"] - previous["end_date"] > GAP_TOLERANCE:
+                timeline.append(
+                    {
+                        "kind": "gap",
+                        "label": "Interruption de validité",
+                        "start_date": previous["end_date"],
+                        "end_date": period["start_date"],
+                        "issues": [
+                            {
+                                "code": "gap",
+                                "message": (
+                                    "Aucune décision ne couvre cette période : un renouvellement "
+                                    "manque peut-être. Importez sa décision, ou corrigez sur le "
+                                    "classeur papier."
+                                ),
+                            }
+                        ],
+                    }
+                )
+        timeline.append(period)
+        previous = period
+    timeline.extend(pending)
+    timeline.reverse()  # la plus récente en haut
+    return timeline
 
 
 def _empty_counts() -> dict:

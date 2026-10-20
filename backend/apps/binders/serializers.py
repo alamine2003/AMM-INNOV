@@ -140,6 +140,38 @@ class TraceSerializer(serializers.Serializer):
     dossier = DossierTraceSerializer(allow_null=True)
 
 
+class ChronologyDocumentSerializer(serializers.Serializer):
+    document_id = serializers.UUIDField()
+    kind = serializers.CharField()
+    kind_label = serializers.CharField()
+    document_date = serializers.DateField()
+    title = serializers.CharField(allow_blank=True)
+    page_count = serializers.IntegerField(allow_null=True)
+
+
+class ChronologyIssueSerializer(serializers.Serializer):
+    code = serializers.ChoiceField(choices=["no_scan", "no_date", "no_number", "no_receipt", "gap"])
+    message = serializers.CharField()
+
+
+class ChronologyEntrySerializer(serializers.Serializer):
+    """Une période de l'AMM (de la plus récente à l'origine), ou une interruption de validité."""
+
+    kind = serializers.ChoiceField(choices=["pending", "renewal", "closed", "origin", "gap"])
+    label = serializers.CharField()
+    renewal_id = serializers.UUIDField(allow_null=True, required=False)
+    sequence = serializers.IntegerField(required=False)
+    workflow_status = serializers.CharField(allow_null=True, required=False)
+    workflow_label = serializers.CharField(allow_null=True, required=False)
+    number = serializers.CharField(allow_blank=True, required=False)
+    start_date = serializers.DateField(allow_null=True)
+    end_date = serializers.DateField(allow_null=True)
+    filing_date = serializers.DateField(allow_null=True, required=False)
+    decisions = ChronologyDocumentSerializer(many=True, required=False)
+    others = ChronologyDocumentSerializer(many=True, required=False)
+    issues = ChronologyIssueSerializer(many=True)
+
+
 class PageSerializer(serializers.Serializer):
     amm_id = serializers.UUIDField()
     page = serializers.IntegerField()
@@ -154,6 +186,8 @@ class PageSerializer(serializers.Serializer):
     status_label = serializers.CharField()
     dossier_state = serializers.ChoiceField(choices=MarketingAuthorization.DossierState.choices)
     scan = ScanSerializer(allow_null=True)
+    decision_count = serializers.IntegerField()
+    chronology = ChronologyEntrySerializer(many=True)
     discrepancies = DiscrepancySerializer(many=True)
     check = CheckSerializer(allow_null=True)
     changed_since_check = ChangeSinceCheckSerializer(many=True)

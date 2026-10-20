@@ -500,3 +500,30 @@ def test_locate_links_the_amm_card_to_its_page(country_client, shelf_data):
     ci = shelf_data["ci"]
     assert country_client.get(f"/api/v1/binders/locate?amm={ci.pk}").status_code == 404
     assert country_client.get("/api/v1/binders/locate?amm=pas-un-uuid").status_code == 404
+
+
+def test_stacked_decisions_and_chronology_show_what_is_missing(
+    hq_client, shelf_data, make_renewal, make_scan
+):
+    amm = shelf_data["amlo"]
+    amm.original_start_date = date(2012, 3, 1)
+    amm.save()
+    first = make_renewal(amm, status="OBTENU", start_date=date(2017, 3, 1), number="R1")
+    # Pas de renouvellement de 2022 : la validité s'interrompt du 01/03/2022 au 10/01/2024.
+    last = make_renewal(amm, status="OBTENU", start_date=date(2024, 1, 10), number="R3")
+    make_renewal(amm, status="DEPOSE", filing_date=date(2026, 6, 2))
+    make_scan(amm)  # décision d'origine
+    make_scan(amm, renewal=last)
+    page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+
+    assert page["decision_count"] == 2
+    assert page["scan"]["document_id"]  # la plus récente reste en haut de la pile
+    kinds = [entry["kind"] for entry in page["chronology"]]
+    assert kinds == ["pending", "renewal", "gap", "renewal", "origin"]
+    pending, latest, gap, middle, origin = page["chronology"]
+    assert [i["code"] for i in pending["issues"]] == ["no_receipt"]
+    assert latest["renewal_id"] == str(last.pk) and latest["decisions"] and not latest["issues"]
+    assert (gap["start_date"], gap["end_date"]) == ("2022-03-01", "2024-01-10")
+    assert middle["renewal_id"] == str(first.pk)
+    assert [i["code"] for i in middle["issues"]] == ["no_scan"]
+    assert origin["decisions"] and origin["start_date"] == "2012-03-01"
