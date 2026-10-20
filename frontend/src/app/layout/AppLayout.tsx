@@ -3,10 +3,12 @@ import { Outlet } from 'react-router';
 import { Box, Toolbar } from '@mui/material';
 import { useRealtime } from '@/realtime/useRealtime';
 import { TopBar } from './TopBar';
-import { SideNav, DRAWER_WIDTH } from './SideNav';
+import { SideNav } from './SideNav';
+import { useDrawerWidth } from './sidebarStore';
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerWidth = useDrawerWidth();
   useRealtime(true);
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -17,7 +19,7 @@ export function AppLayout() {
         sx={{
           flexGrow: 1,
           p: { xs: 2, md: 3 },
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
         }}
       >

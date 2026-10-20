@@ -39,6 +39,8 @@
     "months": "mois"
   },
   "nav": {
+    "collapse": "Réduire le menu",
+    "expand": "Agrandir le menu",
     "dashboard": "Dashboard Afrique",
     "amms": "AMM",
     "alerts": "Alertes",

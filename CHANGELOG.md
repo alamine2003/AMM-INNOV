@@ -5,6 +5,13 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.6] — 2026-10-20
+
+### Ajouté
+- **Menu latéral réductible** : le bouton en bas du menu (‹ / ›) le réduit aux icônes pour laisser la
+  place au contenu (classeurs, tableaux) ; le nom de chaque entrée s'affiche en info-bulle. Le choix est
+  retenu dans le navigateur.
+
 ## [1.0.5] — 2026-10-20
 
 ### Ajouté
