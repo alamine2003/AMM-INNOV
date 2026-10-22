@@ -253,6 +253,13 @@ export function BinderSheet({
   const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending;
 
+  // Le formulaire repart des valeurs actuelles de la page : un scan rangé ou une correction de
+  // la chronologie a pu les changer depuis l'ouverture, et renvoyer les anciennes les écraserait.
+  const startEditing = () => {
+    setValues(initialValues(page));
+    setEditing(true);
+  };
+
   const send = (result: BinderResult, corrections: BinderCorrection[] = []) => {
     setError(null);
     check.mutate(
@@ -459,6 +466,7 @@ export function BinderSheet({
           )}
           <ChronologyDialog
             page={page}
+            binderKey={binder.key}
             open={chronologyOpen}
             onClose={() => setChronologyOpen(false)}
             scanImport={scanImport}
@@ -543,7 +551,7 @@ export function BinderSheet({
                   variant="outlined"
                   color="warning"
                   startIcon={<EditIcon />}
-                  onClick={() => setEditing(true)}
+                  onClick={startEditing}
                   disabled={busy}
                   data-action="corriger"
                 >
