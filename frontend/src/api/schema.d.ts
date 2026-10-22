@@ -545,6 +545,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/{key}/pages/{amm_id}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ajoute une pièce sur une période, à la date saisie (sans lecture automatique). */
+        post: operations["v1_binders_pages_documents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/pages/{amm_id}/documents/{document_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Corrige la date, le type ou la période d'une pièce ; DELETE la retire (archivée). */
+        delete: operations["v1_binders_pages_documents_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Corrige la date, le type ou la période d'une pièce ; DELETE la retire (archivée). */
+        patch: operations["v1_binders_pages_documents_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/binders/{key}/pages/{amm_id}/periods/{period}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop. */
+        delete: operations["v1_binders_pages_periods_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop. */
+        patch: operations["v1_binders_pages_periods_partial_update"];
+        trace?: never;
+    };
     "/api/v1/binders/{key}/pages/{amm_id}/scan/": {
         parameters: {
             query?: never;
@@ -2722,6 +2775,19 @@ export interface components {
             readonly filename: string;
             readonly period: string;
         };
+        DocumentAddInputRequest: {
+            /** Format: binary */
+            file: string;
+            /** @default AMM */
+            kind: components["schemas"]["DocumentKindEnum"];
+            /** Format: date */
+            document_date: string;
+            /**
+             * @description « origin » pour l'AMM d'origine, sinon l'identifiant du renouvellement.
+             * @default origin
+             */
+            period: string;
+        };
         DocumentDetail: {
             /** Format: uuid */
             readonly id: string;
@@ -3556,6 +3622,21 @@ export interface components {
             validity_years?: number;
             /** Fuseau horaire */
             timezone?: string;
+        };
+        PatchedDocumentEditInputRequest: {
+            /** @description « origin » pour l'AMM d'origine, sinon l'identifiant du renouvellement. */
+            period?: string;
+            /** Format: date */
+            document_date?: string;
+            kind?: components["schemas"]["DocumentKindEnum"];
+        };
+        /** @description Correction d'une période : seuls les champs envoyés changent ; une date vide s'efface. */
+        PatchedPeriodInputRequest: {
+            number?: string;
+            /** Format: date */
+            start_date?: string | null;
+            /** Format: date */
+            end_date?: string | null;
         };
         PatchedPieceTypeRequest: {
             /** Pièce */
@@ -5090,6 +5171,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddPageResult"];
+                };
+            };
+        };
+    };
+    v1_binders_pages_documents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["DocumentAddInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_pages_documents_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                document_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_pages_documents_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                document_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDocumentEditInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedDocumentEditInputRequest"];
+                "multipart/form-data": components["schemas"]["PatchedDocumentEditInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_pages_periods_destroy: {
+        parameters: {
+            query?: {
+                /** @description Période où ranger les pièces (« origin » ou un renouvellement) ; absent : elles sont archivées. */
+                move_to?: string;
+            };
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_pages_periods_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPeriodInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPeriodInputRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPeriodInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
                 };
             };
         };

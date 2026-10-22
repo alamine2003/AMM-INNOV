@@ -695,6 +695,8 @@ export interface BinderSlotValues {
   end_date: string | null;
 }
 
+export type BinderDocumentKind = 'AMM' | 'RECEPISSE' | 'COURRIER' | 'AUTRE';
+
 export interface BinderChronologyDocument {
   document_id: string;
   kind: string;
