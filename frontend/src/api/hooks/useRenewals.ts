@@ -24,7 +24,23 @@ function useInvalidateAmm(ammId: string) {
     void qc.invalidateQueries({ queryKey: queryKeys.amms.list() });
     void qc.invalidateQueries({ queryKey: queryKeys.alerts.all });
     void qc.invalidateQueries({ queryKey: queryKeys.analytics.all });
+    // Les scans affichés par période et les classeurs suivent les renouvellements.
+    void qc.invalidateQueries({ queryKey: queryKeys.amms.documents(ammId, true) });
+    void qc.invalidateQueries({ queryKey: ['binders'] });
   };
+}
+
+/** Corrige un renouvellement (n°, dates, notes) : l'ordre et l'échéance de l'AMM sont recalculés. */
+export function useUpdateRenewal(ammId: string) {
+  const invalidate = useInvalidateAmm(ammId);
+  return useMutation({
+    mutationFn: async ({
+      renewalId,
+      ...payload
+    }: RenewalWrite & { renewalId: string; end_date_manual?: boolean }) =>
+      (await api.patch<Renewal>(`/renewals/${renewalId}`, payload)).data,
+    onSuccess: invalidate,
+  });
 }
 
 export function useCreateRenewal(ammId: string) {

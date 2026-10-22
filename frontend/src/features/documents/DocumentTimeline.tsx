@@ -3,6 +3,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useTranslation } from 'react-i18next';
 import type { AmmDocument, DocumentPeriod } from '@/api/types';
@@ -14,6 +15,7 @@ export function DocumentTimeline({
   onView,
   onDownload,
   onReplace,
+  onEdit,
   onDelete,
   canEdit,
   canDelete,
@@ -22,6 +24,7 @@ export function DocumentTimeline({
   onView: (d: AmmDocument) => void;
   onDownload: (d: AmmDocument) => void;
   onReplace?: (d: AmmDocument) => void;
+  onEdit?: (d: AmmDocument) => void;
   onDelete?: (d: AmmDocument) => void;
   canEdit: boolean;
   canDelete: boolean;
@@ -136,6 +139,18 @@ export function DocumentTimeline({
                           <DownloadIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      {canEdit && onEdit && (
+                        <Tooltip title="Corriger le classement (période, type, date)">
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(d)}
+                            aria-label="Corriger le classement"
+                            data-testid={`doc-edit-${d.id}`}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       {canEdit && onReplace && (
                         <Tooltip title={t('documents.replace')}>
                           <IconButton

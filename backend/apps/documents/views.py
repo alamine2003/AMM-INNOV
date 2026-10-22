@@ -12,13 +12,13 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import (
-    CEO_ONLY,
+    GLOBAL_ROLES,
     CountryScopedQuerysetMixin,
     RolePermission,
     ensure_country_in_scope,
@@ -30,6 +30,7 @@ from apps.core.exceptions import StorageUnavailable, StoredFileLost
 from .models import Document
 from .serializers import (
     DocumentDetailSerializer,
+    DocumentEditSerializer,
     DocumentReplaceSerializer,
     DocumentSerializer,
     DocumentUploadSerializer,
@@ -233,8 +234,9 @@ class DocumentViewSet(
     )
     serializer_class = DocumentDetailSerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    delete_roles = CEO_ONLY
-    parser_classes = [MultiPartParser, FormParser]
+    # Retirer un scan l'archive (il reste dans l'historique) : siège et CEO.
+    delete_roles = GLOBAL_ROLES
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     country_lookup = "amm__country"
     filterset_fields = {
         "kind": ["exact", "in"],
@@ -274,6 +276,38 @@ class DocumentViewSet(
         response["Cache-Control"] = "private, max-age=300"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+    @extend_schema(request=DocumentEditSerializer, responses=DocumentDetailSerializer)
+    def partial_update(self, request, pk=None):
+        """Corrige le classement d'un scan : type, période, date, titre (même fichier)."""
+        document = self.get_object()
+        ensure_country_in_scope(request.user, document.amm.country)
+        if not document.is_current or document.is_archived:
+            raise PermissionDenied("Seule la version courante d'un document peut être corrigée.")
+        serializer = DocumentEditSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        changed = []
+        if "renewal" in data:
+            renewal = None
+            if data["renewal"] is not None:
+                renewal = Renewal.objects.filter(pk=data["renewal"], amm=document.amm).first()
+                if renewal is None:
+                    raise ValidationError(
+                        {"renewal": "Ce renouvellement n'appartient pas à l'AMM."}
+                    )
+            if renewal != document.renewal:
+                document.renewal = renewal
+                changed.append("renewal")
+        for name in ("kind", "document_date", "title"):
+            if name in data and data[name] != getattr(document, name):
+                setattr(document, name, data[name])
+                changed.append(name)
+        if changed:
+            document._history_user = request.user
+            document._change_reason = "Classement du scan corrigé"
+            document.save(update_fields=changed)
+        return Response(DocumentDetailSerializer(document).data)
 
     @extend_schema(request=DocumentReplaceSerializer, responses={201: DocumentDetailSerializer})
     @action(detail=True, methods=["post"])

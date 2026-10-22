@@ -91,6 +91,18 @@ class DocumentUploadSerializer(serializers.Serializer):
     renewal = serializers.UUIDField(required=False, allow_null=True)
 
 
+class DocumentEditSerializer(serializers.Serializer):
+    """Correction du classement d'un scan : type, période (renouvellement ou origine), date, titre.
+
+    Le fichier ne change pas (pour cela : « Remplacer »). `renewal` vide = AMM d'origine.
+    """
+
+    kind = serializers.ChoiceField(choices=Document.Kind.choices, required=False)
+    renewal = serializers.UUIDField(required=False, allow_null=True)
+    document_date = serializers.DateField(required=False)
+    title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
 class DocumentReplaceSerializer(serializers.Serializer):
     file = serializers.FileField()
     document_date = serializers.DateField(required=False, allow_null=True)

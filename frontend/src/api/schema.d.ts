@@ -1040,7 +1040,8 @@ export interface paths {
         delete: operations["v1_documents_destroy"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Corrige le classement d'un scan : type, période, date, titre (même fichier). */
+        patch: operations["v1_documents_partial_update"];
         trace?: never;
     };
     "/api/v1/documents/{id}/file/": {
@@ -3557,6 +3558,19 @@ export interface components {
             /** Fuseau horaire */
             timezone?: string;
         };
+        /**
+         * @description Correction du classement d'un scan : type, période (renouvellement ou origine), date, titre.
+         *
+         *     Le fichier ne change pas (pour cela : « Remplacer »). `renewal` vide = AMM d'origine.
+         */
+        PatchedDocumentEditRequest: {
+            kind?: components["schemas"]["DocumentKindEnum"];
+            /** Format: uuid */
+            renewal?: string | null;
+            /** Format: date */
+            document_date?: string;
+            title?: string;
+        };
         PatchedPieceTypeRequest: {
             /** Pièce */
             label?: string;
@@ -6044,6 +6058,34 @@ export interface operations {
             };
         };
     };
+    v1_documents_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["PatchedDocumentEditRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedDocumentEditRequest"];
+                "application/json": components["schemas"]["PatchedDocumentEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDetail"];
+                };
+            };
+        };
+    };
     v1_documents_file_retrieve: {
         parameters: {
             query?: never;
@@ -6080,6 +6122,7 @@ export interface operations {
             content: {
                 "multipart/form-data": components["schemas"]["DocumentReplaceRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["DocumentReplaceRequest"];
+                "application/json": components["schemas"]["DocumentReplaceRequest"];
             };
         };
         responses: {

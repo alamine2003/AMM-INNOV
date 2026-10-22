@@ -5,6 +5,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.7] — 2026-10-22
+
+### Ajouté
+- **Corriger un renouvellement** (onglet Renouvellements, crayon) : n° d'AMM, dates de dépôt, de
+  décision, de début et de fin (calculée automatiquement ou saisie). Les renouvellements sont
+  renumérotés par date et l'échéance, le statut et l'état du dossier de l'AMM sont recalculés ;
+  l'ancienne valeur reste dans l'historique.
+- **Corriger le classement d'un scan** (onglet Documents, crayon) : période (AMM d'origine ou
+  renouvellement), type, date et titre, sans retéléverser le fichier.
+
+### Modifié
+- Le siège (Réglementaire siège) peut retirer un scan, comme le CEO : il est archivé et reste dans
+  l'historique.
+- Une décision ancienne saisie après coup reprend sa place dans l'ordre des dates.
+
+### Corrigé
+- Les classeurs et la fiche AMM ne se rafraîchissaient pas après une modification de l'AMM, d'un
+  renouvellement ou d'un scan.
+
 ## [1.0.6] — 2026-10-20
 
 ### Ajouté

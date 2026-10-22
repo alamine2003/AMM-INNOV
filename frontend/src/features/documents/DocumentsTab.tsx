@@ -17,10 +17,11 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { saveBlob } from '@/lib/download';
 import { extractErrorMessage } from '@/api/client';
-import { isAdmin, useAuthStore } from '@/features/auth/authStore';
+import { useAuthStore } from '@/features/auth/authStore';
 import { DocumentTimeline } from './DocumentTimeline';
 import { UploadDocumentDialog } from './UploadDocumentDialog';
 import { PdfViewerDialog } from './PdfViewerDialog';
+import { EditDocumentDialog } from './EditDocumentDialog';
 
 export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean }) {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
   const [replaceTarget, setReplaceTarget] = useState<AmmDocument | null>(null);
   const [viewing, setViewing] = useState<AmmDocument | null>(null);
   const [deleting, setDeleting] = useState<AmmDocument | null>(null);
+  const [editingDoc, setEditingDoc] = useState<AmmDocument | null>(null);
   const [zipping, setZipping] = useState(false);
 
   if (periods.isPending) return <LoadingBlock />;
@@ -95,9 +97,21 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
             setReplaceTarget(d);
             setUploadOpen(true);
           }}
+          onEdit={setEditingDoc}
           onDelete={setDeleting}
           canEdit={editable}
-          canDelete={isAdmin(user)}
+          // Retirer un scan (archivé) : siège et CEO.
+          canDelete={user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY'}
+        />
+      )}
+      {editingDoc && (
+        <EditDocumentDialog
+          key={editingDoc.id}
+          amm={amm}
+          document={editingDoc}
+          renewals={renewals.data ?? []}
+          open
+          onClose={() => setEditingDoc(null)}
         />
       )}
       <UploadDocumentDialog
