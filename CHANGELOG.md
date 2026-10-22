@@ -5,6 +5,22 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Ajouté
+- **Classeurs : la chronologie se corrige** (ce que la lecture automatique d'un scan a faussé). Dans la
+  fenêtre Chronologie, pour chaque période (AMM d'origine, renouvellements) : ✎ corrige le n° et les
+  dates (date de fin vide : recalculée), + ajoute une pièce directement sur cette période, à la date
+  saisie, sans lecture automatique ; le dernier renouvellement se supprime (saisi à tort ou en double
+  par un import) en rangeant ses pièces sur une autre période au lieu de les archiver. Chaque pièce
+  (décision, récépissé…) se corrige : date, type, période ; l'administrateur peut la retirer
+  (archivée, l'historique la garde). L'AMM (statut, échéance, état du dossier) et la page du classeur
+  se mettent à jour aussitôt. API : `PATCH|DELETE /binders/{clé}/pages/{amm}/periods/{origin|id}`,
+  `POST /binders/{clé}/pages/{amm}/documents`, `PATCH|DELETE /binders/{clé}/pages/{amm}/documents/{id}`.
+
+### Corrigé
+- **Classeurs : « Corriger » ne remet plus d'anciennes valeurs.** Le formulaire gardait les valeurs du
+  moment où la page avait été ouverte : après un scan rangé, l'enregistrer réécrivait les anciennes
+  dates par-dessus les nouvelles. Il repart désormais des valeurs actuelles de la page.
+
 ## [1.0.6] — 2026-10-20
 
 ### Ajouté

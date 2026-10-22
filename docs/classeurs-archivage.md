@@ -74,6 +74,23 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   - dossier déposé sans récépissé scanné → l'importer sur la fiche AMM.
 - Le bouton « Chronologie » indique le nombre de manques de la page (« Chronologie · 2 manques »).
 
+### Corriger la chronologie
+
+Ce que la lecture automatique d'un scan a faussé se reprend dans la fenêtre, à la main :
+
+| Geste | Effet |
+|---|---|
+| ✎ sur une période | N° et dates de l'AMM d'origine ou d'un renouvellement. Seuls les champs modifiés changent ; une date de fin effacée est recalculée (date de début + durée de validité du pays). |
+| + sur une période | Ajoute une pièce (décision, récépissé, courrier, autre) **sur cette période, à la date saisie**, sans lecture automatique. |
+| 🗑 sur le dernier renouvellement | Le supprime (saisi à tort, ou créé en double par un import). Ses pièces sont rangées sur la période choisie, ou archivées. Seul le plus récent se supprime, comme sur la fiche AMM. |
+| ✎ sur une pièce | Corrige sa date, son type ou sa période. |
+| « Retirer la pièce » | Administrateur seulement (même règle que la suppression de document) : la pièce est archivée, l'historique la garde. |
+
+Chaque correction garde son auteur dans l'historique ; l'AMM (statut, échéance, état du dossier) est
+recalculée et la page du classeur se met à jour aussitôt. Une correction de l'origine ou du dernier
+renouvellement après un constat fait apparaître la page « à revérifier », comme toute modification
+de la fiche.
+
 ## Ajouter une page, importer un scan depuis une page
 
 - **Ajouter une page** (en haut du classeur, ou « Créer la page » sur une page en trop du bilan) : un dossier
