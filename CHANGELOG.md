@@ -5,6 +5,17 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.6] — 2026-10-20
+
+### Ajouté
+- **Menu latéral réductible** : le bouton en bas du menu (‹ / ›) le réduit aux icônes pour laisser la
+  place au contenu (classeurs, tableaux) ; le nom de chaque entrée s'affiche en info-bulle. Le choix est
+  retenu dans le navigateur.
+
+### Sécurité
+- Interface : `follow-redirects` 1.16.1 (dépendance d'axios), failles GHSA-q3jh-wrc6-jgq8 et
+  GHSA-8r9p-f939-6h3c publiées le 20/10 et signalées par `npm audit` en CI.
+
 ## [1.0.5] — 2026-10-20
 
 ### Ajouté

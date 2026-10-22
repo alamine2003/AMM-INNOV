@@ -21,7 +21,7 @@ import { useLogout } from '@/api/hooks/useAuth';
 import { RealtimeIndicator } from '@/realtime/RealtimeIndicator';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { ApiHealthBadge } from './ApiHealthBadge';
-import { DRAWER_WIDTH } from './SideNav';
+import { useDrawerWidth } from './sidebarStore';
 
 export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { t } = useTranslation();
@@ -29,6 +29,7 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const logout = useLogout();
   const navigate = useNavigate();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const drawerWidth = useDrawerWidth();
 
   const initials = user
     ? `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase() || user.email[0].toUpperCase()
@@ -37,7 +38,11 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   return (
     <AppBar
       position="fixed"
-      sx={{ width: { md: `calc(100% - ${DRAWER_WIDTH}px)` }, ml: { md: `${DRAWER_WIDTH}px` } }}
+      sx={{
+        width: { md: `calc(100% - ${drawerWidth}px)` },
+        ml: { md: `${drawerWidth}px` },
+        transition: 'width 200ms ease, margin 200ms ease',
+      }}
     >
       <Toolbar sx={{ gap: 1 }}>
         <IconButton
