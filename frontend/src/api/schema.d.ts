@@ -1868,6 +1868,7 @@ export interface components {
             readonly resolved_at: string | null;
             /** Résolution */
             readonly resolution: (components["schemas"]["AlertResolutionEnum"] | components["schemas"]["NullEnum"]) | null;
+            readonly resolution_label: string;
             /** Commentaire */
             readonly comment: string;
         };
@@ -1882,9 +1883,12 @@ export interface components {
          * @description * `AUTO_FILED` - Dépôt enregistré
          *     * `AUTO_RENEWED` - Renouvellement obtenu
          *     * `MANUAL` - Résolution manuelle
+         *     * `AUTO_CLOSED` - Renouvellement rejeté ou abandonné
+         *     * `AUTO_COMPLETED` - Dossier complété
+         *     * `AUTO_UPDATED` - Échéance modifiée
          * @enum {string}
          */
-        AlertResolutionEnum: "AUTO_FILED" | "AUTO_RENEWED" | "MANUAL";
+        AlertResolutionEnum: "AUTO_FILED" | "AUTO_RENEWED" | "MANUAL" | "AUTO_CLOSED" | "AUTO_COMPLETED" | "AUTO_UPDATED";
         AlertResolveRequest: {
             comment?: string;
         };
@@ -3892,6 +3896,8 @@ export interface components {
             /** Format: date */
             document_date: string;
             page_count: number | null;
+            /** @default true */
+            is_current: boolean;
         };
         Section: {
             total: number;

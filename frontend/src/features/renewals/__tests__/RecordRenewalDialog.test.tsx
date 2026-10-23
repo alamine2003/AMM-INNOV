@@ -31,7 +31,7 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     await screen.findByTestId('record-dialog');
 
     fireEvent.change(screen.getByTestId('record-number'), { target: { value: 'CM-2026-4242' } });
-    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '2026-08-01' } });
+    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '01/08/2026' } });
     const projection = await screen.findByTestId('renewal-projection');
     expect(projection).toHaveTextContent('01/08/2031');
     expect(projection).toHaveTextContent('Valide');
@@ -63,7 +63,7 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     await user.click(screen.getByTestId('renewal-record'));
     await screen.findByTestId('record-dialog');
     fireEvent.change(screen.getByTestId('record-number'), { target: { value: 'CI-2026-0808' } });
-    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '2026-08-01' } });
+    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '01/08/2026' } });
     await user.click(screen.getByTestId('record-submit'));
     await waitFor(() => expect(screen.queryByTestId('record-dialog')).toBeNull());
 
@@ -87,7 +87,7 @@ describe('Enregistrement d’un renouvellement obtenu', () => {
     await user.click(await screen.findByTestId('renewal-record', {}, { timeout: 5000 }));
     await screen.findByTestId('record-dialog');
     fireEvent.change(screen.getByTestId('record-number'), { target: { value: 'CM-2026-9999' } });
-    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '2026-08-01' } });
+    fireEvent.change(screen.getByTestId('record-start'), { target: { value: '01/08/2026' } });
     await user.click(screen.getByTestId('record-submit'));
     await waitFor(() => expect(db.amms.find((a) => a.id === 'amm-8')?.status).toBe('VALIDE'));
     // La décision qui fait foi est désormais le renouvellement, et lui n'a pas de scan.

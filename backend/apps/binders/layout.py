@@ -340,9 +340,10 @@ def page_payload(amm, trace: dict | None = None) -> dict:
     # La décision la plus récente en haut de la pile agrafée.
     scans.sort(key=lambda doc: doc.document_date, reverse=True)
     wanted = renewal.pk if renewal else None
-    scan = next((doc for doc in scans if doc.renewal_id == wanted), None) or (
-        scans[0] if scans else None
-    )
+    # En haut de la pile : le scan de la décision en vigueur, sinon la plus récente scannée
+    # (signalée comme n'étant pas celle en vigueur).
+    current_scan = next((doc for doc in scans if doc.renewal_id == wanted), None)
+    scan = current_scan or (scans[0] if scans else None)
     discrepancies = []
     for point in getattr(amm, "open_mismatches", []):
         if point.renewal_id is None and point.field in AMM_FIELD_SLOTS:
@@ -401,6 +402,7 @@ def page_payload(amm, trace: dict | None = None) -> dict:
                 "document_id": str(scan.pk),
                 "document_date": scan.document_date,
                 "page_count": scan.page_count,
+                "is_current": scan is current_scan,
             }
             if scan
             else None
@@ -417,7 +419,10 @@ def page_payload(amm, trace: dict | None = None) -> dict:
         "to_scan": bool(
             check
             and check.physical_present
-            and amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
+            and (
+                amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
+                or current_scan is None
+            )
         ),
     }
 
@@ -457,7 +462,9 @@ def chronology(amm, renewals, documents) -> list[dict]:
         end = renewal.end_date if renewal else amm.original_end_date
         number = renewal.number if renewal else amm.original_number
         issues = []
-        if kind == "pending":
+        if kind == "closed":
+            pass  # rejeté ou abandonné : aucune décision n'a été délivrée, rien ne manque
+        elif kind == "pending":
             if not any(d.kind == Document.Kind.RECEPISSE for d in docs):
                 issues.append(
                     {
@@ -540,7 +547,10 @@ def chronology(amm, renewals, documents) -> list[dict]:
                     }
                 )
         timeline.append(period)
-        previous = period
+        # Une période sans date de fin ne sert pas de repère : sinon un trou après elle passerait
+        # inaperçu (elle signale déjà sa date manquante).
+        if period["end_date"] or previous is None:
+            previous = period
     timeline.extend(pending)
     timeline.reverse()  # la plus récente en haut
     return timeline

@@ -7,6 +7,8 @@ import FolderOffIcon from '@mui/icons-material/FolderOff';
 import UndoIcon from '@mui/icons-material/Undo';
 import { extractErrorMessage } from '@/api/client';
 import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
+import { useValidityYears } from '@/api/hooks/useCatalog';
+import { DateInput, ValidityLine } from '@/components/DateInput';
 import type {
   BinderCorrection,
   BinderDetail,
@@ -16,7 +18,7 @@ import type {
   BinderSectionSummary,
   BinderSlot,
 } from '@/api/types';
-import { formatDate, formatDateTime } from '@/lib/dates';
+import { addValidity, formatDate, formatDateTime } from '@/lib/dates';
 import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
 import { ChronologyDialog, chronologyIssues } from './ChronologyDialog';
 import { ScanThumbnail } from './ScanThumbnail';
@@ -56,10 +58,12 @@ function SlotCard({
   editing,
   values,
   onChange,
+  years,
 }: {
   page: BinderPage;
   slot: BinderSlot;
   title: string;
+  years: number;
   editing: boolean;
   values: Values;
   onChange: (key: string, value: string) => void;
@@ -94,21 +98,45 @@ function SlotCard({
             <Box key={field} sx={{ py: 0.6, borderBottom: `1px dotted ${LINE}` }}>
               {editing ? (
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <TextField
-                    size="small"
-                    label={label}
-                    type={field === 'number' ? 'text' : 'date'}
-                    value={values[key]}
-                    onChange={(e) => onChange(key, e.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={{
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': { bgcolor: changed ? '#fff3b0' : '#fff' },
-                    }}
-                  />
+                  {field === 'number' ? (
+                    <TextField
+                      size="small"
+                      label={label}
+                      value={values[key]}
+                      onChange={(e) => onChange(key, e.target.value)}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={{
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': { bgcolor: changed ? '#fff3b0' : '#fff' },
+                      }}
+                    />
+                  ) : (
+                    <DateInput
+                      size="small"
+                      label={label}
+                      value={values[key]}
+                      background={changed ? '#fff3b0' : '#fff'}
+                      sx={{ flex: 1 }}
+                      inputProps={{ 'data-testid': `sheet-${key}` }}
+                      onChange={(value) => {
+                        onChange(key, value ?? '');
+                        // Date de début corrigée : la fin se recalcule sur la durée du pays.
+                        if (field === 'start_date')
+                          onChange(id(slot, 'end_date'), addValidity(value, years) ?? '');
+                      }}
+                    />
+                  )}
                   {gap && (
                     <Tooltip describeChild title="Reprendre la valeur lue sur le scan">
-                      <Button size="small" onClick={() => onChange(key, String(gap.scan ?? ''))}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          const scanValue = String(gap.scan ?? '');
+                          onChange(key, scanValue);
+                          if (field === 'start_date' && scanValue)
+                            onChange(id(slot, 'end_date'), addValidity(scanValue, years) ?? '');
+                        }}
+                      >
                         Scan : {show(field, gap.scan)}
                       </Button>
                     </Tooltip>
@@ -144,6 +172,15 @@ function SlotCard({
             </Box>
           );
         })
+      )}
+      {editing && (source || values[id(slot, 'start_date')]) && (
+        <Box sx={{ mt: 1 }}>
+          <ValidityLine
+            start={values[id(slot, 'start_date')] || null}
+            end={values[id(slot, 'end_date')] || null}
+            years={years}
+          />
+        </Box>
       )}
     </Box>
   );
@@ -240,6 +277,7 @@ export function BinderSheet({
   total: number;
   onChecked: (result: BinderResult) => void;
 }) {
+  const years = useValidityYears(binder.country_iso2);
   const check = useCheckPage(binder.key);
   const uncheck = useUncheckPage(binder.key);
   const [editing, setEditing] = useState(false);
@@ -284,6 +322,7 @@ export function BinderSheet({
   };
 
   const scan = page.scan;
+  const currentScan = !!scan && scan.is_current !== false;
   const stamp = page.check;
   // Le dashboard ou un import a changé la fiche depuis le constat : le tampon ne vaut plus.
   const stale = page.changed_since_check.length > 0;
@@ -376,6 +415,7 @@ export function BinderSheet({
               slot={slot}
               title={title}
               editing={editing}
+              years={years}
               values={values}
               onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
             />
@@ -426,14 +466,21 @@ export function BinderSheet({
               )}
             </Stack>
             <Typography
-              sx={{ fontSize: 13, mt: 1, color: scan ? INK : '#c62828', fontWeight: scan ? 400 : 700 }}
+              sx={{
+                fontSize: 13,
+                mt: 1,
+                color: currentScan ? INK : '#c62828',
+                fontWeight: currentScan ? 400 : 700,
+              }}
             >
-              {scan
-                ? `Décision scannée du ${formatDate(scan.document_date)}${scan.page_count ? ` · ${scan.page_count} p.` : ''}`
-                : 'Aucun scan dans AMM GH'}
+              {!scan
+                ? 'Aucun scan dans AMM GH'
+                : currentScan
+                  ? `Décision scannée du ${formatDate(scan.document_date)}${scan.page_count ? ` · ${scan.page_count} p.` : ''}`
+                  : `Décision en vigueur non scannée (dernier scan : décision du ${formatDate(scan.document_date)})`}
             </Typography>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-              <ScanImportButton scanImport={scanImport} hasScan={!!scan} />
+              <ScanImportButton scanImport={scanImport} hasScan={currentScan} />
               <Button
                 size="small"
                 color={missing ? 'warning' : 'primary'}

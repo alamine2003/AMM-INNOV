@@ -25,19 +25,48 @@ def _json(value):
     return value.isoformat() if isinstance(value, date) else value
 
 
+def _renewal_target(amm, renewals, corrections):
+    """Le renouvellement que la page corrige : le dernier obtenu, sinon celui que le papier
+    conclut (dépôt en cours dont la décision est datée après le dépôt), sinon un nouveau."""
+    renewal = last_obtained(renewals)
+    if renewal is not None:
+        return renewal
+    start = next(
+        (c["value"] for c in corrections if c["slot"] == "renewal" and c["field"] == "start_date"),
+        None,
+    )
+    pending = [r for r in renewals if r.workflow_status in Renewal.OPEN_STATUSES]
+    pending.sort(key=lambda r: r.sequence, reverse=True)
+    for candidate in pending:
+        # La décision suit son dépôt : une date de début antérieure au dépôt est celle d'un
+        # renouvellement plus ancien, absent de l'application.
+        if start is None or candidate.filing_date is None or start >= candidate.filing_date:
+            candidate._transition_from = candidate.workflow_status
+            candidate.workflow_status = Renewal.WorkflowStatus.OBTENU
+            return candidate
+    # Renouvellement présent dans le classeur mais inconnu de l'application.
+    return Renewal(amm=amm, workflow_status=Renewal.WorkflowStatus.OBTENU)
+
+
 def _apply(amm, corrections, user) -> list[dict]:
-    """Écrit les valeurs lues sur le papier ; renvoie ce qui a réellement changé."""
+    """Écrit les valeurs lues sur le papier ; renvoie ce qui a réellement changé.
+
+    Une date de début corrigée sans date de fin refait le calcul de la fin (début + durée de
+    validité du pays), même si la fin avait été saisie ou importée.
+    """
+    from apps.amm.services.sequence import resequence
+
     applied = []
-    renewal = last_obtained(list(Renewal.objects.select_for_update().filter(amm=amm)))
+    renewals = list(Renewal.objects.select_for_update().filter(amm=amm))
+    renewal = None
     touched = set()
     for correction in corrections:
         slot, field, value = correction["slot"], correction["field"], correction["value"]
         if slot == "renewal":
             if renewal is None:
-                if value in (None, ""):
+                if value in (None, "") and last_obtained(renewals) is None:
                     continue
-                # Renouvellement présent dans le classeur mais inconnu de l'application.
-                renewal = Renewal(amm=amm, workflow_status=Renewal.WorkflowStatus.OBTENU)
+                renewal = _renewal_target(amm, renewals, corrections)
             target = renewal
         else:
             target = amm
@@ -52,13 +81,22 @@ def _apply(amm, corrections, user) -> list[dict]:
             setattr(target, f"{attr}_manual", new is not None)
         applied.append({"slot": slot, "field": field, "old": _json(old), "new": _json(new)})
         touched.add(slot)
-    if "original" in touched:
-        _save_with_actor(amm, user, REASON)
-        _ensure_order(amm.original_start_date, amm.original_end_date, "AMM d'origine")
-    if "renewal" in touched and renewal is not None:
+    for slot in touched:
+        target = amm if slot == "original" else renewal
+        start_changed = any(a["slot"] == slot and a["field"] == "start_date" for a in applied)
+        end_changed = any(a["slot"] == slot and a["field"] == "end_date" for a in applied)
+        if start_changed and not end_changed:
+            # Début corrigé, fin non retouchée : la fin suit (début + durée du pays).
+            setattr(target, f"{SLOT_FIELDS[slot]['end_date']}_manual", False)
+    if "renewal" in touched:
         _save_with_actor(renewal, user, REASON)
         _ensure_order(renewal.start_date, renewal.end_date, "renouvellement")
+        # Un renouvellement daté autrement reprend sa place dans l'ordre des dates.
+        resequence(amm)
+    if touched:
+        # Enregistrer l'AMM recalcule son échéance et son statut sur la décision en vigueur.
         _save_with_actor(amm, user, REASON)
+        _ensure_order(amm.original_start_date, amm.original_end_date, "AMM d'origine")
     return applied
 
 

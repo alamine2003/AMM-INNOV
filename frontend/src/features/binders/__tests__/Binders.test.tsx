@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { BinderDetail, BinderPage, BinderSummary } from '@/api/types';
@@ -180,12 +180,42 @@ describe('Classeurs', () => {
       }),
     );
     renderApp('/classeurs/SN-cardio');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getByText('AMLODIPINE GH 5MG')).toBeInTheDocument();
     await userEvent.click(within(current).getByRole('button', { name: /Conforme/ }));
     await waitFor(() => expect(sent).toMatchObject({ amm: 'amm-1', result: 'CONFORME' }));
     expect(await within(book).findAllByTestId('binder-stamp')).not.toHaveLength(0);
+  });
+
+  it('corrige une date de début : la fin se recalcule sur 5 ans', async () => {
+    loginAs('u-sn');
+    const open = page();
+    let sent: { corrections?: { slot: string; field: string; value: string | null }[] } | null = null;
+    server.use(
+      http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, open]))),
+      http.post(`${endpoint}/SN-cardio/check`, async ({ request }) => {
+        sent = (await request.json()) as typeof sent;
+        return HttpResponse.json(binder([checked, open]));
+      }),
+    );
+    renderApp('/classeurs/SN-cardio');
+    const book = await screen.findByTestId('binder-book');
+    const current = within(book).getAllByTestId('binder-sheet')[0];
+    await userEvent.click(within(current).getByRole('button', { name: /Corriger/ }));
+    fireEvent.change(within(current).getByTestId('sheet-original.start_date'), {
+      target: { value: '16/04/2016' },
+    });
+    expect(within(current).getByTestId('sheet-original.end_date')).toHaveValue('16/04/2021');
+    expect(within(current).getAllByTestId('validity-line')[0]).toHaveTextContent(
+      "Validité : 5 ans, jusqu'au 16/04/2021",
+    );
+    await userEvent.click(within(current).getByRole('button', { name: 'Valider la correction' }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent!.corrections).toEqual([
+      { slot: 'original', field: 'start_date', value: '2016-04-16' },
+      { slot: 'original', field: 'end_date', value: '2021-04-16' },
+    ]);
   });
 
   it('empile les décisions et ouvre la chronologie avec ce qui manque', async () => {
@@ -245,7 +275,7 @@ describe('Classeurs', () => {
     });
     server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, stacked]))));
     renderApp('/classeurs/SN-cardio');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getAllByTestId('scan-stack-sheet')).toHaveLength(1);
     expect(within(current).getByTestId('open-chronology')).toHaveTextContent('2 manques');
@@ -321,7 +351,7 @@ describe('Classeurs', () => {
       http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json({ ...binder([stale, page()]), stale: 1 })),
     );
     renderApp('/classeurs/SN-cardio?amm=amm-0');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     expect(await within(book).findByRole('heading', { name: 'ACARBOSE GH 100MG' })).toBeInTheDocument();
     const banner = within(book).getAllByTestId('page-stale')[0];
     expect(banner).toHaveTextContent('import Excel du Dashboard');

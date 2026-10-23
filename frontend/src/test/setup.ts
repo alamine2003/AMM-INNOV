@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import type React from 'react';
 import { Blob as NodeBlob, File as NodeFile } from 'node:buffer';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import '@/lib/i18n';
 import { server } from '@/mocks/server';
 import { resetDb } from '@/mocks/handlers';
@@ -21,12 +21,16 @@ globalThis.FormData = nativeFormData;
 globalThis.File = NodeFile as unknown as typeof File;
 globalThis.Blob = NodeBlob as unknown as typeof Blob;
 
+// Le premier rendu d'une page charge ses modules (sélecteur de date…) : 1 s ne suffit pas en CI.
+configure({ asyncUtilTimeout: 4000 });
+
 // Polyfills jsdom
 if (!globalThis.matchMedia) {
   Object.defineProperty(globalThis, 'matchMedia', {
     writable: true,
+    // Souris (« pointer: fine ») : les sélecteurs de date s'ouvrent en mode bureau, saisissables.
     value: (query: string) => ({
-      matches: false,
+      matches: query.includes('pointer: fine'),
       media: query,
       onchange: null,
       addListener: vi.fn(),

@@ -81,6 +81,8 @@ class ScanSerializer(serializers.Serializer):
     document_id = serializers.UUIDField()
     document_date = serializers.DateField()
     page_count = serializers.IntegerField(allow_null=True)
+    # Faux : la décision en vigueur n'est pas scannée, la vignette montre une décision antérieure.
+    is_current = serializers.BooleanField(default=True)
 
 
 class DiscrepancySerializer(serializers.Serializer):

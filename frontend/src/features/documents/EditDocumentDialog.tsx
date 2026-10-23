@@ -17,6 +17,7 @@ import { extractErrorMessage } from '@/api/client';
 import { useUpdateDocument, type DocumentEdit } from '@/api/hooks/useDocuments';
 import type { Amm, AmmDocument, DocumentKind, Renewal } from '@/api/types';
 import { formatDate } from '@/lib/dates';
+import { DateInput } from '@/components/DateInput';
 
 const KINDS: DocumentKind[] = ['AMM', 'RECEPISSE', 'COURRIER', 'AUTRE'];
 const ORIGIN = 'origine';
@@ -104,13 +105,7 @@ export function EditDocumentDialog({
               </MenuItem>
             ))}
           </TextField>
-          <TextField
-            type="date"
-            label="Date du document"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
+          <DateInput label="Date du document" value={date} onChange={(value) => value && setDate(value)} />
           <TextField label="Titre" value={title} onChange={(e) => setTitle(e.target.value)} />
         </Stack>
         {update.isError && (

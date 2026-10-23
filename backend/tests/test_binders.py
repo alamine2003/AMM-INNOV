@@ -527,3 +527,114 @@ def test_stacked_decisions_and_chronology_show_what_is_missing(
     assert middle["renewal_id"] == str(first.pk)
     assert [i["code"] for i in middle["issues"]] == ["no_scan"]
     assert origin["decisions"] and origin["start_date"] == "2012-03-01"
+
+
+def _correct(client, amm, corrections, key="SN-cardio"):
+    response = client.post(
+        f"/api/v1/binders/{key}/check",
+        {"amm": str(amm.pk), "result": "CORRIGE", "corrections": corrections},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    return response.json()
+
+
+def test_corrected_start_recomputes_an_imported_end_on_five_years(country_client, shelf_data):
+    amm = shelf_data["amlo"]
+    # Fin importée du Dashboard (« saisie ») et fausse.
+    amm.original_start_date = date(2016, 4, 16)
+    amm.original_end_date = date(2021, 4, 6)
+    amm.original_end_date_manual = True
+    amm.save()
+    _correct(
+        country_client, amm, [{"slot": "original", "field": "start_date", "value": "2016-04-06"}]
+    )
+    amm.refresh_from_db()
+    assert amm.original_end_date == date(2021, 4, 6) and not amm.original_end_date_manual
+    _correct(
+        country_client, amm, [{"slot": "original", "field": "start_date", "value": "2017-02-01"}]
+    )
+    amm.refresh_from_db()
+    assert amm.original_end_date == date(2022, 2, 1)
+
+
+def test_corrected_renewal_start_moves_its_end_and_the_deadline(
+    country_client, shelf_data, make_renewal
+):
+    amm = shelf_data["amlo"]
+    renewal = make_renewal(
+        amm,
+        status="OBTENU",
+        number="R1",
+        start_date=date(2023, 5, 1),
+        end_date=date(2026, 1, 1),
+        end_date_manual=True,
+    )
+    _correct(
+        country_client, amm, [{"slot": "renewal", "field": "start_date", "value": "2023-06-15"}]
+    )
+    renewal.refresh_from_db()
+    amm.refresh_from_db()
+    assert renewal.end_date == date(2028, 6, 15) and not renewal.end_date_manual
+    assert amm.effective_end_date == date(2028, 6, 15)
+
+
+def test_paper_decision_concludes_the_pending_filing(country_client, shelf_data, make_renewal):
+    amm = shelf_data["amlo"]
+    filed = make_renewal(amm, status="DEPOSE", filing_date=date(2025, 12, 1))
+    page = _correct(
+        country_client,
+        amm,
+        [
+            {"slot": "renewal", "field": "number", "value": "R-2026"},
+            {"slot": "renewal", "field": "start_date", "value": "2026-03-01"},
+        ],
+    )["sections"][0]["pages"][0]
+    renewals = list(Renewal.objects.filter(amm=amm))
+    assert len(renewals) == 1 and renewals[0].pk == filed.pk
+    assert renewals[0].workflow_status == "OBTENU" and renewals[0].number == "R-2026"
+    assert page["pending_renewal"] is None
+
+
+def test_older_paper_decision_is_placed_before_the_pending_filing(
+    country_client, shelf_data, make_renewal
+):
+    amm = shelf_data["amlo"]
+    filed = make_renewal(amm, status="DEPOSE", filing_date=date(2025, 12, 1))
+    _correct(
+        country_client,
+        amm,
+        [
+            {"slot": "renewal", "field": "number", "value": "R-2020"},
+            {"slot": "renewal", "field": "start_date", "value": "2020-03-01"},
+        ],
+    )
+    ordered = list(Renewal.objects.filter(amm=amm).order_by("sequence"))
+    assert [(r.sequence, r.workflow_status) for r in ordered] == [(1, "OBTENU"), (2, "DEPOSE")]
+    assert ordered[1].pk == filed.pk
+
+
+def test_rejected_renewal_has_nothing_missing_and_unscanned_decision_is_flagged(
+    hq_client, shelf_data, make_renewal, make_scan
+):
+    amm = shelf_data["amlo"]
+    amm.original_start_date = date(2015, 1, 1)
+    amm.save()
+    make_scan(amm)
+    make_renewal(amm, status="OBTENU", number="R1", start_date=date(2020, 1, 1))
+    make_renewal(amm, status="ABANDONNE")
+    page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+    closed = next(e for e in page["chronology"] if e["kind"] == "closed")
+    assert closed["issues"] == []
+    # La décision en vigueur (R1) n'est pas scannée : la vignette montre l'origine, signalée.
+    assert page["scan"]["is_current"] is False
+
+
+def test_gap_after_an_undated_renewal_is_still_detected(hq_client, shelf_data, make_renewal):
+    amm = shelf_data["amlo"]
+    amm.original_start_date = date(2010, 1, 1)
+    amm.save()
+    make_renewal(amm, status="OBTENU", number="R1")  # sans dates
+    make_renewal(amm, status="OBTENU", number="R2", start_date=date(2019, 1, 1))
+    page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
+    assert "gap" in [entry["kind"] for entry in page["chronology"]]

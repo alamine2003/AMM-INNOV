@@ -18,6 +18,8 @@ export function BinderLink({ ammId }: { ammId: string | null | undefined }) {
         variant="outlined"
         size="small"
         startIcon={<MenuBookIcon />}
+        // L'emplacement d'icône agrandit son contenu : le tampon garde la taille d'une étiquette.
+        sx={{ '& .MuiButton-endIcon > .MuiChip-root': { fontSize: 12, height: 22 } }}
         endIcon={
           stale ? (
             <Chip size="small" color="warning" label="À revérifier" />

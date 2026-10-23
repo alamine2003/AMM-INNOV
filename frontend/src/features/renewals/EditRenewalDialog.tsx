@@ -15,9 +15,12 @@ import {
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
+import { useValidityYears } from '@/api/hooks/useCatalog';
 import { useUpdateRenewal } from '@/api/hooks/useRenewals';
 import type { Amm, Renewal } from '@/api/types';
 import { DateField } from '@/components/DateField';
+import { DateInput, ValidityLine } from '@/components/DateInput';
+import { addValidity } from '@/lib/dates';
 
 type Values = {
   number: string;
@@ -59,10 +62,13 @@ export function EditRenewalDialog({
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const update = useUpdateRenewal(amm.id);
-  const { control, register, handleSubmit, reset, formState } = useForm<Values>({
+  const years = useValidityYears(amm.country_iso2);
+  const { control, register, handleSubmit, reset, formState, setValue } = useForm<Values>({
     defaultValues: initial(renewal),
   });
-  const endAuto = useWatch({ control, name: 'end_auto' });
+  const [endAuto, start, end] = useWatch({ control, name: ['end_auto', 'start_date', 'end_date'] });
+  const computedEnd = addValidity(start, years);
+  const shownEnd = endAuto ? computedEnd : end;
 
   useEffect(() => {
     if (open) reset(initial(renewal));
@@ -114,16 +120,43 @@ export function EditRenewalDialog({
               <DateField control={control} name="decision_date" label="Date de décision" />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <DateField control={control} name="start_date" label="Date de début" />
+              <Controller
+                control={control}
+                name="start_date"
+                render={({ field }) => (
+                  <DateInput
+                    label="Date de début"
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    onChange={(value) => {
+                      field.onChange(value);
+                      // Une date de début corrigée refait le calcul de la fin sur la durée du pays.
+                      if (value !== start) setValue('end_auto', true, { shouldDirty: true });
+                    }}
+                  />
+                )}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <DateField
-                control={control}
-                name="end_date"
-                label="Date de fin"
-                disabled={endAuto}
-                helperText={endAuto ? 'Calculée depuis la date de début' : 'Saisie à la main'}
-              />
+              {endAuto ? (
+                <DateInput
+                  label="Date de fin"
+                  value={computedEnd}
+                  onChange={() => undefined}
+                  disabled
+                  helperText={`Début + ${years} ans`}
+                />
+              ) : (
+                <DateField
+                  control={control}
+                  name="end_date"
+                  label="Date de fin"
+                  helperText="Saisie à la main"
+                />
+              )}
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <ValidityLine start={start} end={shownEnd} years={years} auto={endAuto} />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <Controller
@@ -132,9 +165,16 @@ export function EditRenewalDialog({
                 render={({ field }) => (
                   <FormControlLabel
                     control={
-                      <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                      <Checkbox
+                        checked={field.value}
+                        onChange={(e) => {
+                          field.onChange(e.target.checked);
+                          // On repart de la fin calculée pour la retoucher à la main.
+                          if (!e.target.checked && computedEnd) setValue('end_date', computedEnd);
+                        }}
+                      />
                     }
-                    label="Date de fin calculée automatiquement (durée de validité du pays)"
+                    label={`Date de fin calculée automatiquement (${years} ans, durée de validité du pays)`}
                   />
                 )}
               />

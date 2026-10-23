@@ -21,6 +21,7 @@ from apps.amm.services.status import (
     RENEWAL_WINDOW_MONTHS,
     STATUS_A_RENOUVELER,
     compute_amm_state,
+    current_decision,
     current_scans_prefetch,
 )
 from apps.core.dates import today as reference_today
@@ -56,7 +57,10 @@ def reminder_body(amm, today: date) -> str:
     ideal, agency = amm.ideal_filing_date, amm.agency_filing_deadline
     ideal_text = f"{_fr(ideal)} (dépassé)" if today > ideal else _fr(ideal)
     agency_text = f"{_fr(agency)} (dépassée)" if today > agency else _fr(agency)
-    number = f" n° {amm.original_number}" if amm.original_number else ""
+    # Le n° de la décision en vigueur (celle qui expire), pas celui de l'AMM d'origine.
+    decision = current_decision(list(amm.renewals.all()))
+    current_number = decision.number if decision is not None else amm.original_number
+    number = f" n° {current_number}" if current_number else ""
     return "\n".join(
         [
             f"L'AMM{number} de {amm.product.name} au {amm.country.name} "

@@ -13,7 +13,9 @@ import {
   Typography,
 } from '@mui/material';
 import { extractErrorMessage } from '@/api/client';
-import { useProductSearch } from '@/api/hooks/useCatalog';
+import { useProductSearch, useValidityYears } from '@/api/hooks/useCatalog';
+import { DateInput, ValidityLine } from '@/components/DateInput';
+import { addValidity } from '@/lib/dates';
 import { useAddPage } from '@/api/hooks/useBinders';
 import type { BinderAddPageResult, BinderDetail } from '@/api/types';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
@@ -73,6 +75,7 @@ function AddPageForm({
   const search = useDebouncedValue(name, 250);
   const products = useProductSearch(search, search.length >= 2);
   const add = useAddPage(binder.key);
+  const years = useValidityYears(binder.country_iso2);
 
   const submit = () =>
     add.mutate(
@@ -127,15 +130,14 @@ function AddPageForm({
               onChange={(e) => setNumber(e.target.value)}
               sx={{ flex: 1 }}
             />
-            <TextField
+            <DateInput
               label="Date de début"
-              type="date"
               value={start}
-              onChange={(e) => setStart(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              onChange={(value) => setStart(value ?? '')}
               sx={{ flex: 1 }}
             />
           </Stack>
+          {start && <ValidityLine start={start} end={addValidity(start, years)} years={years} auto />}
           {add.isError && <Alert severity="error">{extractErrorMessage(add.error)}</Alert>}
         </Stack>
       </DialogContent>
