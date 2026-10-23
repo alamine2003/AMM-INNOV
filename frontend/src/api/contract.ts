@@ -9,6 +9,7 @@
  *
  * Ce fichier n'exporte rien d'utile à l'exécution ; il est inclus dans `tsc -b`.
  */
+import type { ChronologyDocumentValues, PeriodValues } from './hooks/useBinders';
 import type { components } from './schema';
 import type {
   Alert,
@@ -17,6 +18,7 @@ import type {
   AmmDocument,
   BinderAddPageResult,
   BinderCorrection,
+  BinderDocumentKind,
   BinderPageScanResult,
   BinderDetail,
   BinderExport,
@@ -102,5 +104,10 @@ export type _CheckRequest = Assert<
     { amm: string; result: BinderResult; corrections: BinderCorrection[]; note: string },
     Schemas['CheckInputRequest']
   >
+>;
+export type _PeriodRequest = Assert<Sends<PeriodValues, Schemas['PatchedPeriodInputRequest']>>;
+export type _DocumentKind = Assert<Sends<BinderDocumentKind, Schemas['DocumentKindEnum']>>;
+export type _ChronologyDocumentRequest = Assert<
+  Sends<ChronologyDocumentValues, Schemas['PatchedDocumentEditInputRequest']>
 >;
 export type _RefreshResponse = Assert<Assignable<Schemas['TokenRefresh'], { access: string }>>;

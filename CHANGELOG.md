@@ -11,8 +11,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - **Nouveau calendrier** pour toutes les dates : on choisit l'année, puis le mois, puis le jour (ou on
   tape JJ/MM/AAAA), en français. Sous les dates d'une période, la validité se calcule toute seule
   (« Validité : 5 ans, jusqu'au 06/04/2021 ») et une durée différente de celle du pays est signalée.
+- **Classeurs : la chronologie se corrige** (ce que la lecture automatique d'un scan a faussé). Dans la
+  fenêtre Chronologie, pour chaque période (AMM d'origine, renouvellements) : ✎ corrige le n° et les
+  dates (date de fin vide : recalculée), + ajoute une pièce directement sur cette période, à la date
+  saisie, sans lecture automatique ; le dernier renouvellement se supprime (saisi à tort ou en double
+  par un import) en rangeant ses pièces sur une autre période au lieu de les archiver. Chaque pièce
+  (décision, récépissé…) se corrige : date, type, période ; le CEO ou le siège peut la retirer
+  (archivée, l'historique la garde). L'AMM (statut, échéance, état du dossier) et la page du classeur
+  se mettent à jour aussitôt. API : `PATCH|DELETE /binders/{clé}/pages/{amm}/periods/{origin|id}`,
+  `POST /binders/{clé}/pages/{amm}/documents`, `PATCH|DELETE /binders/{clé}/pages/{amm}/documents/{id}`.
 
 ### Corrigé
+- **Classeurs : « Corriger » ne remet plus d'anciennes valeurs.** Le formulaire gardait les valeurs du
+  moment où la page avait été ouverte : après un scan rangé, l'enregistrer réécrivait les anciennes
+  dates par-dessus les nouvelles. Il repart désormais des valeurs actuelles de la page.
 - **Une date de début corrigée refait le calcul sur 5 ans** (durée de validité du pays) : classeurs,
   fiche AMM, renouvellements, création d'AMM et de page. Avant, une fin importée du Dashboard restait
   figée et la correction « ne changeait rien ». Une fin égale à début + durée reste calculée.
