@@ -49,6 +49,7 @@ class AlertSerializer(serializers.ModelSerializer):
     assigned_to_email = serializers.EmailField(
         source="assigned_to.email", read_only=True, default=None
     )
+    resolution_label = serializers.CharField(source="get_resolution_display", read_only=True)
 
     class Meta:
         model = Alert
@@ -72,6 +73,7 @@ class AlertSerializer(serializers.ModelSerializer):
             "acknowledged_at",
             "resolved_at",
             "resolution",
+            "resolution_label",
             "comment",
         ]
         read_only_fields = fields

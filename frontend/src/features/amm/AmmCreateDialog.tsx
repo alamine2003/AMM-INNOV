@@ -11,7 +11,7 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useCreateAmm } from '@/api/hooks/useAmms';
@@ -19,6 +19,8 @@ import { useCountries, useProductSearch } from '@/api/hooks/useCatalog';
 import type { Amm, Product } from '@/api/types';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { DateField } from '@/components/DateField';
+import { DateInput, ValidityLine } from '@/components/DateInput';
+import { addValidity } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
 import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { ammSchema, type AmmFormValues } from './ammSchema';
@@ -47,7 +49,7 @@ export function AmmCreateDialog({
   );
   const canCreateProduct = isHqOrAdmin(user);
 
-  const { control, handleSubmit, register, reset, formState } = useForm<AmmFormValues>({
+  const { control, handleSubmit, register, reset, formState, setValue } = useForm<AmmFormValues>({
     resolver: zodResolver(ammSchema),
     defaultValues: {
       product: '',
@@ -59,12 +61,21 @@ export function AmmCreateDialog({
     },
   });
 
+  const [countryId, start, end] = useWatch({
+    control,
+    name: ['country', 'original_start_date', 'original_end_date'],
+  });
+  const years = countries.data?.find((c) => c.id === countryId)?.validity_years ?? 5;
+
   const submit = (values: AmmFormValues) => {
     create.mutate(
       {
         ...values,
         original_number: values.original_number || null,
-        original_end_date_manual: !!values.original_end_date,
+        // Fin = début + durée du pays : calculée par le serveur, pas « saisie à la main ».
+        original_end_date_manual:
+          !!values.original_end_date &&
+          values.original_end_date !== addValidity(values.original_start_date, years),
       },
       {
         onSuccess: (amm) => {
@@ -137,13 +148,28 @@ export function AmmCreateDialog({
               )}
             />
             <TextField label={t('amm.fields.originalNumber')} {...register('original_number')} />
-            <DateField control={control} name="original_start_date" label={t('amm.fields.originalStart')} />
+            <Controller
+              control={control}
+              name="original_start_date"
+              render={({ field }) => (
+                <DateInput
+                  label={t('amm.fields.originalStart')}
+                  value={field.value}
+                  onBlur={field.onBlur}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    setValue('original_end_date', addValidity(value, years));
+                  }}
+                />
+              )}
+            />
             <DateField
               control={control}
               name="original_end_date"
               label={t('amm.fields.originalEnd')}
-              helperText={t('amm.fields.endManual')}
+              helperText={`Calculée : début + ${years} ans (modifiable)`}
             />
+            {start && <ValidityLine start={start} end={end} years={years} />}
             <TextField label={t('amm.fields.notes')} multiline minRows={2} {...register('notes')} />
             {create.isError && <Alert severity="error">{extractErrorMessage(create.error)}</Alert>}
           </Stack>

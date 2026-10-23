@@ -5,6 +5,50 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.8] — 2026-10-23
+
+### Ajouté
+- **Nouveau calendrier** pour toutes les dates : on choisit l'année, puis le mois, puis le jour (ou on
+  tape JJ/MM/AAAA), en français. Sous les dates d'une période, la validité se calcule toute seule
+  (« Validité : 5 ans, jusqu'au 06/04/2021 ») et une durée différente de celle du pays est signalée.
+- **Classeurs : la chronologie se corrige** (ce que la lecture automatique d'un scan a faussé). Dans la
+  fenêtre Chronologie, pour chaque période (AMM d'origine, renouvellements) : ✎ corrige le n° et les
+  dates (date de fin vide : recalculée), + ajoute une pièce directement sur cette période, à la date
+  saisie, sans lecture automatique ; le dernier renouvellement se supprime (saisi à tort ou en double
+  par un import) en rangeant ses pièces sur une autre période au lieu de les archiver. Chaque pièce
+  (décision, récépissé…) se corrige : date, type, période ; le CEO ou le siège peut la retirer
+  (archivée, l'historique la garde). L'AMM (statut, échéance, état du dossier) et la page du classeur
+  se mettent à jour aussitôt. API : `PATCH|DELETE /binders/{clé}/pages/{amm}/periods/{origin|id}`,
+  `POST /binders/{clé}/pages/{amm}/documents`, `PATCH|DELETE /binders/{clé}/pages/{amm}/documents/{id}`.
+
+### Corrigé
+- **Classeurs : « Corriger » ne remet plus d'anciennes valeurs.** Le formulaire gardait les valeurs du
+  moment où la page avait été ouverte : après un scan rangé, l'enregistrer réécrivait les anciennes
+  dates par-dessus les nouvelles. Il repart désormais des valeurs actuelles de la page.
+- **Une date de début corrigée refait le calcul sur 5 ans** (durée de validité du pays) : classeurs,
+  fiche AMM, renouvellements, création d'AMM et de page. Avant, une fin importée du Dashboard restait
+  figée et la correction « ne changeait rien ». Une fin égale à début + durée reste calculée.
+- Classeurs : la décision relevée sur le papier conclut le dépôt en cours au lieu de créer un second
+  renouvellement (le tampon « DÉPOSÉ » restait) ; une décision plus ancienne que le dépôt prend sa
+  place dans l'ordre des dates.
+- Classeurs : un renouvellement rejeté ou abandonné ne compte plus de faux manques ; une
+  interruption de validité après un renouvellement non daté est détectée ; une page dont la
+  décision en vigueur n'est pas scannée le dit (et passe « À scanner ») au lieu de montrer le scan
+  d'une autre période comme le sien.
+- Alertes :
+  - l'alerte DOSSIER se ferme quand le scan arrive ; un dépôt ne ferme plus DOSSIER ni J0 ;
+  - une échéance corrigée remplace ses alertes au lieu de les dédoubler ;
+  - une alerte DECISION n'est plus classée « Renouvellement obtenu » après un rejet ou un abandon ;
+  - J-180 et J-90 tombent le jour du dépôt idéal et de la limite agence affichés ;
+  - le motif de résolution s'affiche en clair.
+- Durée restante : mois entiers, en années et mois (« 872 j (2 ans et 4 mois) » et non « 29 mois »).
+- Tableau de bord : « expire sous 6 mois / 12 mois » compte comme le statut « À renouveler » en fin
+  de mois.
+- Export Excel : les colonnes RENOUV. donnent la décision en vigueur (et non un renouvellement
+  planifié, rejeté ou abandonné, vide).
+- Rappel quotidien : le n° cité est celui de la décision qui expire.
+- Le lien « Classeur … · page » de la fiche AMM : étiquette du constat à la bonne taille.
+
 ## [1.0.7] — 2026-10-22
 
 ### Ajouté

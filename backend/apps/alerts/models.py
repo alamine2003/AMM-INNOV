@@ -58,6 +58,9 @@ class Alert(models.Model):
         AUTO_FILED = "AUTO_FILED", "Dépôt enregistré"
         AUTO_RENEWED = "AUTO_RENEWED", "Renouvellement obtenu"
         MANUAL = "MANUAL", "Résolution manuelle"
+        AUTO_CLOSED = "AUTO_CLOSED", "Renouvellement rejeté ou abandonné"
+        AUTO_COMPLETED = "AUTO_COMPLETED", "Dossier complété"
+        AUTO_UPDATED = "AUTO_UPDATED", "Échéance modifiée"
 
     OPEN_STATUSES = (Status.OPEN, Status.ACKNOWLEDGED)
 

@@ -1,17 +1,19 @@
 import { useEffect } from 'react';
 import { Alert, Box, Button, Grid2 as Grid, Stack, TextField, Typography } from '@mui/material';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { useUpdateAmm } from '@/api/hooks/useAmms';
 import type { Amm } from '@/api/types';
+import { useValidityYears } from '@/api/hooks/useCatalog';
 import { DateField } from '@/components/DateField';
+import { DateInput, ValidityLine } from '@/components/DateInput';
 import { DossierChip, StatusChip } from '@/components/chips';
 import { filingDateText } from '@/components/FilingDates';
 import { AmmTimeline } from './AmmTimeline';
-import { formatDate, formatDateTime } from '@/lib/dates';
+import { addValidity, formatDate, formatDateTime } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
 
 const schema = z.object({
@@ -26,7 +28,8 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
   const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const update = useUpdateAmm();
-  const { control, register, handleSubmit, reset, formState } = useForm<Values>({
+  const years = useValidityYears(amm.country_iso2);
+  const { control, register, handleSubmit, reset, formState, setValue } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       original_number: amm.original_number ?? '',
@@ -35,6 +38,8 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
       notes: amm.notes ?? '',
     },
   });
+
+  const [start, end] = useWatch({ control, name: ['original_start_date', 'original_end_date'] });
 
   useEffect(() => {
     reset({
@@ -47,8 +52,13 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
 
   const submit = (values: Values) => {
     const payload: Record<string, unknown> = { ...values, original_number: values.original_number || null };
-    if (values.original_end_date !== amm.original_end_date)
-      payload.original_end_date_manual = !!values.original_end_date;
+    // Fin égale à début + durée du pays : elle reste calculée (et suivra une prochaine correction).
+    const auto = values.original_end_date === addValidity(values.original_start_date, years);
+    if (
+      values.original_end_date !== amm.original_end_date ||
+      values.original_start_date !== amm.original_start_date
+    )
+      payload.original_end_date_manual = !!values.original_end_date && !auto;
     update.mutate(
       { id: amm.id, ...payload },
       { onSuccess: () => enqueueSnackbar(t('amm.updated'), { variant: 'success' }) },
@@ -107,11 +117,24 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
-          <DateField
+          <Controller
             control={control}
             name="original_start_date"
-            label={t('amm.fields.originalStart')}
-            disabled={!editable}
+            render={({ field }) => (
+              <DateInput
+                label={t('amm.fields.originalStart')}
+                value={field.value}
+                onBlur={field.onBlur}
+                disabled={!editable}
+                inputProps={{ 'data-testid': 'original-start' }}
+                onChange={(value) => {
+                  field.onChange(value);
+                  // Début corrigé : la fin se recalcule sur la durée de validité du pays.
+                  if (value !== start)
+                    setValue('original_end_date', addValidity(value, years), { shouldDirty: true });
+                }}
+              />
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
@@ -120,9 +143,16 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
             name="original_end_date"
             label={t('amm.fields.originalEnd')}
             disabled={!editable}
-            helperText={amm.original_end_date_manual ? t('amm.fields.endManual') : undefined}
+            helperText={
+              end && end !== addValidity(start, years) ? t('amm.fields.endManual') : `Début + ${years} ans`
+            }
           />
         </Grid>
+        {editable && (
+          <Grid size={{ xs: 12 }} sx={{ mt: -1 }}>
+            <ValidityLine start={start} end={end} years={years} />
+          </Grid>
+        )}
         <Grid size={{ xs: 12 }}>
           <TextField
             label={t('amm.fields.notes')}

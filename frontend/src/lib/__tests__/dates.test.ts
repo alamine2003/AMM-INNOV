@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatRemaining, parseDisplayDate, daysUntil } from '@/lib/dates';
+import {
+  addValidity,
+  daysUntil,
+  formatDate,
+  formatDateTime,
+  formatRemaining,
+  formatSpan,
+  parseDisplayDate,
+} from '@/lib/dates';
 
 describe('dates', () => {
   it('formate une date ISO en JJ/MM/AAAA', () => {
@@ -24,5 +32,20 @@ describe('dates', () => {
     expect(formatRemaining('2026-09-14', today)).toBe('10 j');
     expect(formatRemaining('2027-01-04', today)).toBe('122 j (4 mois)');
     expect(formatRemaining('2026-08-01', today)).toBe('−34 j (−1 mois)');
+  });
+  it('compte les mois entiers, en années et mois', () => {
+    const today = new Date(2026, 9, 23, 15, 30);
+    expect(formatRemaining('2029-03-13', today)).toBe('872 j (2 ans et 4 mois)');
+    expect(formatRemaining('2026-11-01', new Date(2026, 9, 31))).toBe('1 j');
+    expect(formatRemaining('2026-09-30', new Date(2026, 9, 1))).toBe('−1 j');
+  });
+  it('calcule la fin de validité et la durée', () => {
+    expect(addValidity('2024-12-03', 5)).toBe('2029-12-03');
+    expect(addValidity('2024-02-29', 5)).toBe('2029-02-28');
+    expect(addValidity(null, 5)).toBeNull();
+    expect(formatSpan('2024-12-03', '2029-12-03')).toBe('5 ans');
+    expect(formatSpan('2024-12-03', '2029-11-03')).toBe('4 ans et 11 mois');
+    expect(formatSpan('2024-12-03', '2024-12-20')).toBe('17 j');
+    expect(formatSpan('2025-01-01', '2024-01-01')).toBeNull();
   });
 });

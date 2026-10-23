@@ -1,28 +1,29 @@
-import { TextField, type TextFieldProps } from '@mui/material';
+import type { ReactNode } from 'react';
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
+import { DateInput, type DateInputProps } from './DateInput';
 
 /**
- * Champ date natif (AAAA-MM-JJ côté valeur, affiché en JJ/MM/AAAA par le navigateur en locale fr).
- * Stocke '' ou une date ISO.
+ * Champ date d'un formulaire react-hook-form : sélecteur année → mois → jour (JJ/MM/AAAA).
+ * Stocke null ou une date ISO.
  */
 export function DateField<T extends FieldValues>({
   control,
   name,
+  helperText,
   ...props
-}: { control: Control<T>; name: FieldPath<T> } & Omit<TextFieldProps, 'name' | 'value' | 'onChange'>) {
+}: { control: Control<T>; name: FieldPath<T>; helperText?: ReactNode } & Omit<
+  DateInputProps,
+  'value' | 'onChange' | 'onBlur' | 'helperText'
+>) {
   const { field, fieldState } = useController({ control, name });
   return (
-    <TextField
+    <DateInput
       {...props}
-      type="date"
-      value={(field.value as string | null | undefined) ?? ''}
-      onChange={(e) => field.onChange(e.target.value || null)}
+      value={(field.value as string | null | undefined) ?? null}
+      onChange={field.onChange}
       onBlur={field.onBlur}
-      inputRef={field.ref}
       error={!!fieldState.error || props.error}
-      helperText={fieldState.error?.message ?? props.helperText}
-      slotProps={{ inputLabel: { shrink: true }, ...props.slotProps }}
-      fullWidth
+      helperText={fieldState.error?.message ?? helperText}
     />
   );
 }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
 import type {
   BinderAddPageResult,
+  BinderDocumentKind,
   BinderCorrection,
   BinderDetail,
   BinderExport,
@@ -54,6 +55,7 @@ function useBinderMutation<T>(key: string, send: (payload: T) => Promise<BinderD
       client.setQueryData(binderKeys.detail(key), binder);
       void client.invalidateQueries({ queryKey: binderKeys.shelf });
       void client.invalidateQueries({ queryKey: ['amms'] });
+      void client.invalidateQueries({ queryKey: ['documents'] });
     },
   });
 }
@@ -156,6 +158,69 @@ export function useImportPageScan(key: string) {
       return (await api.post<BinderPageScanResult>(`/binders/${key}/pages/${amm}/scan`, form)).data;
     },
   });
+}
+
+/** Période de la chronologie : « origin » (AMM d'origine) ou l'identifiant d'un renouvellement. */
+export type ChronologyPeriod = 'origin' | (string & {});
+
+export interface PeriodValues {
+  number?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+export interface ChronologyDocumentValues {
+  period?: ChronologyPeriod;
+  document_date?: string;
+  kind?: BinderDocumentKind;
+}
+
+export interface ChronologyDocumentUpload {
+  file: File;
+  kind: BinderDocumentKind;
+  document_date: string;
+  period: ChronologyPeriod;
+}
+
+/**
+ * Corriger la chronologie d'une page : n° et dates d'une période, renouvellement en trop, date
+ * ou période d'une pièce, pièce retirée ou ajoutée. Chaque action renvoie le classeur à jour.
+ */
+export function useChronologyEdits(key: string, amm: string) {
+  const page = `/binders/${key}/pages/${amm}`;
+  return {
+    editPeriod: useBinderMutation(
+      key,
+      async ({ period, values }: { period: ChronologyPeriod; values: PeriodValues }) =>
+        (await api.patch<BinderDetail>(`${page}/periods/${period}`, values)).data,
+    ),
+    deletePeriod: useBinderMutation(
+      key,
+      async ({ period, moveTo }: { period: string; moveTo: ChronologyPeriod | null }) =>
+        (
+          await api.delete<BinderDetail>(`${page}/periods/${period}`, {
+            params: moveTo ? { move_to: moveTo } : undefined,
+          })
+        ).data,
+    ),
+    editDocument: useBinderMutation(
+      key,
+      async ({ document, values }: { document: string; values: ChronologyDocumentValues }) =>
+        (await api.patch<BinderDetail>(`${page}/documents/${document}`, values)).data,
+    ),
+    removeDocument: useBinderMutation(
+      key,
+      async (document: string) => (await api.delete<BinderDetail>(`${page}/documents/${document}`)).data,
+    ),
+    addDocument: useBinderMutation(key, async (upload: ChronologyDocumentUpload) => {
+      const form = new FormData();
+      form.append('file', upload.file, upload.file.name);
+      form.append('kind', upload.kind);
+      form.append('document_date', upload.document_date);
+      form.append('period', upload.period);
+      return (await api.post<BinderDetail>(`${page}/documents`, form)).data;
+    }),
+  };
 }
 
 /** Signale que le classeur est ouvert (chaque minute) : l'étagère le montre sorti. */

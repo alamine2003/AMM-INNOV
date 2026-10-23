@@ -99,6 +99,15 @@ class MarketingAuthorization(models.Model):
     def save(self, *args, **kwargs):
         from .services.status import compute_amm_state
 
+        if (
+            self.original_end_date_manual
+            and self.original_start_date
+            and self.original_end_date
+            == self.original_start_date + relativedelta(years=self.country.validity_years)
+        ):
+            # Une fin « saisie » égale à début + durée du pays est la fin calculée : elle suivra
+            # désormais une correction de la date de début.
+            self.original_end_date_manual = False
         if self.original_start_date and not self.original_end_date_manual:
             self.original_end_date = self.original_start_date + relativedelta(
                 years=self.country.validity_years
@@ -110,7 +119,9 @@ class MarketingAuthorization(models.Model):
         update_fields = kwargs.get("update_fields")
         if update_fields is not None:
             kwargs["update_fields"] = sorted(
-                set(update_fields) | set(self.COMPUTED_FIELDS) | {"original_end_date"}
+                set(update_fields)
+                | set(self.COMPUTED_FIELDS)
+                | {"original_end_date", "original_end_date_manual"}
             )
         super().save(*args, **kwargs)
 
@@ -180,10 +191,16 @@ class Renewal(models.Model):
                 .get("sequence__max")
             )
             self.sequence = (last or 0) + 1
+        validity = relativedelta(years=self.amm.country.validity_years)
+        if self.end_date_manual and self.start_date and self.end_date == self.start_date + validity:
+            self.end_date_manual = False  # fin égale à la fin calculée : elle reste calculée
         if self.start_date and not self.end_date_manual:
-            self.end_date = self.start_date + relativedelta(years=self.amm.country.validity_years)
+            self.end_date = self.start_date + validity
         elif not self.start_date and not self.end_date_manual:
             self.end_date = None
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = sorted(set(update_fields) | {"end_date", "end_date_manual"})
         super().save(*args, **kwargs)
 
     @property

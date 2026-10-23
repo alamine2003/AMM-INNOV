@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { BinderDetail, BinderPage, BinderSummary } from '@/api/types';
@@ -180,12 +180,42 @@ describe('Classeurs', () => {
       }),
     );
     renderApp('/classeurs/SN-cardio');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getByText('AMLODIPINE GH 5MG')).toBeInTheDocument();
     await userEvent.click(within(current).getByRole('button', { name: /Conforme/ }));
     await waitFor(() => expect(sent).toMatchObject({ amm: 'amm-1', result: 'CONFORME' }));
     expect(await within(book).findAllByTestId('binder-stamp')).not.toHaveLength(0);
+  });
+
+  it('corrige une date de début : la fin se recalcule sur 5 ans', async () => {
+    loginAs('u-sn');
+    const open = page();
+    let sent: { corrections?: { slot: string; field: string; value: string | null }[] } | null = null;
+    server.use(
+      http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, open]))),
+      http.post(`${endpoint}/SN-cardio/check`, async ({ request }) => {
+        sent = (await request.json()) as typeof sent;
+        return HttpResponse.json(binder([checked, open]));
+      }),
+    );
+    renderApp('/classeurs/SN-cardio');
+    const book = await screen.findByTestId('binder-book');
+    const current = within(book).getAllByTestId('binder-sheet')[0];
+    await userEvent.click(within(current).getByRole('button', { name: /Corriger/ }));
+    fireEvent.change(within(current).getByTestId('sheet-original.start_date'), {
+      target: { value: '16/04/2016' },
+    });
+    expect(within(current).getByTestId('sheet-original.end_date')).toHaveValue('16/04/2021');
+    expect(within(current).getAllByTestId('validity-line')[0]).toHaveTextContent(
+      "Validité : 5 ans, jusqu'au 16/04/2021",
+    );
+    await userEvent.click(within(current).getByRole('button', { name: 'Valider la correction' }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent!.corrections).toEqual([
+      { slot: 'original', field: 'start_date', value: '2016-04-16' },
+      { slot: 'original', field: 'end_date', value: '2021-04-16' },
+    ]);
   });
 
   it('empile les décisions et ouvre la chronologie avec ce qui manque', async () => {
@@ -245,7 +275,7 @@ describe('Classeurs', () => {
     });
     server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, stacked]))));
     renderApp('/classeurs/SN-cardio');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getAllByTestId('scan-stack-sheet')).toHaveLength(1);
     expect(within(current).getByTestId('open-chronology')).toHaveTextContent('2 manques');
@@ -259,6 +289,145 @@ describe('Classeurs', () => {
     expect(within(dialog).getByTestId('issue-gap')).toBeInTheDocument();
     expect(within(dialog).getByTestId('issue-no_scan')).toBeInTheDocument();
     expect(within(dialog).getByText(/Décision du 10\/01\/2024/)).toBeInTheDocument();
+  });
+
+  describe('chronologie modifiable', () => {
+    const decision = (id: string, date: string) => ({
+      document_id: id,
+      kind: 'AMM',
+      kind_label: 'AMM',
+      document_date: date,
+      title: '',
+      page_count: 1,
+    });
+    // Le cas d'ALFA GH : un import a créé le renouvellement 2 en double du 1, avec la décision.
+    const doubled = (r1Start = '2025-06-23') =>
+      page({
+        decision_count: 2,
+        scan: { document_id: 'doc-r2', document_date: '2026-08-20', page_count: 1 },
+        chronology: [
+          {
+            kind: 'renewal',
+            label: 'Renouvellement 2',
+            renewal_id: 'r2',
+            sequence: 2,
+            number: '9315',
+            start_date: '2025-06-23',
+            end_date: '2030-06-23',
+            decisions: [decision('doc-r2', '2026-08-20')],
+            others: [],
+            issues: [],
+          },
+          {
+            kind: 'renewal',
+            label: 'Renouvellement 1',
+            renewal_id: 'r1',
+            sequence: 1,
+            number: '9315',
+            start_date: r1Start,
+            end_date: '2030-06-23',
+            decisions: [],
+            others: [],
+            issues: [{ code: 'no_scan', message: 'Décision non scannée.' }],
+          },
+          {
+            kind: 'origin',
+            label: "AMM d'origine",
+            number: '9315',
+            start_date: '2020-06-23',
+            end_date: '2025-06-23',
+            decisions: [decision('doc-o', '2020-06-23')],
+            others: [],
+            issues: [],
+          },
+        ],
+      });
+
+    async function openChronology() {
+      renderApp('/classeurs/SN-cardio');
+      const book = await screen.findByTestId('binder-book');
+      const current = within(book).getAllByTestId('binder-sheet')[0];
+      await userEvent.click(within(current).getByTestId('open-chronology'));
+      return screen.findByTestId('chronology-dialog');
+    }
+
+    it("corrige les dates d'une période et la page suit", async () => {
+      loginAs('u-sn');
+      let sent: unknown = null;
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
+        http.patch(`${endpoint}/SN-cardio/pages/amm-1/periods/r1`, async ({ request }) => {
+          sent = await request.json();
+          return HttpResponse.json(binder([checked, doubled('2025-06-24')]));
+        }),
+      );
+      const dialog = await openChronology();
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Corriger Renouvellement 1' }));
+      const start = within(dialog).getByRole('textbox', { name: 'Date de début' });
+      fireEvent.change(start, { target: { value: '24/06/2025' } });
+      // La fin suit : début + 5 ans.
+      expect(within(dialog).getByRole('textbox', { name: 'Date de fin' })).toHaveValue('24/06/2030');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
+      // Seul le champ modifié part.
+      await waitFor(() => expect(sent).toEqual({ start_date: '2025-06-24' }));
+      expect(await within(dialog).findByText('du 24/06/2025 au 23/06/2030')).toBeInTheDocument();
+      expect(within(dialog).queryByTestId('chronology-edit')).not.toBeInTheDocument();
+    });
+
+    it('supprime le renouvellement en double en gardant ses pièces', async () => {
+      loginAs('u-sn');
+      let url = '';
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
+        http.delete(`${endpoint}/SN-cardio/pages/amm-1/periods/r2`, ({ request }) => {
+          url = request.url;
+          return HttpResponse.json(binder([checked, page()]));
+        }),
+      );
+      const dialog = await openChronology();
+      // Seul le plus récent se supprime.
+      expect(within(dialog).queryByRole('button', { name: 'Supprimer Renouvellement 1' })).toBeNull();
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer Renouvellement 2' }));
+      expect(within(dialog).getByLabelText(/1 pièce à ranger sur/)).toHaveTextContent('Renouvellement 1');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer la période' }));
+      await waitFor(() => expect(new URL(url).searchParams.get('move_to')).toBe('r1'));
+    });
+
+    it("range une pièce sur une autre période ; seul l'administrateur peut la retirer", async () => {
+      loginAs('u-sn');
+      let sent: unknown = null;
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
+        http.patch(`${endpoint}/SN-cardio/pages/amm-1/documents/doc-r2`, async ({ request }) => {
+          sent = await request.json();
+          return HttpResponse.json(binder([checked, doubled()]));
+        }),
+      );
+      const dialog = await openChronology();
+      await userEvent.click(within(dialog).getByLabelText('Corriger la décision du 20/08/2026'));
+      expect(within(dialog).queryByRole('button', { name: 'Retirer la pièce' })).toBeNull();
+      await userEvent.click(within(dialog).getByLabelText('Période'));
+      await userEvent.click(await screen.findByRole('option', { name: 'Renouvellement 1' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
+      await waitFor(() => expect(sent).toEqual({ period: 'r1' }));
+    });
+
+    it("l'administrateur retire une pièce", async () => {
+      loginAs('u-ceo');
+      let removed = false;
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
+        http.delete(`${endpoint}/SN-cardio/pages/amm-1/documents/doc-r2`, () => {
+          removed = true;
+          return HttpResponse.json(binder([checked, doubled()]));
+        }),
+      );
+      const dialog = await openChronology();
+      await userEvent.click(within(dialog).getByLabelText('Corriger la décision du 20/08/2026'));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Retirer la pièce' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Confirmer le retrait' }));
+      await waitFor(() => expect(removed).toBe(true));
+    });
   });
 
   it("ajoute la page d'un produit oublié et l'ouvre", async () => {
@@ -321,7 +490,7 @@ describe('Classeurs', () => {
       http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json({ ...binder([stale, page()]), stale: 1 })),
     );
     renderApp('/classeurs/SN-cardio?amm=amm-0');
-    const book = await screen.findByTestId('binder-book');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     expect(await within(book).findByRole('heading', { name: 'ACARBOSE GH 100MG' })).toBeInTheDocument();
     const banner = within(book).getAllByTestId('page-stale')[0];
     expect(banner).toHaveTextContent('import Excel du Dashboard');

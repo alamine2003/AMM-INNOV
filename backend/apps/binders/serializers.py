@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.amm.models import MarketingAuthorization
 from apps.catalog.models import ProductRange
+from apps.documents.models import Document
 
 from .models import BinderCheck, BinderExport
 
@@ -58,6 +59,36 @@ class PageScanInputSerializer(serializers.Serializer):
     )
 
 
+# Une période de la chronologie : « origin » (AMM d'origine) ou l'identifiant d'un renouvellement.
+PERIOD_HELP = "« origin » pour l'AMM d'origine, sinon l'identifiant du renouvellement."
+
+
+class PeriodInputSerializer(serializers.Serializer):
+    """Correction d'une période : seuls les champs envoyés changent ; une date vide s'efface."""
+
+    number = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+
+
+class PeriodDeleteInputSerializer(serializers.Serializer):
+    # Absent : les pièces du renouvellement annulé sont archivées, comme sur la fiche AMM.
+    move_to = serializers.CharField(required=False, allow_null=True, help_text=PERIOD_HELP)
+
+
+class DocumentEditInputSerializer(serializers.Serializer):
+    period = serializers.CharField(required=False, help_text=PERIOD_HELP)
+    document_date = serializers.DateField(required=False)
+    kind = serializers.ChoiceField(choices=Document.Kind.choices, required=False)
+
+
+class DocumentAddInputSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    kind = serializers.ChoiceField(choices=Document.Kind.choices, default=Document.Kind.AMM)
+    document_date = serializers.DateField()
+    period = serializers.CharField(default="origin", help_text=PERIOD_HELP)
+
+
 class ExtraPageInputSerializer(serializers.Serializer):
     product_name = serializers.CharField(max_length=255)
     note = serializers.CharField(allow_blank=True, required=False, default="")
@@ -81,6 +112,8 @@ class ScanSerializer(serializers.Serializer):
     document_id = serializers.UUIDField()
     document_date = serializers.DateField()
     page_count = serializers.IntegerField(allow_null=True)
+    # Faux : la décision en vigueur n'est pas scannée, la vignette montre une décision antérieure.
+    is_current = serializers.BooleanField(default=True)
 
 
 class DiscrepancySerializer(serializers.Serializer):

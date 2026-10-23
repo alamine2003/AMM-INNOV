@@ -121,7 +121,7 @@ export function AlertsTable({ alerts, hideAmm = false }: { alerts: Alert[]; hide
                         </Button>
                       </Stack>
                     )}
-                    {a.status === 'RESOLVED' && (a.comment || a.resolution)}
+                    {a.status === 'RESOLVED' && (a.comment || a.resolution_label || a.resolution)}
                   </TableCell>
                 </TableRow>
               );

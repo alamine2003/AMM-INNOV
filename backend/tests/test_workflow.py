@@ -102,3 +102,51 @@ def test_correcting_a_renewal_date_reorders_and_recomputes(ceo_client, make_amm,
     amm.refresh_from_db()
     assert amm.effective_end_date == first.end_date
     assert Renewal.objects.filter(amm=amm).count() == 2
+
+
+def test_correcting_a_start_date_recomputes_a_typed_end(ceo_client, make_amm, make_renewal):
+    amm = make_amm(start=date(2019, 1, 1))
+    renewal = make_renewal(
+        amm,
+        "OBTENU",
+        number="R1",
+        start_date=date(2024, 1, 1),
+        end_date=date(2027, 7, 1),
+        end_date_manual=True,
+    )
+    # Le formulaire renvoie la fin inchangée : la date de début corrigée refait le calcul.
+    response = ceo_client.patch(
+        f"/api/v1/renewals/{renewal.pk}",
+        {"start_date": "2024-03-02", "end_date": "2027-07-01"},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    renewal.refresh_from_db()
+    assert renewal.end_date == date(2029, 3, 2) and not renewal.end_date_manual
+    amm.original_end_date = date(2023, 5, 5)
+    amm.original_end_date_manual = True
+    amm.save()
+    response = ceo_client.patch(
+        f"/api/v1/amms/{amm.pk}",
+        {"original_start_date": "2019-02-01", "original_end_date": "2023-05-05"},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    amm.refresh_from_db()
+    assert amm.original_end_date == date(2024, 2, 1) and not amm.original_end_date_manual
+
+
+def test_typed_end_equal_to_the_computed_one_stays_computed(make_amm, make_renewal):
+    amm = make_amm(start=date(2019, 1, 1))
+    renewal = make_renewal(
+        amm,
+        "OBTENU",
+        number="R1",
+        start_date=date(2024, 1, 1),
+        end_date=date(2029, 1, 1),
+        end_date_manual=True,
+    )
+    assert not renewal.end_date_manual
+    renewal.start_date = date(2024, 6, 1)
+    renewal.save()
+    assert renewal.end_date == date(2029, 6, 1)

@@ -13,7 +13,9 @@ describe('Correction d’un renouvellement', () => {
     const dialog = await screen.findByTestId('edit-renewal-dialog');
     const number = dialog.querySelector('input[name="number"]') as HTMLInputElement;
     fireEvent.change(number, { target: { value: 'SN-2024-0999' } });
-    fireEvent.change(screen.getByLabelText('Date de début'), { target: { value: '2024-03-02' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Date de début' }), {
+      target: { value: '02/03/2024' },
+    });
     await user.click(screen.getByTestId('edit-renewal-save'));
     await waitFor(() => expect(screen.queryByTestId('edit-renewal-dialog')).toBeNull());
     const renewal = db.renewals.find((r) => r.amm_id === 'amm-1');

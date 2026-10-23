@@ -257,6 +257,7 @@ export interface Alert {
   acknowledged_at: string | null;
   resolved_at: string | null;
   resolution: string | null;
+  resolution_label?: string;
   comment: string | null;
 }
 
@@ -695,6 +696,8 @@ export interface BinderSlotValues {
   end_date: string | null;
 }
 
+export type BinderDocumentKind = 'AMM' | 'RECEPISSE' | 'COURRIER' | 'AUTRE';
+
 export interface BinderChronologyDocument {
   document_id: string;
   kind: string;
@@ -737,7 +740,13 @@ export interface BinderPage {
   status: AmmStatus;
   status_label: string;
   dossier_state: DossierState;
-  scan: { document_id: string; document_date: string; page_count: number | null } | null;
+  scan: {
+    document_id: string;
+    document_date: string;
+    page_count: number | null;
+    /** Faux : la décision en vigueur n'est pas scannée, la vignette en montre une plus ancienne. */
+    is_current?: boolean;
+  } | null;
   /** Décisions scannées de l'AMM (origine et renouvellements) : la pile agrafée sur la page. */
   decision_count: number;
   /** De la décision la plus récente à l'AMM d'origine, avec les pièces et les manques. */

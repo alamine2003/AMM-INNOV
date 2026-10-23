@@ -150,3 +150,9 @@ export function useMergeDuplicates() {
     },
   });
 }
+
+/** Durée de validité d'une AMM dans le pays (5 ans par défaut, tant que la liste charge). */
+export function useValidityYears(iso2: string | null | undefined): number {
+  const countries = useCountries();
+  return countries.data?.find((c) => c.iso2 === iso2)?.validity_years ?? 5;
+}
