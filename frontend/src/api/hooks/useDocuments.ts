@@ -61,7 +61,26 @@ function useInvalidateDocuments(ammId: string) {
     void qc.invalidateQueries({ queryKey: queryKeys.documents.all });
     void qc.invalidateQueries({ queryKey: queryKeys.countries.all });
     void qc.invalidateQueries({ queryKey: queryKeys.products.all });
+    void qc.invalidateQueries({ queryKey: ['binders'] });
   };
+}
+
+export interface DocumentEdit {
+  kind?: DocumentKind;
+  /** null : AMM d'origine. */
+  renewal?: string | null;
+  document_date?: string;
+  title?: string;
+}
+
+/** Corrige le classement d'un scan (type, période, date, titre) sans changer le fichier. */
+export function useUpdateDocument(ammId: string) {
+  const invalidate = useInvalidateDocuments(ammId);
+  return useMutation({
+    mutationFn: async ({ documentId, ...payload }: DocumentEdit & { documentId: string }) =>
+      (await api.patch<AmmDocument>(`/documents/${documentId}`, payload)).data,
+    onSuccess: invalidate,
+  });
 }
 
 export function useUploadDocument(ammId: string) {

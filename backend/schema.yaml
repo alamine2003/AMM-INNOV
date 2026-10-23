@@ -2586,6 +2586,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentDetail'
           description: ''
+    patch:
+      operationId: v1_documents_partial_update
+      description: 'Corrige le classement d''un scan : type, période, date, titre
+        (même fichier).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) document.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+          description: ''
     delete:
       operationId: v1_documents_destroy
       description: |-
@@ -2657,6 +2691,9 @@ paths:
             schema:
               $ref: '#/components/schemas/DocumentReplaceRequest'
           application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentReplaceRequest'
+          application/json:
             schema:
               $ref: '#/components/schemas/DocumentReplaceRequest'
         required: true
@@ -8197,6 +8234,25 @@ components:
           minLength: 1
           title: Fuseau horaire
           maxLength: 64
+    PatchedDocumentEditRequest:
+      type: object
+      description: |-
+        Correction du classement d'un scan : type, période (renouvellement ou origine), date, titre.
+
+        Le fichier ne change pas (pour cela : « Remplacer »). `renewal` vide = AMM d'origine.
+      properties:
+        kind:
+          $ref: '#/components/schemas/DocumentKindEnum'
+        renewal:
+          type: string
+          format: uuid
+          nullable: true
+        document_date:
+          type: string
+          format: date
+        title:
+          type: string
+          maxLength: 255
     PatchedPieceTypeRequest:
       type: object
       properties:

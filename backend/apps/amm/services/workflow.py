@@ -127,6 +127,13 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
         # Propagates the actor to the AMM recomputed by the post-save signal.
         renewal._transition_actor = actor
     renewal.save()
+    # Une décision ancienne saisie après coup reprend sa place dans l'ordre des dates.
+    from .sequence import resequence
+    from .status import apply_state
+
+    if resequence(amm):
+        renewal.refresh_from_db(fields=["sequence"])
+        apply_state(amm)
     return renewal
 
 
@@ -212,4 +219,10 @@ def transition(renewal: Renewal, to: str, actor=None, **fields) -> Renewal:
     if actor is not None:
         renewal._history_user = actor
     renewal.save()
+    from .sequence import resequence
+    from .status import apply_state
+
+    if resequence(renewal.amm):
+        renewal.refresh_from_db(fields=["sequence"])
+        apply_state(renewal.amm)
     return renewal

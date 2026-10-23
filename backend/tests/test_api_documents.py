@@ -92,8 +92,8 @@ def test_replace_delete_and_libraries(country_client, ceo_client, hq_client, mak
     assert len(everything) == 2
 
     assert country_client.delete(f"/api/v1/documents/{replaced.json()['id']}").status_code == 403
-    assert hq_client.delete(f"/api/v1/documents/{replaced.json()['id']}").status_code == 403
-    assert ceo_client.delete(f"/api/v1/documents/{replaced.json()['id']}").status_code == 204
+    # Retirer un scan (archivé, gardé dans l'historique) : le siège comme le CEO.
+    assert hq_client.delete(f"/api/v1/documents/{replaced.json()['id']}").status_code == 204
     assert country_client.get(f"/api/v1/amms/{amm.pk}/documents").json() == []
 
     library = hq_client.get("/api/v1/countries/SN/documents").json()
@@ -121,3 +121,37 @@ def test_document_scope(country_client, hq_client, make_amm):
         ).status_code
         == 404
     )
+
+
+def test_scan_classification_can_be_corrected(country_client, make_amm, make_renewal, countries):
+    amm = make_amm(start=date(2018, 1, 1))
+    renewal = make_renewal(amm, status="OBTENU", start_date=date(2023, 1, 1), number="R1")
+    created = country_client.post(
+        f"/api/v1/amms/{amm.pk}/documents", {"file": pdf(), "kind": "AUTRE"}, format="multipart"
+    ).json()
+    assert created["renewal_id"] is None
+    moved = country_client.patch(
+        f"/api/v1/documents/{created['id']}",
+        {"kind": "AMM", "renewal": str(renewal.pk), "document_date": "2023-01-05"},
+        format="json",
+    )
+    assert moved.status_code == 200, moved.content
+    body = moved.json()
+    assert (body["kind"], body["renewal_id"], body["document_date"]) == (
+        "AMM",
+        str(renewal.pk),
+        "2023-01-05",
+    )
+    # Retour sur l'AMM d'origine.
+    back = country_client.patch(
+        f"/api/v1/documents/{created['id']}", {"renewal": None}, format="json"
+    ).json()
+    assert back["renewal_id"] is None
+    # Un renouvellement d'une autre AMM est refusé.
+    other = make_renewal(
+        make_amm(start=date(2019, 1, 1)), status="OBTENU", start_date=date(2024, 1, 1)
+    )
+    refused = country_client.patch(
+        f"/api/v1/documents/{created['id']}", {"renewal": str(other.pk)}, format="json"
+    )
+    assert refused.status_code == 400

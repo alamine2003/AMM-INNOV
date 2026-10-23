@@ -602,6 +602,20 @@ export const handlers = [
         : HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
     }),
   ),
+  http.patch(
+    url('/renewals/:id'),
+    withAuth(async (user, { params, request }) => {
+      const renewal = db.renewals.find((r) => r.id === params.id);
+      if (!renewal) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
+      const amm = db.amms.find((a) => a.id === renewal.amm_id)!;
+      if (!inScope(user, amm.country_iso2))
+        return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
+      const body = (await request.json()) as Partial<Renewal>;
+      Object.assign(renewal, body);
+      recomputeAmm(db, amm.id);
+      return HttpResponse.json(renewal);
+    }),
+  ),
   http.delete(
     url('/renewals/:id'),
     withAuth((user, { params }) => {
@@ -765,10 +779,34 @@ export const handlers = [
       return HttpResponse.json(doc, { status: 201 });
     }),
   ),
+  http.patch(
+    url('/documents/:id'),
+    withAuth(async (user, { params, request }) => {
+      const doc = db.documents.find((d) => d.id === params.id);
+      if (!doc) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
+      const body = (await request.json()) as {
+        kind?: AmmDocument['kind'];
+        renewal?: string | null;
+        document_date?: string;
+        title?: string;
+      };
+      if (body.kind) doc.kind = body.kind;
+      if (body.document_date) doc.document_date = body.document_date;
+      if (body.title !== undefined) doc.title = body.title;
+      if (body.renewal !== undefined) {
+        const renewal = body.renewal ? db.renewals.find((r) => r.id === body.renewal) : null;
+        doc.renewal_id = renewal ? renewal.id : null;
+        doc.renewal_sequence = renewal ? renewal.sequence : null;
+      }
+      recomputeAmm(db, doc.amm_id);
+      addHistory(doc.amm_id, user, 'DOCUMENT_UPDATED', [{ field: 'document', old: null, new: doc.title }]);
+      return HttpResponse.json(doc);
+    }),
+  ),
   http.delete(
     url('/documents/:id'),
     withAuth((user, { params }) => {
-      if (user.role !== 'CEO_ADMIN') return forbidden();
+      if (user.role !== 'CEO_ADMIN' && user.role !== 'HQ_REGULATORY') return forbidden();
       const doc = db.documents.find((d) => d.id === params.id);
       if (!doc) return HttpResponse.json({ detail: 'Introuvable' }, { status: 404 });
       doc.archived_at = new Date().toISOString();

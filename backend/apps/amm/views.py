@@ -27,6 +27,8 @@ from .serializers import (
     django_to_drf_validation_error,
 )
 from .services import workflow
+from .services.sequence import resequence
+from .services.status import apply_state
 from .services.workflow import lock_amm
 
 
@@ -195,6 +197,12 @@ class RenewalViewSet(
             if amm_id is not None:
                 lock_amm(amm_id)
             return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        """Correction d'un renouvellement (n°, dates) : ordre et état de l'AMM recalculés."""
+        renewal = serializer.save()
+        if resequence(renewal.amm):
+            apply_state(renewal.amm)  # le dernier obtenu a pu changer : échéance et statut
 
     def perform_destroy(self, instance):
         """Annule le dernier renouvellement : l'AMM est recalculée, ses scans sont archivés."""

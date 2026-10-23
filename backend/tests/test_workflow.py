@@ -80,3 +80,25 @@ def test_abandon_from_any_open_state(make_amm, make_renewal):
 def test_unknown_target_status(make_amm, make_renewal):
     with pytest.raises(ValidationError):
         transition(make_renewal(make_amm()), "FOO")
+
+
+def test_correcting_a_renewal_date_reorders_and_recomputes(ceo_client, make_amm, make_renewal):
+    from apps.amm.models import Renewal
+
+    amm = make_amm(start=date(2012, 1, 1))
+    first = make_renewal(amm, status="OBTENU", start_date=date(2017, 1, 1), number="R1")
+    second = make_renewal(amm, status="OBTENU", start_date=date(2022, 1, 1), number="R2")
+    # La date du « second » était fausse (décision de 2016) : corrigée, il passe en premier.
+    response = ceo_client.patch(
+        f"/api/v1/renewals/{second.pk}",
+        {"start_date": "2016-06-01", "number": "R0"},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    second.refresh_from_db()
+    first.refresh_from_db()
+    assert (second.sequence, first.sequence) == (1, 2)
+    assert second.end_date is not None and second.number == "R0"
+    amm.refresh_from_db()
+    assert amm.effective_end_date == first.end_date
+    assert Renewal.objects.filter(amm=amm).count() == 2

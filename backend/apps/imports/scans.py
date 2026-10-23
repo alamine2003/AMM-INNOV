@@ -39,6 +39,7 @@ from dateutil.relativedelta import relativedelta
 from django.db import transaction
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.services.sequence import resequence
 from apps.amm.services.status import compute_amm_state
 from apps.catalog.models import Country, Product, ProductRange
 from apps.core.dates import today as reference_today
@@ -238,30 +239,6 @@ def _number(pieces: list[Piece]) -> tuple[str, bool]:
 
 def _fmt(value) -> str:
     return value.strftime("%d/%m/%Y") if value else "—"
-
-
-def _sequence_key(renewal: Renewal):
-    when = renewal.start_date or renewal.decision_date or renewal.filing_date
-    still_open = renewal.workflow_status in Renewal.OPEN_STATUSES
-    return (still_open, when or date.max, renewal.sequence or 0)
-
-
-def resequence(amm) -> bool:
-    """Renumérote les renouvellements dans l'ordre des dates (dossiers en cours à la fin).
-
-    `current_decision` retient le renouvellement obtenu de plus grand n° d'ordre : une décision
-    ancienne ajoutée après coup ne doit pas devenir « la dernière ».
-    """
-    renewals = list(Renewal.objects.filter(amm=amm))
-    ordered = sorted(renewals, key=_sequence_key)
-    if [r.pk for r in ordered] == [r.pk for r in sorted(renewals, key=lambda r: r.sequence)]:
-        return False
-    offset = max(r.sequence for r in renewals) + len(renewals) + 1
-    for index, renewal in enumerate(ordered, start=1):  # deux temps : (amm, sequence) unique
-        Renewal.objects.filter(pk=renewal.pk).update(sequence=offset + index)
-    for index, renewal in enumerate(ordered, start=1):
-        Renewal.objects.filter(pk=renewal.pk).update(sequence=index)
-    return True
 
 
 class _Group:

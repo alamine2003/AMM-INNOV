@@ -66,6 +66,7 @@ export function useUpdateAmm() {
       qc.setQueryData(queryKeys.amms.detail(data.id), data);
       void qc.invalidateQueries({ queryKey: queryKeys.amms.all });
       void qc.invalidateQueries({ queryKey: queryKeys.analytics.all });
+      void qc.invalidateQueries({ queryKey: ['binders'] });
     },
   });
 }

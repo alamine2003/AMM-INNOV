@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import EditIcon from '@mui/icons-material/Edit';
 import UndoIcon from '@mui/icons-material/Undo';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
@@ -25,6 +26,7 @@ import { formatDate } from '@/lib/dates';
 import { TERMINAL_STATES, WORKFLOW_COLORS, WORKFLOW_TRANSITIONS } from '@/lib/urgency';
 import { extractErrorMessage } from '@/api/client';
 import { CancelRenewalDialog } from './CancelRenewalDialog';
+import { EditRenewalDialog } from './EditRenewalDialog';
 import { RecordRenewalDialog } from './RecordRenewalDialog';
 import { TransitionDialog } from './TransitionDialog';
 
@@ -34,12 +36,14 @@ function RenewalCard({
   cancellable,
   onTransition,
   onCancel,
+  onEdit,
 }: {
   renewal: Renewal;
   editable: boolean;
   cancellable: boolean;
   onTransition: (r: Renewal, to: WorkflowStatus) => void;
   onCancel: (r: Renewal) => void;
+  onEdit: (r: Renewal) => void;
 }) {
   const { t } = useTranslation();
   const transitions = WORKFLOW_TRANSITIONS[renewal.workflow_status];
@@ -82,6 +86,18 @@ function RenewalCard({
               {t('renewals.terminal')}
             </Typography>
           )}
+          {editable && (
+            <Tooltip title="Corriger le n° ou les dates">
+              <IconButton
+                size="small"
+                onClick={() => onEdit(renewal)}
+                aria-label={`Corriger le renouvellement ${renewal.sequence}`}
+                data-testid={`renewal-edit-${renewal.sequence}`}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           {editable && cancellable && (
             <Tooltip title={t('renewals.cancelHelp')}>
               <IconButton
@@ -117,6 +133,7 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
   const [dialog, setDialog] = useState<{ renewal: Renewal; to: WorkflowStatus } | null>(null);
   const [recording, setRecording] = useState(false);
   const [cancelling, setCancelling] = useState<Renewal | null>(null);
+  const [editing, setEditing] = useState<Renewal | null>(null);
 
   if (renewals.isPending) return <LoadingBlock />;
   if (renewals.isError) return <ErrorBlock error={renewals.error} onRetry={() => renewals.refetch()} />;
@@ -199,6 +216,7 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
             cancellable={r.sequence === lastSequence}
             onTransition={(renewal, to) => setDialog({ renewal, to })}
             onCancel={setCancelling}
+            onEdit={setEditing}
           />
         ))}
         <Card
@@ -220,6 +238,7 @@ export function RenewalsTab({ amm, editable }: { amm: Amm; editable: boolean }) 
         </Card>
       </Stack>
       {recording && <RecordRenewalDialog amm={amm} open onClose={() => setRecording(false)} />}
+      {editing && <EditRenewalDialog amm={amm} renewal={editing} open onClose={() => setEditing(null)} />}
       {cancelling && (
         <CancelRenewalDialog amm={amm} renewal={cancelling} open onClose={() => setCancelling(null)} />
       )}
