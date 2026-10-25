@@ -1,11 +1,12 @@
 """Dashboard aggregates computed with the ORM (portable: SQLite in tests, PostgreSQL in prod)."""
 
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil.relativedelta import relativedelta
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.services.status import current_decision
 from apps.catalog.models import Country
 from apps.core.dates import today as reference_today
 
@@ -52,6 +53,15 @@ def _pct(part: int, total: int) -> float:
     return round(100.0 * part / total, 1) if total else 0.0
 
 
+def window_end(today: date, months: int) -> date:
+    """Dernière échéance comprise dans les `months` prochains mois, au sens de `derive_status`
+    (fin − N mois <= aujourd'hui) : un 30 septembre, une fin au 31 mars en fait partie."""
+    end = today + relativedelta(months=months)
+    if (today + timedelta(days=1)).month != today.month:  # fin de mois : jusqu'à la fin du mois
+        end = end + relativedelta(day=31)
+    return end
+
+
 def _kpi_annotations(today: date) -> dict:
     return {
         "total": Count("id"),
@@ -61,11 +71,11 @@ def _kpi_annotations(today: date) -> dict:
         "undetermined": Count("id", filter=Q(status=S.INDETERMINE)),
         "expiring_6m": Count(
             "id",
-            filter=Q(status__in=IN_FORCE, effective_end_date__lte=today + relativedelta(months=6)),
+            filter=Q(status__in=IN_FORCE, effective_end_date__lte=window_end(today, 6)),
         ),
         "expiring_12m": Count(
             "id",
-            filter=Q(status__in=IN_FORCE, effective_end_date__lte=today + relativedelta(months=12)),
+            filter=Q(status__in=IN_FORCE, effective_end_date__lte=window_end(today, 12)),
         ),
         "complete": Count(
             "id", filter=Q(dossier_state=MarketingAuthorization.DossierState.COMPLET)
@@ -205,14 +215,17 @@ EXPORT_COLUMNS = [
 
 
 def export_rows(queryset) -> list[list]:
-    """Rows in the workbook column layout (last renewal = highest sequence)."""
+    """Rows in the workbook column layout (renewal columns = decision in force)."""
     rows = []
     for amm in queryset.select_related("country", "product", "product__range").prefetch_related(
         "renewals"
     ):
         renewals = list(amm.renewals.all())
-        last = max(renewals, key=lambda r: r.sequence) if renewals else None
-        if last is not None and last.workflow_status in Renewal.PENDING_STATUSES:
+        # Colonnes RENOUV. : la décision en vigueur (celle qui donne l'échéance), pas le dernier
+        # dossier ouvert, rejeté ou abandonné ; un dépôt en cours sans décision : « IN PROCESS ».
+        last = current_decision(renewals)
+        pending = any(r.workflow_status in Renewal.PENDING_STATUSES for r in renewals)
+        if last is None and pending:
             renewal_start = "IN PROCESS"
         else:
             renewal_start = last.start_date if last else None

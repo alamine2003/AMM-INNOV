@@ -94,6 +94,16 @@ class RenewalSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {name: f"Champ requis pour le statut {status}." for name in missing}
                 )
+        if (
+            self.instance is not None
+            and "start_date" in attrs
+            and attrs["start_date"] != self.instance.start_date
+            and attrs.get("end_date", self.instance.end_date) == self.instance.end_date
+            and not attrs.get("end_date_manual")
+        ):
+            # Date de début corrigée sans nouvelle fin : la fin se recalcule sur la durée du pays.
+            attrs.pop("end_date", None)
+            attrs["end_date_manual"] = False
         if "end_date" in attrs and attrs["end_date"] is not None and "end_date_manual" not in attrs:
             attrs["end_date_manual"] = True
         return attrs
@@ -216,6 +226,17 @@ class AmmListSerializer(serializers.ModelSerializer):
         country = attrs.get("country") or (self.instance.country if self.instance else None)
         if request is not None and country is not None:
             ensure_country_in_scope(request.user, country)
+        if (
+            self.instance is not None
+            and "original_start_date" in attrs
+            and attrs["original_start_date"] != self.instance.original_start_date
+            and attrs.get("original_end_date", self.instance.original_end_date)
+            == self.instance.original_end_date
+            and not attrs.get("original_end_date_manual")
+        ):
+            # Date de début corrigée sans nouvelle fin : la fin se recalcule sur la durée du pays.
+            attrs.pop("original_end_date", None)
+            attrs["original_end_date_manual"] = False
         if (
             "original_end_date" in attrs
             and attrs["original_end_date"] is not None

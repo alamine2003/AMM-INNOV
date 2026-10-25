@@ -32,7 +32,7 @@ describe('Transition de renouvellement', () => {
     ).toBeInTheDocument();
     expect(db.renewals.find((r) => r.id === 'amm-10-ren-1')?.workflow_status).toBe('EN_PREPARATION');
 
-    fireEvent.change(screen.getByTestId('filing_date'), { target: { value: '2026-09-04' } });
+    fireEvent.change(screen.getByTestId('filing_date'), { target: { value: '04/09/2026' } });
     await user.click(screen.getByTestId('transition-submit'));
     await waitFor(() =>
       expect(db.renewals.find((r) => r.id === 'amm-10-ren-1')?.workflow_status).toBe('DEPOSE'),

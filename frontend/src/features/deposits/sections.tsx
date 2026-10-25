@@ -39,6 +39,7 @@ import { depositFiles } from '@/api/hooks/useDeposits';
 import type { DepositDetail, DepositEventKind, DepositPiece } from '@/api/types';
 import { formatDate, formatDateTime, todayIso } from '@/lib/dates';
 import { formatBytes, saveBlob } from '@/lib/download';
+import { DateInput } from '@/components/DateInput';
 
 export const PIECE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.odt,.jpg,.jpeg,.png';
 export const SCAN_ACCEPT = '.pdf,.jpg,.jpeg,.png';
@@ -354,21 +355,19 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
             value={form.batch_number}
             onChange={(e) => setForm({ ...form, batch_number: e.target.value })}
           />
-          <TextField
+          <DateInput
             size="small"
-            type="date"
+            fullWidth={false}
             label="Date de fabrication"
             value={form.manufactured_on}
-            onChange={(e) => setForm({ ...form, manufactured_on: e.target.value })}
-            slotProps={{ inputLabel: { shrink: true } }}
+            onChange={(value) => setForm({ ...form, manufactured_on: value ?? '' })}
           />
-          <TextField
+          <DateInput
             size="small"
-            type="date"
+            fullWidth={false}
             label="Date de péremption"
             value={form.expires_on}
-            onChange={(e) => setForm({ ...form, expires_on: e.target.value })}
-            slotProps={{ inputLabel: { shrink: true } }}
+            onChange={(value) => setForm({ ...form, expires_on: value ?? '' })}
           />
           <TextField
             size="small"
@@ -530,13 +529,13 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
       )}
       {!deposited && dossier.can.deposit && (
         <Stack direction={{ xs: 'column', md: 'row' }} gap={1} alignItems={{ md: 'center' }}>
-          <TextField
+          <DateInput
             size="small"
-            type="date"
+            fullWidth={false}
             label="Date de dépôt"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: todayIso() } }}
+            onChange={(value) => setDate(value ?? '')}
+            maxDate={new Date()}
           />
           <FileButton
             label={file ? file.name : 'Attestation de dépôt (PDF, photo)'}
@@ -649,13 +648,13 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
+            <DateInput
               size="small"
-              type="date"
+              fullWidth={false}
               label="Date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: todayIso() } }}
+              onChange={(value) => setDate(value ?? '')}
+              maxDate={new Date()}
             />
             <FileButton
               label={file ? file.name : 'Pièce (facultatif)'}
@@ -749,23 +748,21 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
                   value={form.number}
                   onChange={(e) => setForm({ ...form, number: e.target.value })}
                 />
-                <TextField
+                <DateInput
                   size="small"
-                  type="date"
+                  fullWidth={false}
                   label="Date de début"
                   value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                  slotProps={{ inputLabel: { shrink: true } }}
+                  onChange={(value) => setForm({ ...form, start_date: value ?? '' })}
                 />
               </>
             )}
-            <TextField
+            <DateInput
               size="small"
-              type="date"
+              fullWidth={false}
               label="Date de la décision"
               value={form.decision_date}
-              onChange={(e) => setForm({ ...form, decision_date: e.target.value })}
-              slotProps={{ inputLabel: { shrink: true } }}
+              onChange={(value) => setForm({ ...form, decision_date: value ?? '' })}
             />
             <FileButton
               label={file ? file.name : 'Scan de la décision'}

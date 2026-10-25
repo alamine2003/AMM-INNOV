@@ -82,9 +82,7 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
     créent pas deux renouvellements (et que `sequence` reste unique).
     """
     lock_amm(amm.pk)
-    fields.setdefault(
-        "workflow_status", S.OBTENU if fields.get("start_date") else S.PLANIFIE
-    )
+    fields.setdefault("workflow_status", S.OBTENU if fields.get("start_date") else S.PLANIFIE)
     if fields["workflow_status"] == S.OBTENU and fields.get("number"):
         # Idempotence : la même décision (n° et date de début) déjà enregistrée est renvoyée
         # telle quelle. Sous le verrou de l'AMM, deux envois simultanés ne font qu'un.
@@ -120,6 +118,8 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
             # décision complète le dépôt, elle ne le remplace pas.
             if value not in (None, "") or not getattr(renewal, name):
                 setattr(renewal, name, value)
+        if fields.get("start_date") and not fields.get("end_date"):
+            renewal.end_date_manual = False  # la décision donne le début : fin calculée
     else:
         renewal = Renewal(amm=amm, **fields)
     if actor is not None:
@@ -205,11 +205,14 @@ def transition(renewal: Renewal, to: str, actor=None, **fields) -> Renewal:
     missing = missing_fields(renewal, to, fields)
     if missing:
         raise ValidationError({name: f"Champ requis pour passer à {to}." for name in missing})
+    old_start = renewal.start_date
     for name in EDITABLE_FIELDS:
         if name in fields and fields[name] is not None:
             setattr(renewal, name, fields[name])
     if "end_date" in fields and fields["end_date"] is not None:
         renewal.end_date_manual = True
+    elif fields.get("start_date") is not None and fields["start_date"] != old_start:
+        renewal.end_date_manual = False  # début donné sans fin : début + durée du pays
     if to in (S.OBTENU, S.REJETE) and not renewal.decision_date and fields.get("decision_date"):
         renewal.decision_date = fields["decision_date"]
     previous = renewal.workflow_status

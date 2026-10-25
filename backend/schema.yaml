@@ -1503,6 +1503,199 @@ paths:
               schema:
                 $ref: '#/components/schemas/AddPageResult'
           description: ''
+  /api/v1/binders/{key}/pages/{amm_id}/documents/:
+    post:
+      operationId: v1_binders_pages_documents_create
+      description: Ajoute une pièce sur une période, à la date saisie (sans lecture
+        automatique).
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentAddInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+  /api/v1/binders/{key}/pages/{amm_id}/documents/{document_id}/:
+    patch:
+      operationId: v1_binders_pages_documents_partial_update
+      description: Corrige la date, le type ou la période d'une pièce ; DELETE la
+        retire (archivée).
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: document_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentEditInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+    delete:
+      operationId: v1_binders_pages_documents_destroy
+      description: Corrige la date, le type ou la période d'une pièce ; DELETE la
+        retire (archivée).
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: document_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/binders/{key}/pages/{amm_id}/periods/{period}/:
+    patch:
+      operationId: v1_binders_pages_periods_partial_update
+      description: Corrige le n° et les dates d'une période ; DELETE annule un renouvellement
+        en trop.
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      - in: path
+        name: period
+        schema:
+          type: string
+          pattern: ^origin|[0-9a-f-]{36}$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPeriodInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPeriodInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPeriodInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+    delete:
+      operationId: v1_binders_pages_periods_destroy
+      description: Corrige le n° et les dates d'une période ; DELETE annule un renouvellement
+        en trop.
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      - in: query
+        name: move_to
+        schema:
+          type: string
+        description: 'Période où ranger les pièces (« origin » ou un renouvellement)
+          ; absent : elles sont archivées.'
+      - in: path
+        name: period
+        schema:
+          type: string
+          pattern: ^origin|[0-9a-f-]{36}$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/binders/{key}/pages/{amm_id}/scan/:
     post:
       operationId: v1_binders_pages_scan_create
@@ -4525,6 +4718,9 @@ components:
           oneOf:
           - $ref: '#/components/schemas/AlertResolutionEnum'
           - $ref: '#/components/schemas/NullEnum'
+        resolution_label:
+          type: string
+          readOnly: true
         comment:
           type: string
           readOnly: true
@@ -4544,6 +4740,7 @@ components:
       - id
       - product_name
       - resolution
+      - resolution_label
       - resolved_at
       - rule
       - rule_code
@@ -4568,11 +4765,17 @@ components:
       - AUTO_FILED
       - AUTO_RENEWED
       - MANUAL
+      - AUTO_CLOSED
+      - AUTO_COMPLETED
+      - AUTO_UPDATED
       type: string
       description: |-
         * `AUTO_FILED` - Dépôt enregistré
         * `AUTO_RENEWED` - Renouvellement obtenu
         * `MANUAL` - Résolution manuelle
+        * `AUTO_CLOSED` - Renouvellement rejeté ou abandonné
+        * `AUTO_COMPLETED` - Dossier complété
+        * `AUTO_UPDATED` - Échéance modifiée
     AlertResolveRequest:
       type: object
       properties:
@@ -6421,6 +6624,27 @@ components:
       - uploaded_by
       - uploaded_by_email
       - version
+    DocumentAddInputRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DocumentKindEnum'
+          default: AMM
+        document_date:
+          type: string
+          format: date
+        period:
+          type: string
+          minLength: 1
+          default: origin
+          description: « origin » pour l'AMM d'origine, sinon l'identifiant du renouvellement.
+      required:
+      - document_date
+      - file
     DocumentDetail:
       type: object
       properties:
@@ -8234,6 +8458,18 @@ components:
           minLength: 1
           title: Fuseau horaire
           maxLength: 64
+    PatchedDocumentEditInputRequest:
+      type: object
+      properties:
+        period:
+          type: string
+          minLength: 1
+          description: « origin » pour l'AMM d'origine, sinon l'identifiant du renouvellement.
+        document_date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/DocumentKindEnum'
     PatchedDocumentEditRequest:
       type: object
       description: |-
@@ -8253,6 +8489,22 @@ components:
         title:
           type: string
           maxLength: 255
+    PatchedPeriodInputRequest:
+      type: object
+      description: 'Correction d''une période : seuls les champs envoyés changent
+        ; une date vide s''efface.'
+      properties:
+        number:
+          type: string
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
     PatchedPieceTypeRequest:
       type: object
       properties:
@@ -8899,6 +9151,9 @@ components:
         page_count:
           type: integer
           nullable: true
+        is_current:
+          type: boolean
+          default: true
       required:
       - document_date
       - document_id

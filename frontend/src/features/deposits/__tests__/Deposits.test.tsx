@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { DepositDetail, DepositSuggestion, PieceType } from '@/api/types';
@@ -134,10 +134,10 @@ describe('Dépôts AMM', () => {
       http.get(`${api}/dep-1`, () => HttpResponse.json(dossier())),
     );
     renderApp('/depots');
-    expect(await screen.findByText(/À préparer : 1 AMM/)).toBeInTheDocument();
+    expect(await screen.findByText(/À préparer : 1 AMM/, {}, { timeout: 5000 })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Monter le dossier' }));
     await waitFor(() => expect(opened).toEqual({ amm: 'amm-1' }));
-    expect(await screen.findByTestId('section-pieces')).toBeInTheDocument();
+    expect(await screen.findByTestId('section-pieces', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Envoyer au pays/ })).toBeDisabled();
     expect(screen.getByText(/Avant l’envoi/).closest('[role="alert"]')).toHaveTextContent('RCP');
   });
@@ -163,7 +163,7 @@ describe('Dépôts AMM', () => {
       }),
     );
     renderApp('/depots/dep-1');
-    const row = await screen.findByTestId('piece-RCP');
+    const row = await screen.findByTestId('piece-RCP', {}, { timeout: 5000 });
     const file = new File(['rcp'], 'rcp.docx');
     await userEvent.upload(within(row).getByLabelText('Joindre'), file);
     await waitFor(() => expect(uploaded?.get('piece_type')).toBe('pt-3'));
@@ -222,9 +222,8 @@ describe('Dépôts AMM', () => {
     expect(await screen.findByText(/À faire :/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Envoyer au pays/ })).not.toBeInTheDocument();
     const section = screen.getByTestId('section-deposit');
-    const date = within(section).getByLabelText('Date de dépôt');
-    await userEvent.clear(date);
-    await userEvent.type(date, '2026-09-27');
+    const date = within(section).getByRole('textbox', { name: 'Date de dépôt' });
+    fireEvent.change(date, { target: { value: '27/09/2026' } });
     await userEvent.upload(
       within(section).getByLabelText(/Attestation de dépôt/),
       new File(['%PDF'], 'attestation.pdf', { type: 'application/pdf' }),

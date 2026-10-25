@@ -29,7 +29,8 @@ def test_j180_created_once(make_amm, make_scan, rules, users):
     assert second["created"] == 0
     assert Alert.objects.filter(amm=amm).count() == 2
     alert = Alert.objects.get(amm=amm, rule__code="J-180")
-    assert alert.due_date == amm.effective_end_date - timedelta(days=180)
+    # J-180 tombe le jour du « dépôt idéal » affiché sur la fiche (fin − 6 mois).
+    assert alert.due_date == amm.ideal_filing_date
     # notifications: country user (SN) + HQ on J-180, in-app + email
     assert Notification.objects.filter(alert=alert, user=users["country"]).count() == 2
     assert Notification.objects.filter(alert=alert, user=users["hq"]).count() == 2
@@ -189,12 +190,75 @@ def test_quiet_first_run_creates_alerts_without_notifications(make_amm, make_sca
 def test_evaluate_alerts_command_quiet(make_amm, rules, users, capsys):
     from django.core.management import call_command
 
-    make_amm(
-        start=None, original_end_date=TODAY - timedelta(days=3), original_end_date_manual=True
-    )
+    make_amm(start=None, original_end_date=TODAY - timedelta(days=3), original_end_date_manual=True)
     call_command("evaluate_alerts", "--quiet", today=TODAY.isoformat())
     out = capsys.readouterr().out
     assert "1 alerte(s) créée(s)" in out
     assert "0 notifiée(s)" in out
     assert Alert.objects.filter(rule__code="J0").exists()
     assert not Notification.objects.exists()
+
+
+def test_dossier_alert_closes_when_scan_arrives_not_when_filing(
+    make_amm, make_renewal, make_scan, rules
+):
+    amm = make_amm(
+        start=None, original_end_date=TODAY + timedelta(days=200), original_end_date_manual=True
+    )
+    evaluate_rules(today=TODAY)
+    dossier = Alert.objects.get(amm=amm, rule__code="DOSSIER")
+    # Un dépôt ne complète pas le dossier : l'alerte DOSSIER reste ouverte.
+    renewal = make_renewal(amm, "EN_PREPARATION")
+    transition(renewal, "DEPOSE", filing_date=TODAY)
+    dossier.refresh_from_db()
+    assert dossier.status == "OPEN"
+    # Le scan de la décision en vigueur la ferme.
+    make_scan(amm)
+    amm.refresh_from_db()
+    assert amm.dossier_state == "COMPLET"
+    reconcile(amm)
+    dossier.refresh_from_db()
+    assert (dossier.status, dossier.resolution) == ("RESOLVED", "AUTO_COMPLETED")
+
+
+def test_j0_stays_open_while_a_filing_awaits_decision(make_amm, make_renewal, rules):
+    amm = make_amm(
+        start=None, original_end_date=TODAY - timedelta(days=3), original_end_date_manual=True
+    )
+    evaluate_rules(today=TODAY)
+    renewal = make_renewal(amm, "EN_PREPARATION")
+    transition(renewal, "DEPOSE", filing_date=TODAY)
+    assert Alert.objects.get(amm=amm, rule__code="J0").status == "OPEN"
+
+
+def test_corrected_end_date_replaces_alerts_without_duplicates(make_amm, make_scan, rules):
+    amm = make_amm(
+        start=None, original_end_date=TODAY + timedelta(days=100), original_end_date_manual=True
+    )
+    make_scan(amm)
+    evaluate_rules(today=TODAY)
+    amm.original_end_date = TODAY + timedelta(days=90)
+    amm.save()
+    reconcile(amm)
+    evaluate_rules(today=TODAY)
+    open_alerts = Alert.objects.filter(amm=amm, status="OPEN")
+    codes_open = list(open_alerts.values_list("rule__code", flat=True))
+    assert len(codes_open) == len(set(codes_open))  # une seule alerte par règle
+    assert "J-90" in codes_open  # 90 jours : la limite agence (fin − 3 mois) est atteinte
+    for alert in open_alerts:
+        assert alert.due_date <= TODAY
+    assert set(
+        Alert.objects.filter(amm=amm, status="RESOLVED").values_list("resolution", flat=True)
+    ) == {"AUTO_UPDATED"}
+
+
+def test_decision_alert_after_rejection_is_not_renewed(make_amm, make_renewal, rules):
+    amm = make_amm(start=TODAY - timedelta(days=1000))
+    renewal = make_renewal(amm, "EN_PREPARATION")
+    transition(renewal, "DEPOSE", filing_date=TODAY - timedelta(days=150))
+    transition(renewal, "EN_INSTRUCTION")
+    evaluate_rules(today=TODAY)
+    alert = Alert.objects.get(amm=amm, rule__code="DECISION")
+    transition(renewal, "REJETE", decision_date=TODAY)
+    alert.refresh_from_db()
+    assert (alert.status, alert.resolution) == ("RESOLVED", "AUTO_CLOSED")

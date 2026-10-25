@@ -21,7 +21,7 @@ from apps.core.dates import today
 from apps.core.tasks import enqueue
 from apps.documents.views import open_stored_file
 
-from . import actions
+from . import actions, chronology
 from .layout import binder_detail, get_binder, locate, shelf
 from .models import BinderExport, BinderPresence
 from .pdf import binder_pdf
@@ -33,10 +33,13 @@ from .serializers import (
     BinderLocationSerializer,
     BinderSummarySerializer,
     CheckInputSerializer,
+    DocumentAddInputSerializer,
+    DocumentEditInputSerializer,
     ExtraPageInputSerializer,
     ExtraPageSerializer,
     PageScanInputSerializer,
     PageScanResultSerializer,
+    PeriodInputSerializer,
     UncheckInputSerializer,
 )
 
@@ -167,6 +170,111 @@ class BinderViewSet(viewsets.ViewSet):
         return Response(
             PageScanResultSerializer({"batch_id": batch.pk, "status": batch.status}).data,
             status=status.HTTP_202_ACCEPTED,
+        )
+
+    # --- Chronologie d'une page : corriger périodes et pièces --------------------------------
+
+    def _chronology(self, request, key, call):
+        binder = get_binder(request.user, key)
+        self._run(lambda: call(binder))
+        return Response(BinderDetailSerializer(binder_detail(binder)).data)
+
+    @extend_schema(
+        methods=["PATCH"], request=PeriodInputSerializer, responses=BinderDetailSerializer
+    )
+    @extend_schema(
+        methods=["DELETE"],
+        parameters=[
+            OpenApiParameter(
+                "move_to",
+                str,
+                required=False,
+                description="Période où ranger les pièces (« origin » ou un renouvellement) ; "
+                "absent : elles sont archivées.",
+            )
+        ],
+        request=None,
+        responses=BinderDetailSerializer,
+    )
+    @action(
+        detail=True,
+        methods=["patch", "delete"],
+        url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/periods/(?P<period>origin|[0-9a-f-]{36})",
+    )
+    def page_period(self, request, key=None, amm_id=None, period=None):
+        """Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop."""
+        if request.method == "DELETE":
+            if period == "origin":
+                raise PermissionDenied("L'AMM d'origine ne s'annule pas : corrigez ses valeurs.")
+            move_to = request.query_params.get("move_to") or None
+            return self._chronology(
+                request,
+                key,
+                lambda binder: chronology.delete_period(
+                    binder, amm_id, period, move_to=move_to, user=request.user
+                ),
+            )
+        serializer = PeriodInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._chronology(
+            request,
+            key,
+            lambda binder: chronology.edit_period(
+                binder, amm_id, period=period, values=serializer.validated_data, user=request.user
+            ),
+        )
+
+    @extend_schema(
+        request={"multipart/form-data": DocumentAddInputSerializer},
+        responses={201: BinderDetailSerializer},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/documents",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def page_documents(self, request, key=None, amm_id=None):
+        """Ajoute une pièce sur une période, à la date saisie (sans lecture automatique)."""
+        serializer = DocumentAddInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = self._chronology(
+            request,
+            key,
+            lambda binder: chronology.add_document(
+                binder, amm_id, user=request.user, **serializer.validated_data
+            ),
+        )
+        response.status_code = status.HTTP_201_CREATED
+        return response
+
+    @extend_schema(
+        methods=["PATCH"], request=DocumentEditInputSerializer, responses=BinderDetailSerializer
+    )
+    @extend_schema(methods=["DELETE"], request=None, responses=BinderDetailSerializer)
+    @action(
+        detail=True,
+        methods=["patch", "delete"],
+        url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/documents/(?P<document_id>[0-9a-f-]{36})",
+    )
+    def page_document(self, request, key=None, amm_id=None, document_id=None):
+        """Corrige la date, le type ou la période d'une pièce ; DELETE la retire (archivée)."""
+        if request.method == "DELETE":
+            return self._chronology(
+                request,
+                key,
+                lambda binder: chronology.remove_document(
+                    binder, amm_id, document_id, user=request.user
+                ),
+            )
+        serializer = DocumentEditInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._chronology(
+            request,
+            key,
+            lambda binder: chronology.edit_document(
+                binder, amm_id, document_id, values=serializer.validated_data, user=request.user
+            ),
         )
 
     @extend_schema(request=ExtraPageInputSerializer, responses={201: ExtraPageSerializer})

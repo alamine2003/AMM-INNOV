@@ -4,6 +4,7 @@ import type { AmmFilters as Filters } from '@/api/types';
 import { useCountries, useRanges } from '@/api/hooks/useCatalog';
 import { AMM_STATUSES, DOSSIER_STATES, URGENCIES } from '@/lib/urgency';
 import { useAuthStore } from '@/features/auth/authStore';
+import { DateInput } from '@/components/DateInput';
 
 export function AmmFilters({ value, onChange }: { value: Filters; onChange: (next: Filters) => void }) {
   const { t } = useTranslation();
@@ -90,13 +91,12 @@ export function AmmFilters({ value, onChange }: { value: Filters; onChange: (nex
         ],
         'filter-scan',
       )}
-      <TextField
+      <DateInput
         size="small"
-        type="date"
+        fullWidth={false}
         label={t('amm.filters.expiresBefore')}
         value={value.expires_before ?? ''}
-        onChange={(e) => set({ expires_before: e.target.value })}
-        slotProps={{ inputLabel: { shrink: true } }}
+        onChange={(value) => set({ expires_before: value ?? '' })}
       />
     </Box>
   );

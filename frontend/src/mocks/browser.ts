@@ -1,7 +1,8 @@
 import { setupWorker } from 'msw/browser';
+import { binderHandlers } from './binders';
 import { handlers } from './handlers';
 
-export const worker = setupWorker(...handlers);
+export const worker = setupWorker(...handlers, ...binderHandlers);
 
 export async function startMockWorker() {
   await worker.start({ onUnhandledRequest: 'bypass', serviceWorker: { url: '/mockServiceWorker.js' } });
