@@ -5,6 +5,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.0.9] — 2026-10-25
+
+### Sécurité
+- Interface : zod 4.6.7 (faille GHSA-mrhx-c7xc-m3w5 publiée après la fusion de la 1.0.8, qui
+  bloquait la CI de main par `npm audit`).
+- Serveur : cinq failles de Twisted publiées le 24/10 (IMAP, IRC, telnet, XML, serveur HTTP
+  twisted.web) ignorées par `pip-audit`, avec leur motif dans la CI : Twisted n'arrive que par daphne
+  (serveur de développement), la production est servie par uvicorn ; seul correctif : une préversion.
+
+### Modifié
+- Messages de validation des formulaires en français (« Champ obligatoire », « adresse e-mail
+  invalide ») au lieu de l'anglais.
+
 ## [1.0.8] — 2026-10-23
 
 ### Ajouté
