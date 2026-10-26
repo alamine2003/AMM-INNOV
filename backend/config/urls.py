@@ -25,7 +25,7 @@ from apps.catalog.views import CountryViewSet, ProductRangeViewSet, ProductViewS
 from apps.deposits.views import DepositViewSet, PieceTypeViewSet
 from apps.documents.views import DocumentViewSet
 from apps.imports.dossier_views import DossierImportViewSet, DossierReviewPointViewSet
-from apps.imports.views import ImportViewSet
+from apps.imports.views import GhplSyncViewSet, ImportViewSet
 from apps.notifications.views import NotificationViewSet
 
 router = SimpleRouter(trailing_slash=False)
@@ -41,6 +41,7 @@ router.register("alerts", AlertViewSet, basename="alert")
 router.register("alert-rules", AlertRuleViewSet, basename="alert-rule")
 router.register("notifications", NotificationViewSet, basename="notification")
 router.register("imports", ImportViewSet, basename="import")
+router.register("ghpl-sync", GhplSyncViewSet, basename="ghpl-sync")
 router.register("dossier-imports", DossierImportViewSet, basename="dossier-import")
 router.register("binders", BinderViewSet, basename="binder")
 router.register("deposit-pieces", PieceTypeViewSet, basename="deposit-piece")

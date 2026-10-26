@@ -1,7 +1,7 @@
 {
   "name": "amm-innov-frontend",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "node": "^22.22.2 || >=24.15.0"

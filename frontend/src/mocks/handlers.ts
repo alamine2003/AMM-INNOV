@@ -19,6 +19,73 @@ import { addMonths, differenceInCalendarMonths, format, parseISO } from 'date-fn
 export let db: MockDb = buildDb();
 export function resetDb() {
   db = buildDb();
+  ghplRuns = initialGhplRuns();
+}
+
+// Synchronisation AMM GHPL simulée : un passage réussi, deux scans à regarder.
+let ghplCounter = 0;
+function ghplRun(status: string, label: string, summary: Record<string, unknown>) {
+  return {
+    id: `sync-${++ghplCounter}`,
+    status,
+    status_label: label,
+    trigger: 'SCHEDULE',
+    started_at: `${MOCK_TODAY}T10:20:00Z`,
+    finished_at: `${MOCK_TODAY}T10:24:00Z`,
+    registry_modified: `${MOCK_TODAY}T09:41:00Z`,
+    message: '',
+    summary,
+    registry_batch: null,
+    scans_batch: null,
+  };
+}
+function initialGhplRuns() {
+  return [
+    ghplRun('DONE', 'Synchronisé', {
+      pieces: 3714,
+      presentations_changed: 12,
+      downloaded: 9,
+      adopted: 3,
+      moved: 2,
+      skipped: 2,
+      issues: [
+        {
+          path: 'SENEGAL/LOLIP/6_DEPOTS - COURRIERS/lettre.docx',
+          message: 'document Word : à enregistrer en PDF dans le classement',
+        },
+        {
+          path: 'MALI/GENFORTE/2_RENOUVELLEMENTS/gros.pdf',
+          message: 'trop volumineux (32 Mo, limite 25 Mo) : à compresser',
+        },
+      ],
+      issues_total: 2,
+    }),
+  ];
+}
+let ghplRuns = initialGhplRuns();
+const ghplFiles = [
+  {
+    id: 'f-1',
+    path: 'SENEGAL/LOLIP/6_DEPOTS - COURRIERS/lettre.docx',
+    state: 'SKIPPED',
+    state_label: 'Laissé de côté',
+    message: 'document Word : à enregistrer en PDF dans le classement',
+    amm: 'amm-1',
+    document: null,
+    updated_at: `${MOCK_TODAY}T10:24:00Z`,
+  },
+];
+function ghplSyncStatus() {
+  return {
+    configured: true,
+    enabled: true,
+    folder: 'ALAMINE NEXTCLOUD/AMM GHPL - CLASSEMENT GENERAL',
+    running: false,
+    last_run: ghplRuns[0],
+    last_success: ghplRuns[0],
+    recent: ghplRuns.filter((r) => r.status !== 'UP_TO_DATE'),
+    files: { SYNCED: 3601, PENDING: 0, SKIPPED: 1, REMOVED: 0, ERROR: 0 },
+  };
 }
 
 const BASE = '/api/v1';
@@ -1084,6 +1151,31 @@ export const handlers = [
       if (user.role !== 'CEO_ADMIN') return forbidden();
       db.users = db.users.filter((u) => u.id !== params.id);
       return new HttpResponse(null, { status: 204 });
+    }),
+  ),
+
+  // ---- Synchronisation AMM GHPL ----
+  http.get(
+    url('/ghpl-sync'),
+    withAuth((user) => {
+      if (user.role === 'COUNTRY_REGULATORY') return forbidden();
+      return HttpResponse.json(ghplSyncStatus());
+    }),
+  ),
+  http.post(
+    url('/ghpl-sync/run'),
+    withAuth((user) => {
+      if (user.role === 'COUNTRY_REGULATORY') return forbidden();
+      ghplRuns.unshift(ghplRun('UP_TO_DATE', 'Déjà à jour', { message: 'Registre inchangé.' }));
+      return HttpResponse.json({ detail: 'Synchronisation lancée.' }, { status: 202 });
+    }),
+  ),
+  http.get(
+    url('/ghpl-sync/files'),
+    withAuth((_u, { request }) => {
+      const state = new URL(request.url).searchParams.get('state') ?? '';
+      const files = ghplFiles.filter((f) => !state || state.split(',').includes(f.state));
+      return HttpResponse.json(paginate(files, request));
     }),
   ),
 

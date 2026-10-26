@@ -133,10 +133,32 @@ def recover_pending_work() -> dict:
         report["previews"] += 1
 
     report.update(recover_binder_exports(now))
+    report["ghpl_sync"] = recover_ghpl_sync(now)
 
     if any(report.values()):
         logger.warning("Rattrapage du travail en attente : %s", report)
     return report
+
+
+GHPL_SYNC_EVERY = timedelta(minutes=65)
+
+
+def recover_ghpl_sync(now) -> int:
+    """Synchronisation AMM GHPL en retard (service endormi à H+20 sur Render gratuit) : relancée
+    dans les cinq minutes du réveil au lieu d'attendre l'heure suivante."""
+    from django.conf import settings
+
+    from apps.imports.ghpl.webdav import Nextcloud
+    from apps.imports.models import GhplSyncRun
+    from apps.imports.tasks import sync_ghpl
+
+    if not settings.GHPL_SYNC_ENABLED or Nextcloud.from_settings() is None:
+        return 0
+    last = GhplSyncRun.objects.order_by("-started_at").values_list("started_at", flat=True).first()
+    if last is not None and last > now - GHPL_SYNC_EVERY:
+        return 0
+    sync_ghpl.delay()
+    return 1
 
 
 BINDER_EXPORT_RUNNING_MAX = timedelta(minutes=35)  # soft_time_limit de la tâche : 30 min

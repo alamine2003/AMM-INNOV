@@ -83,6 +83,17 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # Synchronisation horaire avec le classement AMM GHPL (docs/synchronisation-ghpl.md) :
+      # compte Nextcloud propriétaire du dossier, et un mot de passe d'application créé
+      # dans Nextcloud (Paramètres personnels > Sécurité), en lecture seule côté AMM GH.
+      - key: NEXTCLOUD_URL
+        value: https://innovpharma.stellarixcloud.sn
+      - key: NEXTCLOUD_USER          # compte propriétaire du classement
+        value: Alamine
+      - key: NEXTCLOUD_APP_PASSWORD  # saisi dans le tableau de bord Render, jamais ici
+        sync: false
+      - key: GHPL_SYNC_ROOT
+        value: ALAMINE NEXTCLOUD/AMM GHPL - CLASSEMENT GENERAL
       - key: DJANGO_SUPERUSER_EMAIL
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD

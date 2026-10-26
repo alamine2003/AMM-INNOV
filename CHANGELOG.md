@@ -5,6 +5,26 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.0] — 2026-10-26
+
+### Ajouté
+- **Synchronisation automatique avec le classement AMM GHPL** (`docs/synchronisation-ghpl.md`).
+  Chaque heure, AMM GH relit le registre du classement sur Nextcloud, en lecture seule. Il
+  réimporte les seules présentations qui ont changé (registre, puis scans classés) et range les
+  pièces sur leur fiche :
+  - un scan nouveau est téléchargé ;
+  - un scan déjà envoyé est rattaché sans être retéléchargé ;
+  - un scan reclassé dans le classement (autre période, type ou AMM) est suivi par son document,
+    sans doublon ;
+  - un document Word ou trop lourd est listé.
+
+  Les dates corrigées dans AMM GH ne sont jamais réécrites : un écart est signalé « à vérifier ».
+  Si le registre est incomplet (en cours d'écriture), rien n'est appliqué. Un passage manqué
+  pendant que Render dormait est rattrapé au réveil. Un passage long garde le service éveillé.
+  Carte « Synchronisation avec AMM GHPL » dans Imports Excel, avec « Synchroniser maintenant ».
+  Mise en service : un mot de passe d'application Nextcloud à saisir dans Render
+  (`NEXTCLOUD_APP_PASSWORD`).
+
 ## [1.0.9] — 2026-10-25
 
 ### Sécurité
