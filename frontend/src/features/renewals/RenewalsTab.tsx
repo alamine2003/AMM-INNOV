@@ -48,8 +48,8 @@ function RenewalCard({
   const { t } = useTranslation();
   const transitions = WORKFLOW_TRANSITIONS[renewal.workflow_status];
   const field = (label: string, value: string | null | undefined) => (
-    <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-      <Typography variant="caption" color="text.secondary">
+    <Grid size={{ xs: 6, sm: 4, lg: 2 }}>
+      <Typography variant="caption" color="text.secondary" noWrap component="div" title={label}>
         {label}
       </Typography>
       <Typography variant="body2">{value || '—'}</Typography>

@@ -5,6 +5,13 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.1] — 2026-10-26
+
+### Corrigé
+- Fiche AMM : une AMM expirée n'affiche plus deux fois « Expirée » dans l'en-tête (statut et urgence).
+- Carte d'un renouvellement : les intitulés (« Date de décision »…) ne passent plus sur deux lignes
+  quand la fenêtre est étroite (trois colonnes par ligne, six sur grand écran).
+
 ## [1.1.0] — 2026-10-26
 
 ### Ajouté
