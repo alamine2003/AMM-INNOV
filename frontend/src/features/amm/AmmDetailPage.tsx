@@ -69,7 +69,8 @@ export default function AmmDetailPage() {
             <Chip size="small" label={`${data.country_name} (${data.country_iso2})`} />
             <Chip size="small" label={data.range_code} variant="outlined" />
             <StatusChip value={data.status} />
-            <UrgencyChip value={data.urgency} />
+            {/* AMM expirée : l'urgence « Expirée » redirait le statut. */}
+            {data.urgency !== 'EXPIRE' && <UrgencyChip value={data.urgency} />}
             <DossierChip value={data.dossier_state} />
             <Typography variant="body2" color="text.secondary">
               {t('amm.fields.effectiveEnd')} : {formatDate(data.effective_end_date)} (
