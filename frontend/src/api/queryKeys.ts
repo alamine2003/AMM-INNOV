@@ -50,6 +50,11 @@ export const queryKeys = {
     coverage: (productId: string) => ['analytics', 'coverage', productId] as const,
   },
   users: { all: ['users'] as const, list: () => ['users', 'list'] as const },
+  ghplSync: {
+    all: ['ghpl-sync'] as const,
+    status: () => ['ghpl-sync', 'status'] as const,
+    files: (state: string, page: number) => ['ghpl-sync', 'files', state, page] as const,
+  },
   imports: {
     all: ['imports'] as const,
     list: () => ['imports', 'list'] as const,

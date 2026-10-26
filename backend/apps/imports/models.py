@@ -242,3 +242,106 @@ class DossierReviewPoint(models.Model):
     @property
     def applicable(self) -> bool:
         return bool(self.field) and self.scan_value not in (None, "")
+
+
+class GhplSyncRun(models.Model):
+    """Un passage de la synchronisation horaire avec le classement AMM GHPL (Nextcloud).
+
+    Le registre `0_REGISTRE AMM GHPL.xlsx` est relu ; seules les présentations dont le
+    classement a changé sont réimportées (registre puis scans), et leurs fichiers téléchargés.
+    """
+
+    class Status(models.TextChoices):
+        RUNNING = "RUNNING", "En cours"
+        UP_TO_DATE = "UP_TO_DATE", "Déjà à jour"
+        DONE = "DONE", "Synchronisé"
+        PARTIAL = "PARTIAL", "Synchronisé en partie"
+        FAILED = "FAILED", "Échoué"
+        NOT_CONFIGURED = "NOT_CONFIGURED", "Non configurée"
+
+    class Trigger(models.TextChoices):
+        SCHEDULE = "SCHEDULE", "Automatique (chaque heure)"
+        MANUAL = "MANUAL", "Lancée à la main"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    status = models.CharField(
+        "statut", max_length=16, choices=Status.choices, default=Status.RUNNING
+    )
+    trigger = models.CharField(
+        "déclenchement", max_length=16, choices=Trigger.choices, default=Trigger.SCHEDULE
+    )
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    started_at = models.DateTimeField("démarrée le", auto_now_add=True)
+    finished_at = models.DateTimeField("terminée le", null=True, blank=True)
+    registry_etag = models.CharField("version du registre", max_length=200, blank=True)
+    registry_modified = models.DateTimeField("registre modifié le", null=True, blank=True)
+    # Empreinte de chaque présentation (registre + pièces) après ce passage : le suivant ne
+    # réimporte que celles qui ont changé.
+    fingerprints = models.JSONField("empreintes", default=dict, blank=True)
+    summary = models.JSONField("bilan", default=dict, blank=True)
+    message = models.TextField("message", blank=True)
+    registry_batch = models.ForeignKey(
+        ImportBatch, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    scans_batch = models.ForeignKey(
+        ImportBatch, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        verbose_name = "synchronisation AMM GHPL"
+        verbose_name_plural = "synchronisations AMM GHPL"
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"Synchronisation {self.started_at:%d/%m/%Y %H:%M} — {self.get_status_display()}"
+
+
+class GhplSyncedFile(models.Model):
+    """Un fichier du classement suivi par la synchronisation, et le document qu'il est devenu."""
+
+    class State(models.TextChoices):
+        SYNCED = "SYNCED", "Rangé"
+        PENDING = "PENDING", "À télécharger"
+        SKIPPED = "SKIPPED", "Laissé de côté"
+        ERROR = "ERROR", "Erreur"
+        REMOVED = "REMOVED", "Retiré du classement"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    path = models.TextField("chemin dans le classement", unique=True)
+    document = models.ForeignKey(
+        "documents.Document",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    amm = models.ForeignKey(
+        "amm.MarketingAuthorization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    placement = models.JSONField("place dans AMM GH", default=dict, blank=True)
+    sha256 = models.CharField("empreinte du fichier", max_length=64, blank=True, db_index=True)
+    state = models.CharField(
+        "état", max_length=16, choices=State.choices, default=State.PENDING, db_index=True
+    )
+    message = models.TextField("détail", blank=True)
+    attempts = models.PositiveSmallIntegerField("essais", default=0)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "fichier synchronisé"
+        verbose_name_plural = "fichiers synchronisés"
+        ordering = ["path"]
+
+    def __str__(self) -> str:
+        return f"{self.path} — {self.get_state_display()}"

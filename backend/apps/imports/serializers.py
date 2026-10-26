@@ -59,3 +59,39 @@ class ImportRowSerializer(serializers.ModelSerializer):
         model = ImportRow
         fields = ["id", "sheet", "row_number", "raw", "outcome", "message", "amm"]
         read_only_fields = fields
+
+
+class GhplSyncRunSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    status = serializers.CharField()
+    status_label = serializers.CharField(source="get_status_display")
+    trigger = serializers.CharField()
+    started_at = serializers.DateTimeField()
+    finished_at = serializers.DateTimeField(allow_null=True)
+    registry_modified = serializers.DateTimeField(allow_null=True)
+    message = serializers.CharField()
+    summary = serializers.DictField()
+    registry_batch = serializers.UUIDField(source="registry_batch_id", allow_null=True)
+    scans_batch = serializers.UUIDField(source="scans_batch_id", allow_null=True)
+
+
+class GhplSyncStatusSerializer(serializers.Serializer):
+    configured = serializers.BooleanField()
+    enabled = serializers.BooleanField()
+    folder = serializers.CharField()
+    running = serializers.BooleanField()
+    last_run = GhplSyncRunSerializer(allow_null=True)
+    last_success = GhplSyncRunSerializer(allow_null=True)
+    recent = GhplSyncRunSerializer(many=True)
+    files = serializers.DictField(child=serializers.IntegerField())
+
+
+class GhplSyncedFileSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    path = serializers.CharField()
+    state = serializers.CharField()
+    state_label = serializers.CharField(source="get_state_display")
+    message = serializers.CharField()
+    amm = serializers.UUIDField(source="amm_id", allow_null=True)
+    document = serializers.UUIDField(source="document_id", allow_null=True)
+    updated_at = serializers.DateTimeField()

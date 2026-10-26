@@ -678,9 +678,23 @@ class _Shortened(Exception):
     pass
 
 
-def import_scan_manifest(source, batch: ImportBatch | None, dry_run: bool) -> dict[str, dict]:
-    """Applique le manifeste ; renvoie les compteurs par pays (« Scans classés — SENEGAL »)."""
-    rows = [r for r in _read(source) if r["principal"].lower() == "oui"]
+def import_scan_manifest(
+    source,
+    batch: ImportBatch | None,
+    dry_run: bool,
+    rows: list[dict] | None = None,
+    correct: bool = True,
+) -> dict[str, dict]:
+    """Applique le manifeste ; renvoie les compteurs par pays (« Scans classés — SENEGAL »).
+
+    `rows` : lignes déjà lues (synchronisation, qui les tire du registre) au lieu du fichier.
+    `correct=False` (synchronisation) : le classement complète et crée, il ne corrige jamais une
+    date déjà sur la fiche ; un écart est signalé « à vérifier ». Une date corrigée à la main
+    dans AMM GH n'est ainsi pas réécrite à chaque passage.
+    """
+    rows = [
+        r for r in (rows if rows is not None else _read(source)) if r["principal"].lower() == "oui"
+    ]
     groups: dict[tuple, list[dict]] = defaultdict(list)
     for row in rows:
         groups[(row["iso2"].upper(), _plain(row["presentation"]))].append(row)
@@ -698,13 +712,20 @@ def import_scan_manifest(source, batch: ImportBatch | None, dry_run: bool) -> di
             for index, group_rows in enumerate(groups.values()):
                 if batch is not None and index % PROGRESS_EVERY == 0:
                     set_progress(batch.pk, done, len(rows))
-                group = _Group(group_rows, context, user)
+                group = _Group(group_rows, context, user, correct=correct)
                 try:
                     try:
                         with transaction.atomic():  # un groupe en erreur n'emporte que lui
                             group.run()
-                            if group.shortened:
+                            if correct and group.shortened:
                                 raise _Shortened
+                            if not correct and group.corrections:
+                                group.warn(
+                                    group.pieces,
+                                    "le classement diffère de la fiche ("
+                                    + ", ".join(group.corrections)
+                                    + ") : fiche conservée, à vérifier",
+                                )
                             results = list(group.results())
                     except _Shortened:
                         # Corrections écartées : seconde passe qui ne fait que compléter et créer.

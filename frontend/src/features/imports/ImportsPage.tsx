@@ -29,6 +29,7 @@ import { FileDropzone } from '@/components/FileDropzone';
 import { EmptyBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
+import { GhplSyncCard } from './GhplSyncCard';
 
 export const statusColor = (s: string): 'success' | 'error' | 'warning' | 'default' =>
   s === 'DONE'
@@ -74,6 +75,7 @@ export default function ImportsPage() {
           </Button>
         }
       />
+      <GhplSyncCard />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
           <Stack spacing={2}>
@@ -147,6 +149,15 @@ export default function ImportsPage() {
                             color="info"
                             variant="outlined"
                             label={t('admin.imports.registryChip')}
+                            sx={{ ml: 0.5 }}
+                          />
+                        )}
+                        {(b.summary as Record<string, unknown> | null)?.source === 'synchro' && (
+                          <Chip
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            label="Synchro AMM GHPL"
                             sx={{ ml: 0.5 }}
                           />
                         )}

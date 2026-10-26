@@ -1372,6 +1372,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ghpl-sync/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Synchronisation horaire avec le classement AMM GHPL (Nextcloud) : état et lancement. */
+        get: operations["v1_ghpl_sync_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ghpl-sync/files/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Synchronisation horaire avec le classement AMM GHPL (Nextcloud) : état et lancement. */
+        get: operations["v1_ghpl_sync_files_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ghpl-sync/run/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Synchronisation horaire avec le classement AMM GHPL (Nextcloud) : état et lancement. */
+        post: operations["v1_ghpl_sync_run_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/": {
         parameters: {
             query?: never;
@@ -3144,6 +3195,53 @@ export interface components {
          * @enum {string}
          */
         FieldEnum: "number" | "start_date" | "end_date";
+        GhplSyncRun: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            status_label: string;
+            trigger: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            finished_at: string | null;
+            /** Format: date-time */
+            registry_modified: string | null;
+            message: string;
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            registry_batch: string | null;
+            /** Format: uuid */
+            scans_batch: string | null;
+        };
+        GhplSyncStatus: {
+            configured: boolean;
+            enabled: boolean;
+            folder: string;
+            running: boolean;
+            last_run: components["schemas"]["GhplSyncRun"] | null;
+            last_success: components["schemas"]["GhplSyncRun"] | null;
+            recent: components["schemas"]["GhplSyncRun"][];
+            files: {
+                [key: string]: number;
+            };
+        };
+        GhplSyncedFile: {
+            /** Format: uuid */
+            id: string;
+            path: string;
+            state: string;
+            state_label: string;
+            message: string;
+            /** Format: uuid */
+            amm: string | null;
+            /** Format: uuid */
+            document: string | null;
+            /** Format: date-time */
+            updated_at: string;
+        };
         /** @description Réponse de /api/v1/health : 200 si la base répond, 503 sinon (sert au schéma OpenAPI). */
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
@@ -6729,6 +6827,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DossierReviewPoint"];
+                };
+            };
+        };
+    };
+    v1_ghpl_sync_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GhplSyncStatus"][];
+                };
+            };
+        };
+    };
+    v1_ghpl_sync_files_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GhplSyncedFile"][];
+                };
+            };
+        };
+    };
+    v1_ghpl_sync_run_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GhplSyncStatus"];
                 };
             };
         };

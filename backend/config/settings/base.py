@@ -286,6 +286,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.check_integrity",
         "schedule": crontab(hour=5, minute=0),
     },
+    # Synchronisation avec le classement AMM GHPL (Nextcloud), mis à jour chaque heure par sa
+    # propre tâche planifiée : on relit le registre à H+20 (inactive tant que Nextcloud n'est
+    # pas configuré, voir docs/synchronisation-ghpl.md).
+    "sync-ghpl": {
+        "task": "apps.imports.tasks.sync_ghpl",
+        "schedule": crontab(minute=20),
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -491,6 +498,18 @@ if DOCUMENT_STORAGE == "s3":
         },
     }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
+
+# Synchronisation horaire avec le classement AMM GHPL (Nextcloud, lecture seule : PROPFIND et
+# GET). Identifiant et mot de passe d'application saisis dans Render (jamais dans le dépôt).
+NEXTCLOUD_URL = env("NEXTCLOUD_URL") or "https://innovpharma.stellarixcloud.sn"
+NEXTCLOUD_USER = env("NEXTCLOUD_USER", "")
+NEXTCLOUD_APP_PASSWORD = env("NEXTCLOUD_APP_PASSWORD", "")
+# Dossier du classement, tel qu'il apparaît dans « Fichiers » du compte ci-dessus.
+GHPL_SYNC_ROOT = env("GHPL_SYNC_ROOT") or "ALAMINE NEXTCLOUD/AMM GHPL - CLASSEMENT GENERAL"
+GHPL_SYNC_REGISTRY = env("GHPL_SYNC_REGISTRY") or "0_REGISTRE AMM GHPL.xlsx"
+GHPL_SYNC_ENABLED = env_bool("GHPL_SYNC_ENABLED", True)
+# Fichiers téléchargés par passage (Render gratuit : un passage reste court, la suite au suivant).
+GHPL_SYNC_MAX_FILES = int(env("GHPL_SYNC_MAX_FILES", "80"))
 DOSSIER_MAX_FILES = int(env("DOSSIER_MAX_FILES", "200"))
 DOSSIER_MAX_MB = int(env("DOSSIER_MAX_MB", "250"))
 DOSSIER_MAX_PAGES = int(env("DOSSIER_MAX_PAGES", "100"))

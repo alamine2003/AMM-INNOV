@@ -360,14 +360,29 @@ OUTCOME_COUNTERS = {
 }
 
 
-def import_registry(source, batch: ImportBatch | None, dry_run: bool) -> dict[str, dict]:
-    """Applique le registre ; renvoie les compteurs par pays (« Registre GHPL — SENEGAL »)."""
+def read_registry(source) -> tuple[list[dict], list[dict]]:
+    """Lignes de `_Consolidation` (une par présentation × pays) et de `_Docs` (une par pièce)."""
     workbook = load_workbook(source, data_only=True, read_only=True)
     try:
-        records = _records(workbook, "_Consolidation")
-        deposits = _deposits(_records(workbook, "_Docs"))
+        return _records(workbook, "_Consolidation"), _records(workbook, "_Docs")
     finally:
         workbook.close()
+
+
+def import_registry(
+    source,
+    batch: ImportBatch | None,
+    dry_run: bool,
+    records: list[dict] | None = None,
+    docs: list[dict] | None = None,
+) -> dict[str, dict]:
+    """Applique le registre ; renvoie les compteurs par pays (« Registre GHPL — SENEGAL »).
+
+    `records` / `docs` : lignes déjà lues (la synchronisation n'en passe qu'une partie).
+    """
+    if records is None or docs is None:
+        records, docs = read_registry(source)
+    deposits = _deposits(docs)
     sheets: dict[str, dict] = {}
     rows: list[ImportRow] = []
     try:

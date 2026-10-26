@@ -25,6 +25,8 @@ import type {
   BinderLocation,
   BinderResult,
   BinderSummary,
+  GhplSyncedFile,
+  GhplSyncStatus,
   DepositDetail,
   DepositSuggestion,
   DepositSummary,
@@ -76,6 +78,8 @@ export type _HistoryEntry = Assert<Assignable<Schemas['HistoryEntry'], HistoryEn
 export type _DossierCounts = Assert<Assignable<Schemas['DossierCounts'], DossierCounts>>;
 export type _DossierReviewPoint = Assert<Assignable<Schemas['DossierReviewPoint'], DossierReviewPoint>>;
 export type _BinderSummary = Assert<Assignable<Schemas['BinderSummary'], BinderSummary>>;
+export type _GhplSyncStatus = Assert<Assignable<Schemas['GhplSyncStatus'], GhplSyncStatus>>;
+export type _GhplSyncedFile = Assert<Assignable<Schemas['GhplSyncedFile'], GhplSyncedFile>>;
 export type _BinderDetail = Assert<Assignable<Schemas['BinderDetail'], BinderDetail>>;
 export type _BinderAddPage = Assert<Assignable<Schemas['AddPageResult'], BinderAddPageResult>>;
 export type _BinderPageScan = Assert<Assignable<Schemas['PageScanResult'], BinderPageScanResult>>;

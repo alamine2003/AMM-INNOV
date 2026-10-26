@@ -144,3 +144,59 @@ def _auto_apply(batch, token: str, create: bool = False) -> bool:
         return False
     logger.info("Dossier %s rangé automatiquement", batch.pk)
     return True
+
+
+@shared_task(name="apps.imports.tasks.sync_ghpl", soft_time_limit=3300, time_limit=3420)
+def sync_ghpl(trigger: str = "SCHEDULE", user_id: str | None = None) -> dict:
+    """Synchronisation avec le classement AMM GHPL (voir apps.imports.ghpl.sync)."""
+    from datetime import timedelta
+
+    from apps.accounts.models import User
+
+    from .ghpl.sync import run_sync
+    from .models import GhplSyncRun
+
+    # Un seul passage à la fois : le précédent peut encore tourner (premier passage, gros lot).
+    busy = GhplSyncRun.objects.filter(
+        status=GhplSyncRun.Status.RUNNING,
+        started_at__gte=timezone.now() - timedelta(minutes=90),
+    ).exists()
+    if busy:
+        return {"status": "skipped"}
+    # Passage interrompu (redémarrage du service) : clos pour ne pas bloquer les suivants.
+    GhplSyncRun.objects.filter(status=GhplSyncRun.Status.RUNNING).update(
+        status=GhplSyncRun.Status.FAILED,
+        finished_at=timezone.now(),
+        message="Passage interrompu (service redémarré) : repris au passage suivant.",
+    )
+    user = User.objects.filter(pk=user_id).first() if user_id else None
+    stop = _keep_awake()
+    try:
+        run = run_sync(trigger=trigger, user=user)
+    finally:
+        stop.set()
+    return {"status": run.status, **{k: v for k, v in run.summary.items() if isinstance(v, int)}}
+
+
+def _keep_awake():
+    """Render gratuit endort le service après 15 min sans requête entrante, Celery compris :
+    pendant un long passage (premier passage, nombreux scans), le service s'appelle lui-même
+    toutes les 4 min par son adresse publique pour ne pas être coupé en route."""
+    import os
+    import threading
+    import urllib.request
+
+    stop = threading.Event()
+    url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not url:
+        return stop
+
+    def ping():
+        while not stop.wait(240):
+            try:
+                urllib.request.urlopen(f"{url}/api/v1/health", timeout=30).close()
+            except OSError:
+                pass
+
+    threading.Thread(target=ping, name="ghpl-sync-keep-awake", daemon=True).start()
+    return stop

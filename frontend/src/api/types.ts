@@ -971,3 +971,47 @@ export interface DepositDetail extends DepositSummary {
 export interface DepositSuggestion extends DepositAmm {
   renewal_status: WorkflowStatus | null;
 }
+
+// --- Synchronisation horaire avec le classement AMM GHPL (Nextcloud)
+export type GhplSyncStatusCode = 'RUNNING' | 'UP_TO_DATE' | 'DONE' | 'PARTIAL' | 'FAILED' | 'NOT_CONFIGURED';
+
+export interface GhplSyncIssue {
+  path: string;
+  message: string;
+}
+
+export interface GhplSyncRun {
+  id: string;
+  status: GhplSyncStatusCode | string;
+  status_label: string;
+  trigger: string;
+  started_at: string;
+  finished_at: string | null;
+  registry_modified: string | null;
+  message: string;
+  summary: { [key: string]: unknown };
+  registry_batch: string | null;
+  scans_batch: string | null;
+}
+
+export interface GhplSyncStatus {
+  configured: boolean;
+  enabled: boolean;
+  folder: string;
+  running: boolean;
+  last_run: GhplSyncRun | null;
+  last_success: GhplSyncRun | null;
+  recent: GhplSyncRun[];
+  files: { [state: string]: number };
+}
+
+export interface GhplSyncedFile {
+  id: string;
+  path: string;
+  state: string;
+  state_label: string;
+  message: string;
+  amm: string | null;
+  document: string | null;
+  updated_at: string;
+}
