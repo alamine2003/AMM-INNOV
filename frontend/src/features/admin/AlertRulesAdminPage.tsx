@@ -49,14 +49,16 @@ const schema = z.object({
   only_if_not_filed: z.boolean(),
   is_active: z.boolean(),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.output<typeof schema>;
+// zod 4 : `z.coerce` accepte n'importe quelle saisie (le champ du formulaire est du texte).
+type FormInput = z.input<typeof schema>;
 
 function RuleDialog({ open, onClose, rule }: { open: boolean; onClose: () => void; rule: AlertRule | null }) {
   const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const countries = useCountries();
   const { create, update } = useAlertRuleMutations();
-  const { control, register, handleSubmit, formState } = useForm<Values>({
+  const { control, register, handleSubmit, formState } = useForm<FormInput, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: rule
       ? { ...rule, country: rule.country ?? '' }

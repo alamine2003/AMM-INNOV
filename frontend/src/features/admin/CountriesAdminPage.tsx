@@ -32,7 +32,9 @@ const schema = z.object({
   validity_years: z.coerce.number().int().min(1).max(20),
   timezone: z.string().min(1),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.output<typeof schema>;
+// zod 4 : `z.coerce` accepte n'importe quelle saisie (le champ du formulaire est du texte).
+type FormInput = z.input<typeof schema>;
 
 function CountryDialog({
   open,
@@ -46,7 +48,7 @@ function CountryDialog({
   const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const { create, update } = useCountryMutations();
-  const { register, handleSubmit, formState } = useForm<Values>({
+  const { register, handleSubmit, formState } = useForm<FormInput, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: country ?? {
       iso2: '',
