@@ -301,9 +301,7 @@ def test_late_sync_is_caught_up_after_waking(settings, monkeypatch):
 def test_webdav_url_quotes_every_segment():
     from apps.imports.ghpl.webdav import Nextcloud
 
-    client = Nextcloud(
-        "https://cloud.test/", "m.gueye", "x", "AMM GHPL - CLASSEMENT GENERAL"
-    )
+    client = Nextcloud("https://cloud.test/", "m.gueye", "x", "AMM GHPL - CLASSEMENT GENERAL")
     assert client.url("1_GAMME/N° 885/a b.pdf") == (
         "https://cloud.test/remote.php/dav/files/m.gueye/"
         "AMM%20GHPL%20-%20CLASSEMENT%20GENERAL/1_GAMME/N%C2%B0%20885/a%20b.pdf"
@@ -346,3 +344,76 @@ def test_webdav_reads_version_and_refuses_bad_credentials(monkeypatch):
     assert seen == [("PROPFIND", "0")]  # lecture seule, profondeur 0
     with pytest.raises(webdav.NextcloudError, match="mot de passe d'application"):
         client.stat("refus.xlsx")
+
+
+SIBLING = "LOLIP 20MG CPR B30"
+
+
+def grouped(presentation, name):
+    values = doc(
+        "AMM (octroi)",
+        "1_AMM ORIGINE - 2019 - N° 885",
+        date(2019, 7, 4),
+        name,
+        numero="885",
+    )
+    values["Presentation"] = presentation
+    values["Chemin"] = f"1_GAMME GENERALE/SENEGAL/LOLIP/{presentation}/1_AMM ORIGINE/{name}"
+    return values
+
+
+def sibling_records():
+    return [
+        {
+            "Pays": "SENEGAL",
+            "Gamme": "GAMME GENERALE",
+            "Presentation": name,
+            "Source": "Classement seul",
+            "Controle": "Classement seul",
+            "Referentiel": name,
+            "N° AMM origine": "885",
+            "Date origine": datetime(2019, 7, 4),
+        }
+        for name in (PRODUCT, SIBLING)
+    ]
+
+
+def test_grouped_decision_gets_a_copy_on_each_record(cloud):
+    first = grouped(PRODUCT, "decision groupee.pdf")
+    second = grouped(SIBLING, "decision groupee (2).pdf")
+    shared = MINIMAL_PDF + b"decision groupee"
+    cloud.publish(
+        [first, second],
+        records=sibling_records(),
+        files={first["Chemin"]: shared, second["Chemin"]: shared},
+    )
+    run = run_sync(client=cloud)
+    assert run.status == GhplSyncRun.Status.DONE, run.message
+    for name in (PRODUCT, SIBLING):
+        amm = MarketingAuthorization.objects.get(product__name=name)
+        assert Document.objects.current().filter(amm=amm).count() == 1, name
+    assert not run.summary.get("moved")
+
+
+def test_scan_taken_from_a_sibling_record_is_given_back(cloud):
+    first = grouped(PRODUCT, "decision groupee.pdf")
+    second = grouped(SIBLING, "decision groupee (2).pdf")
+    shared = MINIMAL_PDF + b"decision groupee"
+    cloud.publish(
+        [first, second],
+        records=sibling_records(),
+        files={first["Chemin"]: shared, second["Chemin"]: shared},
+    )
+    run_sync(client=cloud)
+    # État laissé par la 1.1.0 : la copie de la première fiche a été déplacée sur la seconde.
+    mine = GhplSyncedFile.objects.get(path=first["Chemin"])
+    theirs = GhplSyncedFile.objects.get(path=second["Chemin"])
+    Document.objects.filter(pk=theirs.document_id).delete()
+    Document.objects.filter(pk=mine.document_id).update(amm=theirs.amm_id)
+    theirs.document_id = mine.document_id
+    theirs.save()
+    run = run_sync(client=cloud)  # registre inchangé : la réparation passe quand même
+    assert run.summary["repaired"] == 1
+    for name in (PRODUCT, SIBLING):
+        amm = MarketingAuthorization.objects.get(product__name=name)
+        assert Document.objects.current().filter(amm=amm).count() == 1, name

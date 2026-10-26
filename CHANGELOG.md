@@ -5,6 +5,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.2] — 2026-10-26
+
+### Corrigé
+- **Synchronisation AMM GHPL : décisions groupées.** Un même scan qui sert à plusieurs présentations
+  (décision groupée, au Mali notamment) était déplacé d'une fiche à l'autre au lieu d'être présent
+  sur chacune. Chaque fiche garde désormais sa copie. Un document n'est déplacé vers une autre fiche
+  que si sa pièce a vraiment quitté la première dans le classement. Les fiches touchées au premier
+  passage (26/10) retrouvent leur copie au passage suivant (réparation automatique).
+
 ## [1.1.1] — 2026-10-26
 
 ### Corrigé
