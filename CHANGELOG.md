@@ -14,6 +14,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   que si sa pièce a vraiment quitté la première dans le classement. Les fiches touchées au premier
   passage (26/10) retrouvent leur copie au passage suivant (réparation automatique).
 
+### Sécurité
+- CVE-2026-83813 (client DNS de Twisted, publiée le 27/10) ignorée par `pip-audit` avec son motif :
+  AMM GH ne fait aucune résolution DNS par Twisted (daphne ne sert qu'en développement).
+
 ## [1.1.1] — 2026-10-26
 
 ### Corrigé
