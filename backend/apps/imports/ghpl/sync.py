@@ -110,6 +110,8 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
             f"Registre introuvable sur Nextcloud : « {settings.GHPL_SYNC_ROOT}/{registry_path} »."
         )
     run.registry_etag, run.registry_modified = remote.etag, remote.modified
+    repair: Counter = Counter()
+    _repair_shared(repair)
     previous = _previous()
     pending = GhplSyncedFile.objects.filter(
         state=GhplSyncedFile.State.PENDING, attempts__lt=MAX_ATTEMPTS
@@ -120,7 +122,7 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
         run.summary = {"message": "Registre inchangé depuis le dernier passage."}
         return
 
-    counts: Counter = Counter()
+    counts: Counter = Counter(repair)
     issues: list[dict] = []
     present: set[str] | None = None
     if previous is None or previous.registry_etag != remote.etag:
@@ -167,11 +169,9 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
         run.fingerprints = previous.fingerprints
         counts["pieces"] = (previous.summary or {}).get("pieces", 0)
 
+    removed = _mark_removed(present) if present is not None else []
     _download(client, counts, issues)
-    if present is not None:
-        # Après les téléchargements : une pièce déplacée a retrouvé son document sous son
-        # nouveau chemin, l'ancien chemin n'est pas signalé comme « retiré ».
-        _mark_removed(present, counts, issues)
+    _report_removed(removed, counts, issues)
     left = GhplSyncedFile.objects.filter(
         state=GhplSyncedFile.State.PENDING, attempts__lt=MAX_ATTEMPTS
     ).count()
@@ -279,6 +279,50 @@ def _adopt(place: dict, name: str) -> Document | None:
     )
 
 
+def _claimed_by_others(document: Document, synced: GhplSyncedFile) -> bool:
+    """Le document est aussi la pièce d'un autre chemin encore présent dans le classement.
+
+    Une décision groupée (plusieurs présentations sur un même scan) est le même fichier rangé
+    sur plusieurs fiches : chaque fiche garde sa copie, on ne la déplace jamais de l'une à
+    l'autre.
+    """
+    return (
+        GhplSyncedFile.objects.filter(document=document)
+        .exclude(pk=synced.pk)
+        .exclude(state=GhplSyncedFile.State.REMOVED)
+        .exists()
+    )
+
+
+def _repair_shared(counts: Counter) -> None:
+    """Répare les pièces partagées entre fiches (1.1.0 déplaçait une décision groupée vers la
+    dernière fiche qui la réclamait) : chaque chemin rangé sur une autre fiche que la sienne
+    est remis en attente, et sa fiche retrouve sa copie au téléchargement suivant."""
+    from django.db.models import Count, F
+
+    shared = (
+        GhplSyncedFile.objects.exclude(state=GhplSyncedFile.State.REMOVED)
+        .filter(document__isnull=False)
+        .values("document_id")
+        .annotate(n=Count("id"))
+        .filter(n__gt=1)
+        .values_list("document_id", flat=True)
+    )
+    wrong = (
+        GhplSyncedFile.objects.filter(document_id__in=list(shared))
+        .exclude(state=GhplSyncedFile.State.REMOVED)
+        .exclude(amm_id=F("document__amm_id"))
+    )
+    repaired = wrong.update(
+        document=None,
+        state=GhplSyncedFile.State.PENDING,
+        attempts=0,
+        message="copie à refaire sur sa fiche (scan partagé entre plusieurs présentations)",
+    )
+    if repaired:
+        counts["repaired"] += repaired
+
+
 def _place(batch: ImportBatch, counts: Counter, issues: list[dict]) -> None:
     """Rattache chaque pièce importée à son document, ou la met en attente de téléchargement."""
     for row in ImportRow.objects.filter(batch=batch).only("raw", "amm_id").iterator():
@@ -301,7 +345,21 @@ def _place(batch: ImportBatch, counts: Counter, issues: list[dict]) -> None:
         synced.placement, synced.amm_id = place, place["amm"]
         document = synced.document
         if document is not None and document.archived_at is None:
-            if not _same_place(document, place):
+            if str(document.amm_id) != place["amm"] and _claimed_by_others(document, synced):
+                # Rangée maintenant sur une autre fiche, et ce scan sert encore ailleurs :
+                # une copie est faite pour la nouvelle fiche.
+                synced.document, synced.state, synced.attempts = (
+                    None,
+                    GhplSyncedFile.State.PENDING,
+                    0,
+                )
+                synced.message = ""
+                counts["queued"] += 1
+                synced.save()
+                continue
+            if not _same_place(document, place) and _claimed_by_others(document, synced):
+                synced.message = "même scan qu'une autre pièce de la fiche : rangé une seule fois"
+            elif not _same_place(document, place):
                 reason = _move(document, place)
                 if reason:
                     synced.message = f"reclassé dans le classement, non suivi : {reason}"
@@ -316,7 +374,11 @@ def _place(batch: ImportBatch, counts: Counter, issues: list[dict]) -> None:
         if adopted is not None:
             synced.document, synced.sha256 = adopted, adopted.sha256
             synced.state, synced.message = GhplSyncedFile.State.SYNCED, "déjà sur la fiche"
-            if not _same_place(adopted, place) and not _move(adopted, place):
+            if (
+                not _same_place(adopted, place)
+                and not _claimed_by_others(adopted, synced)
+                and not _move(adopted, place)
+            ):
                 counts["moved"] += 1
             counts["adopted"] += 1
         elif not (synced.state == GhplSyncedFile.State.SKIPPED and synced.sha256):
@@ -327,24 +389,31 @@ def _place(batch: ImportBatch, counts: Counter, issues: list[dict]) -> None:
         synced.save()
 
 
-def _mark_removed(present: set[str], counts: Counter, issues: list[dict]) -> None:
+def _mark_removed(present: set[str]) -> list:
+    """Chemins disparus du classement : « retirés » (avant les téléchargements, pour qu'une pièce
+    déplacée retrouve son document sous son nouveau chemin)."""
     gone = GhplSyncedFile.objects.exclude(path__in=present).exclude(
         state=GhplSyncedFile.State.REMOVED
     )
+    pks = list(gone.values_list("pk", flat=True))
+    gone.update(state=GhplSyncedFile.State.REMOVED, message="déplacé dans le classement")
+    return pks
+
+
+def _report_removed(pks: list, counts: Counter, issues: list[dict]) -> None:
+    """Après les téléchargements : un document que plus aucune pièce ne réclame est signalé."""
     claimed = set(
-        GhplSyncedFile.objects.filter(path__in=present, document__isnull=False).values_list(
-            "document_id", flat=True
-        )
+        GhplSyncedFile.objects.exclude(state=GhplSyncedFile.State.REMOVED)
+        .filter(document__isnull=False)
+        .values_list("document_id", flat=True)
     )
-    for synced in gone.iterator():
-        synced.state = GhplSyncedFile.State.REMOVED
-        if synced.document_id and synced.document_id not in claimed:
-            synced.message = "retiré du classement : le document reste dans AMM GH (à vérifier)"
-            issues.append(_summary_issue(synced.path, synced.message))
-            counts["removed"] += 1
-        else:
-            synced.message = "déplacé dans le classement"
-        synced.save(update_fields=["state", "message", "updated_at"])
+    for synced in GhplSyncedFile.objects.filter(pk__in=pks, document__isnull=False):
+        if synced.document_id in claimed:
+            continue
+        synced.message = "retiré du classement : le document reste dans AMM GH (à vérifier)"
+        synced.save(update_fields=["message", "updated_at"])
+        issues.append(_summary_issue(synced.path, synced.message))
+        counts["removed"] += 1
 
 
 def _to_upload(name: str, content: bytes) -> tuple[bytes, str] | str:
@@ -421,13 +490,31 @@ def _download(client: Nextcloud, counts: Counter, issues: list[dict]) -> None:
             synced.save()
             continue
         data, upload_name = prepared
-        existing = (
-            Document.objects.current().filter(sha256=hashlib.sha256(data).hexdigest()).first()
-        )
+        digest = hashlib.sha256(data).hexdigest()
+        # Même fichier déjà sur la fiche de la pièce : rattaché (et rangé à sa place, s'il ne
+        # sert pas déjà à une autre pièce de la fiche).
+        existing = Document.objects.current().filter(sha256=digest, amm_id=place["amm"]).first()
+        if existing is None:
+            # Sur une autre fiche : déplacé seulement s'il n'y sert plus (pièce déplacée dans le
+            # classement) ; sinon, décision groupée, la fiche reçoit sa propre copie.
+            existing = next(
+                (
+                    doc
+                    for doc in Document.objects.current().filter(sha256=digest)
+                    if not _claimed_by_others(doc, synced)
+                    and GhplSyncedFile.objects.filter(
+                        document=doc, state=GhplSyncedFile.State.REMOVED
+                    ).exists()
+                ),
+                None,
+            )
         if existing is not None:
-            # Même fichier déjà dans AMM GH (envoyé à la main, ou reclassé sous un autre nom).
             synced.document = existing
-            if not _same_place(existing, place):
+            if _same_place(existing, place):
+                synced.message = "déjà dans AMM GH"
+            elif _claimed_by_others(existing, synced):
+                synced.message = "même scan qu'une autre pièce de la fiche : rangé une seule fois"
+            else:
                 reason = _move(existing, place)
                 synced.message = (
                     f"déjà dans AMM GH, non déplacé : {reason}"
@@ -436,8 +523,6 @@ def _download(client: Nextcloud, counts: Counter, issues: list[dict]) -> None:
                 )
                 if not reason:
                     counts["moved"] += 1
-            else:
-                synced.message = "déjà dans AMM GH"
             synced.state = GhplSyncedFile.State.SYNCED
             counts["adopted"] += 1
             synced.save()

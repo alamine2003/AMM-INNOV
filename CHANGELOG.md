@@ -5,6 +5,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.2] — 2026-10-26
+
+### Corrigé
+- **Synchronisation AMM GHPL : décisions groupées.** Un même scan qui sert à plusieurs présentations
+  (décision groupée, au Mali notamment) était déplacé d'une fiche à l'autre au lieu d'être présent
+  sur chacune. Chaque fiche garde désormais sa copie. Un document n'est déplacé vers une autre fiche
+  que si sa pièce a vraiment quitté la première dans le classement. Les fiches touchées au premier
+  passage (26/10) retrouvent leur copie au passage suivant (réparation automatique).
+
+### Sécurité
+- CVE-2026-83813 (client DNS de Twisted, publiée le 27/10) ignorée par `pip-audit` avec son motif :
+  AMM GH ne fait aucune résolution DNS par Twisted (daphne ne sert qu'en développement).
+
 ## [1.1.1] — 2026-10-26
 
 ### Corrigé
