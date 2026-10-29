@@ -86,6 +86,25 @@ class GhplSyncStatusSerializer(serializers.Serializer):
     files = serializers.DictField(child=serializers.IntegerField())
 
 
+class GhplCopyPairSerializer(serializers.Serializer):
+    copy = serializers.UUIDField()
+    keep = serializers.UUIDField()
+
+
+class GhplCopyMergeSerializer(serializers.Serializer):
+    pairs = GhplCopyPairSerializer(many=True, allow_empty=False)
+
+
+class GhplCopyRefusalSerializer(serializers.Serializer):
+    copy = serializers.UUIDField()
+    reason = serializers.CharField()
+
+
+class GhplCopyMergeResultSerializer(serializers.Serializer):
+    merged = serializers.IntegerField()
+    refused = GhplCopyRefusalSerializer(many=True)
+
+
 class GhplSyncedFileSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     path = serializers.CharField()

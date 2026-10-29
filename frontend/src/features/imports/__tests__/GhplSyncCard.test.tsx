@@ -23,4 +23,18 @@ describe('Synchronisation AMM GHPL', () => {
       },
     );
   });
+
+  it('liste les fiches en double et fusionne les simples copies après confirmation', async () => {
+    const user = userEvent.setup();
+    loginAs('u-ceo');
+    renderApp('/admin/imports');
+    const copies = await screen.findByTestId('ghpl-copies');
+    expect(copies).toHaveTextContent('Fiches en double (2)');
+    expect(copies).toHaveTextContent("à vérifier : n° d'origine différent");
+    await user.click(within(copies).getByTestId('ghpl-copies-merge'));
+    await user.click(within(copies).getByTestId('ghpl-copies-confirm'));
+    expect(await screen.findByText('1 fiche fusionnée')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('ghpl-copies')).toHaveTextContent('Fiches en double (1)'));
+    expect(screen.getByTestId('ghpl-copies')).not.toHaveTextContent('SALBUTUS');
+  });
 });

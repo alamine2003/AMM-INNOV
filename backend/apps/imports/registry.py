@@ -35,6 +35,7 @@ from .dossier.matching import (
     _strengths,
     _strengths_fit,
     _words_fit,
+    forms_clash,
 )
 from .excel_parser import SHEET_COUNTRIES
 from .models import ImportBatch, ImportRow
@@ -150,7 +151,7 @@ class _Catalog:
         label = _features(name)
         if not label:
             return []
-        brand, forms, strengths, _pack, distinctive = label
+        brand, forms, strengths, pack, distinctive = label
         found = []
         for pk in self._brands.get(brand[:2], []):
             if pool is not None and pk not in pool:
@@ -158,8 +159,10 @@ class _Catalog:
             other = self._features[pk]
             if SequenceMatcher(None, brand, other[0]).ratio() < 0.85:
                 continue
-            if forms and other[1] and not forms & other[1]:
+            if forms_clash(forms, other[1]):
                 continue
+            if pack and other[3] and pack != other[3]:
+                continue  # « SACHET B12 » n'est pas « SACH B/16 » : autre présentation
             if not _strengths_fit(strengths, other[2]):
                 continue
             if not _words_fit(distinctive, other[4]):
@@ -184,34 +187,55 @@ class _Catalog:
             return max(candidates, key=lambda item: (self._usage(item[0]), item[0].name))[0]
         return None
 
-    def exact(self, labels: list[str]) -> Product | None:
+    def _exact(self, labels: list[str], local: bool) -> list[Product]:
+        """Produits désignés exactement par un des libellés.
+
+        Dans le pays, le nom exact prime sur l'alias : la fiche ouverte sous ce libellé est
+        celle du pays. Ailleurs, l'alias (choix fait dans le catalogue) prime, comme avant.
+        """
+        found: list[Product] = []
         for label in labels:
             name = normalize_product_name(label)
             if not name:
                 continue
-            product = self.aliases.get(name) or self.by_name.get(name)
-            product = product or self.by_key.get(product_key(name))
-            if product:
-                return product
-        return None
+            by_name, by_key = self.by_name.get(name), self.by_key.get(product_key(name))
+            alias = self.aliases.get(name)
+            for product in (by_name, by_key, alias) if local else (alias, by_name, by_key):
+                if product is not None and product not in found:
+                    found.append(product)
+        return found
+
+    def exact(self, labels: list[str]) -> Product | None:
+        found = self._exact(labels, local=False)
+        return found[0] if found else None
 
     def find(self, labels: list[str], country) -> Product | None:
-        """Le libellé exact (alias, nom, clé), puis le même produit écrit autrement.
+        """Le produit déjà suivi dans le pays, puis le libellé exact, puis la même présentation.
 
-        « OMEPRAL 20MG GELULE B28 » est « OMEPRAL 20MG GEL B/28 », « TENSOPLUS 2,5MG-10MG-10MG »
-        est « TENSOPLUS 10MG/2,5MG/10MG » : même marque, même forme, mêmes dosages. On cherche
-        d'abord parmi les produits suivis dans le pays, puis dans tout le catalogue ; il faut une
-        seule réponse (ou des doublons du catalogue), sinon le produit est considéré comme nouveau.
+        D'abord dans le pays : le libellé exact (nom, clé, alias), puis le même produit écrit
+        autrement (« OMEPRAL 20MG GELULE B28 » est « OMEPRAL 20MG GEL B/28 », « TENSOPLUS
+        2,5MG-10MG-10MG » est « TENSOPLUS 10MG/2,5MG/10MG » : même marque, même forme, mêmes
+        dosages, même boîte). Ensuite seulement dans tout le catalogue : un libellé du pays repris
+        sous l'intitulé d'un autre pays ouvrait une seconde fiche à côté de celle du pays
+        (« SALBUTUS 2MG-5ML SIROP-SUSP BUV 100ML » en Côte d'Ivoire, sous le libellé du Sénégal).
+        Il faut une seule réponse (ou des doublons du catalogue), sinon le produit est nouveau.
         """
+        local = self.by_country.get(country.pk, set())
+        for product in self._exact(labels, local=True):
+            if product.pk in local:
+                return product
+        names = [label for label in labels if label]
+        for name in names:
+            found = self._pick(name, local)
+            if found:
+                return found
         exact = self.exact(labels)
         if exact:
             return exact
-        names = [label for label in labels if label]
-        for scope in (self.by_country.get(country.pk, set()), None):
-            for name in names:
-                found = self._pick(name, scope)
-                if found:
-                    return found
+        for name in names:
+            found = self._pick(name, None)
+            if found:
+                return found
         return None
 
 
@@ -223,6 +247,24 @@ def _features(name: str) -> tuple | None:
         return None
     strengths, pack = _strengths(name)
     return words[0], _forms(words), strengths, pack, _distinctive(words)
+
+
+def same_presentation(first: str, second: str) -> bool:
+    """Deux libellés de la même présentation (dans les deux sens) : marque, forme, dosages,
+    boîte et mots distinctifs concordants. « DOLCARE 75MG GEL B/20 » = « DOLCARE 75MG GELULE
+    B20 » ; « DOLCARE 75MG GELULE B10 » n'en est pas une, ni « SALBUTUS ... F200ML »."""
+    one, two = _features(first), _features(second)
+    if not one or not two:
+        return False
+    if SequenceMatcher(None, one[0], two[0]).ratio() < 0.85 or forms_clash(one[1], two[1]):
+        return False
+    if one[3] and two[3] and one[3] != two[3]:
+        return False
+    return (
+        _strengths_fit(one[2], two[2])
+        and _strengths_fit(two[2], one[2])
+        and _words_fit(one[4], two[4])
+    )
 
 
 def _deposits(docs: list[dict]) -> dict[str, date]:

@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
-import type { GhplSyncedFile, GhplSyncStatus, Paginated } from '@/api/types';
+import type { GhplCopyMergeResult, GhplSyncedFile, GhplSyncStatus, Paginated } from '@/api/types';
 
 /** État de la synchronisation AMM GHPL ; relu toutes les 5 s pendant un passage. */
 export function useGhplSync() {
@@ -34,6 +34,19 @@ export function useRunGhplSync() {
       // Le passage démarre dans le worker : on relit l'état aussitôt, puis toutes les 5 s.
       setTimeout(() => void qc.invalidateQueries({ queryKey: queryKeys.ghplSync.all }), 1500);
       void qc.invalidateQueries({ queryKey: queryKeys.imports.all });
+    },
+  });
+}
+
+/** Fusionne des fiches en double (simples copies) dans la fiche du pays. */
+export function useMergeGhplCopies() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (pairs: { copy: string; keep: string }[]) =>
+      (await api.post<GhplCopyMergeResult>('/ghpl-sync/merge-copies', { pairs })).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.ghplSync.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.amms.all });
     },
   });
 }

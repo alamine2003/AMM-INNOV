@@ -1,6 +1,6 @@
 """Import du registre GHPL (classement général des scans) : complète sans écraser."""
 
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from openpyxl import Workbook
@@ -258,3 +258,64 @@ def test_matching_scales_without_queries_per_row(
 
         counters = import_registry(source, None, dry_run=True)
     assert counters["Registre GHPL — SENEGAL"]["skipped"] == 30
+
+
+def test_country_record_beats_another_countrys_label(tmp_path, make_amm, ranges, batch):
+    """La fiche du pays d'abord : le libellé exact d'un autre pays n'ouvre pas une seconde fiche."""
+    senegal = Product.objects.create(name="SALBUTUS 2MG-5ML SIROP-SUSP BUV 100ML")
+    make_amm("SN", product_obj=senegal)
+    ivory = Product.objects.create(name="SALBUTUS 2MG/5ML SIROP FL/100ML")
+    ci = make_amm("CI", product_obj=ivory, original_number="")
+    source = registry(
+        tmp_path,
+        [
+            row(
+                Pays="COTE D'IVOIRE",
+                Presentation="SALBUTUS 2MG-5ML SIROP-SUSP BUV 100ML",
+                Source="Classement seul",
+                **{"N° AMM origine": "E-2011-311"},
+            )
+        ],
+    )
+    import_workbook(source, batch=batch)
+    assert MarketingAuthorization.objects.filter(country__iso2="CI").count() == 1
+    ci.refresh_from_db()
+    assert ci.original_number == "E-2011-311"
+
+
+def test_spray_and_other_pack_are_other_presentations(tmp_path, make_amm, ranges, batch):
+    """« NASO-GH 0,05% SPRAY » n'est pas les gouttes ; « SACHET B12 » n'est pas « B/16 »."""
+    drops = make_amm("CI", product_obj=Product.objects.create(name="NASO GH 0.05% GTTE F/10ML"))
+    sachets = make_amm(
+        "CI", product_obj=Product.objects.create(name="GENCLAV 1G/125MG PDRE SUSP BUV SACH B/16")
+    )
+    source = registry(
+        tmp_path,
+        [
+            row(
+                Pays="COTE D'IVOIRE",
+                Presentation="NASO-GH 0,05% SPRAY",
+                Source="Classement seul",
+                **{"Statut dossier": "Depose"},
+            ),
+            row(
+                Pays="COTE D'IVOIRE",
+                Presentation="GENCLAV 1G-125MG SACHET B12",
+                Source="Classement seul",
+            ),  # fmt: skip
+        ],
+        docs=[
+            {
+                "Pays": "COTE D'IVOIRE",
+                "Presentation": "NASO-GH 0,05% SPRAY",
+                "Type": "Depot / attestation",
+                "Date": datetime(2021, 1, 4),
+            }
+        ],
+    )
+    import_workbook(source, batch=batch)
+    spray = MarketingAuthorization.objects.get(product__name="NASO-GH 0,05% SPRAY")
+    assert spray.renewals.get().filing_date == date(2021, 1, 4)
+    assert not drops.renewals.exists()
+    assert MarketingAuthorization.objects.filter(product__name="GENCLAV 1G-125MG SACHET B12")
+    assert not sachets.renewals.exists()

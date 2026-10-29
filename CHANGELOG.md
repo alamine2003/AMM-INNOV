@@ -5,6 +5,28 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.3] — 2026-10-29
+
+### Corrigé
+- **Fiches en double ouvertes par l'import du registre.** Une présentation connue par le seul
+  classement (« Classement seul ») était parfois rattachée au produit d'un autre pays : une seconde
+  fiche s'ouvrait à côté de celle du pays, sans scan, avec les mêmes dates et parfois le même dépôt
+  (deux rappels). Exemple : « SALBUTUS 2MG-5ML SIROP-SUSP BUV 100ML » en Côte d'Ivoire, doublée
+  d'une fiche au libellé du Sénégal. L'import cherche désormais d'abord la fiche du pays (libellé
+  exact, puis même présentation écrite autrement), et seulement ensuite le reste du catalogue.
+- **Présentations confondues.** Un spray n'est plus rattaché aux gouttes du même dosage
+  (« NASO-GH 0,05% SPRAY » n'est pas « NASO GH 0.05% GTTE F/10ML ») ; deux boîtes différentes ne
+  sont plus la même présentation (« SACHET B12 » / « SACH B/16 », « B100 » / « B/30 »).
+- Le premier passage de la synchronisation après la mise à jour relit tout le registre avec ces
+  règles : les présentations manquantes sont créées et leurs scans rangés sur la bonne fiche.
+
+### Ajouté
+- **Fiches en double** (Imports Excel, carte de synchronisation) : la synchronisation liste, pays
+  par pays, les fiches qui suivent la même présentation que la fiche du pays sous le libellé d'un
+  autre pays. Une simple copie (ni document, ni dossier, des dates et renouvellements identiques)
+  se fusionne sur demande, sans rien perdre ; les autres sont listées « à vérifier » avec la
+  différence trouvée.
+
 ## [1.1.2] — 2026-10-26
 
 ### Corrigé

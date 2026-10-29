@@ -37,9 +37,26 @@ GHPL ». Le bouton « Synchroniser maintenant » lance un passage à la demande.
      Pour la faire entrer, enregistrez-la en PDF ou compressez-la dans le classement.
    - Une pièce retirée du classement est listée. Son document est conservé : AMM GH ne
      supprime jamais rien.
-5. **Garde-fou.** Si le registre compte 10 % de pièces de moins qu'au passage précédent (par
+5. **Fiches en double.** Chaque fois qu'il relit le registre, AMM GH cherche, pays par pays, les
+   fiches qu'aucun libellé du registre du pays ne désigne et qui sont la même présentation qu'une
+   fiche du pays (même marque, forme, dosages et boîte), ouvertes sous le libellé d'un autre pays.
+   Elles sont listées dans la carte, sous « Fiches en double » :
+   - une **simple copie** (aucun document, aucun dossier de dépôt ni import de dossier, des dates,
+     un n° d'origine et des renouvellements identiques) peut être fusionnée dans la fiche du pays
+     (« Fusionner ») ; la fusion ne perd rien et reste dans l'historique ;
+   - les autres sont « à vérifier », avec la différence trouvée : à régler à la main.
+
+   Rien n'est fusionné sans qu'une personne le demande.
+6. **Garde-fou.** Si le registre compte 10 % de pièces de moins qu'au passage précédent (par
    exemple parce qu'il est en cours d'écriture), rien n'est appliqué. Le passage est marqué en
    échec et le suivant réessaie.
+
+**Rattachement d'une présentation à sa fiche.** AMM GH cherche d'abord la fiche du pays : le
+libellé exact (nom, puis alias), puis la même présentation écrite autrement (« OMEPRAL 20MG
+GELULE B28 » = « OMEPRAL 20MG GEL B/28 »). Il ne cherche dans le reste du catalogue qu'ensuite.
+Un spray n'est jamais les gouttes du même dosage, et deux boîtes différentes (B12 / B16) sont deux
+présentations. Quand ces règles changent (1.1.3), le passage suivant relit tout le registre une
+fois, comme au premier passage.
 
 Côté Nextcloud, AMM GH ne fait que lire : des requêtes `PROPFIND` (profondeur 0) et `GET`.
 
