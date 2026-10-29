@@ -980,6 +980,24 @@ export interface GhplSyncIssue {
   message: string;
 }
 
+/** Fiche en double repérée par la synchronisation (même pays, même présentation). */
+export interface GhplSyncCopy {
+  country: string;
+  copy: string;
+  copy_name: string;
+  keep: string;
+  keep_name: string;
+  /** Simple copie (rien de plus que l'autre fiche) : fusion possible. */
+  mergeable: boolean;
+  /** Sinon : ce que la fiche apporte de plus (à vérifier par une personne). */
+  reason: string;
+}
+
+export interface GhplCopyMergeResult {
+  merged: number;
+  refused: { copy: string; reason: string }[];
+}
+
 export interface GhplSyncRun {
   id: string;
   status: GhplSyncStatusCode | string;

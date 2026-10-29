@@ -417,3 +417,50 @@ def test_scan_taken_from_a_sibling_record_is_given_back(cloud):
     for name in (PRODUCT, SIBLING):
         amm = MarketingAuthorization.objects.get(product__name=name)
         assert Document.objects.current().filter(amm=amm).count() == 1, name
+
+
+def test_new_matching_rules_reread_the_whole_registry_once(cloud):
+    cloud.publish([ORIGIN, RENEWAL])
+    first = run_sync(client=cloud)
+    # Passage fait avec les règles d'avant la 1.1.3 : le suivant reprend tout le registre.
+    first.fingerprints.pop("V:matching")
+    first.save()
+    again = run_sync(client=cloud)
+    assert again.status == GhplSyncRun.Status.DONE
+    assert again.registry_batch is not None and again.scans_batch is not None
+    assert run_sync(client=cloud).status == GhplSyncRun.Status.UP_TO_DATE
+
+
+def test_duplicate_record_is_listed_then_merged_on_request(cloud, make_amm, hq_client):
+    cloud.publish([ORIGIN, RENEWAL])
+    run_sync(client=cloud)
+    keep = amm_of_product()
+    # Même présentation ouverte sous un autre libellé (celui d'un autre pays), sans scan.
+    copy = make_amm(
+        "SN",
+        product_obj=Product.objects.create(name="LOLIP 10 MG COMPRIME B/30"),
+        original_number="885",
+        original_start_date=date(2019, 7, 4),
+    )
+    other = make_amm(
+        "SN",
+        product_obj=Product.objects.create(name="LOLIP 10MG COMPRIMES BTE 30"),
+        original_number="999",
+        original_start_date=date(2019, 7, 4),
+    )
+    cloud.publish([ORIGIN, RENEWAL])
+    run = run_sync(client=cloud)
+    entries = {entry["copy"]: entry for entry in run.summary["copies"]}
+    assert entries[str(copy.pk)]["mergeable"] and entries[str(copy.pk)]["keep"] == str(keep.pk)
+    assert not entries[str(other.pk)]["mergeable"]
+    assert "n° d'origine différent" in entries[str(other.pk)]["reason"]
+    assert run.summary["copies"] and run.summary["copies"][0]["copy"] == str(copy.pk)
+    pairs = [{"copy": str(e["copy"]), "keep": e["keep"]} for e in entries.values()]
+    body = hq_client.post("/api/v1/ghpl-sync/merge-copies", {"pairs": pairs}, format="json").json()
+    assert body["merged"] == 1
+    assert body["refused"][0]["copy"] == str(other.pk)
+    assert not MarketingAuthorization.objects.filter(pk=copy.pk).exists()
+    assert MarketingAuthorization.objects.filter(pk=other.pk).exists()
+    assert Renewal.objects.filter(amm=keep).count() == 1
+    run.refresh_from_db()
+    assert [entry["copy"] for entry in run.summary["copies"]] == [str(other.pk)]

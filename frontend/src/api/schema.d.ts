@@ -1406,6 +1406,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ghpl-sync/merge-copies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Fusionne des fiches en double (copies sans rien de plus) dans la fiche du pays. */
+        post: operations["v1_ghpl_sync_merge_copies_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ghpl-sync/run/": {
         parameters: {
             query?: never;
@@ -3195,6 +3212,24 @@ export interface components {
          * @enum {string}
          */
         FieldEnum: "number" | "start_date" | "end_date";
+        GhplCopyMergeRequest: {
+            pairs: components["schemas"]["GhplCopyPairRequest"][];
+        };
+        GhplCopyMergeResult: {
+            merged: number;
+            refused: components["schemas"]["GhplCopyRefusal"][];
+        };
+        GhplCopyPairRequest: {
+            /** Format: uuid */
+            copy: string;
+            /** Format: uuid */
+            keep: string;
+        };
+        GhplCopyRefusal: {
+            /** Format: uuid */
+            copy: string;
+            reason: string;
+        };
         GhplSyncRun: {
             /** Format: uuid */
             id: string;
@@ -6865,6 +6900,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GhplSyncedFile"][];
+                };
+            };
+        };
+    };
+    v1_ghpl_sync_merge_copies_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GhplCopyMergeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GhplCopyMergeRequest"];
+                "multipart/form-data": components["schemas"]["GhplCopyMergeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GhplCopyMergeResult"];
                 };
             };
         };

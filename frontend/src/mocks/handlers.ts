@@ -59,6 +59,26 @@ function initialGhplRuns() {
         },
       ],
       issues_total: 2,
+      copies: [
+        {
+          country: 'CI',
+          copy: 'amm-copy-1',
+          copy_name: 'SALBUTUS 2MG/5ML SOL BUV FL/100ML',
+          keep: 'amm-1',
+          keep_name: 'SALBUTUS 2MG-5ML SIROP-SUSP BUV 100ML',
+          mergeable: true,
+          reason: '',
+        },
+        {
+          country: 'BF',
+          copy: 'amm-copy-2',
+          copy_name: 'ALFA GH SR 10MG CPR B30',
+          keep: 'amm-2',
+          keep_name: 'ALFA-GH 10MG CPR B30',
+          mergeable: false,
+          reason: "n° d'origine différent (2717920269C000000 / —)",
+        },
+      ],
     }),
   ];
 }
@@ -1168,6 +1188,24 @@ export const handlers = [
       if (user.role === 'COUNTRY_REGULATORY') return forbidden();
       ghplRuns.unshift(ghplRun('UP_TO_DATE', 'Déjà à jour', { message: 'Registre inchangé.' }));
       return HttpResponse.json({ detail: 'Synchronisation lancée.' }, { status: 202 });
+    }),
+  ),
+  http.post(
+    url('/ghpl-sync/merge-copies'),
+    withAuth(async (user, { request }) => {
+      if (user.role === 'COUNTRY_REGULATORY') return forbidden();
+      const { pairs } = (await request.json()) as { pairs: { copy: string; keep: string }[] };
+      const summary = ghplRuns[0].summary as {
+        copies?: { copy: string; mergeable: boolean; reason: string }[];
+      };
+      const copies = summary.copies ?? [];
+      const asked = new Set(pairs.map((p) => p.copy));
+      const merged = copies.filter((c) => asked.has(c.copy) && c.mergeable).map((c) => c.copy);
+      const refused = copies
+        .filter((c) => asked.has(c.copy) && !c.mergeable)
+        .map((c) => ({ copy: c.copy, reason: `à vérifier : ${c.reason}` }));
+      summary.copies = copies.filter((c) => !merged.includes(c.copy));
+      return HttpResponse.json({ merged: merged.length, refused });
     }),
   ),
   http.get(

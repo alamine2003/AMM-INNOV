@@ -3359,6 +3359,34 @@ paths:
                 items:
                   $ref: '#/components/schemas/GhplSyncedFile'
           description: ''
+  /api/v1/ghpl-sync/merge-copies/:
+    post:
+      operationId: v1_ghpl_sync_merge_copies_create
+      description: Fusionne des fiches en double (copies sans rien de plus) dans la
+        fiche du pays.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GhplCopyMergeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GhplCopyMergeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GhplCopyMergeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GhplCopyMergeResult'
+          description: ''
   /api/v1/ghpl-sync/run/:
     post:
       operationId: v1_ghpl_sync_run_create
@@ -7586,6 +7614,50 @@ components:
         * `number` - N° d'AMM
         * `start_date` - Date de début
         * `end_date` - Date de fin
+    GhplCopyMergeRequest:
+      type: object
+      properties:
+        pairs:
+          type: array
+          items:
+            $ref: '#/components/schemas/GhplCopyPairRequest'
+      required:
+      - pairs
+    GhplCopyMergeResult:
+      type: object
+      properties:
+        merged:
+          type: integer
+        refused:
+          type: array
+          items:
+            $ref: '#/components/schemas/GhplCopyRefusal'
+      required:
+      - merged
+      - refused
+    GhplCopyPairRequest:
+      type: object
+      properties:
+        copy:
+          type: string
+          format: uuid
+        keep:
+          type: string
+          format: uuid
+      required:
+      - copy
+      - keep
+    GhplCopyRefusal:
+      type: object
+      properties:
+        copy:
+          type: string
+          format: uuid
+        reason:
+          type: string
+      required:
+      - copy
+      - reason
     GhplSyncRun:
       type: object
       properties:

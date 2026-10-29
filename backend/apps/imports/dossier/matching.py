@@ -163,11 +163,24 @@ _FORM_FAMILIES = {
     "col": "oculaire",
     "creme": "cutane", "pde": "cutane", "pommade": "cutane", "der": "cutane",
     "suppo": "rectal", "ovule": "vaginal", "vag": "vaginal", "inh": "inhale",
+    "spray": "spray", "pulv": "spray", "pulverisation": "spray", "aerosol": "spray",
+    "sach": "sachet",
 }  # fmt: skip
 
 
 def _forms(words: list[str]) -> set[str]:
     return {_FORM_FAMILIES[word] for word in words if word in _FORM_FAMILIES}
+
+
+def forms_clash(first: set[str], second: set[str]) -> bool:
+    """Deux familles de forme incompatibles : « CPR » n'est pas « SUSP BUV ».
+
+    Un spray n'est jamais une autre présentation de la marque, même quand l'autre libellé ne
+    dit pas sa forme : « NASO-GH 0,05% SPRAY » n'est pas « NASO GH 0.05% GTTE F/10ML ».
+    """
+    if first and second and not first & second:
+        return True
+    return ("spray" in first) != ("spray" in second)
 
 
 def _brand_in_country(labels, products, preferred) -> object | None:
@@ -190,8 +203,7 @@ def _brand_in_country(labels, products, preferred) -> object | None:
                 and SequenceMatcher(None, words[0], label_words[0]).ratio() < 0.85
             ):
                 continue
-            label_forms, forms = _forms(label_words), _forms(words)
-            if label_forms and forms and not label_forms & forms:
+            if forms_clash(_forms(label_words), _forms(words)):
                 continue
             same_brand.append((product, numbers))
         if label_numbers:
@@ -352,7 +364,8 @@ def pick_table_row(rows: list[dict], product, products) -> dict | None:
     return best[1]
 
 
-_PACK = re.compile(r"\b(?:b|bte|boite|x)\s*[:/]?\s*(\d+)\b")
+# « B/30 », « BTE 30 », « X30 », et les sachets : « SACH/12 », « SACH12 » (12 sachets).
+_PACK = re.compile(r"\b(?:b|bte|boite|x|sach)\s*[:/]?\s*(\d+)\b")
 
 
 def _strengths(name: str) -> tuple[list[str], str]:
@@ -418,8 +431,7 @@ def _country_candidates(name: str, marketed) -> list[tuple[object, str]]:
         other = [word for word in other if word not in _UNITS]
         if not other or SequenceMatcher(None, words[0], other[0]).ratio() < 0.85:
             continue
-        other_forms = _forms(other)
-        if forms and other_forms and not forms & other_forms:
+        if forms_clash(forms, _forms(other)):
             continue
         other_strengths, other_pack = _strengths(product.name)
         if not _strengths_fit(strengths, other_strengths):

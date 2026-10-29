@@ -11,6 +11,8 @@ from apps.core.tasks import enqueue
 
 from .models import ImportBatch, ImportRow
 from .serializers import (
+    GhplCopyMergeResultSerializer,
+    GhplCopyMergeSerializer,
     GhplSyncedFileSerializer,
     GhplSyncStatusSerializer,
     ImportBatchSerializer,
@@ -124,6 +126,37 @@ class GhplSyncViewSet(viewsets.ViewSet):
 
         enqueue(sync_ghpl, "MANUAL", str(request.user.pk))
         return Response({"detail": "Synchronisation lancée."}, status=status.HTTP_202_ACCEPTED)
+
+    @extend_schema(request=GhplCopyMergeSerializer, responses=GhplCopyMergeResultSerializer)
+    @action(detail=False, methods=["post"], url_path="merge-copies")
+    def merge_copies(self, request):
+        """Fusionne des fiches en double (copies sans rien de plus) dans la fiche du pays."""
+        from .ghpl.copies import merge_copy
+        from .models import GhplSyncRun
+
+        serializer = GhplCopyMergeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        merged, refused = set(), []
+        for pair in serializer.validated_data["pairs"]:
+            copy, keep = str(pair["copy"]), str(pair["keep"])
+            reason = merge_copy(copy, keep, user=request.user)
+            if reason:
+                refused.append({"copy": copy, "reason": reason})
+            else:
+                merged.add(copy)
+        if merged:  # les bilans ne listent plus les fiches fusionnées
+            for run in GhplSyncRun.objects.order_by("-started_at")[:8]:
+                copies = (run.summary or {}).get("copies") or []
+                kept = [entry for entry in copies if entry.get("copy") not in merged]
+                if len(kept) != len(copies):
+                    run.summary["copies"] = kept
+                    run.summary["copies_merged"] = (
+                        run.summary.get("copies_merged", 0) + len(copies) - len(kept)
+                    )
+                    run.save(update_fields=["summary"])
+        return Response(
+            GhplCopyMergeResultSerializer({"merged": len(merged), "refused": refused}).data
+        )
 
     @extend_schema(responses=GhplSyncedFileSerializer(many=True))
     @action(detail=False, methods=["get"])

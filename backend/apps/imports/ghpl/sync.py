@@ -50,6 +50,11 @@ MAX_ATTEMPTS = 5
 ACCEPTED = {".pdf", ".jpg", ".jpeg", ".png"}
 KEEP_BATCH_ROWS = 12  # lots de synchronisation dont on garde les lignes détaillées
 ISSUES_SHOWN = 60
+# Version des règles de rapprochement. Quand elle change, le passage suivant relit tout le
+# registre (comme au premier passage) : les présentations mal rattachées sont reprises.
+# 2 (1.1.3) : la fiche du pays avant le libellé d'un autre pays ; spray ≠ gouttes ; boîtes.
+MATCHING = "2"
+MATCHING_KEY = "V:matching"
 
 
 class SyncFailed(Exception):
@@ -116,7 +121,8 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
     pending = GhplSyncedFile.objects.filter(
         state=GhplSyncedFile.State.PENDING, attempts__lt=MAX_ATTEMPTS
     ).exists()
-    if previous and previous.registry_etag == remote.etag and not pending:
+    stale = bool(previous) and previous.fingerprints.get(MATCHING_KEY) != MATCHING
+    if previous and previous.registry_etag == remote.etag and not pending and not stale:
         run.status = GhplSyncRun.Status.UP_TO_DATE
         run.fingerprints = {}
         run.summary = {"message": "Registre inchangé depuis le dernier passage."}
@@ -125,7 +131,8 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
     counts: Counter = Counter(repair)
     issues: list[dict] = []
     present: set[str] | None = None
-    if previous is None or previous.registry_etag != remote.etag:
+    copies: list[dict] | None = None
+    if previous is None or previous.registry_etag != remote.etag or stale:
         content = client.download(registry_path, max_bytes=64 << 20)
         if content is None:
             raise SyncFailed(
@@ -148,7 +155,8 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
                 "précédent (registre peut-être en cours d'écriture). Rien n'est appliqué."
             )
         prints = fingerprints(rows, records, _deposits(docs))
-        old = previous.fingerprints if previous else {}
+        prints[MATCHING_KEY] = MATCHING
+        old = previous.fingerprints if previous and not stale else {}
         changed = {key for key, value in prints.items() if old.get(key) != value}
         changed_records = [r for r in records if f"R:{record_key(r)}" in changed]
         changed_groups = {key[2:] for key in changed if key.startswith("D:")}
@@ -165,6 +173,9 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
             _place(run.scans_batch, counts, issues)
         present = {r["chemin"] for r in principal}
         run.fingerprints = prints
+        from .copies import find_copies
+
+        copies = find_copies(records)
     else:
         run.fingerprints = previous.fingerprints
         counts["pieces"] = (previous.summary or {}).get("pieces", 0)
@@ -177,7 +188,16 @@ def _run(run: GhplSyncRun, client: Nextcloud, user) -> None:
     ).count()
     counts["pending"] = left
     run.status = GhplSyncRun.Status.PARTIAL if left else GhplSyncRun.Status.DONE
-    run.summary = {**counts, "issues": issues[:ISSUES_SHOWN], "issues_total": len(issues)}
+    if copies is None and previous is not None:  # registre inchangé : liste du passage d'avant
+        copies = (previous.summary or {}).get("copies")
+    copies = copies or []
+    counts["copies"] = sum(1 for entry in copies if entry["mergeable"])
+    run.summary = {
+        **counts,
+        "issues": issues[:ISSUES_SHOWN],
+        "issues_total": len(issues),
+        "copies": copies,
+    }
     if counts.get("presentations_changed") or counts.get("downloaded") or counts.get("moved"):
         from apps.analytics.tasks import refresh_analytics_views
         from apps.core.tasks import enqueue

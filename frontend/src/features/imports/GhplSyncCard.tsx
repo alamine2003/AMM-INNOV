@@ -21,8 +21,8 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { Link } from 'react-router';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
-import { useGhplSync, useGhplSyncFiles, useRunGhplSync } from '@/api/hooks/useGhplSync';
-import type { GhplSyncIssue, GhplSyncRun } from '@/api/types';
+import { useGhplSync, useGhplSyncFiles, useMergeGhplCopies, useRunGhplSync } from '@/api/hooks/useGhplSync';
+import type { GhplSyncCopy, GhplSyncIssue, GhplSyncRun } from '@/api/types';
 import { formatDateTime } from '@/lib/dates';
 
 const STATUS_COLOR: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
@@ -42,6 +42,7 @@ const COUNTERS: { key: string; label: [string, string] }[] = [
   { key: 'moved', label: ['reclassé', 'reclassés'] },
   { key: 'skipped', label: ['laissé de côté', 'laissés de côté'] },
   { key: 'pending', label: ['en attente', 'en attente'] },
+  { key: 'copies_merged', label: ['fiche en double fusionnée', 'fiches en double fusionnées'] },
 ];
 
 const plural = (n: number, [one, many]: [string, string]) => `${n} ${n > 1 ? many : one}`;
@@ -96,6 +97,104 @@ function FilesList({ state }: { state: string }) {
 }
 
 /**
+ * Fiches en double (même pays, même présentation sous deux libellés) : les simples copies se
+ * fusionnent dans la fiche du pays, sur demande ; les autres sont à vérifier.
+ */
+function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
+  const { enqueueSnackbar } = useSnackbar();
+  const merge = useMergeGhplCopies();
+  const [confirming, setConfirming] = useState(false);
+  const mergeable = copies.filter((c) => c.mergeable);
+  const send = (pairs: GhplSyncCopy[]) =>
+    merge.mutate(
+      pairs.map(({ copy, keep }) => ({ copy, keep })),
+      {
+        onSuccess: (result) => {
+          setConfirming(false);
+          enqueueSnackbar(
+            result.refused.length
+              ? `${plural(result.merged, ['fiche fusionnée', 'fiches fusionnées'])}, ${result.refused.length} refusée(s) : ${result.refused[0].reason}`
+              : plural(result.merged, ['fiche fusionnée', 'fiches fusionnées']),
+            { variant: result.refused.length ? 'warning' : 'success' },
+          );
+        },
+        onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
+      },
+    );
+  return (
+    <Box sx={{ mt: 2 }} data-testid="ghpl-copies">
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5, flexWrap: 'wrap' }}>
+        <Typography variant="subtitle2" sx={{ flex: 1 }}>
+          Fiches en double ({copies.length})
+        </Typography>
+        {mergeable.length > 0 &&
+          (confirming ? (
+            <>
+              <Button size="small" onClick={() => setConfirming(false)} disabled={merge.isPending}>
+                Annuler
+              </Button>
+              <Button
+                size="small"
+                color="warning"
+                variant="contained"
+                onClick={() => send(mergeable)}
+                disabled={merge.isPending}
+                data-testid="ghpl-copies-confirm"
+              >
+                Confirmer : fusionner {plural(mergeable.length, ['copie', 'copies'])}
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setConfirming(true)}
+              data-testid="ghpl-copies-merge"
+            >
+              Fusionner {plural(mergeable.length, ['copie', 'copies'])}
+            </Button>
+          ))}
+      </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: 12.5 }}>
+        La même présentation suivie sous deux libellés dans un pays (celui du pays et celui d'un autre pays).
+        Une simple copie n'a ni document ni rien de plus que la fiche du pays : la fusion ne perd rien.
+      </Typography>
+      <Table size="small">
+        <TableBody>
+          {copies.slice(0, 40).map((entry) => (
+            <TableRow key={entry.copy}>
+              <TableCell sx={{ fontSize: 12, width: 36 }}>{entry.country}</TableCell>
+              <TableCell sx={{ fontSize: 12, wordBreak: 'break-word' }}>
+                <MuiLink component={Link} to={`/amms/${entry.copy}`}>
+                  {entry.copy_name}
+                </MuiLink>
+                {' → '}
+                <MuiLink component={Link} to={`/amms/${entry.keep}`}>
+                  {entry.keep_name}
+                </MuiLink>
+                {!entry.mergeable && (
+                  <Typography component="span" sx={{ fontSize: 12, color: 'warning.main' }}>
+                    {' '}
+                    — à vérifier : {entry.reason}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell sx={{ width: 96, textAlign: 'right' }}>
+                {entry.mergeable && (
+                  <Button size="small" onClick={() => send([entry])} disabled={merge.isPending}>
+                    Fusionner
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+}
+
+/**
  * Synchronisation horaire avec le classement AMM GHPL (Nextcloud) : état du dernier passage,
  * ce qu'il a fait, ce qui demande une action, et « Synchroniser maintenant ».
  */
@@ -110,6 +209,7 @@ export function GhplSyncCard() {
   // Bilan : le dernier passage qui a lu le registre (un passage « déjà à jour » n'a rien à dire).
   const report = data.recent.find((r) => r.status === 'DONE' || r.status === 'PARTIAL') ?? null;
   const issues = ((report?.summary?.issues as GhplSyncIssue[] | undefined) ?? []).slice(0, 12);
+  const copies = (report?.summary?.copies as GhplSyncCopy[] | undefined) ?? [];
   const launch = () =>
     run.mutate(undefined, {
       onSuccess: () => enqueueSnackbar('Synchronisation lancée', { variant: 'info' }),
@@ -203,6 +303,8 @@ export function GhplSyncCard() {
         <Collapse in={!!open} unmountOnExit>
           <Box sx={{ mt: 1.5 }}>{open && <FilesList state={open} />}</Box>
         </Collapse>
+
+        {copies.length > 0 && <DuplicateRecords copies={copies} />}
 
         {issues.length > 0 && (
           <Box sx={{ mt: 2 }}>
