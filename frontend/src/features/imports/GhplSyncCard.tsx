@@ -159,37 +159,39 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
         La même présentation suivie sous deux libellés dans un pays (celui du pays et celui d'un autre pays).
         Une simple copie n'a ni document ni rien de plus que la fiche du pays : la fusion ne perd rien.
       </Typography>
-      <Table size="small">
-        <TableBody>
-          {copies.slice(0, 40).map((entry) => (
-            <TableRow key={entry.copy}>
-              <TableCell sx={{ fontSize: 12, width: 36 }}>{entry.country}</TableCell>
-              <TableCell sx={{ fontSize: 12, wordBreak: 'break-word' }}>
-                <MuiLink component={Link} to={`/amms/${entry.copy}`}>
-                  {entry.copy_name}
-                </MuiLink>
-                {' → '}
-                <MuiLink component={Link} to={`/amms/${entry.keep}`}>
-                  {entry.keep_name}
-                </MuiLink>
-                {!entry.mergeable && (
-                  <Typography component="span" sx={{ fontSize: 12, color: 'warning.main' }}>
-                    {' '}
-                    — à vérifier : {entry.reason}
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell sx={{ width: 96, textAlign: 'right' }}>
-                {entry.mergeable && (
-                  <Button size="small" onClick={() => send([entry])} disabled={merge.isPending}>
-                    Fusionner
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Box sx={{ maxHeight: 360, overflowY: 'auto' }}>
+        <Table size="small" stickyHeader>
+          <TableBody>
+            {copies.map((entry) => (
+              <TableRow key={entry.copy}>
+                <TableCell sx={{ fontSize: 12, width: 36 }}>{entry.country}</TableCell>
+                <TableCell sx={{ fontSize: 12, wordBreak: 'break-word' }}>
+                  <MuiLink component={Link} to={`/amms/${entry.copy}`}>
+                    {entry.copy_name}
+                  </MuiLink>
+                  {' → '}
+                  <MuiLink component={Link} to={`/amms/${entry.keep}`}>
+                    {entry.keep_name}
+                  </MuiLink>
+                  {!entry.mergeable && (
+                    <Typography component="span" sx={{ fontSize: 12, color: 'warning.main' }}>
+                      {' '}
+                      — à vérifier : {entry.reason}
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell sx={{ width: 96, textAlign: 'right' }}>
+                  {entry.mergeable && (
+                    <Button size="small" onClick={() => send([entry])} disabled={merge.isPending}>
+                      Fusionner
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
     </Box>
   );
 }
