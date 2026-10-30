@@ -187,8 +187,8 @@ class BinderDocument:
         # Chiffres clés.
         tiles = [
             ("Pages", b["total"]),
-            ("Vérifiées", b["checked"]),
-            ("Corrigées", b["corrected"]),
+            ("Conformes", b["conformes"]),
+            ("Non conformes", b["non_conformes"]),
             ("Absentes", b["absent"]),
             ("À scanner", b["to_scan"]),
             ("En trop", b["extras"]),
@@ -304,6 +304,20 @@ class BinderDocument:
             c.setDash()
             row_y -= 30
         return height
+
+    def _verdict(self, verdict: dict):
+        """Résultat des 4 niveaux : « Le dossier est conforme », ou ce qui ne l'est pas."""
+        c = self.canvas
+        ok = verdict["status"] == "CONFORME"
+        c.setFillColor(HexColor("#2e7d32") if ok else HexColor("#c62828"))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(LEFT, 222, verdict["label"])
+        failing = [f"{item['label']} : {item['detail']}" for item in verdict["criteria"]
+                   if item["ok"] is False]  # fmt: skip
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(INK)
+        for i, text in enumerate(failing[:3]):
+            c.drawString(LEFT, 208 - 11 * i, text[:95])
 
     def _stamp(self, check: dict, x: float, y: float):
         c = self.canvas
@@ -505,6 +519,7 @@ class BinderDocument:
                 ):
                     c.drawString(LEFT, 170 - 12 * i, line)
             self._stamp(check, RIGHT - 100, 110)
+            self._verdict(page["conformity"])
         else:
             self._checkbox_form(max(min(y, 250), 160))
         self._footer()
@@ -542,9 +557,10 @@ class BinderDocument:
         new_page()
         b = self.binder
         line(
-            f"{b['total']} pages · {b['checked']} vérifiées · {b['conformes']} conformes · "
-            f"{b['corrected']} corrigées · {b['absent']} absentes · {b['to_scan']} à scanner · "
-            f"{b['extras']} en trop",
+            f"{b['total']} pages · {b['checked']} vérifiées · "
+            f"{b['conformes']} dossiers conformes · {b['non_conformes']} non conformes · "
+            f"{b['corrected']} corrigées · "
+            f"{b['absent']} absentes · {b['to_scan']} à scanner · {b['extras']} en trop",
             space=26,
         )
         pages = [page for section in self.sections for page in section["pages"]]
@@ -556,6 +572,16 @@ class BinderDocument:
             (
                 "Décisions à scanner (papier présent, pas de scan)",
                 [p for p in pages if p["to_scan"]],
+            ),
+            (
+                "Date ou n° à revoir (manquant, ou fiche modifiée depuis la vérification)",
+                [
+                    p
+                    for p in pages
+                    if any(
+                        c["key"] == "data" and c["ok"] is False for c in p["conformity"]["criteria"]
+                    )
+                ],
             ),
             ("Pages corrigées", [p for p in pages if p["check"] and p["check"]["corrections"]]),
             ("Pages pas encore vérifiées", [p for p in pages if not p["check"]]),

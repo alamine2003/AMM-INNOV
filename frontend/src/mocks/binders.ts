@@ -6,7 +6,16 @@ import { db } from './handlers';
  * Classeurs en mode démonstration (navigateur seulement) : un classeur par pays, une page par AMM.
  * Les tests montent leurs propres réponses ; ces maquettes servent à `npm run dev:mock`.
  */
-const counts = { total: 0, checked: 0, conformes: 0, corrected: 0, absent: 0, to_scan: 0 };
+const counts = {
+  total: 0,
+  checked: 0,
+  conformes: 0,
+  non_conformes: 0,
+  corrected: 0,
+  absent: 0,
+  to_scan: 0,
+  stale: 0,
+};
 
 function pageOf(index: number, amm: (typeof db.amms)[number]): BinderPage {
   const renewals = db.renewals
@@ -44,6 +53,23 @@ function pageOf(index: number, amm: (typeof db.amms)[number]): BinderPage {
     discrepancies: [],
     check: null,
     to_scan: false,
+    conformity: {
+      status: 'NON_VERIFIE',
+      label: 'Dossier pas encore vérifié',
+      criteria: [
+        {
+          key: 'digital',
+          label: 'Visible dans le classeur numérique',
+          ok: true,
+          detail: 'fiche dans AMM GH',
+        },
+        { key: 'paper', label: 'Dossier papier dans le classeur', ok: null, detail: 'à constater' },
+        { key: 'scan', label: 'Version scannée', ok: false, detail: 'aucun scan de décision' },
+        { key: 'data', label: "Bonne date et bon n° d'AMM", ok: null, detail: 'à relever sur le papier' },
+      ],
+      to_scan: false,
+      stale: false,
+    },
     changed_since_check: [],
     changed_by: null,
     trace: { excel: null, dossier: null },
@@ -65,10 +91,9 @@ function binderOf(iso2: string): BinderDetail {
     last_checked_at: null,
     last_checked_by: null,
     readers: [],
-    sections: [{ code: 'GENERALE', label: 'Générale', color: '#1565c0', ...total, pages, stale: 0 }],
+    sections: [{ code: 'GENERALE', label: 'Générale', color: '#1565c0', ...total, pages }],
     extra_pages: [],
     resume_page: 1,
-    stale: 0,
   } as BinderDetail;
 }
 
@@ -85,6 +110,7 @@ export const binderHandlers = [
       total: pages.length,
       check: null,
       stale: false,
+      conformity: pageOf(0, amm).conformity,
     });
   }),
   http.get('/api/v1/binders/:key', ({ params }) => HttpResponse.json(binderOf(String(params.key)))),

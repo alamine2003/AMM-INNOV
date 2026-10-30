@@ -2296,9 +2296,11 @@ export interface components {
             total: number;
             checked: number;
             conformes: number;
+            non_conformes: number;
             corrected: number;
             absent: number;
             to_scan: number;
+            stale: number;
             key: string;
             title: string;
             country_iso2: string;
@@ -2312,7 +2314,6 @@ export interface components {
             readers: string[];
             extra_pages: components["schemas"]["ExtraPage"][];
             resume_page: number;
-            stale: number;
         };
         BinderExport: {
             /** Format: uuid */
@@ -2371,6 +2372,7 @@ export interface components {
             total: number;
             check: components["schemas"]["Check"] | null;
             stale: boolean;
+            conformity: components["schemas"]["Conformity"];
         };
         /**
          * @description * `CONFORME` - Conforme
@@ -2383,9 +2385,11 @@ export interface components {
             total: number;
             checked: number;
             conformes: number;
+            non_conformes: number;
             corrected: number;
             absent: number;
             to_scan: number;
+            stale: number;
             key: string;
             title: string;
             country_iso2: string;
@@ -2483,6 +2487,21 @@ export interface components {
          * @enum {string}
          */
         ChronologyIssueCodeEnum: "no_scan" | "no_date" | "no_number" | "no_receipt" | "gap";
+        /** @description Les 4 niveaux de vérification du dossier et le résultat (recalculé à chaque lecture). */
+        Conformity: {
+            status: components["schemas"]["ConformityStatusEnum"];
+            label: string;
+            criteria: components["schemas"]["Criterion"][];
+            to_scan: boolean;
+            stale: boolean;
+        };
+        /**
+         * @description * `CONFORME` - CONFORME
+         *     * `NON_CONFORME` - NON_CONFORME
+         *     * `NON_VERIFIE` - NON_VERIFIE
+         * @enum {string}
+         */
+        ConformityStatusEnum: "CONFORME" | "NON_CONFORME" | "NON_VERIFIE";
         Correction: {
             slot: components["schemas"]["SlotEnum"];
             field: components["schemas"]["FieldEnum"];
@@ -2519,6 +2538,12 @@ export interface components {
             validity_years?: number;
             /** Fuseau horaire */
             timezone?: string;
+        };
+        Criterion: {
+            key: components["schemas"]["KeyEnum"];
+            label: string;
+            ok: boolean | null;
+            detail: string;
         };
         DecisionInputRequest: {
             result: components["schemas"]["DecisionInputResultEnum"];
@@ -3385,6 +3410,14 @@ export interface components {
             /** @default false */
             dry_run: boolean;
         };
+        /**
+         * @description * `digital` - digital
+         *     * `paper` - paper
+         *     * `scan` - scan
+         *     * `data` - data
+         * @enum {string}
+         */
+        KeyEnum: "digital" | "paper" | "scan" | "data";
         /** @description Shape of `last_renewal` in the AMM list (documentation of the OpenAPI schema). */
         LastRenewal: {
             /** Format: uuid */
@@ -3478,6 +3511,7 @@ export interface components {
             changed_by: string | null;
             trace: components["schemas"]["Trace"];
             to_scan: boolean;
+            conformity: components["schemas"]["Conformity"];
         };
         PageScanInputRequest: {
             files: string[];
@@ -4117,22 +4151,25 @@ export interface components {
             total: number;
             checked: number;
             conformes: number;
+            non_conformes: number;
             corrected: number;
             absent: number;
             to_scan: number;
+            stale: number;
             code: string;
             label: string;
             color: string;
             pages: components["schemas"]["Page"][];
-            stale: number;
         };
         SectionSummary: {
             total: number;
             checked: number;
             conformes: number;
+            non_conformes: number;
             corrected: number;
             absent: number;
             to_scan: number;
+            stale: number;
             code: string;
             label: string;
             color: string;

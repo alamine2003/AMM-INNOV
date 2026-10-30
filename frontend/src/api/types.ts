@@ -663,11 +663,27 @@ export type BinderField = 'number' | 'start_date' | 'end_date';
 
 export interface BinderCounts {
   total: number;
+  /** Papier constaté (présent ou absent). */
   checked: number;
+  /** Les 4 niveaux justes : « Le dossier est conforme ». */
   conformes: number;
+  non_conformes: number;
   corrected: number;
   absent: number;
   to_scan: number;
+  /** Fiches modifiées depuis leur vérification : à revérifier. */
+  stale: number;
+}
+
+export type BinderCriterionKey = 'digital' | 'paper' | 'scan' | 'data';
+
+/** Les 4 niveaux de vérification d'un dossier (recalculés à chaque lecture). */
+export interface BinderConformity {
+  status: 'CONFORME' | 'NON_CONFORME' | 'NON_VERIFIE';
+  label: string;
+  criteria: { key: BinderCriterionKey; label: string; ok: boolean | null; detail: string }[];
+  to_scan: boolean;
+  stale: boolean;
 }
 
 export interface BinderSectionSummary extends BinderCounts {
@@ -766,6 +782,7 @@ export interface BinderPage {
     checked_at: string;
   } | null;
   to_scan: boolean;
+  conformity: BinderConformity;
   /** Valeurs changées (dashboard, import Excel ou de dossier) depuis le constat : à revérifier. */
   changed_since_check: { slot: BinderSlot; field: BinderField; checked: unknown; now: unknown }[];
   changed_by: string | null;
@@ -785,11 +802,9 @@ export interface BinderExtraPage {
 }
 
 export interface BinderDetail extends Omit<BinderSummary, 'sections'> {
-  sections: (BinderSectionSummary & { pages: BinderPage[]; stale: number })[];
+  sections: (BinderSectionSummary & { pages: BinderPage[] })[];
   extra_pages: BinderExtraPage[];
   resume_page: number;
-  /** Pages modifiées depuis leur vérification. */
-  stale: number;
 }
 
 /** Page d'une AMM dans les classeurs (GET /binders/locate?amm=). */
@@ -801,6 +816,7 @@ export interface BinderLocation {
   total: number;
   check: BinderPage['check'];
   stale: boolean;
+  conformity: BinderConformity;
 }
 
 export interface BinderCorrection {

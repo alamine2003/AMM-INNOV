@@ -62,7 +62,8 @@ export function TitleLeaf({
         <Stack direction="row" gap={1} flexWrap="wrap">
           <Tile value={binder.total} label="pages" />
           <Tile value={binder.checked} label="vérifiées" />
-          <Tile value={binder.corrected} label="corrigées" />
+          <Tile value={binder.conformes} label="dossiers conformes" />
+          <Tile value={binder.non_conformes} label="non conformes" />
           <Tile value={binder.absent} label="absentes" />
           <Tile value={binder.to_scan} label="à scanner" />
           {binder.stale > 0 && <Tile value={binder.stale} label="à revérifier" />}
@@ -89,8 +90,8 @@ export function TitleLeaf({
         )}
         <Typography sx={{ fontSize: 12, color: MUTED, mt: 2.5, lineHeight: 1.7 }}>
           Feuilletez le classeur papier en même temps : chaque page correspond à un dossier, dans le même
-          ordre. <b>←</b> <b>→</b> ou glisser pour tourner les pages · <b>C</b> conforme · <b>E</b> corriger ·{' '}
-          <b>A</b> absent. Les onglets de couleur mènent directement à une gamme.
+          ordre. <b>←</b> <b>→</b> ou glisser pour tourner les pages · <b>C</b> papier conforme · <b>E</b>{' '}
+          corriger · <b>A</b> absent. Les onglets de couleur mènent directement à une gamme.
         </Typography>
       </Box>
     </Box>
@@ -98,13 +99,7 @@ export function TitleLeaf({
 }
 
 /** Intercalaire de gamme : carton de couleur avec l'avancement de la gamme. */
-export function DividerLeaf({
-  section,
-  pages,
-}: {
-  section: BinderSectionSummary & { stale?: number };
-  pages: BinderPage[];
-}) {
+export function DividerLeaf({ section, pages }: { section: BinderSectionSummary; pages: BinderPage[] }) {
   const progress = section.total ? (section.checked / section.total) * 100 : 0;
   return (
     <Box
@@ -126,7 +121,8 @@ export function DividerLeaf({
           {section.label.toUpperCase()}
         </Typography>
         <Typography sx={{ fontSize: 18, color: INK, mt: 1 }}>
-          {section.label} — {section.checked} / {section.total} vérifiées
+          {section.label} — {section.checked} / {section.total} vérifiées · {section.conformes} conforme
+          {section.conformes > 1 ? 's' : ''}
         </Typography>
         <Box sx={{ width: 260, maxWidth: '80%', mt: 2 }}>
           <LinearProgress
@@ -179,9 +175,11 @@ export function EndLeaf({
   const pages = binder.sections.flatMap((section) => section.pages);
   const absent = pages.filter((p) => p.check?.result === 'ABSENT');
   const toScan = pages.filter((p) => p.to_scan);
+  const data = pages.filter((p) => p.conformity.criteria.some((c) => c.key === 'data' && c.ok === false));
   const groups = [
-    { title: 'Dossiers à retrouver', items: absent },
+    { title: 'Dossiers à retrouver (papier absent)', items: absent },
     { title: 'Décisions à scanner', items: toScan },
+    { title: 'Date ou n° à revoir (manquant, ou fiche modifiée depuis la vérification)', items: data },
   ];
   return (
     <Box sx={paperSx}>
@@ -194,8 +192,9 @@ export function EndLeaf({
           {downloadButton}
         </Stack>
         <Typography sx={{ fontSize: 13, color: MUTED, mb: 2 }}>
-          {binder.checked} / {binder.total} pages vérifiées · {binder.conformes} conformes ·{' '}
-          {binder.corrected} corrigées · {binder.absent} absentes · {binder.to_scan} à scanner
+          {binder.checked} / {binder.total} pages vérifiées · {binder.conformes} dossiers conformes ·{' '}
+          {binder.non_conformes} non conformes · {binder.corrected} corrigées · {binder.absent} absentes ·{' '}
+          {binder.to_scan} à scanner
         </Typography>
         {groups.map((group) => (
           <Box key={group.title} sx={{ mb: 2 }}>

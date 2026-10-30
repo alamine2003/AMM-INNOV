@@ -497,6 +497,7 @@ def test_locate_links_the_amm_card_to_its_page(country_client, shelf_data):
     amm = shelf_data["gripex"]
     body = country_client.get(f"/api/v1/binders/locate?amm={amm.pk}").json()
     assert body["binder_key"] == "SN-generale-a-k" and body["page"] == 2 and body["total"] == 2
+    assert body["conformity"]["status"] == "NON_VERIFIE"
     ci = shelf_data["ci"]
     assert country_client.get(f"/api/v1/binders/locate?amm={ci.pk}").status_code == 404
     assert country_client.get("/api/v1/binders/locate?amm=pas-un-uuid").status_code == 404
@@ -638,3 +639,70 @@ def test_gap_after_an_undated_renewal_is_still_detected(hq_client, shelf_data, m
     make_renewal(amm, status="OBTENU", number="R2", start_date=date(2019, 1, 1))
     page = hq_client.get("/api/v1/binders/SN-cardio").json()["sections"][0]["pages"][0]
     assert "gap" in [entry["kind"] for entry in page["chronology"]]
+
+
+def _criteria(page) -> dict:
+    return {c["key"]: c["ok"] for c in page["conformity"]["criteria"]}
+
+
+def test_four_levels_make_the_dossier_conforme(country_client, shelf_data):
+    """Numérique, papier, scan de la décision en vigueur, date et n° : dossier conforme."""
+    amm = shelf_data["amlo"]
+    amm.original_number = "885"
+    amm.save()
+    url = "/api/v1/binders/SN-cardio"
+    page = country_client.get(url).json()["sections"][0]["pages"][0]
+    assert page["conformity"]["status"] == "NON_VERIFIE"
+    assert _criteria(page) == {"digital": True, "paper": None, "scan": False, "data": None}
+
+    # Papier présent, date et n° justes, mais pas de scan : non conforme, à scanner.
+    body = country_client.post(
+        f"{url}/check", {"amm": str(amm.pk), "result": "CONFORME"}, format="json"
+    ).json()
+    page = body["sections"][0]["pages"][0]
+    assert page["conformity"]["status"] == "NON_CONFORME"
+    assert _criteria(page) == {"digital": True, "paper": True, "scan": False, "data": True}
+    assert body["conformes"] == 0 and body["non_conformes"] == 1 and body["to_scan"] == 1
+
+    # Le scan de la décision arrive : le dossier devient conforme sans nouveau constat.
+    _attach(amm, _pdf("AMLODIPINE"), "application/pdf")
+    body = country_client.get(url).json()
+    page = body["sections"][0]["pages"][0]
+    assert page["conformity"]["status"] == "CONFORME"
+    assert page["conformity"]["label"] == "Le dossier est conforme"
+    assert body["conformes"] == 1 and body["non_conformes"] == 0 and body["to_scan"] == 0
+
+    # L'étagère compte exactement comme le classeur.
+    shelf = {b["key"]: b for b in country_client.get("/api/v1/binders").json()}["SN-cardio"]
+    assert (shelf["conformes"], shelf["non_conformes"], shelf["to_scan"]) == (1, 0, 0)
+
+    # La fiche change après la vérification : date et n° à revérifier, plus conforme.
+    amm.original_number = "886"
+    amm.save()
+    body = country_client.get(url).json()
+    page = body["sections"][0]["pages"][0]
+    assert page["conformity"]["status"] == "NON_CONFORME" and _criteria(page)["data"] is False
+    assert body["stale"] == 1
+    shelf = {b["key"]: b for b in country_client.get("/api/v1/binders").json()}["SN-cardio"]
+    assert (shelf["conformes"], shelf["non_conformes"], shelf["stale"]) == (0, 1, 1)
+
+
+def test_missing_number_or_absent_paper_is_not_conforme(country_client, shelf_data):
+    amm = shelf_data["amlo"]
+    amm.original_number = ""
+    amm.save()
+    _attach(amm, _pdf("AMLODIPINE"), "application/pdf")
+    url = "/api/v1/binders/SN-cardio"
+    body = country_client.post(
+        f"{url}/check", {"amm": str(amm.pk), "result": "CONFORME"}, format="json"
+    ).json()
+    data = next(
+        c for c in body["sections"][0]["pages"][0]["conformity"]["criteria"] if c["key"] == "data"
+    )
+    assert data["ok"] is False and data["detail"] == "n° d'AMM manquant"
+    body = country_client.post(
+        f"{url}/check", {"amm": str(amm.pk), "result": "ABSENT"}, format="json"
+    ).json()
+    page = body["sections"][0]["pages"][0]
+    assert page["conformity"]["status"] == "NON_CONFORME" and _criteria(page)["paper"] is False
+    assert body["absent"] == 1 and body["to_scan"] == 0

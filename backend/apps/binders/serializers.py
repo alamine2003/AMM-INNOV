@@ -205,6 +205,23 @@ class ChronologyEntrySerializer(serializers.Serializer):
     issues = ChronologyIssueSerializer(many=True)
 
 
+class CriterionSerializer(serializers.Serializer):
+    key = serializers.ChoiceField(choices=["digital", "paper", "scan", "data"])
+    label = serializers.CharField()
+    ok = serializers.BooleanField(allow_null=True)
+    detail = serializers.CharField()
+
+
+class ConformitySerializer(serializers.Serializer):
+    """Les 4 niveaux de vérification du dossier et le résultat (recalculé à chaque lecture)."""
+
+    status = serializers.ChoiceField(choices=["CONFORME", "NON_CONFORME", "NON_VERIFIE"])
+    label = serializers.CharField()
+    criteria = CriterionSerializer(many=True)
+    to_scan = serializers.BooleanField()
+    stale = serializers.BooleanField()
+
+
 class PageSerializer(serializers.Serializer):
     amm_id = serializers.UUIDField()
     page = serializers.IntegerField()
@@ -227,15 +244,21 @@ class PageSerializer(serializers.Serializer):
     changed_by = serializers.CharField(allow_null=True)
     trace = TraceSerializer()
     to_scan = serializers.BooleanField()
+    conformity = ConformitySerializer()
 
 
 class CountsMixin(serializers.Serializer):
     total = serializers.IntegerField()
+    # Papier constaté (présent ou absent).
     checked = serializers.IntegerField()
+    # Les 4 niveaux justes : « Le dossier est conforme ».
     conformes = serializers.IntegerField()
+    non_conformes = serializers.IntegerField()
     corrected = serializers.IntegerField()
     absent = serializers.IntegerField()
     to_scan = serializers.IntegerField()
+    # Fiche modifiée depuis le constat : à revérifier.
+    stale = serializers.IntegerField()
 
 
 class SectionSummarySerializer(CountsMixin):
@@ -246,7 +269,6 @@ class SectionSummarySerializer(CountsMixin):
 
 class SectionSerializer(SectionSummarySerializer):
     pages = PageSerializer(many=True)
-    stale = serializers.IntegerField()
 
 
 class ExtraPageSerializer(serializers.Serializer):
@@ -275,8 +297,6 @@ class BinderDetailSerializer(BinderSummarySerializer):
     sections = SectionSerializer(many=True)
     extra_pages = ExtraPageSerializer(many=True)
     resume_page = serializers.IntegerField()
-    # Pages modifiées depuis leur vérification (dashboard, import Excel ou de dossier).
-    stale = serializers.IntegerField()
 
 
 class BinderExportSerializer(serializers.ModelSerializer):
@@ -331,3 +351,4 @@ class BinderLocationSerializer(serializers.Serializer):
     total = serializers.IntegerField()
     check = CheckSerializer(allow_null=True)
     stale = serializers.BooleanField()
+    conformity = ConformitySerializer()

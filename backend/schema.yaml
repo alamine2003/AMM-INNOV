@@ -5372,11 +5372,15 @@ components:
           type: integer
         conformes:
           type: integer
+        non_conformes:
+          type: integer
         corrected:
           type: integer
         absent:
           type: integer
         to_scan:
+          type: integer
+        stale:
           type: integer
         key:
           type: string
@@ -5411,8 +5415,6 @@ components:
             $ref: '#/components/schemas/ExtraPage'
         resume_page:
           type: integer
-        stale:
-          type: integer
       required:
       - absent
       - checked
@@ -5426,6 +5428,7 @@ components:
       - key
       - last_checked_at
       - last_checked_by
+      - non_conformes
       - readers
       - resume_page
       - sections
@@ -5553,9 +5556,12 @@ components:
           nullable: true
         stale:
           type: boolean
+        conformity:
+          $ref: '#/components/schemas/Conformity'
       required:
       - binder_key
       - check
+      - conformity
       - country_name
       - page
       - stale
@@ -5580,11 +5586,15 @@ components:
           type: integer
         conformes:
           type: integer
+        non_conformes:
+          type: integer
         corrected:
           type: integer
         absent:
           type: integer
         to_scan:
+          type: integer
+        stale:
           type: integer
         key:
           type: string
@@ -5625,8 +5635,10 @@ components:
       - key
       - last_checked_at
       - last_checked_by
+      - non_conformes
       - readers
       - sections
+      - stale
       - title
       - to_scan
       - total
@@ -5826,6 +5838,39 @@ components:
         * `no_number` - no_number
         * `no_receipt` - no_receipt
         * `gap` - gap
+    Conformity:
+      type: object
+      description: Les 4 niveaux de vérification du dossier et le résultat (recalculé
+        à chaque lecture).
+      properties:
+        status:
+          $ref: '#/components/schemas/ConformityStatusEnum'
+        label:
+          type: string
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/Criterion'
+        to_scan:
+          type: boolean
+        stale:
+          type: boolean
+      required:
+      - criteria
+      - label
+      - stale
+      - status
+      - to_scan
+    ConformityStatusEnum:
+      enum:
+      - CONFORME
+      - NON_CONFORME
+      - NON_VERIFIE
+      type: string
+      description: |-
+        * `CONFORME` - CONFORME
+        * `NON_CONFORME` - NON_CONFORME
+        * `NON_VERIFIE` - NON_VERIFIE
     Correction:
       type: object
       properties:
@@ -5919,6 +5964,23 @@ components:
       required:
       - iso2
       - name
+    Criterion:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/KeyEnum'
+        label:
+          type: string
+        ok:
+          type: boolean
+          nullable: true
+        detail:
+          type: string
+      required:
+      - detail
+      - key
+      - label
+      - ok
     DecisionInputRequest:
       type: object
       properties:
@@ -8016,6 +8078,18 @@ components:
           default: false
       required:
       - file
+    KeyEnum:
+      enum:
+      - digital
+      - paper
+      - scan
+      - data
+      type: string
+      description: |-
+        * `digital` - digital
+        * `paper` - paper
+        * `scan` - scan
+        * `data` - data
     LastRenewal:
       type: object
       description: Shape of `last_renewal` in the AMM list (documentation of the OpenAPI
@@ -8232,12 +8306,15 @@ components:
           $ref: '#/components/schemas/Trace'
         to_scan:
           type: boolean
+        conformity:
+          $ref: '#/components/schemas/Conformity'
       required:
       - amm_id
       - changed_by
       - changed_since_check
       - check
       - chronology
+      - conformity
       - decision_count
       - discrepancies
       - dossier_state
@@ -9409,11 +9486,15 @@ components:
           type: integer
         conformes:
           type: integer
+        non_conformes:
+          type: integer
         corrected:
           type: integer
         absent:
           type: integer
         to_scan:
+          type: integer
+        stale:
           type: integer
         code:
           type: string
@@ -9425,8 +9506,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Page'
-        stale:
-          type: integer
       required:
       - absent
       - checked
@@ -9435,6 +9514,7 @@ components:
       - conformes
       - corrected
       - label
+      - non_conformes
       - pages
       - stale
       - to_scan
@@ -9448,11 +9528,15 @@ components:
           type: integer
         conformes:
           type: integer
+        non_conformes:
+          type: integer
         corrected:
           type: integer
         absent:
           type: integer
         to_scan:
+          type: integer
+        stale:
           type: integer
         code:
           type: string
@@ -9468,6 +9552,8 @@ components:
       - conformes
       - corrected
       - label
+      - non_conformes
+      - stale
       - to_scan
       - total
     SendRequest:
