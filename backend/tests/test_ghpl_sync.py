@@ -464,3 +464,22 @@ def test_duplicate_record_is_listed_then_merged_on_request(cloud, make_amm, hq_c
     assert Renewal.objects.filter(amm=keep).count() == 1
     run.refresh_from_db()
     assert [entry["copy"] for entry in run.summary["copies"]] == [str(other.pk)]
+
+
+def test_merge_reason_fits_the_history(cloud, make_amm):
+    """Le motif de l'historique tient en 100 caractères (Postgres refusait la fusion)."""
+    from apps.imports.ghpl.copies import merge_copy
+
+    long = "LEVOPIRID GH 25MG/2,5MLSOL INJ AMP 2,5ML B/6 SOLUTION INJECTABLE AMPOULE BOITE DE SIX"
+    keep = make_amm("SN", product_obj=Product.objects.create(name=long), original_number="1")
+    copy = make_amm(
+        "SN", product_obj=Product.objects.create(name=long + " (copie)"), original_number="1"
+    )
+    copy.original_start_date = keep.original_start_date
+    copy.save()
+    assert merge_copy(str(copy.pk), str(keep.pk)) is None
+    reasons = [h.history_change_reason or "" for h in keep.history.all()]
+    reasons += [
+        h.history_change_reason or "" for h in MarketingAuthorization.history.filter(id=copy.pk)
+    ]
+    assert max(len(reason) for reason in reasons) <= 100

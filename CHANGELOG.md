@@ -5,6 +5,15 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.4] — 2026-10-29
+
+### Corrigé
+- **Fusion d'une fiche en double refusée (erreur 500)** quand le libellé de la fiche était long
+  (« DOLEX 75MG IM/IV SOL INJ AMP 3ML B/5 ») : le motif inscrit dans l'historique dépassait les
+  100 caractères admis. Il est raccourci.
+- Carte de synchronisation : toutes les fiches en double sont listées (les 40 premières seulement
+  jusqu'ici, si bien que celles « à vérifier », en fin de liste, n'apparaissaient pas).
+
 ## [1.1.3] — 2026-10-29
 
 ### Corrigé

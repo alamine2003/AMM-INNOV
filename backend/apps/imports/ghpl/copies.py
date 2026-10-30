@@ -30,7 +30,8 @@ from apps.catalog.normalize import product_key
 from ..registry import COUNTRIES, _plain, same_presentation
 
 LISTED = 200
-REASON = "Fusion d'une fiche en double (synchronisation AMM GHPL)"
+REASON = "Fiche en double fusionnée"
+REASON_MAX = 100  # longueur du motif dans l'historique (django-simple-history)
 
 
 def _labels_by_country(records: list[dict]) -> dict[str, set[str]]:
@@ -150,10 +151,10 @@ def merge_copy(copy_id: str, keep_id: str, user=None) -> str | None:
             return f"à vérifier : {problem}"
         ImportRow.objects.filter(amm=copy).update(amm=keep)
         GhplSyncedFile.objects.filter(amm=copy).update(amm=keep)
-        copy._change_reason = f"{REASON} : doublon de « {keep.product.name} »"
+        copy._change_reason = f"{REASON} dans « {keep.product.name} »"[:REASON_MAX]
         if user is not None:
             copy._history_user = user
         copy.delete()  # renouvellements identiques, alertes et rappels de la copie avec elle
-        keep._change_reason = f"{REASON} : « {copy.product.name} » fusionnée"
+        keep._change_reason = f"{REASON} : « {copy.product.name} »"[:REASON_MAX]
         keep.save()
     return None
