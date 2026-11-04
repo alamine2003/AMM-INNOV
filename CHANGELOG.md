@@ -5,7 +5,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
-## [1.2.0] — 2026-10-30
+## [1.1.5] — 2026-11-04
 
 ### Modifié
 - **Classeurs : les 4 niveaux de vérification d'un dossier.** Chaque page affiche « Vérification du
