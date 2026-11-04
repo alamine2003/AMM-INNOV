@@ -5,6 +5,35 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.5] — 2026-11-04
+
+### Modifié
+- **Classeurs : les 4 niveaux de vérification d'un dossier.** Chaque page affiche « Vérification du
+  dossier » :
+  1. visible dans le classeur numérique (la fiche existe dans AMM GH) ;
+  2. dossier papier dans le classeur (constat de l'archiviste) ;
+  3. version scannée de la décision en vigueur (AMM GH) ;
+  4. bonne date et bon n° d'AMM (relevés sur le papier, renseignés, inchangés depuis).
+
+  Résultat : « Le dossier est conforme » quand les 4 sont justes, sinon « Dossier non conforme » avec
+  le niveau en défaut. Le bouton « Conforme » devient « Papier conforme » : il dit que le papier est là
+  et que la date et le n° sont justes, pas que tout le dossier l'est.
+- Les constats déjà faits sont repris : une page tamponnée sans scan de la décision en vigueur, ou
+  dont la fiche a changé depuis, est maintenant « non conforme ».
+
+### Corrigé
+- **Incohérences des compteurs des classeurs.** L'étagère comptait les décisions « à scanner »
+  d'après l'état du dossier de la fiche, la page d'après le scan de la décision en vigueur : les
+  chiffres ne correspondaient pas. Les pages modifiées depuis leur vérification restaient comptées
+  « conformes » sur l'étagère. Tous les compteurs (étagère, Dashboard, page de garde, intercalaires,
+  bilan, PDF, fiche AMM) viennent maintenant du même calcul que la page.
+- Filtre « Écarts et manques » : il regarde la décision en vigueur (dernier renouvellement obtenu),
+  plus seulement l'AMM d'origine.
+
+### Sécurité
+- follow-redirects 1.16.2 (dépendance d'axios) : faille GHSA-mrwp-f3q8-3g9p publiée le 03/11, des
+  en-têtes d'identification pouvaient suivre une redirection.
+
 ## [1.1.4] — 2026-10-29
 
 ### Corrigé

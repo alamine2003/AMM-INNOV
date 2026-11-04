@@ -1,8 +1,28 @@
 # Classeurs d'archivage (classeurs 3D)
 
 Chaque classeur papier des AMM a son jumeau dans AMM GH (menu **Classeurs**). L'archiviste feuillette le papier
-et l'écran en même temps. Pour chaque page, il constate : **Conforme**, **Corriger** (il saisit la valeur lue
-sur le papier) ou **Absent du classeur**.
+et l'écran en même temps. Pour chaque page, il constate : **Papier conforme**, **Corriger** (il saisit la valeur
+lue sur le papier) ou **Absent du classeur**.
+
+## Les 4 niveaux de vérification d'un dossier
+
+Chaque page affiche « Vérification du dossier » et son résultat. Les niveaux 1 et 3 sont calculés par AMM GH,
+les niveaux 2 et 4 viennent du constat de l'archiviste.
+
+| Niveau | Juste quand | Qui le dit |
+| --- | --- | --- |
+| 1. Visible dans le classeur numérique | la fiche existe dans AMM GH (un dossier papier sans fiche est une « page en trop ») | AMM GH |
+| 2. Dossier papier dans le classeur | constat « Papier conforme » ou « Corriger » (faux si « Absent du classeur ») | archiviste |
+| 3. Version scannée | la décision en vigueur (dernier renouvellement obtenu, sinon l'AMM d'origine) a son scan | AMM GH |
+| 4. Bonne date et bon n° d'AMM | relevés sur le papier, renseignés tous les deux, et la fiche n'a pas changé depuis | archiviste |
+
+**Résultat** : « Le dossier est conforme » quand les 4 niveaux sont justes ; « Dossier non conforme » sinon,
+avec le niveau en défaut ; « Dossier pas encore vérifié » tant que le papier n'a pas été constaté. Le résultat
+est recalculé à chaque lecture : un scan importé plus tard rend le dossier conforme sans nouveau constat, une
+fiche modifiée après le constat le rend non conforme (à revérifier).
+
+L'étagère, le Dashboard, la page de garde, les intercalaires, le bilan, le PDF et la fiche AMM comptent avec
+ce même calcul.
 
 ## Les classeurs
 
@@ -27,7 +47,7 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 
 ## Ce que fait un constat
 
-- **Conforme** : la page est tamponnée « Vérifié ». Les écarts ouverts de l'import sur cette AMM sont refermés :
+- **Papier conforme** : la page est tamponnée « Vérifié » (niveaux 2 et 4). Les écarts ouverts de l'import sur cette AMM sont refermés :
   « valeur du scan appliquée » si la fiche porte déjà la valeur du scan, « ignoré » sinon.
 - **Corriger** : la valeur lue sur le papier remplace celle de la fiche. L'historique garde l'ancienne valeur,
   l'auteur et le motif « Vérifié sur le classeur papier ». Un renouvellement présent sur le papier mais absent
@@ -47,10 +67,11 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   - une feuille perforée par AMM, avec les onglets de gamme sur la tranche et le mécanisme à levier ;
   - les pages se tournent en 3D, et le mode rapide se règle avec le bouton « Animation » ;
   - navigation : flèches ←/→, glisser du doigt, coin corné ou curseur en bas ;
-  - raccourcis : **C** conforme, **E** corriger, **A** absent. Après un constat, la page se tourne seule ;
+  - raccourcis : **C** papier conforme, **E** corriger, **A** absent. Après un constat, la page se tourne seule ;
   - le classeur s'ouvre à la première page pas encore vérifiée.
-- **Filtres** : « Toutes les pages », « Pas encore vérifiées » ou « Écarts et manques » (écart avec le scan,
-  pas de scan, n° ou date d'origine manquants). Le filtre est figé à son choix : une page que l'on vient de
+- **Filtres** : « Toutes les pages », « À vérifier ou revérifier », « Écarts et manques » (écart avec le
+  scan, décision en vigueur non scannée, n° ou date de la décision en vigueur manquants) ou « Dossiers non
+  conformes ». Le filtre est figé à son choix : une page que l'on vient de
   vérifier ne disparaît pas.
 - **PDF (siège)** : dans l'ordre, la couverture, un intercalaire de couleur par gamme, une feuille par AMM puis
   le bilan (dossiers à retrouver, à scanner, corrigés, pas encore vérifiés, pages en trop). Une page pas

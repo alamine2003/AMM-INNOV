@@ -181,8 +181,12 @@ export default function BindersShelfPage() {
 
   const binders = shelf.data ?? [];
   const totals = binders.reduce(
-    (acc, b) => ({ pages: acc.pages + b.total, checked: acc.checked + b.checked }),
-    { pages: 0, checked: 0 },
+    (acc, b) => ({
+      pages: acc.pages + b.total,
+      checked: acc.checked + b.checked,
+      conformes: acc.conformes + b.conformes,
+    }),
+    { pages: 0, checked: 0, conformes: 0 },
   );
 
   return (
@@ -191,7 +195,7 @@ export default function BindersShelfPage() {
         title="Classeurs d'archivage"
         subtitle={
           shelf.data
-            ? `${binders.length} classeurs · ${totals.checked} / ${totals.pages} pages vérifiées${
+            ? `${binders.length} classeurs · ${totals.checked} / ${totals.pages} pages vérifiées · ${totals.conformes} dossiers conformes${
                 isHq ? '' : ' · vos pays uniquement'
               }`
             : undefined
@@ -232,8 +236,9 @@ export default function BindersShelfPage() {
                         <br />
                       </>
                     )}
-                    {binder.checked} / {binder.total} vérifiées · {binder.absent} absentes · {binder.to_scan}{' '}
-                    à scanner
+                    {binder.checked} / {binder.total} vérifiées · {binder.conformes} conformes ·{' '}
+                    {binder.non_conformes} non conformes · {binder.absent} absentes · {binder.to_scan} à
+                    scanner
                     {binder.last_checked_at && (
                       <>
                         <br />

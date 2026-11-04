@@ -7,13 +7,15 @@ import { useBinders } from '@/api/hooks/useBinders';
 export function BindersDashboardCard() {
   const shelf = useBinders();
   if (!shelf.data?.length) return null;
-  const sum = (key: 'total' | 'checked' | 'absent' | 'to_scan' | 'corrected' | 'extras') =>
-    shelf.data.reduce((acc, binder) => acc + binder[key], 0);
+  const sum = (
+    key: 'total' | 'checked' | 'conformes' | 'non_conformes' | 'absent' | 'to_scan' | 'corrected' | 'extras',
+  ) => shelf.data.reduce((acc, binder) => acc + binder[key], 0);
   const total = sum('total');
   const checked = sum('checked');
   const open = shelf.data.filter((binder) => binder.readers.length > 0);
   const figures = [
-    { label: 'corrigées', value: sum('corrected'), color: '#e65100' },
+    { label: 'dossiers conformes', value: sum('conformes'), color: '#2e7d32' },
+    { label: 'non conformes', value: sum('non_conformes'), color: '#e65100' },
     { label: 'dossiers absents', value: sum('absent'), color: '#c62828' },
     { label: 'décisions à scanner', value: sum('to_scan'), color: '#c62828' },
     { label: 'pages en trop', value: sum('extras'), color: '#6b7280' },

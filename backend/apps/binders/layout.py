@@ -17,7 +17,7 @@ from django.http import Http404
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
-from apps.amm.models import MarketingAuthorization
+from apps.amm.models import MarketingAuthorization, Renewal
 from apps.catalog.models import Country
 from apps.documents.models import Document
 from apps.imports.models import DossierReviewPoint
@@ -339,10 +339,9 @@ def page_payload(amm, trace: dict | None = None) -> dict:
     scans = [doc for doc in documents if doc.kind == Document.Kind.AMM]
     # La décision la plus récente en haut de la pile agrafée.
     scans.sort(key=lambda doc: doc.document_date, reverse=True)
-    wanted = renewal.pk if renewal else None
     # En haut de la pile : le scan de la décision en vigueur, sinon la plus récente scannée
     # (signalée comme n'étant pas celle en vigueur).
-    current_scan = next((doc for doc in scans if doc.renewal_id == wanted), None)
+    current_scan = _scan_of_decision(amm, renewal, scans)
     scan = current_scan or (scans[0] if scans else None)
     discrepancies = []
     for point in getattr(amm, "open_mismatches", []):
@@ -364,6 +363,7 @@ def page_payload(amm, trace: dict | None = None) -> dict:
     check = amm.binder_check if hasattr(amm, "binder_check") else None
     code = _range_code(amm)
     changed = changes_since(check.snapshot, page_values(amm, renewal)) if check else []
+    verdict = conformity(amm, renewal, check, changed, current_scan, scan)
     return {
         "amm_id": str(amm.pk),
         "product_name": amm.product.name,
@@ -416,14 +416,105 @@ def page_payload(amm, trace: dict | None = None) -> dict:
         "changed_by": _change_source(trace, check.checked_at) if changed else None,
         "trace": trace or {"excel": None, "dossier": None},
         # Le papier est là mais la décision en vigueur n'a pas de scan.
-        "to_scan": bool(
-            check
-            and check.physical_present
-            and (
-                amm.dossier_state == MarketingAuthorization.DossierState.INCOMPLET
-                or current_scan is None
-            )
-        ),
+        "to_scan": verdict["to_scan"],
+        "conformity": verdict,
+    }
+
+
+CONFORMITY_LABELS = {
+    "CONFORME": "Le dossier est conforme",
+    "NON_CONFORME": "Dossier non conforme",
+    "NON_VERIFIE": "Dossier pas encore vérifié",
+}
+
+
+def _scan_of_decision(amm, renewal, scans):
+    """Le scan de la décision en vigueur (dernier renouvellement obtenu, sinon l'origine)."""
+    wanted = renewal.pk if renewal else None
+    return next((doc for doc in scans if doc.renewal_id == wanted), None)
+
+
+def conformity(amm, renewal, check, changed, current_scan, scan=None) -> dict:
+    """Les 4 niveaux de vérification d'un dossier, et le résultat.
+
+    1. Visible dans le classeur numérique : la fiche existe dans AMM GH (toujours vrai pour une
+       page ; un dossier papier sans fiche est une « page en trop »).
+    2. Dossier papier dans le classeur : constat de l'archiviste (présent ou absent).
+    3. Décision en vigueur scannée : dans AMM GH, automatiquement.
+    4. Bonne date et bon n° d'AMM : relevés sur le papier par l'archiviste (« Conforme » ou
+       « Corriger »), renseignés, et inchangés depuis.
+
+    « Le dossier est conforme » quand les 4 sont justes ; pas encore vérifié tant que le papier
+    n'a pas été constaté. Le résultat est recalculé à chaque lecture : un scan ajouté plus tard,
+    ou une fiche modifiée après le constat, le met à jour.
+    """
+    number = renewal.number if renewal else amm.original_number
+    start = renewal.start_date if renewal else amm.original_start_date
+    known = bool(renewal) or bool(amm.original_number or amm.original_start_date)
+    decision = f"renouvellement {renewal.sequence}" if renewal else "AMM d'origine"
+
+    paper = None if check is None else check.result != "ABSENT"
+    if not known:
+        scanned, scan_detail = False, "aucune décision enregistrée sur la fiche"
+    elif current_scan is not None:
+        scanned, scan_detail = True, f"décision scannée ({decision})"
+    elif scan is not None:
+        scanned, scan_detail = False, f"la décision en vigueur ({decision}) n'est pas scannée"
+    else:
+        scanned, scan_detail = False, "aucun scan de décision"
+
+    if check is None:
+        data, data_detail = None, "à relever sur le papier"
+    elif not paper:
+        data, data_detail = None, "pas de papier pour le vérifier"
+    elif changed:
+        data, data_detail = False, "la fiche a changé depuis la vérification : à revérifier"
+    elif not number or not start:
+        missing = " et ".join(
+            label for label, value in (("date", start), ("n° d'AMM", number)) if not value
+        )
+        data, data_detail = False, f"{missing} manquant{'s' if ' et ' in missing else ''}"
+    else:
+        data, data_detail = True, f"n° {number} du {start:%d/%m/%Y}"
+
+    criteria = [
+        {
+            "key": "digital",
+            "label": "Visible dans le classeur numérique",
+            "ok": True,
+            "detail": "fiche dans AMM GH",
+        },
+        {
+            "key": "paper",
+            "label": "Dossier papier dans le classeur",
+            "ok": paper,
+            "detail": {None: "à constater", True: "présent", False: "absent du classeur"}[paper],
+        },
+        {
+            "key": "scan",
+            "label": "Version scannée",
+            "ok": scanned,
+            "detail": scan_detail,
+        },
+        {
+            "key": "data",
+            "label": "Bonne date et bon n° d'AMM",
+            "ok": data,
+            "detail": data_detail,
+        },
+    ]
+    if paper is None:
+        status = "NON_VERIFIE"
+    elif all(item["ok"] is True for item in criteria):
+        status = "CONFORME"
+    else:
+        status = "NON_CONFORME"
+    return {
+        "status": status,
+        "label": CONFORMITY_LABELS[status],
+        "criteria": criteria,
+        "to_scan": bool(paper) and not scanned and known,
+        "stale": bool(changed),
     }
 
 
@@ -556,18 +647,35 @@ def chronology(amm, renewals, documents) -> list[dict]:
     return timeline
 
 
+COUNT_KEYS = (
+    "total",  # pages du classeur
+    "checked",  # papier constaté (présent ou absent)
+    "conformes",  # les 4 niveaux justes : « Le dossier est conforme »
+    "non_conformes",  # constatées, au moins un niveau faux
+    "corrected",  # date ou n° corrigé sur la fiche d'après le papier
+    "absent",  # dossier papier absent du classeur
+    "to_scan",  # papier présent, décision en vigueur non scannée
+    "stale",  # fiche modifiée depuis le constat : à revérifier
+)
+
+
 def _empty_counts() -> dict:
-    return {"total": 0, "checked": 0, "conformes": 0, "corrected": 0, "absent": 0, "to_scan": 0}
+    return dict.fromkeys(COUNT_KEYS, 0)
 
 
-def _count(counts: dict, result: str | None, dossier_state: str) -> None:
+def _count(counts: dict, verdict: dict, result: str | None) -> None:
+    """Les compteurs viennent du même calcul que la page (`conformity`) : pas d'écart possible."""
     counts["total"] += 1
-    if not result:
+    if verdict["status"] == "NON_VERIFIE":
         return
     counts["checked"] += 1
-    counts[{"CONFORME": "conformes", "CORRIGE": "corrected", "ABSENT": "absent"}[result]] += 1
-    if result != "ABSENT" and dossier_state == MarketingAuthorization.DossierState.INCOMPLET:
-        counts["to_scan"] += 1
+    counts["conformes" if verdict["status"] == "CONFORME" else "non_conformes"] += 1
+    if result == "CORRIGE":
+        counts["corrected"] += 1
+    if result == "ABSENT":
+        counts["absent"] += 1
+    counts["to_scan"] += verdict["to_scan"]
+    counts["stale"] += verdict["stale"]
 
 
 READING_WINDOW = timedelta(minutes=2)
@@ -622,6 +730,17 @@ def _summary(
     }
 
 
+def _verdict(amm) -> dict:
+    """Résultat de la page d'une AMM (même calcul que `page_payload`, sans le reste)."""
+    renewals = list(amm.renewals.all())
+    renewal = last_obtained(renewals)
+    scans = sorted(amm.decision_scans, key=lambda doc: doc.document_date, reverse=True)
+    check = amm.binder_check if hasattr(amm, "binder_check") else None
+    changed = changes_since(check.snapshot, page_values(amm, renewal)) if check else []
+    current = _scan_of_decision(amm, renewal, scans)
+    return conformity(amm, renewal, check, changed, current, scans[0] if scans else None)
+
+
 def shelf(user) -> list[dict]:
     """Les classeurs visibles par l'utilisateur, avec leur avancement."""
     from .models import BinderExtraPage
@@ -634,20 +753,28 @@ def shelf(user) -> list[dict]:
         ),
         key=shelf_order,
     )
-    rows = MarketingAuthorization.objects.filter(country__in=countries).values_list(
-        "country_id",
-        "product__name",
-        "product__range__code",
-        "dossier_state",
-        "binder_check__result",
-        "binder_check__checked_at",
-        "binder_check__checked_by__first_name",
-        "binder_check__checked_by__last_name",
-        "binder_check__checked_by__email",
+    amms = (
+        MarketingAuthorization.objects.filter(country__in=countries)
+        .select_related("product__range", "binder_check__checked_by")
+        .prefetch_related(
+            Prefetch(
+                "renewals",
+                queryset=Renewal.objects.only(
+                    "amm_id", "sequence", "workflow_status", "number", "start_date", "end_date"
+                ),
+            ),
+            Prefetch(
+                "documents",
+                queryset=Document.objects.filter(
+                    is_current=True, archived_at__isnull=True, kind=Document.Kind.AMM
+                ).only("amm_id", "renewal_id", "document_date"),
+                to_attr="decision_scans",
+            ),
+        )
     )
     by_country: dict = {}
-    for row in rows:
-        by_country.setdefault(row[0], []).append(row)
+    for amm in amms:
+        by_country.setdefault(amm.country_id, []).append(amm)
     extras: dict = {}
     for key in BinderExtraPage.objects.filter(country__in=countries).values_list(
         "binder_key", flat=True
@@ -662,14 +789,14 @@ def shelf(user) -> list[dict]:
         for binder in binders_of(country):
             sections = {code: _empty_counts() for code in binder.ranges}
             last = None
-            for _, name, code, state, check, at, first, last_name, email in by_country.get(
-                country.pk, []
-            ):
-                if not binder.contains(code, name):
+            for amm in by_country.get(country.pk, []):
+                code = amm.product.range.code if amm.product.range_id else None
+                if not binder.contains(code, amm.product.name):
                     continue
-                _count(sections[code or NO_RANGE], check, state)
-                if at and (last is None or at > last["at"]):
-                    last = {"at": at, "by": f"{first} {last_name}".strip() or email}
+                check = amm.binder_check if hasattr(amm, "binder_check") else None
+                _count(sections[code or NO_RANGE], _verdict(amm), check.result if check else None)
+                if check and (last is None or check.checked_at > last["at"]):
+                    last = {"at": check.checked_at, "by": _person(check.checked_by)}
             result.append(
                 _summary(binder, sections, extras.get(binder.key, 0), last, reading.get(binder.key))
             )
@@ -683,7 +810,6 @@ def binder_detail(binder: Binder) -> dict:
     traces = traces_for([amm.pk for amm in amms])
     sections: dict = {}
     pages_by_section: dict = {}
-    stale: dict = {}
     resume = None
     last = None
     for index, amm in enumerate(amms):
@@ -696,11 +822,9 @@ def binder_detail(binder: Binder) -> dict:
         check = page["check"]
         _count(
             sections.setdefault(code, _empty_counts()),
+            page["conformity"],
             check["result"] if check else None,
-            amm.dossier_state,
         )
-        if page["changed_since_check"]:
-            stale[code] = stale.get(code, 0) + 1
         if (check is None or page["changed_since_check"]) and resume is None:
             resume = index
         if check and (last is None or check["checked_at"] > last["at"]):
@@ -726,8 +850,6 @@ def binder_detail(binder: Binder) -> dict:
     )
     for section in summary["sections"]:
         section["pages"] = pages_by_section.get(section["code"], [])
-        section["stale"] = stale.get(section["code"], 0)
-    summary["stale"] = sum(stale.values())
     summary["extra_pages"] = extras
     summary["resume_page"] = resume if resume is not None else 0
     return summary
@@ -751,4 +873,5 @@ def locate(user, amm_id) -> dict:
         "total": len(amms),
         "check": page["check"],
         "stale": bool(page["changed_since_check"]),
+        "conformity": page["conformity"],
     }

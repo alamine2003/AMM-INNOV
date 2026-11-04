@@ -357,7 +357,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
               aria-label="Avancement du classeur"
             />
             <Typography variant="body2" color="text.secondary">
-              {binder.checked} / {total} vérifiées
+              {binder.checked} / {total} vérifiées · {binder.conformes} conformes
             </Typography>
             {binder.stale > 0 && (
               <Chip

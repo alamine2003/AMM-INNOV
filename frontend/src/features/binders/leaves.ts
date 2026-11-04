@@ -7,23 +7,28 @@ export type Leaf =
   | { kind: 'page'; key: string; ammId: string; code: string }
   | { kind: 'end'; key: 'end' };
 
-export type LeafFilter = 'all' | 'unchecked' | 'issues';
+export type LeafFilter = 'all' | 'unchecked' | 'issues' | 'non_conformes';
 
 export const FILTER_LABELS: Record<LeafFilter, string> = {
   all: 'Toutes les pages',
   unchecked: 'À vérifier ou revérifier',
   issues: 'Écarts et manques',
+  non_conformes: 'Dossiers non conformes',
 };
 
-/** Page qui mérite un œil attentif : écart avec le scan, pas de scan, n° ou date manquants. */
+/**
+ * Page qui mérite un œil attentif : écart avec le scan, décision en vigueur non scannée, n° ou
+ * date de la décision en vigueur manquants (les mêmes règles que les 4 niveaux de vérification).
+ */
 export function hasIssue(page: BinderPage): boolean {
-  const original = page.original;
+  const decision = page.renewal ?? page.original;
+  const scan = page.conformity.criteria.find((c) => c.key === 'scan');
   return (
     page.discrepancies.length > 0 ||
     page.changed_since_check.length > 0 ||
-    !page.scan ||
-    !original.number ||
-    !original.start_date
+    scan?.ok === false ||
+    !decision.number ||
+    !decision.start_date
   );
 }
 
@@ -34,6 +39,7 @@ export function needsCheck(page: BinderPage): boolean {
 
 function keep(page: BinderPage, filter: LeafFilter): boolean {
   if (filter === 'all') return true;
+  if (filter === 'non_conformes') return page.conformity.status === 'NON_CONFORME';
   if (!needsCheck(page)) return false;
   return filter === 'unchecked' || hasIssue(page);
 }

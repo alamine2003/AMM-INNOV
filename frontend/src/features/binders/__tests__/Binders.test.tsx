@@ -2,14 +2,73 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import type { BinderDetail, BinderPage, BinderSummary } from '@/api/types';
+import type {
+  BinderConformity,
+  BinderCriterionKey,
+  BinderDetail,
+  BinderPage,
+  BinderSummary,
+} from '@/api/types';
 import { server } from '@/mocks/server';
 import { loginAs, renderApp } from '@/test/utils';
-import { buildLeaves, resumeIndex } from '../leaves';
+import { buildLeaves, resumeIndex, type LeafFilter } from '../leaves';
+
+/** Pages gardées par un filtre du classeur. */
+const data = (detail: BinderDetail, filter: LeafFilter) =>
+  buildLeaves(detail, filter)
+    .filter((leaf) => leaf.kind === 'page')
+    .map((leaf) => (leaf.kind === 'page' ? leaf.ammId : ''));
 
 const endpoint = '/api/v1/binders';
 
-const counts = { total: 2, checked: 1, conformes: 1, corrected: 0, absent: 0, to_scan: 0 };
+const counts = {
+  total: 2,
+  checked: 1,
+  conformes: 1,
+  non_conformes: 0,
+  corrected: 0,
+  absent: 0,
+  to_scan: 0,
+  stale: 0,
+};
+
+function conformity(
+  status: BinderConformity['status'],
+  ok: Record<BinderCriterionKey, boolean | null>,
+): BinderConformity {
+  const labels = {
+    CONFORME: 'Le dossier est conforme',
+    NON_CONFORME: 'Dossier non conforme',
+    NON_VERIFIE: 'Dossier pas encore vérifié',
+  };
+  return {
+    status,
+    label: labels[status],
+    criteria: [
+      {
+        key: 'digital',
+        label: 'Visible dans le classeur numérique',
+        ok: ok.digital,
+        detail: 'fiche dans AMM GH',
+      },
+      { key: 'paper', label: 'Dossier papier dans le classeur', ok: ok.paper, detail: 'présent' },
+      {
+        key: 'scan',
+        label: 'Version scannée',
+        ok: ok.scan,
+        detail: ok.scan ? 'décision scannée' : 'aucun scan de décision',
+      },
+      {
+        key: 'data',
+        label: "Bonne date et bon n° d'AMM",
+        ok: ok.data,
+        detail: 'n° AMM/SN/2010/0152 du 22/12/2010',
+      },
+    ],
+    to_scan: ok.paper === true && ok.scan === false,
+    stale: false,
+  };
+}
 
 function page(overrides: Partial<BinderPage> = {}): BinderPage {
   return {
@@ -31,6 +90,7 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     discrepancies: [],
     check: null,
     to_scan: false,
+    conformity: conformity('NON_VERIFIE', { digital: true, paper: null, scan: false, data: null }),
     changed_since_check: [],
     changed_by: null,
     trace: { excel: null, dossier: null },
@@ -48,6 +108,7 @@ const checked = page({
     checked_by: 'Fatou',
     checked_at: '2026-09-27T10:00:00Z',
   },
+  conformity: conformity('CONFORME', { digital: true, paper: true, scan: true, data: true }),
 });
 
 function binder(pages: BinderPage[]): BinderDetail {
@@ -62,10 +123,9 @@ function binder(pages: BinderPage[]): BinderDetail {
     last_checked_at: null,
     last_checked_by: null,
     readers: [],
-    sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts, pages, stale: 0 }],
+    sections: [{ code: 'CARDIO', label: 'Cardio', color: '#c62828', ...counts, pages }],
     extra_pages: [],
     resume_page: 2,
-    stale: 0,
   };
 }
 
@@ -166,7 +226,7 @@ describe('Classeurs', () => {
     expect(screen.queryByLabelText(/Télécharger le classeur/)).not.toBeInTheDocument();
   });
 
-  it("s'ouvre sur la page à vérifier et tamponne « Conforme »", async () => {
+  it("s'ouvre sur la page à vérifier et tamponne « Papier conforme »", async () => {
     loginAs('u-sn');
     const open = page();
     let sent: unknown = null;
@@ -183,9 +243,33 @@ describe('Classeurs', () => {
     const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getByText('AMLODIPINE GH 5MG')).toBeInTheDocument();
-    await userEvent.click(within(current).getByRole('button', { name: /Conforme/ }));
+    // Les 4 niveaux : numérique juste, papier et date/n° à constater, pas de scan.
+    const panel = within(current).getByTestId('page-conformity');
+    expect(panel).toHaveTextContent('1. Visible dans le classeur numérique');
+    expect(panel).toHaveTextContent('3. Version scannée — aucun scan de décision');
+    expect(within(current).getByTestId('page-verdict')).toHaveTextContent(
+      'Résultat : Dossier pas encore vérifié',
+    );
+    await userEvent.click(within(current).getByRole('button', { name: /Papier conforme/ }));
     await waitFor(() => expect(sent).toMatchObject({ amm: 'amm-1', result: 'CONFORME' }));
     expect(await within(book).findAllByTestId('binder-stamp')).not.toHaveLength(0);
+  });
+
+  it('montre « Le dossier est conforme » quand les 4 niveaux sont justes', async () => {
+    loginAs('u-sn');
+    const missing = page({
+      check: { ...checked.check! },
+      conformity: conformity('NON_CONFORME', { digital: true, paper: true, scan: false, data: true }),
+    });
+    server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, missing]))));
+    renderApp('/classeurs/SN-cardio?amm=amm-0');
+    const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
+    const current = (await within(book).findAllByTestId('binder-sheet'))[0];
+    expect(within(current).getByTestId('page-verdict')).toHaveTextContent(
+      'Résultat : Le dossier est conforme',
+    );
+    // Le filtre « Dossiers non conformes » ne garde que la page sans scan.
+    expect(data(binder([checked, missing]), 'non_conformes')).toEqual(['amm-1']);
   });
 
   it('corrige une date de début : la fin se recalcule sur 5 ans', async () => {

@@ -5,6 +5,9 @@ import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import FolderOffIcon from '@mui/icons-material/FolderOff';
 import UndoIcon from '@mui/icons-material/Undo';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { extractErrorMessage } from '@/api/client';
 import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
 import { useValidityYears } from '@/api/hooks/useCatalog';
@@ -49,6 +52,56 @@ function initialValues(page: BinderPage): Values {
 function show(field: BinderField, value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
   return field === 'number' ? String(value) : formatDate(String(value));
+}
+
+const VERDICT_COLORS = { CONFORME: '#2e7d32', NON_CONFORME: '#c62828', NON_VERIFIE: MUTED };
+
+/** Les 4 niveaux de vérification du dossier, et le résultat (calculé par AMM GH). */
+function ConformityPanel({ page }: { page: BinderPage }) {
+  const { conformity } = page;
+  const color = VERDICT_COLORS[conformity.status];
+  return (
+    <Box
+      data-testid="page-conformity"
+      sx={{ mt: 1.5, bgcolor: '#fff', border: `1px solid ${LINE}`, borderRadius: 2, p: 1.75 }}
+    >
+      <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, mb: 1 }}>
+        VÉRIFICATION DU DOSSIER
+      </Typography>
+      <Stack spacing={0.5}>
+        {conformity.criteria.map((criterion, index) => (
+          <Stack key={criterion.key} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+            {criterion.ok === true ? (
+              <CheckCircleIcon sx={{ fontSize: 18, color: '#2e7d32', mt: '1px' }} aria-label="juste" />
+            ) : criterion.ok === false ? (
+              <CancelIcon sx={{ fontSize: 18, color: '#c62828', mt: '1px' }} aria-label="à régler" />
+            ) : (
+              <RadioButtonUncheckedIcon
+                sx={{ fontSize: 18, color: MUTED, mt: '1px' }}
+                aria-label="à vérifier"
+              />
+            )}
+            <Typography sx={{ fontSize: 13, color: INK }}>
+              {index + 1}. {criterion.label}
+              <Typography
+                component="span"
+                sx={{ fontSize: 12, color: criterion.ok === false ? '#c62828' : MUTED }}
+              >
+                {' '}
+                — {criterion.detail}
+              </Typography>
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+      <Typography
+        data-testid="page-verdict"
+        sx={{ mt: 1.25, fontWeight: 900, fontSize: 15, color, letterSpacing: 0.2 }}
+      >
+        Résultat : {conformity.label}
+      </Typography>
+    </Box>
+  );
 }
 
 function SlotCard({
@@ -322,7 +375,7 @@ export function BinderSheet({
         return { slot, field, value: values[key] || null };
       });
     if (!corrections.length && !note.trim()) {
-      setError('Aucune valeur modifiée : utilisez « Conforme » si la page est juste.');
+      setError('Aucune valeur modifiée : utilisez « Papier conforme » si la page est juste.');
       return;
     }
     send('CORRIGE', corrections);
@@ -523,6 +576,8 @@ export function BinderSheet({
 
         <ScanImportStatus scanImport={scanImport} />
 
+        <ConformityPanel page={page} />
+
         {stale && !editing && (
           <Alert severity="warning" sx={{ mt: 1.5, bgcolor: '#fff3e0' }} data-testid="page-stale">
             <Typography variant="subtitle2">
@@ -542,8 +597,8 @@ export function BinderSheet({
 
         {page.discrepancies.length > 0 && !editing && (
           <Alert severity="warning" sx={{ mt: 1.5, py: 0.25, bgcolor: '#fff8e1' }}>
-            Écart entre la fiche et le scan : vérifiez sur le papier, puis « Conforme » si la fiche est juste
-            ou « Corriger ».
+            Écart entre la fiche et le scan : vérifiez sur le papier, puis « Papier conforme » si la fiche est
+            juste ou « Corriger ».
           </Alert>
         )}
 
@@ -582,7 +637,10 @@ export function BinderSheet({
             </Stack>
           ) : (
             <Stack direction="row" gap={1} flexWrap="wrap">
-              <Tooltip describeChild title="Tout est juste sur le papier (touche C)">
+              <Tooltip
+                describeChild
+                title="Le dossier papier est dans le classeur, la date et le n° d'AMM sont justes (touche C)"
+              >
                 <Button
                   variant="contained"
                   color="success"
@@ -591,7 +649,7 @@ export function BinderSheet({
                   disabled={busy}
                   data-action="conforme"
                 >
-                  Conforme
+                  Papier conforme
                 </Button>
               </Tooltip>
               <Tooltip describeChild title="Saisir la valeur lue sur le papier (touche E)">
