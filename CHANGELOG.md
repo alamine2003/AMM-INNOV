@@ -30,6 +30,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 - Filtre « Écarts et manques » : il regarde la décision en vigueur (dernier renouvellement obtenu),
   plus seulement l'AMM d'origine.
 
+### Sécurité
+- follow-redirects 1.16.2 (dépendance d'axios) : faille GHSA-mrwp-f3q8-3g9p publiée le 03/11, des
+  en-têtes d'identification pouvaient suivre une redirection.
+
 ## [1.1.4] — 2026-10-29
 
 ### Corrigé
