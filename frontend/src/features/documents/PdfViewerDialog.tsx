@@ -7,6 +7,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DownloadIcon from '@mui/icons-material/Download';
+import PrintIcon from '@mui/icons-material/Print';
 import { Document, Page } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -14,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchDocumentBlob } from '@/api/hooks/useDocuments';
 import type { AmmDocument } from '@/api/types';
 import { saveBlob } from '@/lib/download';
+import { printBlob } from '@/lib/print';
 import { LoadingBlock, ErrorBlock } from '@/components/QueryState';
 
 /** Seuls l’identifiant et le titre du document servent à la visionneuse. */
@@ -104,6 +106,15 @@ function PdfViewerContent({
             aria-label={t('documents.openNewTab')}
           >
             <OpenInNewIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => loaded && void printBlob(loaded.blob, doc.title).catch(() => undefined)}
+            disabled={!loaded}
+            aria-label={t('documents.print')}
+            title={t('documents.print')}
+            data-testid="pdf-viewer-print"
+          >
+            <PrintIcon />
           </IconButton>
           <IconButton
             onClick={() => loaded && saveBlob(loaded.blob, fileName ?? `${doc.title || 'document'}.pdf`)}

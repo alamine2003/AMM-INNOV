@@ -5,6 +5,17 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.6] — 2026-11-05
+
+### Ajouté
+- **Imprimer un scan.** Un petit bouton « Imprimer » :
+  - sur la miniature de la décision, dans les classeurs ;
+  - à côté de « Télécharger » dans l'onglet Documents de la fiche AMM ;
+  - dans la barre de la visionneuse (bibliothèque, chronologie, fiche).
+
+  La boîte d'impression du navigateur s'ouvre sur le scan seul, sans quitter la page. Si le
+  navigateur refuse, le scan s'ouvre dans un onglet pour être imprimé de là.
+
 ## [1.1.5] — 2026-11-04
 
 ### Modifié

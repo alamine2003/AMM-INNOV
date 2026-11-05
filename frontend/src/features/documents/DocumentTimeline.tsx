@@ -1,6 +1,7 @@
 import { Box, Chip, Divider, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
+import PrintIcon from '@mui/icons-material/Print';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -14,6 +15,7 @@ export function DocumentTimeline({
   periods,
   onView,
   onDownload,
+  onPrint,
   onReplace,
   onEdit,
   onDelete,
@@ -23,6 +25,8 @@ export function DocumentTimeline({
   periods: DocumentPeriod[];
   onView: (d: AmmDocument) => void;
   onDownload: (d: AmmDocument) => void;
+  /** Imprimer le scan (petit bouton à côté du téléchargement). */
+  onPrint?: (d: AmmDocument) => void;
   onReplace?: (d: AmmDocument) => void;
   onEdit?: (d: AmmDocument) => void;
   onDelete?: (d: AmmDocument) => void;
@@ -139,6 +143,17 @@ export function DocumentTimeline({
                           <DownloadIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      {onPrint && (
+                        <Tooltip title={t('documents.print')}>
+                          <IconButton
+                            size="small"
+                            onClick={() => onPrint(d)}
+                            aria-label={t('documents.print')}
+                          >
+                            <PrintIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       {canEdit && onEdit && (
                         <Tooltip title="Corriger le classement (période, type, date)">
                           <IconButton

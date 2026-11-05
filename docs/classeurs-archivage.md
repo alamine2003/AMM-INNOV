@@ -80,6 +80,8 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 
 ## Pile des décisions et chronologie de l'AMM
 
+- **Imprimer** : le petit bouton dans le coin de la miniature imprime la décision affichée (la
+  visionneuse a aussi son bouton « Imprimer »).
 - **Pile agrafée** : toutes les décisions scannées de l'AMM (origine, puis chaque renouvellement) sont
   agrafées ensemble sur la page ; la plus récente est au-dessus et visible, les plus anciennes dépassent
   dessous, et une pastille donne leur nombre.

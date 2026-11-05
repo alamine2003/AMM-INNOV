@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosProgressEvent } from 'axios';
 import { api, fetchBlob } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
+import { printBlob } from '@/lib/print';
 import type { AmmDocument, DocumentKind, DocumentPeriod, Paginated } from '@/api/types';
 
 export function useAmmDocumentsByPeriod(ammId: string | undefined) {
@@ -147,4 +149,18 @@ export const fetchAmmArchive = (ammId: string) => fetchBlob(`/amms/${ammId}/docu
 export function documentFileName(doc: AmmDocument, countryIso2?: string, productName?: string): string {
   const base = [countryIso2, productName, doc.kind, doc.document_date].filter(Boolean).join('_');
   return `${base || doc.title || doc.id}.pdf`.replace(/[\\/:*?"<>|\s]+/g, '_');
+}
+
+/** Imprime un document de la fiche (scan d'une décision, récépissé…). */
+export function usePrintDocument() {
+  const [printing, setPrinting] = useState<string | null>(null);
+  const print = async (id: string, title?: string) => {
+    setPrinting(id);
+    try {
+      await printBlob(await fetchDocumentBlob(id), title);
+    } finally {
+      setPrinting(null);
+    }
+  };
+  return { print, printing };
 }

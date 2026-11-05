@@ -358,6 +358,8 @@
     "view": "Consulter",
     "downloadZip": "Télécharger le dossier (ZIP)",
     "openNewTab": "Ouvrir dans un nouvel onglet",
+    "print": "Imprimer",
+    "printError": "Impression impossible : le scan s'ouvre dans un onglet, imprimez-le depuis là.",
     "uploaded": "Document téléversé",
     "deleted": "Document archivé",
     "deleteConfirm": "Archiver ce document ? Il restera consultable par un administrateur.",

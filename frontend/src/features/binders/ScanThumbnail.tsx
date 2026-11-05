@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, ButtonBase, CircularProgress, Typography } from '@mui/material';
+import { Box, ButtonBase, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import PrintIcon from '@mui/icons-material/Print';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { useQuery } from '@tanstack/react-query';
 import { Document, Page } from 'react-pdf';
-import { fetchDocumentBlob } from '@/api/hooks/useDocuments';
+import { fetchDocumentBlob, usePrintDocument } from '@/api/hooks/useDocuments';
 import { PdfViewerDialog } from '@/features/documents/PdfViewerDialog';
 import { formatDate } from '@/lib/dates';
 import { LINE, MUTED } from './paper';
@@ -38,6 +39,7 @@ export function ScanThumbnail({
   stack = 0,
   onOpen,
   label,
+  printable = true,
 }: {
   documentId: string;
   documentDate: string;
@@ -46,8 +48,12 @@ export function ScanThumbnail({
   stack?: number;
   onOpen?: () => void;
   label?: string;
+  /** Petit bouton « Imprimer » dans le coin de la miniature. */
+  printable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const printing = usePrintDocument();
+  const [printError, setPrintError] = useState(false);
   const blob = useQuery({
     queryKey: ['binders', 'scan', documentId],
     queryFn: () => loadScan(documentId),
@@ -131,6 +137,45 @@ export function ScanThumbnail({
           </Document>
         )}
       </ButtonBase>
+      {printable && !blob.isError && (
+        <Tooltip
+          title={
+            printError
+              ? "Impression impossible ici : le scan s'est ouvert dans un onglet"
+              : 'Imprimer le scan'
+          }
+        >
+          <IconButton
+            size="small"
+            aria-label={`Imprimer le scan du ${formatDate(documentDate)}`}
+            data-testid="scan-print"
+            disabled={printing.printing === documentId}
+            onClick={(event) => {
+              event.stopPropagation();
+              setPrintError(false);
+              void printing.print(documentId, title).catch(() => setPrintError(true));
+            }}
+            sx={{
+              position: 'absolute',
+              left: -10,
+              bottom: -10,
+              zIndex: 3,
+              width: 28,
+              height: 28,
+              bgcolor: '#fff',
+              border: `1px solid ${LINE}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+              '&:hover': { bgcolor: '#f5f5f5' },
+            }}
+          >
+            {printing.printing === documentId ? (
+              <CircularProgress size={14} />
+            ) : (
+              <PrintIcon sx={{ fontSize: 16, color: '#37474f' }} />
+            )}
+          </IconButton>
+        </Tooltip>
+      )}
       {stack > 0 && (
         <Box
           aria-hidden
