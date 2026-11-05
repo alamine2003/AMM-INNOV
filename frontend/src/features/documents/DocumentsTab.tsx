@@ -9,6 +9,7 @@ import {
   fetchAmmArchive,
   fetchDocumentBlob,
   useAmmDocumentsByPeriod,
+  usePrintDocument,
   useDeleteDocument,
 } from '@/api/hooks/useDocuments';
 import { useRenewals } from '@/api/hooks/useRenewals';
@@ -28,6 +29,7 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
   const { enqueueSnackbar } = useSnackbar();
   const user = useAuthStore((s) => s.user);
   const periods = useAmmDocumentsByPeriod(amm.id);
+  const printing = usePrintDocument();
   const renewals = useRenewals(amm.id);
   const remove = useDeleteDocument(amm.id);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -93,6 +95,11 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
           periods={periods.data}
           onView={setViewing}
           onDownload={download}
+          onPrint={(d) =>
+            void printing
+              .print(d.id, d.title)
+              .catch(() => enqueueSnackbar(t('documents.printError'), { variant: 'warning' }))
+          }
           onReplace={(d) => {
             setReplaceTarget(d);
             setUploadOpen(true);

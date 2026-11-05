@@ -362,6 +362,8 @@ describe('Classeurs', () => {
     const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
     const current = within(book).getAllByTestId('binder-sheet')[0];
     expect(within(current).getAllByTestId('scan-stack-sheet')).toHaveLength(1);
+    // Petit bouton d'impression sur la miniature du scan.
+    expect(within(current).getByRole('button', { name: /Imprimer le scan du/ })).toBeInTheDocument();
     expect(within(current).getByTestId('open-chronology')).toHaveTextContent('2 manques');
     await userEvent.click(within(current).getByRole('button', { name: /Chronologie des 2 décisions/ }));
     const dialog = await screen.findByTestId('chronology-dialog');
