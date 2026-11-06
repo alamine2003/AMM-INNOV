@@ -28,6 +28,10 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
   correction, il s'ouvre seulement si le papier porte un renouvellement (« Le papier porte un
   renouvellement »).
 
+### Corrigé
+- **Tests compatibles avec pypdf 7** (sorti le 05/11) : le test du PDF piégé par du JavaScript
+  n'utilise plus `add_js`, retiré de pypdf. Le contrôle des PDF reçus n'avait pas à changer.
+
 ## [1.1.6] — 2026-11-05
 
 ### Ajouté

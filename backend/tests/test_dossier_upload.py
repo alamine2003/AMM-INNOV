@@ -23,7 +23,20 @@ def pdf_bytes(*, pages=1, active=None, encrypted=False):
     for _ in range(pages):
         writer.add_blank_page(width=200, height=200)
     if active == "javascript":
-        writer.add_js("app.alert('test');")
+        # Ce que faisait `add_js` (retiré dans pypdf 7) : une action JavaScript nommée.
+        action = DictionaryObject(
+            {
+                NameObject("/S"): NameObject("/JavaScript"),
+                NameObject("/JS"): TextStringObject("app.alert('test');"),
+            }
+        )
+        writer._root_object[NameObject("/Names")] = DictionaryObject(
+            {
+                NameObject("/JavaScript"): DictionaryObject(
+                    {NameObject("/Names"): ArrayObject([TextStringObject("test"), action])}
+                )
+            }
+        )
     elif active == "attachment":
         writer.add_attachment("payload.txt", b"content")
     elif active == "launch":
