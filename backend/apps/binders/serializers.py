@@ -200,9 +200,21 @@ class ChronologyEntrySerializer(serializers.Serializer):
     start_date = serializers.DateField(allow_null=True)
     end_date = serializers.DateField(allow_null=True)
     filing_date = serializers.DateField(allow_null=True, required=False)
+    # Interruption de validité ignorée : visible, sans compter comme un manque.
+    ignored = serializers.BooleanField(required=False)
     decisions = ChronologyDocumentSerializer(many=True, required=False)
     others = ChronologyDocumentSerializer(many=True, required=False)
     issues = ChronologyIssueSerializer(many=True)
+
+
+class PageRenameInputSerializer(serializers.Serializer):
+    product_name = serializers.CharField(max_length=255)
+
+
+class GapInputSerializer(serializers.Serializer):
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+    ignored = serializers.BooleanField(default=True)
 
 
 class CriterionSerializer(serializers.Serializer):

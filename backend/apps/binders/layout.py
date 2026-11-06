@@ -172,6 +172,7 @@ def binder_amms(binder: Binder) -> list:
                 ).order_by("document_date", "uploaded_at"),
                 to_attr="current_documents",
             ),
+            "ignored_gaps",
             Prefetch(
                 "review_points",
                 queryset=DossierReviewPoint.objects.filter(
@@ -408,7 +409,7 @@ def page_payload(amm, trace: dict | None = None) -> dict:
             else None
         ),
         "decision_count": len(scans),
-        "chronology": chronology(amm, renewals, documents),
+        "chronology": chronology(amm, renewals, documents, _ignored_gaps(amm)),
         "discrepancies": discrepancies,
         "check": check_payload(check),
         # Le dashboard ou un import a changé la fiche depuis le constat : à revérifier.
@@ -533,7 +534,11 @@ def _document(doc) -> dict:
     }
 
 
-def chronology(amm, renewals, documents) -> list[dict]:
+def _ignored_gaps(amm) -> set:
+    return {(gap.start_date, gap.end_date) for gap in amm.ignored_gaps.all()}
+
+
+def chronology(amm, renewals, documents, ignored=frozenset()) -> list[dict]:
     """De la décision la plus récente à l'AMM d'origine : pièces de chaque période et manques.
 
     Chaque période porte ses décisions scannées et ses autres pièces (récépissés, courriers) ;
@@ -619,19 +624,26 @@ def chronology(amm, renewals, documents) -> list[dict]:
             continue
         if previous and previous["end_date"] and period["start_date"]:
             if period["start_date"] - previous["end_date"] > GAP_TOLERANCE:
+                # Ignorée par l'archiviste : il n'y a pas de renouvellement manquant (période
+                # sans AMM). Visible, mais on ne force pas l'ajout d'un passage qui n'existe pas.
+                skipped = (previous["end_date"], period["start_date"]) in ignored
                 timeline.append(
                     {
                         "kind": "gap",
-                        "label": "Interruption de validité",
+                        "label": "Interruption de validité" + (" (ignorée)" if skipped else ""),
                         "start_date": previous["end_date"],
                         "end_date": period["start_date"],
-                        "issues": [
+                        "ignored": skipped,
+                        "issues": []
+                        if skipped
+                        else [
                             {
                                 "code": "gap",
                                 "message": (
                                     "Aucune décision ne couvre cette période : un renouvellement "
-                                    "manque peut-être. Importez sa décision, ou corrigez sur le "
-                                    "classeur papier."
+                                    "manque peut-être. Importez sa décision, corrigez sur le "
+                                    "classeur papier, ou ignorez ce trou s'il n'y a pas eu de "
+                                    "renouvellement."
                                 ),
                             }
                         ],

@@ -377,6 +377,125 @@ describe('Classeurs', () => {
     expect(within(dialog).getByText(/Décision du 10\/01\/2024/)).toBeInTheDocument();
   });
 
+  describe('la page elle-même', () => {
+    async function openPage() {
+      renderApp('/classeurs/SN-cardio?amm=amm-1');
+      const book = await screen.findByTestId('binder-book', {}, { timeout: 5000 });
+      return within(book).getAllByTestId('binder-sheet')[0];
+    }
+
+    it('le siège renomme la page : le titre change partout', async () => {
+      loginAs('u-ceo');
+      let sent: unknown = null;
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))),
+        http.patch(`${endpoint}/SN-cardio/pages/amm-1`, async ({ request }) => {
+          sent = await request.json();
+          return HttpResponse.json(binder([checked, page({ product_name: 'AMLODIPINE GH 5MG CPR B/30' })]));
+        }),
+      );
+      const sheet = await openPage();
+      await userEvent.click(within(sheet).getByTestId('rename-page'));
+      const input = await screen.findByTestId('rename-page-input');
+      await userEvent.clear(input);
+      await userEvent.type(input, 'AMLODIPINE GH 5MG CPR B/30');
+      await userEvent.click(screen.getByRole('button', { name: 'Renommer' }));
+      await waitFor(() => expect(sent).toEqual({ product_name: 'AMLODIPINE GH 5MG CPR B/30' }));
+    });
+
+    it('supprimer une page avec des pièces demande la fiche qui les reprend', async () => {
+      loginAs('u-ceo');
+      let url = '';
+      const withScan = page({
+        chronology: [
+          {
+            kind: 'origin',
+            label: "AMM d'origine",
+            start_date: '2010-12-22',
+            end_date: '2015-12-22',
+            decisions: [
+              {
+                document_id: 'd1',
+                kind: 'AMM',
+                kind_label: 'Décision',
+                document_date: '2010-12-22',
+                title: '',
+                page_count: 1,
+              },
+            ],
+            others: [],
+            issues: [],
+          },
+        ],
+      });
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, withScan]))),
+        http.delete(`${endpoint}/SN-cardio/pages/amm-1`, ({ request }) => {
+          url = request.url;
+          return HttpResponse.json(binder([checked]));
+        }),
+      );
+      const sheet = await openPage();
+      await userEvent.click(within(sheet).getByTestId('delete-page'));
+      const dialog = await screen.findByTestId('delete-page-dialog');
+      expect(dialog).toHaveTextContent('1 pièce');
+      expect(within(dialog).getByTestId('delete-page-confirm')).toBeDisabled();
+      await userEvent.click(within(dialog).getByLabelText('Fiche qui reprend les pièces'));
+      await userEvent.click(await screen.findByRole('option', { name: /ACARBOSE GH 100MG/ }));
+      await userEvent.click(within(dialog).getByTestId('delete-page-confirm'));
+      await waitFor(() => expect(new URL(url).searchParams.get('move_to_amm')).toBe('amm-0'));
+    });
+
+    it('un réglementaire pays ne renomme ni ne supprime de page', async () => {
+      loginAs('u-sn');
+      server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
+      const sheet = await openPage();
+      expect(within(sheet).queryByTestId('rename-page')).toBeNull();
+      expect(within(sheet).queryByTestId('delete-page')).toBeNull();
+    });
+
+    it('sans renouvellement, pas de bloc à remplir ; il s’ouvre seulement si le papier en porte un', async () => {
+      loginAs('u-sn');
+      server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
+      const sheet = await openPage();
+      expect(within(sheet).queryByText('DERNIER RENOUVELLEMENT')).toBeNull();
+      await userEvent.click(within(sheet).getByRole('button', { name: /Corriger/ }));
+      expect(within(sheet).queryByText('DERNIER RENOUVELLEMENT')).toBeNull();
+      await userEvent.click(within(sheet).getByTestId('add-renewal-slot'));
+      expect(within(sheet).getByText('DERNIER RENOUVELLEMENT')).toBeInTheDocument();
+    });
+
+    it('ignore une interruption de validité au lieu d’ajouter un passage', async () => {
+      loginAs('u-sn');
+      let sent: unknown = null;
+      const gapped = page({
+        chronology: [
+          {
+            kind: 'gap',
+            label: 'Interruption de validité',
+            start_date: '2015-12-22',
+            end_date: '2020-01-01',
+            issues: [{ code: 'gap', message: 'Aucune décision ne couvre cette période.' }],
+          },
+        ],
+      });
+      server.use(
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, gapped]))),
+        http.post(`${endpoint}/SN-cardio/pages/amm-1/gaps`, async ({ request }) => {
+          sent = await request.json();
+          return HttpResponse.json(binder([checked, gapped]));
+        }),
+      );
+      const sheet = await openPage();
+      await userEvent.click(within(sheet).getByTestId('open-chronology'));
+      const dialog = await screen.findByTestId('chronology-dialog');
+      await userEvent.click(within(dialog).getByTestId('gap-ignore'));
+      await waitFor(() =>
+        expect(sent).toEqual({ start_date: '2015-12-22', end_date: '2020-01-01', ignored: true }),
+      );
+    });
+  });
+
   describe('chronologie modifiable', () => {
     const decision = (id: string, date: string) => ({
       document_id: id,
@@ -460,8 +579,8 @@ describe('Classeurs', () => {
       expect(within(dialog).queryByTestId('chronology-edit')).not.toBeInTheDocument();
     });
 
-    it('supprime le renouvellement en double en gardant ses pièces', async () => {
-      loginAs('u-sn');
+    it('supprime un passage qui n’existe pas en gardant ses pièces (siège et CEO)', async () => {
+      loginAs('u-ceo');
       let url = '';
       server.use(
         http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
@@ -471,12 +590,23 @@ describe('Classeurs', () => {
         }),
       );
       const dialog = await openChronology();
-      // Seul le plus récent se supprime.
-      expect(within(dialog).queryByRole('button', { name: 'Supprimer Renouvellement 1' })).toBeNull();
+      // N'importe quel passage se supprime, pas seulement le plus récent.
+      expect(within(dialog).getByRole('button', { name: 'Supprimer Renouvellement 1' })).toBeInTheDocument();
       await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer Renouvellement 2' }));
-      expect(within(dialog).getByLabelText(/1 pièce à ranger sur/)).toHaveTextContent('Renouvellement 1');
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer la période' }));
+      // Les pièces vont sur l'AMM d'origine par défaut ; on choisit le renouvellement 1.
+      const select = within(dialog).getByLabelText(/1 pièce à ranger sur/);
+      expect(select).toHaveTextContent("AMM d'origine");
+      await userEvent.click(select);
+      await userEvent.click(await screen.findByRole('option', { name: 'Renouvellement 1' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer le passage' }));
       await waitFor(() => expect(new URL(url).searchParams.get('move_to')).toBe('r1'));
+    });
+
+    it('un réglementaire pays ne supprime pas de passage', async () => {
+      loginAs('u-sn');
+      server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))));
+      const dialog = await openChronology();
+      expect(within(dialog).queryByRole('button', { name: /^Supprimer Renouvellement/ })).toBeNull();
     });
 
     it("range une pièce sur une autre période ; seul l'administrateur peut la retirer", async () => {

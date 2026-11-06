@@ -154,3 +154,76 @@ class BinderPresence(models.Model):
 
     def __str__(self) -> str:
         return f"{self.binder_key} — {self.user_id}"
+
+
+class BinderIgnoredGap(models.Model):
+    """Interruption de validité signalée par la chronologie, que l'on a choisi d'ignorer.
+
+    Le dossier n'a pas de renouvellement manquant (période sans AMM, retrait volontaire…) : on ne
+    force pas l'archiviste à ajouter un passage qui n'existe pas. La chronologie montre le trou,
+    sans le compter comme un manque.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    amm = models.ForeignKey(
+        "amm.MarketingAuthorization",
+        on_delete=models.CASCADE,
+        related_name="ignored_gaps",
+        verbose_name="AMM",
+    )
+    start_date = models.DateField("début de l'interruption")
+    end_date = models.DateField("fin de l'interruption")
+    ignored_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="ignorée par",
+    )
+    ignored_at = models.DateTimeField("ignorée le", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "interruption ignorée"
+        verbose_name_plural = "interruptions ignorées"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["amm", "start_date", "end_date"], name="binder_ignored_gap_uniq"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.amm_id} — {self.start_date} → {self.end_date}"
+
+
+class BinderDeletedPage(models.Model):
+    """Page supprimée d'un classeur : la présentation n'existe pas dans ce pays.
+
+    Les imports (registre GHPL, scans classés, synchronisation) ne recréent pas sa fiche. Ajouter
+    à nouveau la page depuis le classeur lève ce blocage.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    country = models.ForeignKey(
+        "catalog.Country", on_delete=models.CASCADE, related_name="+", verbose_name="pays"
+    )
+    product_name = models.CharField("présentation", max_length=255)
+    product_key = models.CharField("clé de rapprochement", max_length=255, db_index=True)
+    moved_to = models.CharField("pièces rangées sur", max_length=255, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="supprimée par",
+    )
+    deleted_at = models.DateTimeField("supprimée le", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "page supprimée"
+        verbose_name_plural = "pages supprimées"
+        ordering = ["-deleted_at"]
+
+    def __str__(self) -> str:
+        return f"{self.country_id} — {self.product_name}"
