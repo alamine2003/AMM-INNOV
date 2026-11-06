@@ -545,6 +545,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/binders/{key}/pages/{amm_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Titre de la page (nom de la présentation, partout) ; DELETE supprime la page. */
+        delete: operations["v1_binders_pages_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Titre de la page (nom de la présentation, partout) ; DELETE supprime la page. */
+        patch: operations["v1_binders_pages_partial_update"];
+        trace?: never;
+    };
     "/api/v1/binders/{key}/pages/{amm_id}/documents/": {
         parameters: {
             query?: never;
@@ -580,6 +598,23 @@ export interface paths {
         patch: operations["v1_binders_pages_documents_partial_update"];
         trace?: never;
     };
+    "/api/v1/binders/{key}/pages/{amm_id}/gaps/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ignore (ou rétablit) une interruption de validité de la chronologie. */
+        post: operations["v1_binders_pages_gaps_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/binders/{key}/pages/{amm_id}/periods/{period}/": {
         parameters: {
             query?: never;
@@ -590,11 +625,17 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop. */
+        /**
+         * @description Corrige le n° et les dates d'une période ; DELETE supprime un passage qui n'existe pas
+         *     (siège et CEO), ses pièces rangées ailleurs.
+         */
         delete: operations["v1_binders_pages_periods_destroy"];
         options?: never;
         head?: never;
-        /** @description Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop. */
+        /**
+         * @description Corrige le n° et les dates d'une période ; DELETE supprime un passage qui n'existe pas
+         *     (siège et CEO), ses pièces rangées ailleurs.
+         */
         patch: operations["v1_binders_pages_periods_partial_update"];
         trace?: never;
     };
@@ -2461,6 +2502,7 @@ export interface components {
             end_date: string | null;
             /** Format: date */
             filing_date?: string | null;
+            ignored?: boolean;
             decisions?: components["schemas"]["ChronologyDocument"][];
             others?: components["schemas"]["ChronologyDocument"][];
             issues: components["schemas"]["ChronologyIssue"][];
@@ -3237,6 +3279,14 @@ export interface components {
          * @enum {string}
          */
         FieldEnum: "number" | "start_date" | "end_date";
+        GapInputRequest: {
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+            /** @default true */
+            ignored: boolean;
+        };
         GhplCopyMergeRequest: {
             pairs: components["schemas"]["GhplCopyPairRequest"][];
         };
@@ -3814,6 +3864,9 @@ export interface components {
             /** Format: date */
             document_date?: string;
             title?: string;
+        };
+        PatchedPageRenameInputRequest: {
+            product_name?: string;
         };
         /** @description Correction d'une période : seuls les champs envoyés changent ; une date vide s'efface. */
         PatchedPeriodInputRequest: {
@@ -5365,6 +5418,58 @@ export interface operations {
             };
         };
     };
+    v1_binders_pages_destroy: {
+        parameters: {
+            query?: {
+                /** @description Fiche (même pays) qui reprend les pièces de la page supprimée. */
+                move_to_amm?: string;
+            };
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_binders_pages_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPageRenameInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPageRenameInputRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPageRenameInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
     v1_binders_pages_documents_create: {
         parameters: {
             query?: never;
@@ -5442,10 +5547,38 @@ export interface operations {
             };
         };
     };
+    v1_binders_pages_gaps_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GapInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GapInputRequest"];
+                "multipart/form-data": components["schemas"]["GapInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
     v1_binders_pages_periods_destroy: {
         parameters: {
             query?: {
-                /** @description Période où ranger les pièces (« origin » ou un renouvellement) ; absent : elles sont archivées. */
+                /** @description Période où ranger les pièces (« origin » ou un renouvellement) ; absent : l'AMM d'origine. Les pièces ne sont jamais archivées. */
                 move_to?: string;
             };
             header?: never;

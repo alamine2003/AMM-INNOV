@@ -59,6 +59,17 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
   la dernière feuille (Bilan).
 - **Annuler le constat** : remet la page « à vérifier ». Les valeurs déjà corrigées restent en place.
 
+## Gérer la page elle-même (siège et CEO)
+
+- **Titre** : renomme la présentation partout dans AMM GH (tous les pays qui la suivent). L'ancien
+  nom devient un alias : les imports et la synchronisation la reconnaissent toujours. Un nom déjà
+  pris par une autre présentation est refusé : fusionner les deux produits dans le catalogue.
+- **Supprimer la page** : la fiche AMM disparaît de toute l'application. Ses pièces sont reprises
+  par une autre fiche du pays (choisie dans la fenêtre), à la période de même date ; aucune n'est
+  supprimée. Une page qui porte un dossier de dépôt (menu Dépôts) ne se supprime pas avant lui.
+  Les imports ne recréent plus la page (`BinderDeletedPage`) ; « Ajouter une page » la fait
+  revenir.
+
 ## Interface
 
 - **Étagère** : les classeurs debout, avec leur avancement. Le siège a un bouton de téléchargement sous chaque
@@ -98,6 +109,12 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 - Le bouton « Chronologie » indique le nombre de manques de la page (« Chronologie · 2 manques »).
 
 ### Corriger la chronologie
+
+- **Supprimer un passage** (siège et CEO) : un renouvellement ou un dépôt qui n'existe pas, le plus
+  récent ou un plus ancien. Ses pièces sont rangées sur la période choisie (AMM d'origine par
+  défaut), jamais archivées. Les renouvellements sont renumérotés sans trou.
+- **Ignorer une interruption de validité** : s'il n'y a pas eu de renouvellement sur la période, le
+  trou reste affiché « (ignorée) » mais ne compte plus comme un manque.
 
 Ce que la lecture automatique d'un scan a faussé se reprend dans la fenêtre, à la main :
 

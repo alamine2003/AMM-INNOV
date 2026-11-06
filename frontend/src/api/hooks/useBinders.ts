@@ -212,6 +212,12 @@ export function useChronologyEdits(key: string, amm: string) {
       key,
       async (document: string) => (await api.delete<BinderDetail>(`${page}/documents/${document}`)).data,
     ),
+    /** Ignore (ou rétablit) une interruption de validité : pas de passage à ajouter. */
+    ignoreGap: useBinderMutation(
+      key,
+      async (gap: { start_date: string; end_date: string; ignored: boolean }) =>
+        (await api.post<BinderDetail>(`${page}/gaps`, gap)).data,
+    ),
     addDocument: useBinderMutation(key, async (upload: ChronologyDocumentUpload) => {
       const form = new FormData();
       form.append('file', upload.file, upload.file.name);
@@ -244,4 +250,28 @@ export function useBinderLocation(ammId: string | null | undefined) {
     enabled: !!ammId,
     retry: false,
   });
+}
+
+/**
+ * La page elle-même (siège et CEO) : son titre — le nom de la présentation, partout dans AMM GH —
+ * ou sa suppression, ses pièces reprises par une autre fiche du même pays.
+ */
+export function usePageEdits(key: string, amm: string) {
+  const page = `/binders/${key}/pages/${amm}`;
+  return {
+    rename: useBinderMutation(
+      key,
+      async (productName: string) =>
+        (await api.patch<BinderDetail>(page, { product_name: productName })).data,
+    ),
+    remove: useBinderMutation(
+      key,
+      async (moveToAmm: string | null) =>
+        (
+          await api.delete<BinderDetail>(page, {
+            params: moveToAmm ? { move_to_amm: moveToAmm } : undefined,
+          })
+        ).data,
+    ),
+  };
 }

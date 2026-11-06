@@ -737,6 +737,8 @@ export interface BinderChronologyEntry {
   start_date: string | null;
   end_date: string | null;
   filing_date?: string | null;
+  /** Interruption de validité ignorée (pas de renouvellement manquant) : ne compte pas. */
+  ignored?: boolean;
   decisions?: BinderChronologyDocument[];
   others?: BinderChronologyDocument[];
   issues: { code: BinderChronologyIssueCode; message: string }[];

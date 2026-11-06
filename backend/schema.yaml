@@ -1503,6 +1503,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/AddPageResult'
           description: ''
+  /api/v1/binders/{key}/pages/{amm_id}/:
+    patch:
+      operationId: v1_binders_pages_partial_update
+      description: Titre de la page (nom de la présentation, partout) ; DELETE supprime
+        la page.
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPageRenameInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPageRenameInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPageRenameInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
+    delete:
+      operationId: v1_binders_pages_destroy
+      description: Titre de la page (nom de la présentation, partout) ; DELETE supprime
+        la page.
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      - in: query
+        name: move_to_amm
+        schema:
+          type: string
+        description: Fiche (même pays) qui reprend les pièces de la page supprimée.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/binders/{key}/pages/{amm_id}/documents/:
     post:
       operationId: v1_binders_pages_documents_create
@@ -1614,11 +1683,52 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/binders/{key}/pages/{amm_id}/gaps/:
+    post:
+      operationId: v1_binders_pages_gaps_create
+      description: Ignore (ou rétablit) une interruption de validité de la chronologie.
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GapInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GapInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GapInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
   /api/v1/binders/{key}/pages/{amm_id}/periods/{period}/:
     patch:
       operationId: v1_binders_pages_periods_partial_update
-      description: Corrige le n° et les dates d'une période ; DELETE annule un renouvellement
-        en trop.
+      description: |-
+        Corrige le n° et les dates d'une période ; DELETE supprime un passage qui n'existe pas
+        (siège et CEO), ses pièces rangées ailleurs.
       parameters:
       - in: path
         name: amm_id
@@ -1662,8 +1772,9 @@ paths:
           description: ''
     delete:
       operationId: v1_binders_pages_periods_destroy
-      description: Corrige le n° et les dates d'une période ; DELETE annule un renouvellement
-        en trop.
+      description: |-
+        Corrige le n° et les dates d'une période ; DELETE supprime un passage qui n'existe pas
+        (siège et CEO), ses pièces rangées ailleurs.
       parameters:
       - in: path
         name: amm_id
@@ -1682,7 +1793,7 @@ paths:
         schema:
           type: string
         description: 'Période où ranger les pièces (« origin » ou un renouvellement)
-          ; absent : elles sont archivées.'
+          ; absent : l''AMM d''origine. Les pièces ne sont jamais archivées.'
       - in: path
         name: period
         schema:
@@ -5782,6 +5893,8 @@ components:
           type: string
           format: date
           nullable: true
+        ignored:
+          type: boolean
         decisions:
           type: array
           items:
@@ -7676,6 +7789,21 @@ components:
         * `number` - N° d'AMM
         * `start_date` - Date de début
         * `end_date` - Date de fin
+    GapInputRequest:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        ignored:
+          type: boolean
+          default: true
+      required:
+      - end_date
+      - start_date
     GhplCopyMergeRequest:
       type: object
       properties:
@@ -8807,6 +8935,13 @@ components:
           format: date
         title:
           type: string
+          maxLength: 255
+    PatchedPageRenameInputRequest:
+      type: object
+      properties:
+        product_name:
+          type: string
+          minLength: 1
           maxLength: 255
     PatchedPeriodInputRequest:
       type: object

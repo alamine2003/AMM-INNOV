@@ -8,6 +8,9 @@ import UndoIcon from '@mui/icons-material/Undo';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { useCurrentUser } from '@/api/hooks/useAuth';
 import { extractErrorMessage } from '@/api/client';
 import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
 import { useValidityYears } from '@/api/hooks/useCatalog';
@@ -25,6 +28,7 @@ import { addValidity, formatDate, formatDateTime } from '@/lib/dates';
 import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
 import { ChronologyDialog, chronologyIssues } from './ChronologyDialog';
 import { ScanThumbnail } from './ScanThumbnail';
+import { DeletePageDialog, RenamePageDialog } from './PageManage';
 import { Holes, INK, LINE, MUTED, Pill, STATUS_COLORS, Stamp, paperSx } from './paper';
 
 const FIELDS: { field: BinderField; label: string }[] = [
@@ -341,6 +345,14 @@ export function BinderSheet({
   const [dragging, setDragging] = useState(false);
   const scanImport = usePageScanImport(binder.key, page.amm_id);
   const [chronologyOpen, setChronologyOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // Pas de renouvellement : le bloc n'apparaît pas (rien à remplir de force) ; en correction, il
+  // s'ouvre seulement si le papier porte un renouvellement que la fiche n'a pas.
+  const [addingRenewal, setAddingRenewal] = useState(false);
+  const user = useCurrentUser();
+  // Renommer ou supprimer une page touche toute l'application : siège et CEO.
+  const canManage = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
   const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending;
 
@@ -348,6 +360,7 @@ export function BinderSheet({
   // la chronologie a pu les changer depuis l'ouverture, et renvoyer les anciennes les écraserait.
   const startEditing = () => {
     setValues(initialValues(page));
+    setAddingRenewal(false);
     setEditing(true);
   };
 
@@ -460,26 +473,64 @@ export function BinderSheet({
         >
           {page.product_name}
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, mb: 1.5 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, mb: 1.5, flexWrap: 'wrap' }}>
           <Pill color={section.color}>{section.label}</Pill>
           <Typography sx={{ fontSize: 12, color: MUTED }}>
             page {page.section_page} / {section.total} de la gamme
           </Typography>
+          {canManage && (
+            <Stack direction="row" spacing={0.5} sx={{ ml: 'auto !important' }}>
+              <Button
+                size="small"
+                startIcon={<EditIcon fontSize="small" />}
+                onClick={() => setRenaming(true)}
+                sx={{ color: MUTED, fontSize: 12 }}
+                data-testid="rename-page"
+              >
+                Titre
+              </Button>
+              <Button
+                size="small"
+                color="error"
+                startIcon={<DeleteOutlineIcon fontSize="small" />}
+                onClick={() => setDeleting(true)}
+                sx={{ fontSize: 12 }}
+                data-testid="delete-page"
+              >
+                Supprimer la page
+              </Button>
+            </Stack>
+          )}
         </Stack>
+        {renaming && <RenamePageDialog binder={binder} page={page} open onClose={() => setRenaming(false)} />}
+        {deleting && <DeletePageDialog binder={binder} page={page} open onClose={() => setDeleting(false)} />}
 
         <Stack direction="row" gap={1.5} flexWrap="wrap">
-          {SLOTS.map(({ slot, title }) => (
-            <SlotCard
-              key={slot}
-              page={page}
-              slot={slot}
-              title={title}
-              editing={editing}
-              years={years}
-              values={values}
-              onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
-            />
-          ))}
+          {SLOTS.filter(({ slot }) => slot === 'original' || page.renewal || (editing && addingRenewal)).map(
+            ({ slot, title }) => (
+              <SlotCard
+                key={slot}
+                page={page}
+                slot={slot}
+                title={title}
+                editing={editing}
+                years={years}
+                values={values}
+                onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
+              />
+            ),
+          )}
+          {editing && !page.renewal && !addingRenewal && (
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => setAddingRenewal(true)}
+              sx={{ alignSelf: 'center' }}
+              data-testid="add-renewal-slot"
+            >
+              Le papier porte un renouvellement
+            </Button>
+          )}
         </Stack>
 
         <Stack
