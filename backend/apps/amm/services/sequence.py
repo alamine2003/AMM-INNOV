@@ -19,7 +19,9 @@ def resequence(amm) -> bool:
     """
     renewals = list(Renewal.objects.filter(amm=amm))
     ordered = sorted(renewals, key=_sequence_key)
-    if [r.pk for r in ordered] == [r.pk for r in sorted(renewals, key=lambda r: r.sequence)]:
+    # Rien à faire si l'ordre suit les dates et si les n° se suivent (1, 2, 3…) : un passage
+    # supprimé au milieu ne laisse pas de trou dans la numérotation.
+    if [r.sequence for r in ordered] == list(range(1, len(ordered) + 1)):
         return False
     offset = max(r.sequence for r in renewals) + len(renewals) + 1
     for index, renewal in enumerate(ordered, start=1):  # deux temps : (amm, sequence) unique

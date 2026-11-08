@@ -57,11 +57,11 @@ def _period_url(amm, period):
 
 
 def test_duplicate_renewal_is_cancelled_and_its_scans_move(
-    country_client, alfa, django_capture_on_commit_callbacks
+    hq_client, alfa, django_capture_on_commit_callbacks
 ):
     amm, first, second = alfa["amm"], alfa["first"], alfa["second"]
     with django_capture_on_commit_callbacks(execute=True):
-        response = country_client.delete(f"{_period_url(amm, second.pk)}?move_to={first.pk}")
+        response = hq_client.delete(f"{_period_url(amm, second.pk)}?move_to={first.pk}")
     assert response.status_code == 200, response.json()
     page = _page(response.json())
 
@@ -78,10 +78,31 @@ def test_duplicate_renewal_is_cancelled_and_its_scans_move(
     assert (page["status"], page["dossier_state"]) == ("VALIDE", "COMPLET")
 
 
-def test_only_the_latest_renewal_can_be_cancelled(country_client, alfa):
-    response = country_client.delete(_period_url(alfa["amm"], alfa["first"].pk))
-    assert response.status_code == 400
-    assert "seul le plus récent" in str(response.json())
+def test_older_passage_without_scan_is_removed_and_no_scan_is_lost(
+    hq_client, country_client, alfa, django_capture_on_commit_callbacks
+):
+    """Un passage qui n'existe pas (renouvellement 1 sans scan) se supprime, même s'il n'est pas
+    le plus récent ; seul le siège ou le CEO le peut, et aucune pièce n'est archivée."""
+    amm, first, second = alfa["amm"], alfa["first"], alfa["second"]
+    assert country_client.delete(_period_url(amm, first.pk)).status_code == 403
+    with django_capture_on_commit_callbacks(execute=True):
+        response = hq_client.delete(_period_url(amm, first.pk))
+    assert response.status_code == 200, response.json()
+    page = _page(response.json())
+    assert not Renewal.objects.filter(pk=first.pk).exists()
+    second.refresh_from_db()
+    assert second.sequence == 1  # l'ordre est recalculé
+    assert [e["label"] for e in page["chronology"]] == ["Renouvellement 1", "AMM d'origine"]
+    assert Document.objects.current().filter(amm=amm).count() == 3
+
+
+def test_removed_passage_scans_go_to_the_origin_by_default(hq_client, alfa):
+    amm, second = alfa["amm"], alfa["second"]
+    response = hq_client.delete(_period_url(amm, second.pk))
+    assert response.status_code == 200, response.json()
+    origin = _entry(_page(response.json()))
+    assert str(alfa["decision"].pk) in [d["document_id"] for d in origin["decisions"]]
+    assert Document.objects.current().filter(amm=amm).count() == 3
 
 
 def test_period_dates_and_number_are_corrected(country_client, alfa):
@@ -233,3 +254,82 @@ def test_corrected_period_start_recomputes_its_end(country_client, alfa):
     first.refresh_from_db()
     assert first.end_date == new_start.replace(year=new_start.year + 5)
     assert not first.end_date_manual
+
+
+def test_page_title_is_renamed_everywhere_and_old_name_still_matches(
+    hq_client, country_client, alfa
+):
+    from apps.catalog.models import ProductAlias
+
+    amm = alfa["amm"]
+    url = f"{URL}/pages/{amm.pk}"
+    assert country_client.patch(url, {"product_name": "X"}, format="json").status_code == 403
+    response = hq_client.patch(url, {"product_name": "alfa gh sr 10mg  cpr b/30"}, format="json")
+    assert response.status_code == 200, response.json()
+    amm.refresh_from_db()
+    assert amm.product.name == "ALFA GH SR 10MG CPR B/30"
+    # L'ancien nom reste reconnu par les imports.
+    alias = ProductAlias.objects.get(raw_name="ALFA GH SR 10MG CPR B30")
+    assert alias.product_id == amm.product_id
+    other = Product.objects.create(name="AUTRE PRODUIT")
+    response = hq_client.patch(url, {"product_name": other.name}, format="json")
+    assert response.status_code == 400 and "fusionnez" in str(response.json())
+
+
+def test_page_is_deleted_everywhere_and_its_scans_are_taken_by_another_record(
+    hq_client, make_amm, alfa, django_capture_on_commit_callbacks
+):
+    from apps.amm.models import MarketingAuthorization
+    from apps.binders.models import BinderDeletedPage
+
+    amm = alfa["amm"]
+    keep = make_amm(product_obj=Product.objects.create(name="ALFA GH 10MG CPR B30"))
+    url = f"{URL}/pages/{amm.pk}"
+    # Des pièces : il faut une fiche qui les reprend.
+    response = hq_client.delete(url)
+    assert response.status_code == 400 and "3 pièces" in str(response.json())
+    with django_capture_on_commit_callbacks(execute=True):
+        response = hq_client.delete(f"{url}?move_to_amm={keep.pk}")
+    assert response.status_code == 200, response.json()
+    assert not MarketingAuthorization.objects.filter(pk=amm.pk).exists()
+    assert Document.objects.current().filter(amm=keep).count() == 3
+    deleted = BinderDeletedPage.objects.get()
+    assert (
+        deleted.product_name == "ALFA GH SR 10MG CPR B30" and deleted.moved_to == keep.product.name
+    )
+
+
+def test_deleted_page_is_not_recreated_by_the_registry(hq_client, make_amm, countries, tmp_path):
+    from apps.amm.models import MarketingAuthorization
+    from apps.imports.services import import_workbook
+    from tests.test_registry_import import registry, row
+
+    amm = make_amm(product_obj=Product.objects.create(name="FANTOME GH 5MG CPR B30"))
+    assert hq_client.delete(f"{URL}/pages/{amm.pk}").status_code == 200
+    source = registry(
+        tmp_path,
+        [row(Presentation="FANTOME GH 5MG CPR B30", Source="Classement seul")],
+    )
+    import_workbook(source)
+    assert not MarketingAuthorization.objects.filter(product__name__startswith="FANTOME").exists()
+
+
+def test_gap_is_ignored_without_adding_a_passage(country_client, make_amm, make_renewal):
+    amm = make_amm(
+        product_obj=Product.objects.create(name="GAPGEN 5MG CPR B30"),
+        original_start_date=date(2010, 1, 1),
+    )
+    make_renewal(amm, status="OBTENU", number="R2", start_date=date(2020, 1, 1))
+    url = f"{URL}/pages/{amm.pk}/gaps"
+    body = country_client.get(URL).json()
+    page = next(p for s in body["sections"] for p in s["pages"] if p["amm_id"] == str(amm.pk))
+    gap = next(e for e in page["chronology"] if e["kind"] == "gap")
+    assert gap["issues"] and not gap.get("ignored")
+    payload = {"start_date": gap["start_date"], "end_date": gap["end_date"]}
+    body = country_client.post(url, payload, format="json").json()
+    page = next(p for s in body["sections"] for p in s["pages"] if p["amm_id"] == str(amm.pk))
+    gap = next(e for e in page["chronology"] if e["kind"] == "gap")
+    assert gap["ignored"] is True and gap["issues"] == []
+    body = country_client.post(url, {**payload, "ignored": False}, format="json").json()
+    page = next(p for s in body["sections"] for p in s["pages"] if p["amm_id"] == str(amm.pk))
+    assert next(e for e in page["chronology"] if e["kind"] == "gap")["issues"]

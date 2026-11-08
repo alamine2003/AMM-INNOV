@@ -315,6 +315,9 @@ class _Group:
         # Relue en base : l'objet du catalogue a pu être modifié par une passe annulée.
         self.amm = MarketingAuthorization.objects.get(pk=found.pk) if found else None
         origin = self.by_period("ORIGINE")
+        if self.amm is None and catalog.deleted_page(labels, product, country):
+            self.warn(self.pieces, "Page supprimée du classeur : pièces non rangées.")
+            return
         if self.amm is None:
             self._create_amm(product, country, origin)
         else:

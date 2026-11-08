@@ -244,24 +244,22 @@ function CancelRenewalForm({
 }) {
   const pieces = (entry.decisions?.length ?? 0) + (entry.others?.length ?? 0);
   const targets = options.filter((option) => option.value !== entry.renewal_id);
-  const [moveTo, setMoveTo] = useState<string>(targets[0]?.value ?? 'archive');
+  const [moveTo, setMoveTo] = useState<string>(
+    targets.find((option) => option.value === 'origin')?.value ?? targets[0]?.value ?? 'origin',
+  );
   return (
     <EditPanel
       title={`SUPPRIMER ${entry.label.toUpperCase()}`}
-      saveLabel="Supprimer la période"
+      saveLabel="Supprimer le passage"
       saveColor="error"
-      onSave={() =>
-        edits.deletePeriod.mutate(
-          { period: entry.renewal_id!, moveTo: pieces && moveTo !== 'archive' ? moveTo : null },
-          { onSuccess: onDone },
-        )
-      }
+      onSave={() => edits.deletePeriod.mutate({ period: entry.renewal_id!, moveTo }, { onSuccess: onDone })}
       onCancel={onDone}
       busy={edits.deletePeriod.isPending}
     >
       <Typography sx={{ fontSize: 13, color: INK }}>
-        Pour un renouvellement saisi à tort ou en double (créé par un import). L'échéance et le statut de
-        l'AMM sont recalculés.
+        Pour un passage qui n'existe pas : renouvellement saisi à tort ou en double, dépôt jamais fait. Les
+        scans ne sont pas supprimés. L'échéance, le statut et la numérotation des renouvellements sont
+        recalculés.
       </Typography>
       {pieces > 0 && (
         <Box sx={{ mt: 1.25 }}>
@@ -269,7 +267,7 @@ function CancelRenewalForm({
             label={`${pieces} pièce${pieces > 1 ? 's' : ''} à ranger sur`}
             value={moveTo}
             onChange={setMoveTo}
-            options={[...targets, { value: 'archive', label: 'Archiver les pièces' }]}
+            options={targets}
           />
         </Box>
       )}
@@ -477,13 +475,6 @@ export function ChronologyDialog({
   const issues = chronologyIssues(page);
   const periods = page.chronology.filter((entry) => entry.kind !== 'gap');
   const options = periods.map((entry) => ({ value: periodOf(entry), label: entry.label }));
-  // Seul le renouvellement le plus récent se supprime : on défait la dernière étape.
-  const latest = periods
-    .filter((entry) => entry.renewal_id)
-    .reduce<BinderChronologyEntry | null>(
-      (best, entry) => (!best || (entry.sequence ?? 0) > (best.sequence ?? 0) ? entry : best),
-      null,
-    );
   const failed = Object.values(edits).find((mutation) => mutation.isError);
   const close = () => {
     setEditing(null);
@@ -512,7 +503,7 @@ export function ChronologyDialog({
         )}
         <Stack spacing={0}>
           {page.chronology.map((entry, index) => {
-            const color = KIND_COLORS[entry.kind];
+            const color = entry.ignored ? MUTED : KIND_COLORS[entry.kind];
             const last = index === page.chronology.length - 1;
             const here = entry.kind === 'gap' ? null : periodOf(entry);
             const openHere = editing && here !== null && editing.period === here ? editing : null;
@@ -579,8 +570,8 @@ export function ChronologyDialog({
                             <AddIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {latest && entry.renewal_id === latest.renewal_id && (
-                          <Tooltip title="Supprimer ce renouvellement (saisi à tort ou en double)">
+                        {canRemove && entry.renewal_id && (
+                          <Tooltip title="Supprimer ce passage (il n'existe pas) : les scans restent">
                             <IconButton
                               size="small"
                               color="error"
@@ -644,6 +635,25 @@ export function ChronologyDialog({
                       {issue.message}
                     </Alert>
                   ))}
+                  {entry.kind === 'gap' && entry.start_date && entry.end_date && (
+                    <Button
+                      size="small"
+                      sx={{ mt: 0.5 }}
+                      disabled={edits.ignoreGap.isPending}
+                      data-testid={entry.ignored ? 'gap-restore' : 'gap-ignore'}
+                      onClick={() =>
+                        edits.ignoreGap.mutate({
+                          start_date: entry.start_date!,
+                          end_date: entry.end_date!,
+                          ignored: !entry.ignored,
+                        })
+                      }
+                    >
+                      {entry.ignored
+                        ? 'Ne plus ignorer ce trou'
+                        : "Ignorer : il n'y a pas eu de renouvellement sur cette période"}
+                    </Button>
+                  )}
                   {openHere?.type === 'period' && (
                     <PeriodForm entry={entry} edits={edits} years={years} onDone={done} />
                   )}

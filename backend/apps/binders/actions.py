@@ -16,7 +16,7 @@ from apps.imports.dossier.application import _reconcile_after_commit, _save_with
 from apps.imports.models import DossierReviewPoint
 
 from .layout import SLOT_FIELDS, Binder, ensure_in_binder, last_obtained, page_values
-from .models import BinderCheck, BinderExtraPage
+from .models import BinderCheck, BinderDeletedPage, BinderExtraPage
 
 REASON = "Vérifié sur le classeur papier"
 
@@ -251,6 +251,8 @@ def add_page(
         amm.save()
         if extra_id:
             BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).delete()
+        # La page revient : les imports peuvent à nouveau la compléter.
+        BinderDeletedPage.objects.filter(country=binder.country, product_key=product.key).delete()
     code = product.range.code if product.range_id else None
     landing = next(
         (b for b in binders_of(binder.country) if b.contains(code, product.name)), binder

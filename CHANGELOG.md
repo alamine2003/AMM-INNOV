@@ -5,6 +5,33 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.7] — 2026-11-06
+
+### Ajouté
+- **Classeurs : supprimer une page** (siège et CEO). La fiche AMM disparaît de toute
+  l'application : classeurs, fiche, alertes, rappels, tableaux de bord. Ses pièces (scans,
+  récépissés) ne sont jamais perdues : une autre fiche du pays les reprend, à la période de même
+  date. Les imports et la synchronisation ne recréent plus cette page ; « Ajouter une page » la
+  fait revenir.
+- **Classeurs : modifier le titre d'une page** (siège et CEO). Le nom de la présentation change
+  partout, pour tous les pays qui la suivent ; l'ancien nom reste reconnu par les imports.
+- **Chronologie : ignorer une interruption de validité.** Quand il n'y a pas eu de renouvellement
+  sur une période, le trou reste visible mais ne compte plus comme un manque : on n'est plus
+  obligé d'ajouter un passage qui n'existe pas.
+
+### Modifié
+- **Chronologie : supprimer un passage qui n'existe pas** (renouvellement saisi à tort ou en
+  double, dépôt jamais fait), le plus récent ou un plus ancien, sans supprimer de scan : ses
+  pièces sont rangées sur la période choisie (l'AMM d'origine par défaut), jamais archivées.
+  Réservé au siège et au CEO. La numérotation des renouvellements est recalculée sans trou.
+- **Page du classeur : plus de bloc « Dernier renouvellement » vide** quand l'AMM n'en a pas. En
+  correction, il s'ouvre seulement si le papier porte un renouvellement (« Le papier porte un
+  renouvellement »).
+
+### Corrigé
+- **Tests compatibles avec pypdf 7** (sorti le 05/11) : le test du PDF piégé par du JavaScript
+  n'utilise plus `add_js`, retiré de pypdf. Le contrôle des PDF reçus n'avait pas à changer.
+
 ## [1.1.6] — 2026-11-05
 
 ### Ajouté

@@ -37,6 +37,8 @@ from .serializers import (
     DocumentEditInputSerializer,
     ExtraPageInputSerializer,
     ExtraPageSerializer,
+    GapInputSerializer,
+    PageRenameInputSerializer,
     PageScanInputSerializer,
     PageScanResultSerializer,
     PeriodInputSerializer,
@@ -180,6 +182,62 @@ class BinderViewSet(viewsets.ViewSet):
         return Response(BinderDetailSerializer(binder_detail(binder)).data)
 
     @extend_schema(
+        methods=["PATCH"], request=PageRenameInputSerializer, responses=BinderDetailSerializer
+    )
+    @extend_schema(
+        methods=["DELETE"],
+        parameters=[
+            OpenApiParameter(
+                "move_to_amm",
+                str,
+                required=False,
+                description="Fiche (même pays) qui reprend les pièces de la page supprimée.",
+            )
+        ],
+        request=None,
+        responses=BinderDetailSerializer,
+    )
+    @action(
+        detail=True,
+        methods=["patch", "delete"],
+        url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})",
+    )
+    def page_item(self, request, key=None, amm_id=None):
+        """Titre de la page (nom de la présentation, partout) ; DELETE supprime la page."""
+        if request.method == "DELETE":
+            move_to = request.query_params.get("move_to_amm") or None
+            return self._chronology(
+                request,
+                key,
+                lambda binder: chronology.delete_page(
+                    binder, amm_id, move_to_amm=move_to, user=request.user
+                ),
+            )
+        serializer = PageRenameInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._chronology(
+            request,
+            key,
+            lambda binder: chronology.rename_page(
+                binder, amm_id, name=serializer.validated_data["product_name"], user=request.user
+            ),
+        )
+
+    @extend_schema(request=GapInputSerializer, responses=BinderDetailSerializer)
+    @action(detail=True, methods=["post"], url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/gaps")
+    def page_gaps(self, request, key=None, amm_id=None):
+        """Ignore (ou rétablit) une interruption de validité de la chronologie."""
+        serializer = GapInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._chronology(
+            request,
+            key,
+            lambda binder: chronology.ignore_gap(
+                binder, amm_id, user=request.user, **serializer.validated_data
+            ),
+        )
+
+    @extend_schema(
         methods=["PATCH"], request=PeriodInputSerializer, responses=BinderDetailSerializer
     )
     @extend_schema(
@@ -190,7 +248,7 @@ class BinderViewSet(viewsets.ViewSet):
                 str,
                 required=False,
                 description="Période où ranger les pièces (« origin » ou un renouvellement) ; "
-                "absent : elles sont archivées.",
+                "absent : l'AMM d'origine. Les pièces ne sont jamais archivées.",
             )
         ],
         request=None,
@@ -202,7 +260,8 @@ class BinderViewSet(viewsets.ViewSet):
         url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/periods/(?P<period>origin|[0-9a-f-]{36})",
     )
     def page_period(self, request, key=None, amm_id=None, period=None):
-        """Corrige le n° et les dates d'une période ; DELETE annule un renouvellement en trop."""
+        """Corrige le n° et les dates d'une période ; DELETE supprime un passage qui n'existe pas
+        (siège et CEO), ses pièces rangées ailleurs."""
         if request.method == "DELETE":
             if period == "origin":
                 raise PermissionDenied("L'AMM d'origine ne s'annule pas : corrigez ses valeurs.")
