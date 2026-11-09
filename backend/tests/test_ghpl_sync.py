@@ -285,8 +285,8 @@ def test_status_api_for_headquarters_only(hq_client, country_client, settings):
 def test_late_sync_is_caught_up_after_waking(settings, monkeypatch):
     from django.utils import timezone
 
-    from apps.core.tasks import recover_ghpl_sync
     from apps.imports import tasks
+    from apps.imports.hooks import recover_ghpl_sync
 
     calls = []
     monkeypatch.setattr(tasks.sync_ghpl, "delay", lambda *a, **k: calls.append(a))

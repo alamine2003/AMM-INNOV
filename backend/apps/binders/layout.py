@@ -22,6 +22,9 @@ from apps.catalog.models import Country
 from apps.documents.models import Document
 from apps.imports.models import DossierReviewPoint
 
+from .conformity import add_to_counts, conformity, empty_counts, scan_of_decision
+from .timeline import chronology, ignored_gaps
+
 NO_RANGE = ""
 RANGE_ORDER = ("GENERALE", "CARDIO", "BIEN_ETRE", NO_RANGE)
 RANGE_LABELS = {
@@ -342,7 +345,7 @@ def page_payload(amm, trace: dict | None = None) -> dict:
     scans.sort(key=lambda doc: doc.document_date, reverse=True)
     # En haut de la pile : le scan de la décision en vigueur, sinon la plus récente scannée
     # (signalée comme n'étant pas celle en vigueur).
-    current_scan = _scan_of_decision(amm, renewal, scans)
+    current_scan = scan_of_decision(amm, renewal, scans)
     scan = current_scan or (scans[0] if scans else None)
     discrepancies = []
     for point in getattr(amm, "open_mismatches", []):
@@ -409,7 +412,7 @@ def page_payload(amm, trace: dict | None = None) -> dict:
             else None
         ),
         "decision_count": len(scans),
-        "chronology": chronology(amm, renewals, documents, _ignored_gaps(amm)),
+        "chronology": chronology(amm, renewals, documents, ignored_gaps(amm)),
         "discrepancies": discrepancies,
         "check": check_payload(check),
         # Le dashboard ou un import a changé la fiche depuis le constat : à revérifier.
@@ -420,274 +423,6 @@ def page_payload(amm, trace: dict | None = None) -> dict:
         "to_scan": verdict["to_scan"],
         "conformity": verdict,
     }
-
-
-CONFORMITY_LABELS = {
-    "CONFORME": "Le dossier est conforme",
-    "NON_CONFORME": "Dossier non conforme",
-    "NON_VERIFIE": "Dossier pas encore vérifié",
-}
-
-
-def _scan_of_decision(amm, renewal, scans):
-    """Le scan de la décision en vigueur (dernier renouvellement obtenu, sinon l'origine)."""
-    wanted = renewal.pk if renewal else None
-    return next((doc for doc in scans if doc.renewal_id == wanted), None)
-
-
-def conformity(amm, renewal, check, changed, current_scan, scan=None) -> dict:
-    """Les 4 niveaux de vérification d'un dossier, et le résultat.
-
-    1. Visible dans le classeur numérique : la fiche existe dans AMM GH (toujours vrai pour une
-       page ; un dossier papier sans fiche est une « page en trop »).
-    2. Dossier papier dans le classeur : constat de l'archiviste (présent ou absent).
-    3. Décision en vigueur scannée : dans AMM GH, automatiquement.
-    4. Bonne date et bon n° d'AMM : relevés sur le papier par l'archiviste (« Conforme » ou
-       « Corriger »), renseignés, et inchangés depuis.
-
-    « Le dossier est conforme » quand les 4 sont justes ; pas encore vérifié tant que le papier
-    n'a pas été constaté. Le résultat est recalculé à chaque lecture : un scan ajouté plus tard,
-    ou une fiche modifiée après le constat, le met à jour.
-    """
-    number = renewal.number if renewal else amm.original_number
-    start = renewal.start_date if renewal else amm.original_start_date
-    known = bool(renewal) or bool(amm.original_number or amm.original_start_date)
-    decision = f"renouvellement {renewal.sequence}" if renewal else "AMM d'origine"
-
-    paper = None if check is None else check.result != "ABSENT"
-    if not known:
-        scanned, scan_detail = False, "aucune décision enregistrée sur la fiche"
-    elif current_scan is not None:
-        scanned, scan_detail = True, f"décision scannée ({decision})"
-    elif scan is not None:
-        scanned, scan_detail = False, f"la décision en vigueur ({decision}) n'est pas scannée"
-    else:
-        scanned, scan_detail = False, "aucun scan de décision"
-
-    if check is None:
-        data, data_detail = None, "à relever sur le papier"
-    elif not paper:
-        data, data_detail = None, "pas de papier pour le vérifier"
-    elif changed:
-        data, data_detail = False, "la fiche a changé depuis la vérification : à revérifier"
-    elif not number or not start:
-        missing = " et ".join(
-            label for label, value in (("date", start), ("n° d'AMM", number)) if not value
-        )
-        data, data_detail = False, f"{missing} manquant{'s' if ' et ' in missing else ''}"
-    else:
-        data, data_detail = True, f"n° {number} du {start:%d/%m/%Y}"
-
-    criteria = [
-        {
-            "key": "digital",
-            "label": "Visible dans le classeur numérique",
-            "ok": True,
-            "detail": "fiche dans AMM GH",
-        },
-        {
-            "key": "paper",
-            "label": "Dossier papier dans le classeur",
-            "ok": paper,
-            "detail": {None: "à constater", True: "présent", False: "absent du classeur"}[paper],
-        },
-        {
-            "key": "scan",
-            "label": "Version scannée",
-            "ok": scanned,
-            "detail": scan_detail,
-        },
-        {
-            "key": "data",
-            "label": "Bonne date et bon n° d'AMM",
-            "ok": data,
-            "detail": data_detail,
-        },
-    ]
-    if paper is None:
-        status = "NON_VERIFIE"
-    elif all(item["ok"] is True for item in criteria):
-        status = "CONFORME"
-    else:
-        status = "NON_CONFORME"
-    return {
-        "status": status,
-        "label": CONFORMITY_LABELS[status],
-        "criteria": criteria,
-        "to_scan": bool(paper) and not scanned and known,
-        "stale": bool(changed),
-    }
-
-
-# Au-delà, deux périodes qui ne se suivent pas laissent un trou dans la validité.
-GAP_TOLERANCE = timedelta(days=31)
-
-
-def _document(doc) -> dict:
-    return {
-        "document_id": str(doc.pk),
-        "kind": doc.kind,
-        "kind_label": doc.get_kind_display(),
-        "document_date": doc.document_date,
-        "title": doc.title,
-        "page_count": doc.page_count,
-    }
-
-
-def _ignored_gaps(amm) -> set:
-    return {(gap.start_date, gap.end_date) for gap in amm.ignored_gaps.all()}
-
-
-def chronology(amm, renewals, documents, ignored=frozenset()) -> list[dict]:
-    """De la décision la plus récente à l'AMM d'origine : pièces de chaque période et manques.
-
-    Chaque période porte ses décisions scannées et ses autres pièces (récépissés, courriers) ;
-    `issues` dit ce qui manque et comment le régler. Entre deux périodes obtenues qui ne se
-    suivent pas, une entrée « gap » signale une interruption de validité (renouvellement absent
-    de l'application, ou décision non classée).
-    """
-    by_period: dict = {}
-    for doc in documents:
-        by_period.setdefault(doc.renewal_id, []).append(doc)
-
-    def entry(kind, label, renewal=None) -> dict:
-        docs = by_period.get(renewal.pk if renewal else None, [])
-        decisions = [d for d in docs if d.kind == Document.Kind.AMM]
-        others = [d for d in docs if d.kind != Document.Kind.AMM]
-        start = renewal.start_date if renewal else amm.original_start_date
-        end = renewal.end_date if renewal else amm.original_end_date
-        number = renewal.number if renewal else amm.original_number
-        issues = []
-        if kind == "closed":
-            pass  # rejeté ou abandonné : aucune décision n'a été délivrée, rien ne manque
-        elif kind == "pending":
-            if not any(d.kind == Document.Kind.RECEPISSE for d in docs):
-                issues.append(
-                    {
-                        "code": "no_receipt",
-                        "message": "Récépissé de dépôt non scanné : importez-le sur la fiche AMM.",
-                    }
-                )
-        else:
-            if not decisions:
-                issues.append(
-                    {
-                        "code": "no_scan",
-                        "message": "Décision non scannée : importez le scan de cette décision.",
-                    }
-                )
-            if not start:
-                issues.append(
-                    {
-                        "code": "no_date",
-                        "message": "Date de début inconnue : relevez-la sur la décision papier.",
-                    }
-                )
-            if not number:
-                issues.append(
-                    {
-                        "code": "no_number",
-                        "message": "N° d'AMM inconnu : relevez-le sur la décision.",
-                    }
-                )
-        return {
-            "kind": kind,
-            "label": label,
-            "renewal_id": str(renewal.pk) if renewal else None,
-            "sequence": renewal.sequence if renewal else 0,
-            "workflow_status": renewal.workflow_status if renewal else None,
-            "workflow_label": renewal.get_workflow_status_display() if renewal else None,
-            "number": number,
-            "start_date": start,
-            "end_date": end,
-            "filing_date": renewal.filing_date if renewal else None,
-            "decisions": [_document(d) for d in sorted(decisions, key=lambda d: d.document_date)],
-            "others": [_document(d) for d in others],
-            "issues": issues,
-        }
-
-    periods = [entry("origin", "AMM d'origine")]
-    pending = []
-    for renewal in sorted(renewals, key=lambda r: r.sequence):
-        if renewal.workflow_status == "OBTENU":
-            periods.append(entry("renewal", f"Renouvellement {renewal.sequence}", renewal))
-        elif renewal.is_pending:
-            pending.append(entry("pending", f"Renouvellement {renewal.sequence} en cours", renewal))
-        elif renewal.workflow_status in ("REJETE", "ABANDONNE"):
-            periods.append(entry("closed", f"Renouvellement {renewal.sequence}", renewal))
-    # Interruptions de validité entre deux décisions obtenues successives.
-    timeline: list[dict] = []
-    previous = None
-    for period in periods:
-        if period["kind"] == "closed":
-            timeline.append(period)
-            continue
-        if previous and previous["end_date"] and period["start_date"]:
-            if period["start_date"] - previous["end_date"] > GAP_TOLERANCE:
-                # Ignorée par l'archiviste : il n'y a pas de renouvellement manquant (période
-                # sans AMM). Visible, mais on ne force pas l'ajout d'un passage qui n'existe pas.
-                skipped = (previous["end_date"], period["start_date"]) in ignored
-                timeline.append(
-                    {
-                        "kind": "gap",
-                        "label": "Interruption de validité" + (" (ignorée)" if skipped else ""),
-                        "start_date": previous["end_date"],
-                        "end_date": period["start_date"],
-                        "ignored": skipped,
-                        "issues": []
-                        if skipped
-                        else [
-                            {
-                                "code": "gap",
-                                "message": (
-                                    "Aucune décision ne couvre cette période : un renouvellement "
-                                    "manque peut-être. Importez sa décision, corrigez sur le "
-                                    "classeur papier, ou ignorez ce trou s'il n'y a pas eu de "
-                                    "renouvellement."
-                                ),
-                            }
-                        ],
-                    }
-                )
-        timeline.append(period)
-        # Une période sans date de fin ne sert pas de repère : sinon un trou après elle passerait
-        # inaperçu (elle signale déjà sa date manquante).
-        if period["end_date"] or previous is None:
-            previous = period
-    timeline.extend(pending)
-    timeline.reverse()  # la plus récente en haut
-    return timeline
-
-
-COUNT_KEYS = (
-    "total",  # pages du classeur
-    "checked",  # papier constaté (présent ou absent)
-    "conformes",  # les 4 niveaux justes : « Le dossier est conforme »
-    "non_conformes",  # constatées, au moins un niveau faux
-    "corrected",  # date ou n° corrigé sur la fiche d'après le papier
-    "absent",  # dossier papier absent du classeur
-    "to_scan",  # papier présent, décision en vigueur non scannée
-    "stale",  # fiche modifiée depuis le constat : à revérifier
-)
-
-
-def _empty_counts() -> dict:
-    return dict.fromkeys(COUNT_KEYS, 0)
-
-
-def _count(counts: dict, verdict: dict, result: str | None) -> None:
-    """Les compteurs viennent du même calcul que la page (`conformity`) : pas d'écart possible."""
-    counts["total"] += 1
-    if verdict["status"] == "NON_VERIFIE":
-        return
-    counts["checked"] += 1
-    counts["conformes" if verdict["status"] == "CONFORME" else "non_conformes"] += 1
-    if result == "CORRIGE":
-        counts["corrected"] += 1
-    if result == "ABSENT":
-        counts["absent"] += 1
-    counts["to_scan"] += verdict["to_scan"]
-    counts["stale"] += verdict["stale"]
 
 
 READING_WINDOW = timedelta(minutes=2)
@@ -713,7 +448,7 @@ def readers_by_binder(keys) -> dict[str, list[str]]:
 def _summary(
     binder: Binder, sections: dict, extras: int, last_check, readers: list | None = None
 ) -> dict:
-    counts = _empty_counts()
+    counts = empty_counts()
     for section in sections.values():
         for name in counts:
             counts[name] += section[name]
@@ -749,7 +484,7 @@ def _verdict(amm) -> dict:
     scans = sorted(amm.decision_scans, key=lambda doc: doc.document_date, reverse=True)
     check = amm.binder_check if hasattr(amm, "binder_check") else None
     changed = changes_since(check.snapshot, page_values(amm, renewal)) if check else []
-    current = _scan_of_decision(amm, renewal, scans)
+    current = scan_of_decision(amm, renewal, scans)
     return conformity(amm, renewal, check, changed, current, scans[0] if scans else None)
 
 
@@ -799,14 +534,16 @@ def shelf(user) -> list[dict]:
     result = []
     for country in countries:
         for binder in binders_of(country):
-            sections = {code: _empty_counts() for code in binder.ranges}
+            sections = {code: empty_counts() for code in binder.ranges}
             last = None
             for amm in by_country.get(country.pk, []):
                 code = amm.product.range.code if amm.product.range_id else None
                 if not binder.contains(code, amm.product.name):
                     continue
                 check = amm.binder_check if hasattr(amm, "binder_check") else None
-                _count(sections[code or NO_RANGE], _verdict(amm), check.result if check else None)
+                add_to_counts(
+                    sections[code or NO_RANGE], _verdict(amm), check.result if check else None
+                )
                 if check and (last is None or check.checked_at > last["at"]):
                     last = {"at": check.checked_at, "by": _person(check.checked_by)}
             result.append(
@@ -832,8 +569,8 @@ def binder_detail(binder: Binder) -> dict:
         page["section_page"] = len(section) + 1
         section.append(page)
         check = page["check"]
-        _count(
-            sections.setdefault(code, _empty_counts()),
+        add_to_counts(
+            sections.setdefault(code, empty_counts()),
             page["conformity"],
             check["result"] if check else None,
         )
@@ -855,7 +592,7 @@ def binder_detail(binder: Binder) -> dict:
     ]
     summary = _summary(
         binder,
-        {code: sections.get(code, _empty_counts()) for code in binder.ranges},
+        {code: sections.get(code, empty_counts()) for code in binder.ranges},
         len(extras),
         last,
         readers_by_binder([binder.key]).get(binder.key),

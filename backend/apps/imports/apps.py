@@ -5,3 +5,6 @@ class ImportsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.imports"
     verbose_name = "Imports Excel"
+
+    def ready(self) -> None:
+        from . import hooks  # noqa: F401  (déclarations au socle : apps/core/registry.py)

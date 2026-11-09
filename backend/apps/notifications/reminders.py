@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.accounts.roles import REGULATORY_ROLES
 from apps.amm.models import MarketingAuthorization
 from apps.amm.services.status import (
     RENEWAL_WINDOW_MONTHS,
@@ -29,8 +30,6 @@ from apps.core.tasks import enqueue
 from apps.realtime.publisher import publish_user_event
 
 from .models import Notification
-
-REGULATORY_ROLES = (User.Role.HQ_REGULATORY, User.Role.COUNTRY_REGULATORY)
 
 
 def _fr(value: date) -> str:

@@ -1,0 +1,140 @@
+"""1.1.9 : droits centralisés (`apps/accounts/roles.py`), registre du socle, conformité en
+critères."""
+
+from types import SimpleNamespace
+
+import pytest
+from rest_framework.exceptions import PermissionDenied
+
+from apps.accounts.models import User
+from apps.accounts.permissions import ensure_can
+from apps.accounts.roles import ACTION_ROLES, MESSAGES, Action, can
+from apps.binders.conformity import CRITERIA, conformity
+from apps.core.registry import INTEGRITY, METRICS, PENDING_WORK, RECOVERY, WORKER_START, Registry
+
+# --- Droits -------------------------------------------------------------------------------
+
+
+def _user(role, active=True, authenticated=True):
+    return SimpleNamespace(role=role, is_active=active, is_authenticated=authenticated)
+
+
+def test_every_action_has_roles_and_a_message():
+    assert set(ACTION_ROLES) == set(Action) == set(MESSAGES)
+
+
+@pytest.mark.parametrize("action", list(Action))
+def test_binder_actions_belong_to_hq_and_ceo(action):
+    assert can(_user(User.Role.CEO_ADMIN), action)
+    assert can(_user(User.Role.HQ_REGULATORY), action)
+    assert not can(_user(User.Role.COUNTRY_REGULATORY), action)
+
+
+def test_inactive_or_anonymous_users_can_do_nothing():
+    assert not can(_user(User.Role.CEO_ADMIN, active=False), Action.BINDER_DELETE_PAGE)
+    assert not can(_user(User.Role.CEO_ADMIN, authenticated=False), Action.BINDER_DELETE_PAGE)
+    assert not can(None, Action.BINDER_DELETE_PAGE)
+
+
+def test_ensure_can_refuses_with_the_action_message():
+    with pytest.raises(PermissionDenied) as error:
+        ensure_can(_user(User.Role.COUNTRY_REGULATORY), Action.BINDER_DOWNLOAD)
+    assert str(error.value.detail) == MESSAGES[Action.BINDER_DOWNLOAD]
+
+
+# --- Registre du socle --------------------------------------------------------------------
+
+
+def test_registry_keeps_order_and_ignores_a_second_registration():
+    registry = Registry("essai")
+
+    def first(now):
+        return {}
+
+    def second(now):
+        return {}
+
+    registry.register(first)
+    registry.register(second)
+    registry.register(first)
+    assert list(registry) == [first, second]
+
+
+def test_apps_declare_their_work_to_core():
+    """Ce que `core` faisait lui-même avant la 1.1.9, déclaré par chaque app."""
+    names = {registry.name: {f.__module__ for f in registry} for registry in (
+        RECOVERY, INTEGRITY, WORKER_START, PENDING_WORK, METRICS
+    )}
+    assert names[RECOVERY.name] == {
+        "apps.documents.hooks",
+        "apps.notifications.hooks",
+        "apps.imports.hooks",
+        "apps.binders.hooks",
+    }
+    assert names[INTEGRITY.name] == {
+        "apps.amm.hooks",
+        "apps.documents.hooks",
+        "apps.notifications.hooks",
+        "apps.imports.hooks",
+    }
+    assert names[WORKER_START.name] == names[PENDING_WORK.name] == {"apps.imports.hooks"}
+    assert names[METRICS.name] == {"apps.amm.hooks"}
+
+
+def test_integrity_checks_keep_their_order():
+    codes = [f.__name__ for f in INTEGRITY]
+    assert codes == [
+        "check_amm_state",
+        "check_single_open_renewal",
+        "check_renewal_sequences",
+        "check_history_matches_rows",
+        "check_document_versions",
+        "check_document_links",
+        "check_duplicate_notifications",
+        "check_alerts_without_notification",
+        "check_unsent_emails",
+        "check_stuck_jobs",
+        "check_storage",
+    ]
+
+
+# --- Conformité ---------------------------------------------------------------------------
+
+
+def _amm(**fields):
+    defaults = {"original_number": "", "original_start_date": None}
+    return SimpleNamespace(**{**defaults, **fields})
+
+
+def test_conformity_lists_the_four_criteria_in_order():
+    verdict = conformity(_amm(), None, None, [], None)
+    assert [c["key"] for c in verdict["criteria"]] == ["digital", "paper", "scan", "data"]
+    assert [c.key for c in CRITERIA] == ["digital", "paper", "scan", "data"]
+    assert verdict["status"] == "NON_VERIFIE"
+
+
+def test_conformity_conforme_when_every_criterion_is_right():
+    from datetime import date
+
+    amm = _amm(original_number="12/34", original_start_date=date(2024, 1, 2))
+    check = SimpleNamespace(result="CONFORME")
+    scan = SimpleNamespace(renewal_id=None)
+    verdict = conformity(amm, None, check, [], scan, scan)
+    assert verdict["status"] == "CONFORME"
+    assert verdict["criteria"][3]["detail"] == "n° 12/34 du 02/01/2024"
+    assert verdict["to_scan"] is False
+
+
+def test_conformity_paper_present_but_decision_not_scanned():
+    from datetime import date
+
+    amm = _amm(original_number="12/34", original_start_date=date(2024, 1, 2))
+    verdict = conformity(amm, None, SimpleNamespace(result="CONFORME"), [], None)
+    assert verdict["status"] == "NON_CONFORME"
+    assert verdict["to_scan"] is True
+    assert verdict["criteria"][2] == {
+        "key": "scan",
+        "label": "Version scannée",
+        "ok": False,
+        "detail": "aucun scan de décision",
+    }
