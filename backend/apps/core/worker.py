@@ -1,5 +1,8 @@
 """Démarrage du worker Celery : reprise des analyses coupées et maintien en éveil (Render).
 
+Les reprises et le travail en cours sont déclarés par les apps (`WORKER_START`,
+`PENDING_WORK`, dans leur `hooks.py`).
+
 Sur Render gratuit, le worker tourne dans le conteneur du web. Le service est endormi après
 15 minutes sans requête entrante (réglementaire parti déjeuner, onglet fermé) ou tué quand il
 dépasse 512 Mo. Une analyse en cours y restait « Analyse en cours » 25 minutes puis passait en
@@ -13,58 +16,24 @@ import urllib.request
 
 from django.conf import settings
 from django.db import close_old_connections, connection
-from django.utils import timezone
+
+from .registry import PENDING_WORK, WORKER_START
 
 logger = logging.getLogger(__name__)
 
-MAX_ATTEMPTS = 3
-GAVE_UP = (
-    "L'analyse a été interrompue {attempts} fois (redémarrage du serveur, mémoire). "
-    "Relancez-la, ou déposez ce produit seul."
-)
-
-
-def resume_interrupted_analyses() -> dict:
-    """Analyses « en cours » au démarrage du seul worker : reprises, ou abandonnées après
-    MAX_ATTEMPTS essais (un dossier qui fait tomber le serveur ne boucle pas indéfiniment)."""
-    from apps.imports.models import DossierImport
-    from apps.imports.tasks import analyze_dossier
-
-    running = DossierImport.objects.filter(status=DossierImport.Status.RUNNING)
-    failed = running.filter(attempts__gte=MAX_ATTEMPTS)
-    abandoned = 0
-    for batch in failed:
-        abandoned += DossierImport.objects.filter(
-            pk=batch.pk, status=DossierImport.Status.RUNNING
-        ).update(
-            status=DossierImport.Status.FAILED,
-            finished_at=timezone.now(),
-            error=GAVE_UP.format(attempts=batch.attempts),
-        )
-    resumed = []
-    for pk in running.filter(attempts__lt=MAX_ATTEMPTS).values_list("pk", flat=True):
-        if DossierImport.objects.filter(pk=pk, status=DossierImport.Status.RUNNING).update(
-            status=DossierImport.Status.PENDING, started_at=None
-        ):
-            resumed.append(str(pk))
-    for pk in resumed:
-        analyze_dossier.delay(pk)
-    report = {"resumed": len(resumed), "abandoned": abandoned}
-    if resumed or abandoned:
-        logger.warning("Analyses interrompues au démarrage du worker : %s", report)
-    return report
-
 
 def has_pending_work() -> bool:
-    from apps.imports.models import DossierImport, ImportBatch
+    """Une app déclare-t-elle du travail en cours (`PENDING_WORK`, dans son `hooks.py`) ?"""
+    return any(probe() for probe in PENDING_WORK)
 
-    busy = [DossierImport.Status.PENDING, DossierImport.Status.RUNNING]
-    return (
-        DossierImport.objects.filter(status__in=busy).exists()
-        or ImportBatch.objects.filter(
-            status__in=[ImportBatch.Status.PENDING, ImportBatch.Status.RUNNING]
-        ).exists()
-    )
+
+def run_start_hooks() -> None:
+    """Reprises au démarrage du worker déclarées par les apps (`WORKER_START`)."""
+    for hook in WORKER_START:
+        try:
+            hook()
+        except Exception:
+            logger.exception("Reprise au démarrage impossible : %s", hook.__qualname__)
 
 
 def ping_if_busy(url: str) -> bool:
@@ -96,9 +65,7 @@ def _keep_awake(url: str, every: int) -> None:
 def on_worker_ready() -> None:
     if settings.WORKER_RESUME_INTERRUPTED:
         try:
-            resume_interrupted_analyses()
-        except Exception:
-            logger.exception("Reprise des analyses interrompues impossible")
+            run_start_hooks()
         finally:
             connection.close()
     url = settings.KEEPALIVE_URL

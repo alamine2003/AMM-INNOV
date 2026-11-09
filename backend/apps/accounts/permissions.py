@@ -9,11 +9,18 @@
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from .models import User
+from .roles import ALL_ROLES, CEO_ONLY, GLOBAL_ROLES, MESSAGES, Action, can
 
-ALL_ROLES = (User.Role.CEO_ADMIN, User.Role.HQ_REGULATORY, User.Role.COUNTRY_REGULATORY)
-GLOBAL_ROLES = (User.Role.CEO_ADMIN, User.Role.HQ_REGULATORY)
-CEO_ONLY = (User.Role.CEO_ADMIN,)
+__all__ = [
+    "ALL_ROLES",
+    "CEO_ONLY",
+    "GLOBAL_ROLES",
+    "CountryScopedQuerysetMixin",
+    "IsGlobalRole",
+    "RolePermission",
+    "ensure_can",
+    "ensure_country_in_scope",
+]
 
 
 class RolePermission(BasePermission):
@@ -60,6 +67,12 @@ class CountryScopedQuerysetMixin:
         if user.is_authenticated and not user.is_global:
             queryset = queryset.filter(**{f"{self.country_lookup}__in": user.countries.all()})
         return queryset
+
+
+def ensure_can(user, action: Action) -> None:
+    """Refuse (403) une action sensible à un rôle qui n'y a pas droit (`apps/accounts/roles.py`)."""
+    if not can(user, action):
+        raise PermissionDenied(MESSAGES[action])
 
 
 def ensure_country_in_scope(user, country) -> None:

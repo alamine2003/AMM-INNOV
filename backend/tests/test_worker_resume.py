@@ -7,6 +7,7 @@ import pytest
 from django.utils import timezone
 
 from apps.core import worker
+from apps.imports import hooks
 from apps.imports.dossier import extraction
 from apps.imports.models import DossierFile, DossierImport
 from tests.conftest import client_for
@@ -58,7 +59,7 @@ def test_interrupted_analysis_resumes_at_worker_start(users):
         attempts=1,
     )
     with patch("apps.imports.tasks.analyze_dossier.delay") as delay:
-        report = worker.resume_interrupted_analyses()
+        report = hooks.resume_interrupted_analyses()
     batch.refresh_from_db()
     assert report == {"resumed": 1, "abandoned": 0}
     assert batch.status == DossierImport.Status.PENDING and batch.started_at is None
@@ -70,10 +71,10 @@ def test_analysis_that_keeps_crashing_ends_in_failure(users):
         root_name="MALI - LOURD",
         created_by=users["hq"],
         status=DossierImport.Status.RUNNING,
-        attempts=worker.MAX_ATTEMPTS,
+        attempts=hooks.MAX_ATTEMPTS,
     )
     with patch("apps.imports.tasks.analyze_dossier.delay") as delay:
-        report = worker.resume_interrupted_analyses()
+        report = hooks.resume_interrupted_analyses()
     batch.refresh_from_db()
     assert report == {"resumed": 0, "abandoned": 1}
     assert batch.status == DossierImport.Status.FAILED and "3 fois" in batch.error

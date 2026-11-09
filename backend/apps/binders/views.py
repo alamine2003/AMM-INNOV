@@ -15,6 +15,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.accounts.permissions import ensure_can
+from apps.accounts.roles import Action
 from apps.amm.models import MarketingAuthorization
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
@@ -366,8 +368,7 @@ class BinderViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["get"])
     def pdf(self, request, key=None):
         """Le classeur page par page, comme à l'écran. Réservé au siège."""
-        if not request.user.is_global:
-            raise PermissionDenied("Le téléchargement des classeurs est réservé au siège.")
+        ensure_can(request.user, Action.BINDER_DOWNLOAD)
         binder = get_binder(request.user, key)
         content = binder_pdf(binder_detail(binder), generated_by=request.user.full_name)
         name = f"Classeur_{binder.key}_{today():%Y-%m-%d}.pdf"
@@ -379,8 +380,7 @@ class BinderViewSet(viewsets.ViewSet):
     # --- Classeur avec les décisions officielles (siège) --------------------------------------
 
     def _hq_binder(self, request, key):
-        if not request.user.is_global:
-            raise PermissionDenied("Le téléchargement des classeurs est réservé au siège.")
+        ensure_can(request.user, Action.BINDER_DOWNLOAD)
         return get_binder(request.user, key)
 
     @extend_schema(

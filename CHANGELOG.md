@@ -5,6 +5,32 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.9] — 2026-11-09
+
+### Modifié (architecture, sans changement visible)
+Première étape SOLID de la revue d'architecture du 09/11. L'API, les écrans et les données ne
+changent pas.
+- **Le socle ne dépend plus du métier** (inversion des dépendances). `apps/core` n'importe plus
+  aucune app : le rattrapage du travail en attente, les contrôles d'intégrité, la reprise au
+  démarrage du worker, le maintien en éveil et les métriques sont déclarés par chaque app dans
+  son `hooks.py` (`apps/core/registry.py`). La commande `check_integrity` et la tâche
+  `recover_pending_work` font exactement les mêmes contrôles et rattrapages qu'avant.
+- **Droits centralisés** (`apps/accounts/roles.py`). Les groupes de rôles et les actions
+  sensibles des classeurs (supprimer un passage ou une page, renommer une page, retirer une
+  pièce, télécharger) sont définis une seule fois ; le code demande `can()` / `ensure_can()`.
+  Les listes recopiées dans les classeurs et les rappels ont disparu.
+- **Classeurs : `layout.py` découpé** (responsabilité unique). La conformité et ses compteurs
+  vont dans `binders/conformity.py`, avec un critère par classe (ouvert/fermé : ajouter un
+  niveau de vérification = ajouter une classe) ; la chronologie affichée va dans
+  `binders/timeline.py`.
+- **Test d'architecture en CI** (`tests/test_architecture.py`) : trois couches (socle, métier,
+  fonctions transverses) ; une app n'importe que sa couche ou celles du dessous, et `core`
+  aucune. Les 8 écarts restants sont listés et seront corrigés dans le palier 1.2.0.
+
+### Modifié
+- Message de refus du renommage d'une page : « Seuls le CEO et le siège peuvent modifier le
+  titre d'une page. »
+
 ## [1.1.8] — 2026-11-09
 
 ### Performances

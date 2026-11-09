@@ -258,7 +258,7 @@ def test_dossiers_read_with_older_rules_are_reread_and_filed(
     users, product, make_amm, django_capture_on_commit_callbacks
 ):
     """« À ranger » depuis le 22/09 : relu avec les règles actuelles, puis rangé d'office."""
-    from apps.core.tasks import reread_stale_dossiers
+    from apps.imports.hooks import reread_stale_dossiers
 
     amm, batch = expired_amm_with_renewal_dossier(users, product, make_amm)
     preview = ready(batch)

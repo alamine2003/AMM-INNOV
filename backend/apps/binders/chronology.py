@@ -20,10 +20,9 @@ du dossier) une fois la transaction validée.
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import PermissionDenied
 
-from apps.accounts.models import User
-from apps.accounts.permissions import ensure_country_in_scope
+from apps.accounts.permissions import ensure_can, ensure_country_in_scope
+from apps.accounts.roles import Action
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.documents.models import Document
 from apps.documents.services.ingest import ingest_document
@@ -34,7 +33,6 @@ from .layout import Binder, ensure_in_binder
 REASON = "Chronologie corrigée depuis le classeur"
 # Retirer une pièce, c'est la supprimer de la page : même règle que la suppression de document
 # (CEO et siège depuis la 1.0.7).
-REMOVE_ROLES = (User.Role.CEO_ADMIN, User.Role.HQ_REGULATORY)
 
 
 def _page(binder: Binder, amm_id, user) -> MarketingAuthorization:
@@ -130,11 +128,6 @@ def edit_period(binder: Binder, amm_id, *, period: str, values: dict, user):
     return amm
 
 
-def _ensure_can_remove(user) -> None:
-    if user.role not in REMOVE_ROLES:
-        raise PermissionDenied("Seuls le CEO et le siège peuvent supprimer.")
-
-
 def _remove_renewal(amm, renewal, destination, user) -> int:
     """Supprime un renouvellement (n'importe lequel) ; ses pièces rejoignent `destination`.
 
@@ -174,7 +167,7 @@ def delete_period(binder: Binder, amm_id, renewal_id, *, move_to: str | None, us
     Les pièces qu'il portait ne sont jamais perdues : elles sont rangées sur `move_to` (l'AMM
     d'origine par défaut). L'ordre des renouvellements, l'échéance et le statut sont recalculés.
     """
-    _ensure_can_remove(user)
+    ensure_can(user, Action.BINDER_REMOVE_PASSAGE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
         renewal = _renewal(amm, renewal_id)
@@ -213,7 +206,7 @@ def rename_page(binder: Binder, amm_id, *, name: str, user):
     from apps.catalog.models import Product, ProductAlias
     from apps.catalog.normalize import normalize_product_name
 
-    _ensure_can_remove(user)
+    ensure_can(user, Action.BINDER_RENAME_PAGE)
     name = normalize_product_name(name)
     if not name:
         raise ValidationError("Le titre ne peut pas être vide.")
@@ -260,7 +253,7 @@ def delete_page(binder: Binder, amm_id, *, move_to_amm=None, user):
 
     from .models import BinderDeletedPage
 
-    _ensure_can_remove(user)
+    ensure_can(user, Action.BINDER_DELETE_PAGE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
         documents = list(Document.objects.filter(amm=amm))
@@ -352,8 +345,7 @@ def edit_document(binder: Binder, amm_id, document_id, *, values: dict, user):
 
 def remove_document(binder: Binder, amm_id, document_id, *, user):
     """Retire une pièce de la page : elle est archivée (l'historique la garde)."""
-    if user.role not in REMOVE_ROLES:
-        raise PermissionDenied("Seuls le CEO et le siège peuvent retirer une pièce.")
+    ensure_can(user, Action.BINDER_REMOVE_PIECE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
         document = _document(amm, document_id)

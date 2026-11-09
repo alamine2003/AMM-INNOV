@@ -13,6 +13,8 @@ from django.conf import settings
 from prometheus_client import REGISTRY
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily
 
+from .registry import METRICS
+
 logger = logging.getLogger(__name__)
 
 KEY_WS = "metrics:ws_connections"
@@ -66,9 +68,6 @@ class AppCollector:
 
     def describe(self):
         """Declare metric names without touching the database at registration time."""
-        yield GaugeMetricFamily(
-            "amm_amm_by_status", "Nombre d'AMM par statut calculé", labels=["status"]
-        )
         yield GaugeMetricFamily("amm_websocket_connections", "Connexions WebSocket ouvertes")
         yield CounterMetricFamily("amm_emails_sent", "Emails d'alerte envoyés")
         yield CounterMetricFamily("amm_emails_failed", "Emails d'alerte en échec")
@@ -80,24 +79,13 @@ class AppCollector:
         )
 
     def collect(self):
-        yield from self._amm_by_status()
+        yield from self._app_metrics()
         yield from self._redis_metrics()
 
-    def _amm_by_status(self):
-        gauge = GaugeMetricFamily(
-            "amm_amm_by_status", "Nombre d'AMM par statut calculé", labels=["status"]
-        )
-        try:
-            from django.db.models import Count
-
-            from apps.amm.models import MarketingAuthorization
-
-            rows = MarketingAuthorization.objects.values("status").annotate(n=Count("id"))
-            for row in rows:
-                gauge.add_metric([row["status"]], row["n"])
-        except Exception:  # database unavailable during scrape
-            return
-        yield gauge
+    def _app_metrics(self):
+        """Métriques déclarées par les apps (`METRICS`, dans leur `hooks.py`)."""
+        for function in METRICS:
+            yield from function()
 
     def _redis_metrics(self):
         client = _client()

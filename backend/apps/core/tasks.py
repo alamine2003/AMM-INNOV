@@ -15,21 +15,12 @@ from datetime import timedelta
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 
+from apps.core.registry import RECOVERY
 from apps.core.resilience import BROKER_BREAKER, DEGRADED
 
 logger = logging.getLogger(__name__)
-
-# Au-delà (~5 h de panne Gmail couvertes, par exemple un quota d'envoi journalier dépassé), un
-# e-mail est abandonné : l'échec reste visible (last_error, v_ops_backlog, check_integrity).
-MAX_EMAIL_ATTEMPTS = 60
-EMAIL_RETRY_AFTER = timedelta(minutes=15)  # laisse finir les relances Celery (≈ 10 min)
-DOSSIER_PENDING_AFTER = timedelta(minutes=5)
-IMPORT_RUNNING_MAX = timedelta(minutes=45)
-DOSSIER_RUNNING_MAX = timedelta(minutes=25)  # soft_time_limit de l'analyse : 20 min
-PREVIEW_AFTER = timedelta(minutes=10)
 
 
 def enqueue(task, *args, **kwargs) -> None:
@@ -57,177 +48,16 @@ def _publish(task, args, kwargs) -> None:
 @shared_task(name="apps.core.tasks.recover_pending_work")
 def recover_pending_work() -> dict:
     """Republie ce que la base déclare encore à faire. Idempotent : chaque tâche relancée
-    vérifie elle-même qu'elle n'a pas déjà été faite (sent_at, page_count, statut)."""
-    from apps.documents.models import Document
-    from apps.documents.tasks import generate_document_preview
-    from apps.imports.models import DossierImport, ImportBatch
-    from apps.imports.tasks import analyze_dossier, run_import
-    from apps.notifications.models import Notification
-    from apps.notifications.tasks import send_alert_email
+    vérifie elle-même qu'elle n'a pas déjà été faite (sent_at, page_count, statut).
 
+    Le travail à rattraper est déclaré par chaque app (`RECOVERY`, dans son `hooks.py`)."""
     now = timezone.now()
-    report = {
-        "emails": 0,
-        "dossiers_republished": 0,
-        "dossiers_interrupted": 0,
-        "dossiers_reread": 0,
-        "imports_republished": 0,
-        "previews": 0,
-    }
-
-    emails = Notification.objects.filter(
-        channel=Notification.Channel.EMAIL,
-        sent_at__isnull=True,
-        send_attempts__lt=MAX_EMAIL_ATTEMPTS,
-        created_at__lt=now - EMAIL_RETRY_AFTER,
-        created_at__gte=now - timedelta(days=2),
-    ).exclude(last_attempt_at__gte=now - EMAIL_RETRY_AFTER)
-    for pk in emails.values_list("pk", flat=True)[:500]:
-        send_alert_email.delay(str(pk))
-        report["emails"] += 1
-
-    interrupted = DossierImport.objects.filter(
-        status=DossierImport.Status.RUNNING, started_at__lt=now - DOSSIER_RUNNING_MAX
-    ).update(
-        status=DossierImport.Status.FAILED,
-        finished_at=now,
-        error="L'analyse a été interrompue (redémarrage du service). Relancez l'analyse.",
-    )
-    report["dossiers_interrupted"] = interrupted
-    pending = DossierImport.objects.filter(
-        status=DossierImport.Status.PENDING, created_at__lt=now - DOSSIER_PENDING_AFTER
-    )
-    for pk in pending.values_list("pk", flat=True)[:100]:
-        analyze_dossier.delay(str(pk))
-        report["dossiers_republished"] += 1
-
-    report["dossiers_reread"] = reread_stale_dossiers()
-
-    imports = ImportBatch.objects.filter(
-        status=ImportBatch.Status.PENDING, created_at__lt=now - DOSSIER_PENDING_AFTER
-    )
-    for pk in imports.values_list("pk", flat=True)[:20]:
-        run_import.delay(str(pk))  # prise en charge exclusive dans la tâche : pas de doublon
-        report["imports_republished"] += 1
-
-    # Import coupé en route (redémarrage du service, mémoire) : il resterait « en cours » pour
-    # toujours. Rien n'a été écrit (transaction annulée) : on le marque en échec, à relancer.
-    limit = now - IMPORT_RUNNING_MAX
-    stuck = ImportBatch.objects.filter(status=ImportBatch.Status.RUNNING).filter(
-        Q(started_at__lt=limit) | Q(started_at__isnull=True, created_at__lt=limit)
-    )
-    report["imports_failed"] = stuck.update(
-        status=ImportBatch.Status.FAILED,
-        finished_at=now,
-        summary={"error": "Import interrompu (redémarrage du service) : relancez-le."},
-    )
-
-    previews = Document.objects.filter(
-        page_count__isnull=True,
-        content_type="application/pdf",
-        uploaded_at__lt=now - PREVIEW_AFTER,
-        uploaded_at__gte=now - timedelta(days=1),
-    )
-    for pk in previews.values_list("pk", flat=True)[:500]:
-        generate_document_preview.delay(str(pk))
-        report["previews"] += 1
-
-    report.update(recover_binder_exports(now))
-    report["ghpl_sync"] = recover_ghpl_sync(now)
-
+    report: dict[str, int] = {}
+    for recover in RECOVERY:
+        report.update(recover(now))
     if any(report.values()):
         logger.warning("Rattrapage du travail en attente : %s", report)
     return report
-
-
-GHPL_SYNC_EVERY = timedelta(minutes=65)
-
-
-def recover_ghpl_sync(now) -> int:
-    """Synchronisation AMM GHPL en retard (service endormi à H+20 sur Render gratuit) : relancée
-    dans les cinq minutes du réveil au lieu d'attendre l'heure suivante."""
-    from django.conf import settings
-
-    from apps.imports.ghpl.webdav import Nextcloud
-    from apps.imports.models import GhplSyncRun
-    from apps.imports.tasks import sync_ghpl
-
-    if not settings.GHPL_SYNC_ENABLED or Nextcloud.from_settings() is None:
-        return 0
-    last = GhplSyncRun.objects.order_by("-started_at").values_list("started_at", flat=True).first()
-    if last is not None and last > now - GHPL_SYNC_EVERY:
-        return 0
-    sync_ghpl.delay()
-    return 1
-
-
-BINDER_EXPORT_RUNNING_MAX = timedelta(minutes=35)  # soft_time_limit de la tâche : 30 min
-
-
-def recover_binder_exports(now) -> dict:
-    """Classeurs avec décisions : republie une demande restée en attente, clôt une préparation
-    interrompue (redémarrage du service) pour que le siège puisse la relancer."""
-    from apps.binders.models import BinderExport
-    from apps.binders.tasks import build_binder_export
-
-    interrupted = BinderExport.objects.filter(
-        status=BinderExport.Status.RUNNING, started_at__lt=now - BINDER_EXPORT_RUNNING_MAX
-    ).update(
-        status=BinderExport.Status.FAILED,
-        finished_at=now,
-        error="La préparation a été interrompue (redémarrage du service). Relancez-la.",
-    )
-    republished = 0
-    for pk in BinderExport.objects.filter(
-        status=BinderExport.Status.PENDING, created_at__lt=now - DOSSIER_PENDING_AFTER
-    ).values_list("pk", flat=True)[:10]:
-        build_binder_export.delay(str(pk))
-        republished += 1
-    return {"binder_exports_interrupted": interrupted, "binder_exports_republished": republished}
-
-
-REREAD_PER_RUN = 10
-
-
-def reread_stale_dossiers() -> int:
-    """Relit les dossiers restés « prêt à ranger » ou « question » : rien à cliquer.
-
-    - lus avec d'anciennes règles (version d'aperçu inférieure) : relus avec les règles
-      actuelles, puis rangés d'office si l'AMM est identifiée (dossiers du 22/09/2026 restés
-      « À ranger », MAGLIFE en « Question » à cause d'un pays mal lu) ;
-    - « prêt à ranger » dont le rangement automatique a échoué (coupure, stockage) : nouvel
-      essai, au plus MAX_ATTEMPTS fois.
-    Quelques dossiers par passage : le worker unique de Render reste disponible.
-    """
-    from django.conf import settings
-
-    from apps.core.worker import MAX_ATTEMPTS
-    from apps.imports.dossier.preview import PREVIEW_VERSION
-    from apps.imports.models import DossierImport
-    from apps.imports.tasks import analyze_dossier
-
-    if not getattr(settings, "DOSSIER_AUTO_APPLY", False):
-        return 0
-    waiting = DossierImport.objects.filter(
-        status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION],
-        created_by__is_active=True,
-        attempts__lt=MAX_ATTEMPTS,
-    ).order_by("created_at")
-    reread = 0
-    for batch in waiting.only("pk", "status", "preview")[:200]:
-        version = (batch.preview or {}).get("version", 0)
-        stale = version < PREVIEW_VERSION
-        retry = batch.status == DossierImport.Status.READY
-        if not (stale or retry):
-            continue
-        if DossierImport.objects.filter(pk=batch.pk, status=batch.status).update(
-            status=DossierImport.Status.PENDING, preview_token=""
-        ):
-            analyze_dossier.delay(str(batch.pk))
-            reread += 1
-        if reread >= REREAD_PER_RUN:
-            break
-    return reread
 
 
 @shared_task(name="apps.core.tasks.check_integrity")
