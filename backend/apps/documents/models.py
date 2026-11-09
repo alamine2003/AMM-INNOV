@@ -97,6 +97,12 @@ class Document(models.Model):
             models.Index(
                 fields=["amm", "-document_date", "-uploaded_at"], name="doc_amm_chrono_idx"
             ),
+            # « Scan en vigueur » : liste AMM (colonne scan) et conformité des classeurs.
+            models.Index(
+                fields=["amm", "kind"],
+                condition=models.Q(is_current=True, archived_at__isnull=True),
+                name="doc_current_scan_idx",
+            ),
         ]
         constraints = [
             # Le même fichier ne peut exister qu'une fois par AMM tant qu'il n'est pas archivé :

@@ -95,6 +95,7 @@ class Alert(models.Model):
         verbose_name_plural = "alertes"
         unique_together = [("amm", "rule", "due_date")]
         ordering = ["due_date", "-triggered_at"]
+        indexes = [models.Index(fields=["status", "due_date"], name="alert_status_due_idx")]
 
     def __str__(self) -> str:
         return f"{self.rule.code} — {self.amm} — {self.due_date:%d/%m/%Y}"

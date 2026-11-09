@@ -73,6 +73,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Index d'expression avec classe d'opérateurs (recherche trigramme, apps/core/db.py).
+    "django.contrib.postgres",
     "django_prometheus",
     "channels",
     "rest_framework",

@@ -5,6 +5,19 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.1.8] — 2026-11-09
+
+### Performances
+- **Index de la base de données** (revue d'architecture du 09/11). La recherche de l'API
+  (`?search=` des listes AMM, alertes et documents) passe par des index trigramme `pg_trgm` sur
+  le nom du produit, ses alias, le n° d'AMM et le n° de renouvellement : Postgres ne relit plus
+  toute la table à chaque frappe. S'y ajoutent des index pour le scan en vigueur d'une AMM, les
+  renouvellements par étape, les alertes par statut et échéance, et les notifications d'un
+  utilisateur (récentes, non lues).
+- Les index sont créés sans bloquer l'application (`CREATE INDEX CONCURRENTLY`, opération
+  `AddIndexOnline` dans `apps/core/db.py`) ; en développement sous SQLite, les index propres à
+  Postgres sont ignorés. Aucun changement d'API ni d'écran.
+
 ## [1.1.7] — 2026-11-06
 
 ### Ajouté
