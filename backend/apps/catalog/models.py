@@ -6,6 +6,8 @@ from django.db import models
 from django.utils.text import slugify
 from simple_history.models import HistoricalRecords
 
+from apps.core.db import trigram_index
+
 from .normalize import normalize_product_name, product_key
 
 
@@ -75,6 +77,7 @@ class Product(models.Model):
         verbose_name = "produit"
         verbose_name_plural = "produits"
         ordering = ["name"]
+        indexes = [trigram_index("name", "product_name_trgm")]
 
     def __str__(self) -> str:
         return self.name
@@ -98,6 +101,7 @@ class ProductAlias(models.Model):
         verbose_name = "alias produit"
         verbose_name_plural = "alias produits"
         ordering = ["raw_name"]
+        indexes = [trigram_index("raw_name", "alias_raw_name_trgm")]
 
     def __str__(self) -> str:
         return self.raw_name

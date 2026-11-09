@@ -47,6 +47,14 @@ class Notification(models.Model):
         verbose_name = "notification"
         verbose_name_plural = "notifications"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="notif_user_recent_idx"),
+            models.Index(
+                fields=["user"],
+                condition=models.Q(read_at__isnull=True),
+                name="notif_user_unread_idx",
+            ),
+        ]
         constraints = [
             # Au plus un rappel par AMM, par destinataire, par canal et par jour.
             models.UniqueConstraint(

@@ -7,6 +7,8 @@ from django.conf import settings
 from django.db import models
 from simple_history.models import HistoricalRecords
 
+from apps.core.db import trigram_index
+
 
 class MarketingAuthorization(models.Model):
     class Status(models.TextChoices):
@@ -91,6 +93,7 @@ class MarketingAuthorization(models.Model):
         ordering = ["country__iso2", "product__name"]
         indexes = [
             models.Index(fields=["country", "status"], name="amm_country_status_idx"),
+            trigram_index("original_number", "amm_number_trgm"),
         ]
 
     def __str__(self) -> str:
@@ -179,6 +182,10 @@ class Renewal(models.Model):
         verbose_name_plural = "renouvellements"
         unique_together = [("amm", "sequence")]
         ordering = ["amm", "sequence"]
+        indexes = [
+            models.Index(fields=["workflow_status"], name="renewal_workflow_idx"),
+            trigram_index("number", "renewal_number_trgm"),
+        ]
 
     def __str__(self) -> str:
         return f"Renouvellement {self.sequence} — {self.get_workflow_status_display()}"
