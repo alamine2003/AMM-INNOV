@@ -257,6 +257,10 @@ def check_storage(options) -> list[Check]:
             referenced.add(name)
             if not default_storage.exists(name):
                 missing.add(f"{model.__name__} {pk}: {name}")
+    # Les scans des éléments mis à la corbeille restent au stockage : ce ne sont pas des fuites.
+    from apps.core.trash import trashed_files
+
+    referenced |= trashed_files()
     for name in _list_blobs(default_storage, "documents/"):
         if name not in referenced:
             orphans.add(name)

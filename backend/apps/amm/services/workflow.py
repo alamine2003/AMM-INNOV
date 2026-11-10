@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.core.trash import move_to_trash
 
 S = Renewal.WorkflowStatus
 
@@ -175,9 +176,16 @@ def delete_renewal(renewal: Renewal, actor=None) -> None:
         document._change_reason = f"Renouvellement n°{renewal.sequence} annulé"
         document.save(update_fields=["is_current", "archived_at"])
     if actor is not None:
-        renewal._history_user = actor
         renewal._transition_actor = actor
-    renewal.delete()
+    # À la corbeille, pas effacé : un administrateur peut le restaurer.
+    move_to_trash(
+        renewal,
+        user=actor,
+        kind="renouvellement",
+        label=f"{renewal.amm.product.name} : renouvellement {renewal.sequence}",
+        country=renewal.amm.country.iso2,
+        reason="Renouvellement annulé",
+    )
 
 
 @transaction.atomic

@@ -18,6 +18,7 @@ from apps.accounts.models import User
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.services.workflow import create_renewal, lock_amm, transition
 from apps.core.dates import today
+from apps.core.trash import move_to_trash
 from apps.documents.models import Document
 from apps.documents.services.ingest import ingest_document
 from apps.notifications.models import Notification
@@ -245,8 +246,8 @@ def remove_piece(piece: DepositPiece, user) -> None:
     if dossier.sent_at:
         raise ValidationError("Le dossier est déjà envoyé au pays : ajoutez plutôt un complément.")
     label = f"{piece.label} : {piece.filename}"
-    piece.file.delete(save=False)
-    piece.delete()
+    # À la corbeille, fichier compris (il reste au stockage) : rien n'est effacé.
+    move_to_trash(piece, user=user, kind="pièce de dépôt", label=label, reason="Retirée du dossier")
     _touch(dossier, A.PIECE_RETIREE, label, user)
 
 
@@ -271,7 +272,13 @@ def remove_sample(sample: DepositSample, user) -> None:
     if sample.dossier.sent_at:
         raise ValidationError("Le dossier est déjà envoyé au pays.")
     dossier = sample.dossier
-    sample.delete()
+    move_to_trash(
+        sample,
+        user=user,
+        kind="échantillon de dépôt",
+        label=f"Lot {sample.batch_number}",
+        reason="Retiré du dossier",
+    )
     _touch(dossier, A.ECHANTILLON, f"Lot {sample.batch_number} retiré", user)
 
 

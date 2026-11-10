@@ -212,16 +212,12 @@ class BinderViewSet(viewsets.ViewSet):
     )
     @extend_schema(
         methods=["DELETE"],
-        parameters=[
-            OpenApiParameter(
-                "move_to_amm",
-                str,
-                required=False,
-                description="Fiche (même pays) qui reprend les pièces de la page supprimée.",
-            )
-        ],
         request=None,
         responses=BinderDetailSerializer,
+        description=(
+            "Supprime la page tout de suite : la fiche part à la corbeille. L'en-tête "
+            "`X-Trash-Entry` donne l'entrée de corbeille, pour annuler (restaurer)."
+        ),
     )
     @action(
         detail=True,
@@ -231,14 +227,11 @@ class BinderViewSet(viewsets.ViewSet):
     def page_item(self, request, key=None, amm_id=None):
         """Titre de la page (nom de la présentation, partout) ; DELETE supprime la page."""
         if request.method == "DELETE":
-            move_to = request.query_params.get("move_to_amm") or None
-            return self._chronology(
-                request,
-                key,
-                lambda binder: chronology.delete_page(
-                    binder, amm_id, move_to_amm=move_to, user=request.user
-                ),
-            )
+            binder = get_binder(request.user, key)
+            entry = self._run(lambda: chronology.delete_page(binder, amm_id, user=request.user))
+            response = Response(BinderDetailSerializer(binder_detail(binder)).data)
+            response["X-Trash-Entry"] = str(entry.pk)
+            return response
         serializer = PageRenameInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return self._chronology(

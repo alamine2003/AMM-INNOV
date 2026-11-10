@@ -26,6 +26,7 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
 from apps.core.exceptions import StorageUnavailable
+from apps.core.trash import move_to_trash
 from apps.documents.services.archive import aiter_blocks, iter_zip
 from apps.documents.views import open_stored_file
 
@@ -382,4 +383,4 @@ class PieceTypeViewSet(
             instance.active = False
             instance.save(update_fields=["active"])
         else:
-            instance.delete()
+            move_to_trash(instance, user=self.request.user)

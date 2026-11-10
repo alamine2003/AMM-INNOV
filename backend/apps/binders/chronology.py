@@ -134,6 +134,7 @@ def _remove_renewal(amm, renewal, destination, user) -> int:
     Aucune pièce n'est archivée ni supprimée : le scan reste, seul le passage disparaît.
     """
     from apps.amm.services.sequence import resequence
+    from apps.core.trash import move_to_trash
     from apps.imports.models import DossierChange
 
     if hasattr(renewal, "deposit"):
@@ -151,10 +152,16 @@ def _remove_renewal(amm, renewal, destination, user) -> int:
         moved += 1
     # Le journal des imports de dossier garde la modification, sans le renouvellement supprimé.
     DossierChange.objects.filter(renewal=renewal).update(renewal=None)
-    renewal._history_user = user
     renewal._change_reason = REASON
     renewal._skip_signals = True
-    renewal.delete()
+    move_to_trash(
+        renewal,
+        user=user,
+        kind="passage (renouvellement)",
+        label=f"{amm.product.name} : renouvellement {renewal.sequence}",
+        country=amm.country.iso2,
+        reason="Passage supprimé du classeur (il n'existait pas)",
+    )
     resequence(amm)
     _save_with_actor(amm, user, REASON)
     return moved
@@ -240,83 +247,44 @@ def _period_for(target, when):
     return None
 
 
-def delete_page(binder: Binder, amm_id, *, move_to_amm=None, user):
-    """Supprime la page : la fiche AMM disparaît de toute l'application (classeurs, fiches,
-    alertes, rappels, tableaux de bord).
-
-    Ses pièces (scans, récépissés…) ne sont jamais perdues : elles sont rangées sur la fiche
-    `move_to_amm` (même pays), à la période de même date. Une page sans pièce se supprime
-    directement. Les imports ne recréent plus cette page (`BinderDeletedPage`).
+def delete_page(binder: Binder, amm_id, *, user):
+    """Supprime la page, tout de suite : la fiche AMM part à la corbeille avec ce qu'elle porte
+    (renouvellements, scans, pièces, alertes, imports de dossiers), et disparaît de toute
+    l'application. Rien n'est perdu : un administrateur la restaure depuis la corbeille, ou en
+    un clic juste après (« Annuler »). Les imports ne recréent plus cette page
+    (`BinderDeletedPage`) tant qu'elle n'est pas restaurée.
     """
     from apps.catalog.models import Country
-    from apps.imports.models import DossierChange, DossierImport, GhplSyncedFile
+    from apps.core.trash import move_to_trash
 
     from .models import BinderDeletedPage
 
     ensure_can(user, Action.BINDER_DELETE_PAGE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
-        documents = list(Document.objects.filter(amm=amm))
-        imports = DossierImport.objects.filter(amm=amm)
-        changes = DossierChange.objects.filter(amm=amm)
         if Renewal.objects.filter(amm=amm, deposit__isnull=False).exists():
             raise ValidationError(
                 "Cette page a un dossier de dépôt (menu « Dépôts ») : supprimez ou clôturez-le "
                 "d'abord."
             )
-        target = None
-        if move_to_amm:
-            target = (
-                MarketingAuthorization.objects.select_for_update(of=("self",))
-                .select_related("country", "product")
-                .filter(pk=move_to_amm)
-                .first()
-            )
-            if target is None or target.pk == amm.pk or target.country_id != amm.country_id:
-                raise ValidationError("Choisissez une autre fiche du même pays.")
-        if target is None and (documents or imports.exists() or changes.exists()):
-            count = len(documents)
-            raise ValidationError(
-                f"Cette page a {count} pièce{'s' if count > 1 else ''} : choisissez la fiche qui "
-                "les reprend (aucun scan n'est supprimé)."
-            )
-        now = timezone.now()
-        for document in documents:
-            duplicate = (
-                document.archived_at is None
-                and Document.objects.filter(
-                    amm=target, sha256=document.sha256, archived_at__isnull=True
-                ).exists()
-            )
-            if duplicate:  # le même fichier est déjà sur la fiche : il y reste, celui-ci archivé
-                document.is_current = False
-                document.archived_at = now
-            document.amm = target
-            document.renewal = _period_for(target, document.document_date)
-            document._history_user = user
-            document._change_reason = f"{REASON} : page supprimée, pièce reprise"
-            document._skip_signals = True
-            document.save()
-        if target is not None:
-            imports.update(amm=target)
-            changes.update(amm=target)
-        DossierChange.objects.filter(renewal__amm=amm).update(renewal=None)
-        GhplSyncedFile.objects.filter(amm=amm).update(amm=target)
         country = Country.objects.get(pk=amm.country_id)
         BinderDeletedPage.objects.create(
             country=country,
             product_name=amm.product.name,
             product_key=amm.product.key,
-            moved_to=target.product.name if target else "",
+            moved_to="",
             deleted_by=user,
         )
-        amm._history_user = user
-        amm._change_reason = f"{REASON} : page supprimée"
-        amm.delete()
-        if target is not None:
-            _save_with_actor(target, user, REASON)
-            _reconcile(target)
-    return target
+        amm._change_reason = f"{REASON} : page supprimée (corbeille)"
+        return move_to_trash(
+            amm,
+            user=user,
+            kind="page du classeur",
+            label=f"{amm.product.name} ({country.iso2})",
+            country=country.iso2,
+            reason=f"Page supprimée du classeur {binder.title}",
+            include_protected=True,
+        )
 
 
 def edit_document(binder: Binder, amm_id, document_id, *, values: dict, user):

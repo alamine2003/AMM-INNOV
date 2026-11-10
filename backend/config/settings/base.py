@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "apps.imports",
     "apps.binders",
     "apps.deposits",
+    "apps.administration",
     "apps.demo",
 ]
 
@@ -395,6 +396,8 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 CORS_ALLOW_CREDENTIALS = True
+# Lisibles par l'interface (autre origine) : nom des fichiers téléchargés, entrée de corbeille.
+CORS_EXPOSE_HEADERS = ["Content-Disposition", "X-Trash-Entry"]
 FRONTEND_URL = env("FRONTEND_URL", "http://localhost:5173")
 
 # ---------------------------------------------------------------------------

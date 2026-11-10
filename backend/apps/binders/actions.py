@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.accounts.permissions import ensure_country_in_scope
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.core.trash import move_to_trash
 from apps.imports.dossier.application import _reconcile_after_commit, _save_with_actor
 from apps.imports.models import DossierReviewPoint
 
@@ -203,9 +204,17 @@ def add_extra(binder: Binder, *, product_name: str, note: str, user) -> BinderEx
 
 def remove_extra(binder: Binder, extra_id, *, user) -> None:
     ensure_country_in_scope(user, binder.country)
-    deleted, _ = BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).delete()
-    if not deleted:
+    extra = BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).first()
+    if extra is None:
         raise ValidationError("Page en trop introuvable.")
+    move_to_trash(
+        extra,
+        user=user,
+        kind="page en trop",
+        label=extra.product_name,
+        country=binder.country.iso2,
+        reason=f"Retirée du classeur {binder.title}",
+    )
 
 
 def _product(name: str, range_code: str | None):
