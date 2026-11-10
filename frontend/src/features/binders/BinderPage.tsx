@@ -3,13 +3,11 @@ import {
   Box,
   Button,
   Chip,
-  FormControlLabel,
   IconButton,
   LinearProgress,
   MenuItem,
   Slider,
   Stack,
-  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -17,6 +15,9 @@ import {
 import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useSnackbar } from 'notistack';
@@ -130,6 +131,7 @@ export default function BinderPage() {
 
 function OpenBinder({ binder }: { binder: BinderDetail }) {
   const canDownload = useCan('binder.download');
+  const canEdit = useCan('binder.edit');
   const [filter, setFilter] = useState<LeafFilter>('all');
   const [animation, setAnimation] = useState(readAnimation);
   const [sound, setSound] = useState(readSound);
@@ -338,8 +340,16 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const progress = total ? (binder.checked / total) * 100 : 0;
 
   return (
-    <Box>
-      <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap" sx={{ mb: 1.5 }}>
+    // Tout tient dans la fenêtre : barre, classeur et feuilletage, sans défilement de la page.
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: { xs: 'calc(100dvh - 56px - 32px)', md: 'calc(100dvh - 64px - 48px)' },
+        overflow: 'hidden',
+      }}
+    >
+      <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1, flexShrink: 0, minWidth: 0 }}>
         <IconButton component={Link} to="/classeurs" aria-label="Retour à l'étagère">
           <ArrowBackIcon />
         </IconButton>
@@ -382,34 +392,38 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             </MenuItem>
           ))}
         </TextField>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={animation}
-              onChange={(e) => {
-                setAnimation(e.target.checked);
-                saveAnimation(e.target.checked);
-              }}
-            />
-          }
-          label="Animation"
-        />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={sound}
-              onChange={(e) => {
-                setSound(e.target.checked);
-                saveSound(e.target.checked);
-                if (e.target.checked) playPageTurn();
-              }}
-            />
-          }
-          label="Son"
-        />
-        <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
-          Ajouter une page
-        </Button>
+        <Tooltip title={animation ? 'Animation des pages : activée' : 'Animation des pages : désactivée'}>
+          <IconButton
+            aria-label="Animation"
+            aria-pressed={animation}
+            color={animation ? 'primary' : 'default'}
+            onClick={() => {
+              setAnimation(!animation);
+              saveAnimation(!animation);
+            }}
+          >
+            <AutoStoriesIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={sound ? 'Son des pages : activé' : 'Son des pages : désactivé'}>
+          <IconButton
+            aria-label="Son"
+            aria-pressed={sound}
+            color={sound ? 'primary' : 'default'}
+            onClick={() => {
+              setSound(!sound);
+              saveSound(!sound);
+              if (!sound) playPageTurn();
+            }}
+          >
+            {sound ? <VolumeUpIcon /> : <VolumeOffIcon />}
+          </IconButton>
+        </Tooltip>
+        {canEdit && (
+          <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
+            Ajouter une page
+          </Button>
+        )}
         {canDownload && (
           <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
         )}
@@ -456,8 +470,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           position: 'relative',
           mx: 'auto',
           maxWidth: 1240,
-          height: { xs: 'calc(100vh - 230px)', md: 'calc(100vh - 210px)' },
-          minHeight: 560,
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
           pr: { xs: 3.5, sm: 4.5 },
           touchAction: 'pan-y',
           userSelect: 'none',
@@ -684,7 +699,12 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         </Stack>
       </Box>
 
-      <Stack direction="row" alignItems="center" gap={2} sx={{ maxWidth: 1240, mx: 'auto', mt: 1.5, px: 1 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap={2}
+        sx={{ maxWidth: 1240, width: '100%', mx: 'auto', mt: 1, px: 1, flexShrink: 0 }}
+      >
         <IconButton onClick={() => go(index - 1)} disabled={index === 0} aria-label="Page précédente">
           <NavigateBeforeIcon />
         </IconButton>

@@ -74,7 +74,11 @@ export function createFolderFormData(files: FolderFile[], reused: Map<string, st
 /** Empreinte SHA-256 (hexadécimal) d'un fichier ; null si le navigateur ne sait pas la calculer. */
 export async function fileDigest(file: File): Promise<string | null> {
   try {
-    const buffer = await new Response(file).arrayBuffer();
+    // `Blob.arrayBuffer()` : standard, et lu correctement partout (navigateurs comme tests).
+    const buffer =
+      typeof file.arrayBuffer === 'function'
+        ? await file.arrayBuffer()
+        : await new Response(file).arrayBuffer();
     const hash = await crypto.subtle.digest('SHA-256', buffer);
     return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
   } catch {

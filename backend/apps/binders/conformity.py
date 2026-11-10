@@ -176,6 +176,7 @@ COUNT_KEYS = (
     "absent",  # dossier papier absent du classeur
     "to_scan",  # papier présent, décision en vigueur non scannée
     "stale",  # fiche modifiée depuis le constat : à revérifier
+    "to_print",  # scan à imprimer et ranger dans le classeur papier (sans effet sur la conformité)
 )
 
 
@@ -183,9 +184,10 @@ def empty_counts() -> dict:
     return dict.fromkeys(COUNT_KEYS, 0)
 
 
-def add_to_counts(counts: dict, verdict: dict, result: str | None) -> None:
+def add_to_counts(counts: dict, verdict: dict, result: str | None, to_print: bool = False) -> None:
     """Les compteurs viennent du même calcul que la page (`conformity`) : pas d'écart possible."""
     counts["total"] += 1
+    counts["to_print"] += bool(to_print)  # vérifiée ou non, conforme ou non
     if verdict["status"] == "NON_VERIFIE":
         return
     counts["checked"] += 1

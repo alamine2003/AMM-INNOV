@@ -1,7 +1,8 @@
 import type { BinderPage, BinderSlot } from '@/api/types';
 import { DateInput, ValidityLine } from '@/components/DateInput';
 import { addValidity } from '@/lib/dates';
-import { Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { LINE, MUTED } from './paper';
 import { FIELDS, type Values, id, initialValues, show } from './sheetFields';
 
@@ -15,6 +16,11 @@ export function SlotCard({
   values,
   onChange,
   years,
+  canEdit = false,
+  busy = false,
+  onStartEdit,
+  onSave,
+  onCancel,
 }: {
   page: BinderPage;
   slot: BinderSlot;
@@ -23,6 +29,12 @@ export function SlotCard({
   editing: boolean;
   values: Values;
   onChange: (key: string, value: string) => void;
+  /** Modification directe sur la carte (CEO et siège) : sans descendre jusqu'à « Corriger ». */
+  canEdit?: boolean;
+  busy?: boolean;
+  onStartEdit?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }) {
   const source = slot === 'original' ? page.original : page.renewal;
   const gaps = new Map(page.discrepancies.filter((d) => d.slot === slot).map((d) => [d.field, d]));
@@ -38,9 +50,28 @@ export function SlotCard({
         minWidth: 0,
       }}
     >
-      <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, mb: 1 }}>
-        {title.toUpperCase()}
-      </Typography>
+      <Stack direction="row" alignItems="center" sx={{ mb: 1, minHeight: 28 }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, flex: 1 }}>
+          {title.toUpperCase()}
+        </Typography>
+        {canEdit && !editing && onStartEdit && (
+          <Tooltip describeChild title="Modifier le n° et les dates sur la carte">
+            <IconButton size="small" onClick={onStartEdit} disabled={busy} data-testid={`edit-card-${slot}`}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {editing && onSave && onCancel && (
+          <Stack direction="row" gap={0.5}>
+            <Button size="small" variant="contained" color="warning" onClick={onSave} disabled={busy}>
+              Enregistrer
+            </Button>
+            <Button size="small" onClick={onCancel} disabled={busy}>
+              Annuler
+            </Button>
+          </Stack>
+        )}
+      </Stack>
       {!source && !editing ? (
         <Typography sx={{ fontStyle: 'italic', color: MUTED, fontSize: 14 }}>
           Aucun renouvellement enregistré
@@ -99,7 +130,15 @@ export function SlotCard({
                   )}
                 </Stack>
               ) : (
-                <Stack direction="row" alignItems="baseline" spacing={1}>
+                <Stack
+                  direction="row"
+                  alignItems="baseline"
+                  spacing={1}
+                  onClick={canEdit && onStartEdit && !busy ? onStartEdit : undefined}
+                  sx={
+                    canEdit && onStartEdit ? { cursor: 'text', '&:hover': { bgcolor: '#fffbea' } } : undefined
+                  }
+                >
                   <Typography sx={{ fontSize: 12, color: MUTED, width: 96, flexShrink: 0 }}>
                     {label}
                   </Typography>

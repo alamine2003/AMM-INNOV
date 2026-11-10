@@ -39,6 +39,10 @@ class UncheckInputSerializer(serializers.Serializer):
     amm = serializers.UUIDField()
 
 
+class PrintMarkInputSerializer(serializers.Serializer):
+    to_print = serializers.BooleanField()
+
+
 class AddPageInputSerializer(serializers.Serializer):
     product_name = serializers.CharField(max_length=255)
     # Gamme : imposée par le classeur au siège, à choisir dans un classeur de pays.
@@ -256,6 +260,7 @@ class PageSerializer(serializers.Serializer):
     changed_by = serializers.CharField(allow_null=True)
     trace = TraceSerializer()
     to_scan = serializers.BooleanField()
+    to_print = serializers.BooleanField()
     conformity = ConformitySerializer()
 
 
@@ -271,6 +276,8 @@ class CountsMixin(serializers.Serializer):
     to_scan = serializers.IntegerField()
     # Fiche modifiée depuis le constat : à revérifier.
     stale = serializers.IntegerField()
+    # Scans marqués « à imprimer » pendant la lecture.
+    to_print = serializers.IntegerField()
 
 
 class SectionSummarySerializer(CountsMixin):

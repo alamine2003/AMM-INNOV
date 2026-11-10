@@ -13,6 +13,17 @@ from apps.imports.models import DossierImport, DossierReviewPoint
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def archivist_in_country_can_edit(monkeypatch):
+    """Ces tests décrivent le travail de l'archiviste, réglementaire pays compris (portée des
+    pays, valeurs relues…). Depuis la 1.2.1, seuls le CEO et le siège modifient un classeur par
+    défaut : le droit est ouvert ici à tous les rôles. La lecture seule est testée dans
+    tests/test_binders_read_only.py."""
+    from apps.accounts import roles
+
+    monkeypatch.setitem(roles.ACTION_ROLES, roles.Action.BINDER_EDIT, roles.ALL_ROLES)
+
+
 @pytest.fixture
 def shelf_data(make_amm, ranges, countries):
     def amm(name, range_code, country="SN", **kwargs):

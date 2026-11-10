@@ -1,3 +1,4 @@
+import { FitToPage } from './FitToPage';
 import { useState } from 'react';
 import {
   Box,
@@ -12,6 +13,7 @@ import {
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { extractErrorMessage } from '@/api/client';
+import { useCan } from '@/features/auth/authStore';
 import { useExtraPages } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage, BinderSectionSummary } from '@/api/types';
 import { formatDateTime } from '@/lib/dates';
@@ -41,7 +43,7 @@ export function TitleLeaf({
   return (
     <Box sx={{ ...paperSx, bgcolor: '#f4efe3' }}>
       <Holes />
-      <Box sx={{ position: 'absolute', inset: 0, pl: 7, pr: 4, py: 3, overflowY: 'auto' }}>
+      <FitToPage sx={{ pl: 7, pr: 4, py: 3 }}>
         <Typography sx={{ fontSize: 12, fontWeight: 800, color: MUTED, letterSpacing: 1 }}>
           AMM GH · CLASSEUR DES AMM
         </Typography>
@@ -66,6 +68,7 @@ export function TitleLeaf({
           <Tile value={binder.non_conformes} label="non conformes" />
           <Tile value={binder.absent} label="absentes" />
           <Tile value={binder.to_scan} label="à scanner" />
+          <Tile value={binder.to_print} label="à imprimer" />
           {binder.stale > 0 && <Tile value={binder.stale} label="à revérifier" />}
           <Tile value={binder.extras} label="en trop" />
         </Stack>
@@ -93,7 +96,7 @@ export function TitleLeaf({
           ordre. <b>←</b> <b>→</b> ou glisser pour tourner les pages · <b>C</b> papier conforme · <b>E</b>{' '}
           corriger · <b>A</b> absent. Les onglets de couleur mènent directement à une gamme.
         </Typography>
-      </Box>
+      </FitToPage>
     </Box>
   );
 }
@@ -170,21 +173,24 @@ export function EndLeaf({
   onAddPage: (prefill?: { product_name: string; extra_id: string }) => void;
 }) {
   const { add, remove } = useExtraPages(binder.key);
+  const canEdit = useCan('binder.edit');
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const pages = binder.sections.flatMap((section) => section.pages);
   const absent = pages.filter((p) => p.check?.result === 'ABSENT');
   const toScan = pages.filter((p) => p.to_scan);
+  const toPrint = pages.filter((p) => p.to_print);
   const data = pages.filter((p) => p.conformity.criteria.some((c) => c.key === 'data' && c.ok === false));
   const groups = [
     { title: 'Dossiers à retrouver (papier absent)', items: absent },
     { title: 'Décisions à scanner', items: toScan },
+    { title: 'AMM à imprimer et à ranger dans le classeur', items: toPrint },
     { title: 'Date ou n° à revoir (manquant, ou fiche modifiée depuis la vérification)', items: data },
   ];
   return (
     <Box sx={paperSx}>
       <Holes />
-      <Box sx={{ position: 'absolute', inset: 0, pl: 7, pr: 4, py: 3, overflowY: 'auto' }}>
+      <FitToPage sx={{ pl: 7, pr: 4, py: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
           <Typography component="h2" sx={{ fontSize: 24, fontWeight: 900 }}>
             Bilan du classeur
@@ -194,7 +200,7 @@ export function EndLeaf({
         <Typography sx={{ fontSize: 13, color: MUTED, mb: 2 }}>
           {binder.checked} / {binder.total} pages vérifiées · {binder.conformes} dossiers conformes ·{' '}
           {binder.non_conformes} non conformes · {binder.corrected} corrigées · {binder.absent} absentes ·{' '}
-          {binder.to_scan} à scanner
+          {binder.to_scan} à scanner · {binder.to_print} à imprimer
         </Typography>
         {groups.map((group) => (
           <Box key={group.title} sx={{ mb: 2 }}>
@@ -224,9 +230,11 @@ export function EndLeaf({
           Un dossier est dans le classeur papier mais pas dans AMM GH : notez-le ici, ou créez directement sa
           page avec « Ajouter une page ».
         </Typography>
-        <Button size="small" variant="contained" onClick={() => onAddPage()} sx={{ mb: 1 }}>
-          Ajouter une page
-        </Button>
+        {canEdit && (
+          <Button size="small" variant="contained" onClick={() => onAddPage()} sx={{ mb: 1 }}>
+            Ajouter une page
+          </Button>
+        )}
         {binder.extra_pages.map((extra) => (
           <Stack key={extra.id} direction="row" alignItems="center" gap={1}>
             <Typography sx={{ fontSize: 13, flex: 1 }}>
@@ -236,66 +244,72 @@ export function EndLeaf({
                 ({extra.created_by ?? '—'}, {formatDateTime(extra.created_at)})
               </Box>
             </Typography>
-            <Button
-              size="small"
-              onClick={() => onAddPage({ product_name: extra.product_name, extra_id: extra.id })}
-            >
-              Créer la page
-            </Button>
-            <Tooltip title="Retirer">
-              <IconButton
+            {canEdit && (
+              <Button
                 size="small"
-                onClick={() => remove.mutate(extra.id)}
-                aria-label={`Retirer ${extra.product_name}`}
+                onClick={() => onAddPage({ product_name: extra.product_name, extra_id: extra.id })}
               >
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+                Créer la page
+              </Button>
+            )}
+            {canEdit && (
+              <Tooltip title="Retirer">
+                <IconButton
+                  size="small"
+                  onClick={() => remove.mutate(extra.id)}
+                  aria-label={`Retirer ${extra.product_name}`}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Stack>
         ))}
-        <Stack
-          component="form"
-          direction={{ xs: 'column', sm: 'row' }}
-          gap={1}
-          sx={{ mt: 1 }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name.trim()) return;
-            add.mutate(
-              { product_name: name, note },
-              {
-                onSuccess: () => {
-                  setName('');
-                  setNote('');
+        {canEdit && (
+          <Stack
+            component="form"
+            direction={{ xs: 'column', sm: 'row' }}
+            gap={1}
+            sx={{ mt: 1 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name.trim()) return;
+              add.mutate(
+                { product_name: name, note },
+                {
+                  onSuccess: () => {
+                    setName('');
+                    setNote('');
+                  },
                 },
-              },
-            );
-          }}
-        >
-          <TextField
-            size="small"
-            label="Produit lu sur le dossier"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            sx={{ bgcolor: '#fff', flex: 2 }}
-          />
-          <TextField
-            size="small"
-            label="Note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            sx={{ bgcolor: '#fff', flex: 1 }}
-          />
-          <Button type="submit" variant="outlined" disabled={add.isPending || !name.trim()}>
-            Signaler
-          </Button>
-        </Stack>
+              );
+            }}
+          >
+            <TextField
+              size="small"
+              label="Produit lu sur le dossier"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              sx={{ bgcolor: '#fff', flex: 2 }}
+            />
+            <TextField
+              size="small"
+              label="Note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              sx={{ bgcolor: '#fff', flex: 1 }}
+            />
+            <Button type="submit" variant="outlined" disabled={add.isPending || !name.trim()}>
+              Signaler
+            </Button>
+          </Stack>
+        )}
         {add.isError && (
           <Typography sx={{ color: 'error.main', fontSize: 12, mt: 0.5 }}>
             {extractErrorMessage(add.error)}
           </Typography>
         )}
-      </Box>
+      </FitToPage>
     </Box>
   );
 }

@@ -149,8 +149,17 @@ jobs:
       - name: "Typecheck (contrat API/frontend : src/api/contract.ts)"
         run: npm run typecheck
 
-      - name: Tests
+      # Vitest 5 + jsdom : sur Node 24, le Fetch de Node ne lit pas les envois multipart de jsdom
+      # (FormData, fichiers), alors que tout passe sur Node 22 (LTS). Les tests tournent donc sur
+      # Node 22 ; le build reste sur Node 24. À retirer quand Vitest ou jsdom l'auront corrigé.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Tests (Node 22)
         run: npm run test -- --run
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build
         run: npm run build

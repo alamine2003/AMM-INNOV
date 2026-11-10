@@ -1807,6 +1807,47 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/binders/{key}/pages/{amm_id}/print/:
+    post:
+      operationId: v1_binders_pages_print_create
+      description: '« À imprimer » : le scan existe mais sa feuille manque dans le
+        classeur papier.'
+      parameters:
+      - in: path
+        name: amm_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintMarkInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrintMarkInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrintMarkInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinderDetail'
+          description: ''
   /api/v1/binders/{key}/pages/{amm_id}/scan/:
     post:
       operationId: v1_binders_pages_scan_create
@@ -4781,6 +4822,7 @@ components:
       - reason
     ActionsEnum:
       enum:
+      - binder.edit
       - binder.remove_passage
       - binder.rename_page
       - binder.delete_page
@@ -4788,6 +4830,7 @@ components:
       - binder.download
       type: string
       description: |-
+        * `binder.edit` - binder.edit
         * `binder.remove_passage` - binder.remove_passage
         * `binder.rename_page` - binder.rename_page
         * `binder.delete_page` - binder.delete_page
@@ -5507,6 +5550,8 @@ components:
           type: integer
         stale:
           type: integer
+        to_print:
+          type: integer
         key:
           type: string
         title:
@@ -5559,6 +5604,7 @@ components:
       - sections
       - stale
       - title
+      - to_print
       - to_scan
       - total
     BinderExport:
@@ -5721,6 +5767,8 @@ components:
           type: integer
         stale:
           type: integer
+        to_print:
+          type: integer
         key:
           type: string
         title:
@@ -5765,6 +5813,7 @@ components:
       - sections
       - stale
       - title
+      - to_print
       - to_scan
       - total
     ChangeSinceCheck:
@@ -8510,6 +8559,8 @@ components:
           $ref: '#/components/schemas/Trace'
         to_scan:
           type: boolean
+        to_print:
+          type: boolean
         conformity:
           $ref: '#/components/schemas/Conformity'
       required:
@@ -8533,6 +8584,7 @@ components:
       - section_page
       - status
       - status_label
+      - to_print
       - to_scan
       - trace
     PageScanInputRequest:
@@ -9331,6 +9383,13 @@ components:
           maxLength: 200
       required:
       - file
+    PrintMarkInputRequest:
+      type: object
+      properties:
+        to_print:
+          type: boolean
+      required:
+      - to_print
     Product:
       type: object
       properties:
@@ -9707,6 +9766,8 @@ components:
           type: integer
         stale:
           type: integer
+        to_print:
+          type: integer
         code:
           type: string
         label:
@@ -9728,6 +9789,7 @@ components:
       - non_conformes
       - pages
       - stale
+      - to_print
       - to_scan
       - total
     SectionSummary:
@@ -9749,6 +9811,8 @@ components:
           type: integer
         stale:
           type: integer
+        to_print:
+          type: integer
         code:
           type: string
         label:
@@ -9765,6 +9829,7 @@ components:
       - label
       - non_conformes
       - stale
+      - to_print
       - to_scan
       - total
     SendRequest:

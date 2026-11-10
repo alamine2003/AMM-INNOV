@@ -686,6 +686,8 @@ export interface BinderCounts {
   to_scan: number;
   /** Fiches modifiées depuis leur vérification : à revérifier. */
   stale: number;
+  /** Scans marqués « à imprimer » pendant la lecture (sans effet sur la conformité). */
+  to_print: number;
 }
 
 export type BinderCriterionKey = Schemas['KeyEnum'];
@@ -791,6 +793,8 @@ export interface BinderPage {
     checked_at: string;
   } | null;
   to_scan: boolean;
+  /** Marquée « à imprimer » : le scan existe, sa feuille manque dans le classeur papier. */
+  to_print: boolean;
   conformity: BinderConformity;
   /** Valeurs changées (dashboard, import Excel ou de dossier) depuis le constat : à revérifier. */
   changed_since_check: { slot: BinderSlot; field: BinderField; checked: unknown; now: unknown }[];

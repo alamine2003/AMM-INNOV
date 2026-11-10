@@ -165,7 +165,7 @@ def binder_amms(binder: Binder) -> list:
     """Les AMM du classeur, dans l'ordre des pages."""
     queryset = (
         MarketingAuthorization.objects.filter(country=binder.country)
-        .select_related("product__range", "binder_check__checked_by")
+        .select_related("product__range", "binder_check__checked_by", "print_mark")
         .prefetch_related(
             "renewals",
             Prefetch(
@@ -329,6 +329,11 @@ def _change_source(trace: dict | None, since) -> str:
     return "modification de la fiche AMM"
 
 
+def _to_print(amm) -> bool:
+    mark = getattr(amm, "print_mark", None) if hasattr(amm, "print_mark") else None
+    return bool(mark and mark.to_print)
+
+
 def page_payload(amm, trace: dict | None = None) -> dict:
     renewals = list(amm.renewals.all())
     renewal = last_obtained(renewals)
@@ -421,6 +426,8 @@ def page_payload(amm, trace: dict | None = None) -> dict:
         "trace": trace or {"excel": None, "dossier": None},
         # Le papier est là mais la décision en vigueur n'a pas de scan.
         "to_scan": verdict["to_scan"],
+        # Marqué « à imprimer » pendant la lecture : la feuille manque dans le classeur papier.
+        "to_print": _to_print(amm),
         "conformity": verdict,
     }
 
@@ -502,7 +509,7 @@ def shelf(user) -> list[dict]:
     )
     amms = (
         MarketingAuthorization.objects.filter(country__in=countries)
-        .select_related("product__range", "binder_check__checked_by")
+        .select_related("product__range", "binder_check__checked_by", "print_mark")
         .prefetch_related(
             Prefetch(
                 "renewals",
@@ -542,7 +549,10 @@ def shelf(user) -> list[dict]:
                     continue
                 check = amm.binder_check if hasattr(amm, "binder_check") else None
                 add_to_counts(
-                    sections[code or NO_RANGE], _verdict(amm), check.result if check else None
+                    sections[code or NO_RANGE],
+                    _verdict(amm),
+                    check.result if check else None,
+                    _to_print(amm),
                 )
                 if check and (last is None or check.checked_at > last["at"]):
                     last = {"at": check.checked_at, "by": _person(check.checked_by)}
@@ -573,6 +583,7 @@ def binder_detail(binder: Binder) -> dict:
             sections.setdefault(code, empty_counts()),
             page["conformity"],
             check["result"] if check else None,
+            page["to_print"],
         )
         if (check is None or page["changed_since_check"]) and resume is None:
             resume = index

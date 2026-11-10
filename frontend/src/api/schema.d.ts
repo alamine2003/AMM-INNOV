@@ -639,6 +639,23 @@ export interface paths {
         patch: operations["v1_binders_pages_periods_partial_update"];
         trace?: never;
     };
+    "/api/v1/binders/{key}/pages/{amm_id}/print/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description « À imprimer » : le scan existe mais sa feuille manque dans le classeur papier. */
+        post: operations["v1_binders_pages_print_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/binders/{key}/pages/{amm_id}/scan/": {
         parameters: {
             query?: never;
@@ -1967,14 +1984,15 @@ export interface components {
             reason: string;
         };
         /**
-         * @description * `binder.remove_passage` - binder.remove_passage
+         * @description * `binder.edit` - binder.edit
+         *     * `binder.remove_passage` - binder.remove_passage
          *     * `binder.rename_page` - binder.rename_page
          *     * `binder.delete_page` - binder.delete_page
          *     * `binder.remove_piece` - binder.remove_piece
          *     * `binder.download` - binder.download
          * @enum {string}
          */
-        ActionsEnum: "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download";
+        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download";
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -2351,6 +2369,7 @@ export interface components {
             absent: number;
             to_scan: number;
             stale: number;
+            to_print: number;
             key: string;
             title: string;
             country_iso2: string;
@@ -2440,6 +2459,7 @@ export interface components {
             absent: number;
             to_scan: number;
             stale: number;
+            to_print: number;
             key: string;
             title: string;
             country_iso2: string;
@@ -3603,6 +3623,7 @@ export interface components {
             changed_by: string | null;
             trace: components["schemas"]["Trace"];
             to_scan: boolean;
+            to_print: boolean;
             conformity: components["schemas"]["Conformity"];
         };
         PageScanInputRequest: {
@@ -4057,6 +4078,9 @@ export interface components {
             piece_type?: string | null;
             label?: string;
         };
+        PrintMarkInputRequest: {
+            to_print: boolean;
+        };
         Product: {
             /** Format: uuid */
             readonly id: string;
@@ -4251,6 +4275,7 @@ export interface components {
             absent: number;
             to_scan: number;
             stale: number;
+            to_print: number;
             code: string;
             label: string;
             color: string;
@@ -4265,6 +4290,7 @@ export interface components {
             absent: number;
             to_scan: number;
             stale: number;
+            to_print: number;
             code: string;
             label: string;
             color: string;
@@ -5658,6 +5684,34 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedPeriodInputRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedPeriodInputRequest"];
                 "multipart/form-data": components["schemas"]["PatchedPeriodInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BinderDetail"];
+                };
+            };
+        };
+    };
+    v1_binders_pages_print_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                amm_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrintMarkInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PrintMarkInputRequest"];
+                "multipart/form-data": components["schemas"]["PrintMarkInputRequest"];
             };
         };
         responses: {

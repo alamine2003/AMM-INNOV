@@ -240,7 +240,7 @@ export default function BindersShelfPage() {
                     )}
                     {binder.checked} / {binder.total} vérifiées · {binder.conformes} conformes ·{' '}
                     {binder.non_conformes} non conformes · {binder.absent} absentes · {binder.to_scan} à
-                    scanner
+                    scanner · {binder.to_print} à imprimer
                     {binder.last_checked_at && (
                       <>
                         <br />

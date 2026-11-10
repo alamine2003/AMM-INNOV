@@ -28,6 +28,7 @@ REGULATORY_ROLES = (Role.HQ_REGULATORY, Role.COUNTRY_REGULATORY)
 
 
 class Action(StrEnum):
+    BINDER_EDIT = "binder.edit"
     BINDER_REMOVE_PASSAGE = "binder.remove_passage"
     BINDER_RENAME_PAGE = "binder.rename_page"
     BINDER_DELETE_PAGE = "binder.delete_page"
@@ -36,6 +37,8 @@ class Action(StrEnum):
 
 
 ACTION_ROLES: dict[Action, tuple[str, ...]] = {
+    # Classeurs : seuls le CEO et le siège modifient ; les autres les lisent.
+    Action.BINDER_EDIT: GLOBAL_ROLES,
     Action.BINDER_REMOVE_PASSAGE: GLOBAL_ROLES,
     Action.BINDER_RENAME_PAGE: GLOBAL_ROLES,
     Action.BINDER_DELETE_PAGE: GLOBAL_ROLES,
@@ -44,6 +47,9 @@ ACTION_ROLES: dict[Action, tuple[str, ...]] = {
 }
 
 MESSAGES: dict[Action, str] = {
+    Action.BINDER_EDIT: (
+        "Les classeurs sont en lecture seule : seuls le CEO et le siège les modifient."
+    ),
     Action.BINDER_REMOVE_PASSAGE: "Seuls le CEO et le siège peuvent supprimer.",
     Action.BINDER_RENAME_PAGE: "Seuls le CEO et le siège peuvent modifier le titre d'une page.",
     Action.BINDER_DELETE_PAGE: "Seuls le CEO et le siège peuvent supprimer.",

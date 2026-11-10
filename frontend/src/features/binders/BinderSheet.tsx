@@ -1,5 +1,6 @@
+import { FitToPage } from './FitToPage';
 import { extractErrorMessage } from '@/api/client';
-import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
+import { useCheckPage, useMarkPrint, useUncheckPage } from '@/api/hooks/useBinders';
 import { useValidityYears } from '@/api/hooks/useCatalog';
 import type {
   BinderCorrection,
@@ -11,6 +12,7 @@ import type {
   BinderSlot,
 } from '@/api/types';
 import { useCan } from '@/features/auth/authStore';
+import PrintIcon from '@mui/icons-material/Print';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
@@ -61,10 +63,13 @@ export function BinderSheet({
   // s'ouvre seulement si le papier porte un renouvellement que la fiche n'a pas.
   const [addingRenewal, setAddingRenewal] = useState(false);
   // Renommer ou supprimer une page touche toute l'application : droits donnés par le backend.
+  // Lecture seule hors CEO et siège : ni constat, ni correction, ni scan, ni marque.
+  const canEdit = useCan('binder.edit');
+  const markPrint = useMarkPrint(binder.key);
   const canRename = useCan('binder.rename_page');
   const canDelete = useCan('binder.delete_page');
   const missing = chronologyIssues(page);
-  const busy = check.isPending || uncheck.isPending;
+  const busy = check.isPending || uncheck.isPending || markPrint.isPending;
 
   // Le formulaire repart des valeurs actuelles de la page : un scan rangé ou une correction de
   // la chronologie a pu les changer depuis l'ouverture, et renvoyer les anciennes les écraserait.
@@ -72,6 +77,12 @@ export function BinderSheet({
     setValues(initialValues(page));
     setAddingRenewal(false);
     setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setValues(initialValues(page));
+    setError(null);
   };
 
   const send = (result: BinderResult, corrections: BinderCorrection[] = []) => {
@@ -117,7 +128,7 @@ export function BinderSheet({
       sx={aged ? { ...(paperSx as object), ...agedSx } : paperSx}
       data-testid="binder-sheet"
       onDragOver={(e) => {
-        if (!Array.from(e.dataTransfer.types).includes('Files')) return;
+        if (!canEdit || !Array.from(e.dataTransfer.types).includes('Files')) return;
         e.preventDefault();
         setDragging(true);
       }}
@@ -127,7 +138,7 @@ export function BinderSheet({
       onDrop={(e) => {
         e.preventDefault();
         setDragging(false);
-        scanImport.start(Array.from(e.dataTransfer.files));
+        if (canEdit) scanImport.start(Array.from(e.dataTransfer.files));
       }}
     >
       <Holes />
@@ -155,16 +166,7 @@ export function BinderSheet({
           </Typography>
         </Box>
       )}
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pl: { xs: 6, sm: 7 },
-          pr: { xs: 2, sm: 4 },
-          py: 2.5,
-          overflowY: 'auto',
-        }}
-      >
+      <FitToPage sx={{ pl: { xs: 6, sm: 7 }, pr: { xs: 2, sm: 4 }, py: 2.5 }}>
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -231,6 +233,11 @@ export function BinderSheet({
                 years={years}
                 values={values}
                 onChange={(key, value) => setValues((v) => ({ ...v, [key]: value }))}
+                canEdit={canEdit}
+                busy={busy}
+                onStartEdit={startEditing}
+                onSave={submitCorrection}
+                onCancel={cancelEditing}
               />
             ),
           )}
@@ -263,6 +270,7 @@ export function BinderSheet({
                 {page.dossier_state === 'COMPLET' ? 'Dossier complet' : 'Dossier incomplet'}
               </Typography>
               {page.to_scan && <Pill color="#c62828">À SCANNER</Pill>}
+              {page.to_print && <Pill color="#1565c0">À IMPRIMER</Pill>}
               {page.pending_renewal && (
                 <Box
                   aria-label="Renouvellement déposé"
@@ -305,7 +313,28 @@ export function BinderSheet({
                   : `Décision en vigueur non scannée (dernier scan : décision du ${formatDate(scan.document_date)})`}
             </Typography>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-              <ScanImportButton scanImport={scanImport} hasScan={currentScan} />
+              {canEdit && <ScanImportButton scanImport={scanImport} hasScan={currentScan} />}
+              {canEdit && scan && (
+                <Tooltip
+                  describeChild
+                  title={
+                    page.to_print
+                      ? 'La feuille est imprimée et rangée dans le classeur'
+                      : 'Le scan existe mais sa feuille manque dans le classeur papier (compté dans le bilan)'
+                  }
+                >
+                  <Button
+                    size="small"
+                    color={page.to_print ? 'success' : 'primary'}
+                    startIcon={page.to_print ? <CheckIcon /> : <PrintIcon />}
+                    disabled={busy}
+                    onClick={() => markPrint.mutate({ amm: page.amm_id, toPrint: !page.to_print })}
+                    data-testid="mark-print"
+                  >
+                    {page.to_print ? 'Imprimée et rangée' : 'À imprimer'}
+                  </Button>
+                </Tooltip>
+              )}
               <Button
                 size="small"
                 color={missing ? 'warning' : 'primary'}
@@ -384,19 +413,12 @@ export function BinderSheet({
         )}
 
         <Stack direction="column" gap={1.5} sx={{ mt: 2.5, pb: 1 }}>
-          {editing ? (
+          {!canEdit ? null : editing ? (
             <Stack direction="row" gap={1}>
               <Button variant="contained" color="warning" onClick={submitCorrection} disabled={busy}>
                 Valider la correction
               </Button>
-              <Button
-                onClick={() => {
-                  setEditing(false);
-                  setValues(initialValues(page));
-                  setError(null);
-                }}
-                disabled={busy}
-              >
+              <Button onClick={cancelEditing} disabled={busy}>
                 Annuler
               </Button>
             </Stack>
@@ -487,15 +509,17 @@ export function BinderSheet({
                     animate={justStamped}
                   />
                 </Box>
-                <Button
-                  size="small"
-                  startIcon={<UndoIcon />}
-                  onClick={() => uncheck.mutate(page.amm_id, { onSuccess: () => setJustStamped(false) })}
-                  disabled={busy}
-                  sx={{ color: MUTED }}
-                >
-                  Annuler le constat
-                </Button>
+                {canEdit && (
+                  <Button
+                    size="small"
+                    startIcon={<UndoIcon />}
+                    onClick={() => uncheck.mutate(page.amm_id, { onSuccess: () => setJustStamped(false) })}
+                    disabled={busy}
+                    sx={{ color: MUTED }}
+                  >
+                    Annuler le constat
+                  </Button>
+                )}
               </Stack>
             </Stack>
           )}
@@ -511,7 +535,7 @@ export function BinderSheet({
               .join(' · ')}
           </Box>
         )}
-      </Box>
+      </FitToPage>
     </Box>
   );
 }

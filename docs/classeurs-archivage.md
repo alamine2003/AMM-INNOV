@@ -40,10 +40,22 @@ Pour découper un autre pays en plusieurs classeurs, modifier `SPLIT_COUNTRIES` 
 
 ## Qui voit quoi
 
-| Rôle | Classeurs | Vérifier | PDF |
+| Rôle | Classeurs | Modifier (constat, correction, scan, page, « à imprimer ») | PDF |
 | --- | --- | --- | --- |
-| Réglementaire pays | ceux de ses pays uniquement (les autres répondent 404) | oui | non |
+| Réglementaire pays | ceux de ses pays uniquement (les autres répondent 404), en lecture seule | non (403) | non |
 | Siège, CEO | tous | oui | oui |
+
+Depuis la 1.2.1, toute écriture sur un classeur demande le droit `binder.edit`
+(`apps/accounts/roles.py`), sauf le signal « classeur ouvert ». L'interface cache les boutons
+de modification à qui ne l'a pas.
+
+## « À imprimer »
+
+Pendant la lecture, une page dont le scan existe mais dont la feuille manque dans le classeur
+papier se marque « À imprimer » (`POST /binders/<clé>/pages/<amm>/print`, `{"to_print": true}`),
+puis « Imprimée et rangée » (`false`). Le bilan, l'étagère et le Dashboard comptent `to_print`.
+Ce compte n'entre pas dans la conformité. La marque n'est jamais supprimée : son état change,
+et l'historique (`BinderPrintMark`) garde qui l'a posée et quand.
 
 ## Ce que fait un constat
 

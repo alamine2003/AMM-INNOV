@@ -16,7 +16,7 @@ from apps.imports.dossier.application import _reconcile_after_commit, _save_with
 from apps.imports.models import DossierReviewPoint
 
 from .layout import SLOT_FIELDS, Binder, ensure_in_binder, last_obtained, page_values
-from .models import BinderCheck, BinderDeletedPage, BinderExtraPage
+from .models import BinderCheck, BinderDeletedPage, BinderExtraPage, BinderPrintMark
 
 REASON = "Vérifié sur le classeur papier"
 
@@ -161,6 +161,25 @@ def record_check(binder: Binder, amm_id, *, result: str, corrections, note: str,
         if applied:
             transaction.on_commit(lambda: _reconcile_after_commit(amm.pk))
     return check
+
+
+def mark_print(binder: Binder, amm_id, *, to_print: bool, user) -> None:
+    """Marque (ou démarque) la page « à imprimer ». Jamais supprimé : l'état change seulement."""
+    with transaction.atomic():
+        amm = MarketingAuthorization.objects.select_related("country", "product__range").get(
+            pk=amm_id
+        )
+        ensure_country_in_scope(user, amm.country)
+        ensure_in_binder(binder, amm)
+        mark = BinderPrintMark.objects.select_for_update().filter(amm=amm).first()
+        if mark is None:
+            if not to_print:
+                return
+            mark = BinderPrintMark(amm=amm)
+        mark.to_print = to_print
+        mark.updated_by = user
+        mark._history_user = user
+        mark.save()
 
 
 def undo_check(binder: Binder, amm_id, *, user) -> None:
