@@ -74,6 +74,15 @@ export function useCheckPage(key: string) {
   );
 }
 
+/** « À imprimer » : le scan existe, sa feuille manque dans le classeur papier. */
+export function useMarkPrint(key: string) {
+  return useBinderMutation(
+    key,
+    async ({ amm, toPrint }: { amm: string; toPrint: boolean }) =>
+      (await api.post<BinderDetail>(`/binders/${key}/pages/${amm}/print`, { to_print: toPrint })).data,
+  );
+}
+
 export function useUncheckPage(key: string) {
   return useBinderMutation(
     key,

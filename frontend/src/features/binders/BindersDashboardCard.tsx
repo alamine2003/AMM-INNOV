@@ -8,7 +8,16 @@ export function BindersDashboardCard() {
   const shelf = useBinders();
   if (!shelf.data?.length) return null;
   const sum = (
-    key: 'total' | 'checked' | 'conformes' | 'non_conformes' | 'absent' | 'to_scan' | 'corrected' | 'extras',
+    key:
+      | 'total'
+      | 'checked'
+      | 'conformes'
+      | 'non_conformes'
+      | 'absent'
+      | 'to_scan'
+      | 'to_print'
+      | 'corrected'
+      | 'extras',
   ) => shelf.data.reduce((acc, binder) => acc + binder[key], 0);
   const total = sum('total');
   const checked = sum('checked');
@@ -18,6 +27,7 @@ export function BindersDashboardCard() {
     { label: 'non conformes', value: sum('non_conformes'), color: '#e65100' },
     { label: 'dossiers absents', value: sum('absent'), color: '#c62828' },
     { label: 'décisions à scanner', value: sum('to_scan'), color: '#c62828' },
+    { label: 'AMM à imprimer', value: sum('to_print'), color: '#1565c0' },
     { label: 'pages en trop', value: sum('extras'), color: '#6b7280' },
   ];
   return (

@@ -29,6 +29,7 @@ const counts = {
   corrected: 0,
   absent: 0,
   to_scan: 0,
+  to_print: 0,
   stale: 0,
 };
 
@@ -90,6 +91,7 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     discrepancies: [],
     check: null,
     to_scan: false,
+    to_print: false,
     conformity: conformity('NON_VERIFIE', { digital: true, paper: null, scan: false, data: null }),
     changed_since_check: [],
     changed_by: null,
@@ -218,6 +220,29 @@ describe('Classeurs', () => {
     expect(screen.getByRole('button', { name: 'Télécharger' })).toBeInTheDocument();
   });
 
+  it('un pays lit le classeur sans pouvoir le modifier', async () => {
+    loginAs('u-sn');
+    server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
+    renderApp('/classeurs/SN-cardio');
+    expect(await screen.findByTestId('binder-sheet', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Papier conforme/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Corriger$/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-card-original')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mark-print')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ajouter une page/ })).not.toBeInTheDocument();
+  });
+
+  it('le siège modifie le n° directement sur la carte', async () => {
+    loginAs('u-hq');
+    server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
+    renderApp('/classeurs/SN-cardio');
+    await userEvent.click(await screen.findByTestId('edit-card-original', {}, { timeout: 5000 }));
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeInTheDocument();
+    expect(screen.getByLabelText("N° d'AMM")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Annuler' })[0]);
+    expect(screen.queryByRole('button', { name: 'Enregistrer' })).not.toBeInTheDocument();
+  });
+
   it('un pays ne voit pas le téléchargement', async () => {
     loginAs('u-sn');
     server.use(http.get(endpoint, () => HttpResponse.json([summary])));
@@ -227,7 +252,7 @@ describe('Classeurs', () => {
   });
 
   it("s'ouvre sur la page à vérifier et tamponne « Papier conforme »", async () => {
-    loginAs('u-sn');
+    loginAs('u-hq');
     const open = page();
     let sent: unknown = null;
     server.use(
@@ -273,7 +298,7 @@ describe('Classeurs', () => {
   });
 
   it('corrige une date de début : la fin se recalcule sur 5 ans', async () => {
-    loginAs('u-sn');
+    loginAs('u-hq');
     const open = page();
     let sent: { corrections?: { slot: string; field: string; value: string | null }[] } | null = null;
     server.use(
@@ -455,7 +480,7 @@ describe('Classeurs', () => {
     });
 
     it('sans renouvellement, pas de bloc à remplir ; il s’ouvre seulement si le papier en porte un', async () => {
-      loginAs('u-sn');
+      loginAs('u-hq');
       server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
       const sheet = await openPage();
       expect(within(sheet).queryByText('DERNIER RENOUVELLEMENT')).toBeNull();
@@ -466,7 +491,7 @@ describe('Classeurs', () => {
     });
 
     it('ignore une interruption de validité au lieu d’ajouter un passage', async () => {
-      loginAs('u-sn');
+      loginAs('u-hq');
       let sent: unknown = null;
       const gapped = page({
         chronology: [
@@ -557,7 +582,7 @@ describe('Classeurs', () => {
     }
 
     it("corrige les dates d'une période et la page suit", async () => {
-      loginAs('u-sn');
+      loginAs('u-hq');
       let sent: unknown = null;
       server.use(
         http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, doubled()]))),
@@ -647,7 +672,7 @@ describe('Classeurs', () => {
   });
 
   it("ajoute la page d'un produit oublié et l'ouvre", async () => {
-    loginAs('u-sn');
+    loginAs('u-hq');
     const added = page({
       amm_id: 'amm-9',
       page: 2,

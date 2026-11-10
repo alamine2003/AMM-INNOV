@@ -144,6 +144,7 @@ export const users: User[] = [
     countries: [],
     is_active: true,
     actions: [
+      'binder.edit',
       'binder.remove_passage',
       'binder.rename_page',
       'binder.delete_page',
@@ -160,6 +161,7 @@ export const users: User[] = [
     countries: [],
     is_active: true,
     actions: [
+      'binder.edit',
       'binder.remove_passage',
       'binder.rename_page',
       'binder.delete_page',

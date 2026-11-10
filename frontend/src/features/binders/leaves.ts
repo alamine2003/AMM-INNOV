@@ -7,13 +7,14 @@ export type Leaf =
   | { kind: 'page'; key: string; ammId: string; code: string }
   | { kind: 'end'; key: 'end' };
 
-export type LeafFilter = 'all' | 'unchecked' | 'issues' | 'non_conformes';
+export type LeafFilter = 'all' | 'unchecked' | 'issues' | 'non_conformes' | 'to_print';
 
 export const FILTER_LABELS: Record<LeafFilter, string> = {
   all: 'Toutes les pages',
   unchecked: 'À vérifier ou revérifier',
   issues: 'Écarts et manques',
   non_conformes: 'Dossiers non conformes',
+  to_print: 'AMM à imprimer',
 };
 
 /**
@@ -40,6 +41,7 @@ export function needsCheck(page: BinderPage): boolean {
 function keep(page: BinderPage, filter: LeafFilter): boolean {
   if (filter === 'all') return true;
   if (filter === 'non_conformes') return page.conformity.status === 'NON_CONFORME';
+  if (filter === 'to_print') return page.to_print;
   if (!needsCheck(page)) return false;
   return filter === 'unchecked' || hasIssue(page);
 }

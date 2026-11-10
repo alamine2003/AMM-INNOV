@@ -14,6 +14,7 @@ const counts = {
   corrected: 0,
   absent: 0,
   to_scan: 0,
+  to_print: 0,
   stale: 0,
 };
 
@@ -53,6 +54,7 @@ function pageOf(index: number, amm: (typeof db.amms)[number]): BinderPage {
     discrepancies: [],
     check: null,
     to_scan: false,
+    to_print: false,
     conformity: {
       status: 'NON_VERIFIE',
       label: 'Dossier pas encore vérifié',

@@ -60,6 +60,8 @@ export function ChronologyDialog({
   const [viewed, setViewed] = useState<BinderChronologyDocument | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const edits = useChronologyEdits(binderKey, page.amm_id);
+  // Lecture seule hors CEO et siège : la chronologie se consulte, les scans s'ouvrent.
+  const canEdit = useCan('binder.edit');
   const canRemove = useCan('binder.remove_passage');
   const canRemovePiece = useCan('binder.remove_piece');
   const issues = chronologyIssues(page);
@@ -140,7 +142,7 @@ export function ChronologyDialog({
                     {entry.kind === 'pending' && entry.workflow_label && (
                       <Chip size="small" color="warning" variant="outlined" label={entry.workflow_label} />
                     )}
-                    {here !== null && (
+                    {canEdit && here !== null && (
                       <Box sx={{ ml: 'auto !important', display: 'flex' }}>
                         <Tooltip title="Corriger le n° et les dates">
                           <IconButton
@@ -225,7 +227,7 @@ export function ChronologyDialog({
                       {issue.message}
                     </Alert>
                   ))}
-                  {entry.kind === 'gap' && entry.start_date && entry.end_date && (
+                  {canEdit && entry.kind === 'gap' && entry.start_date && entry.end_date && (
                     <Button
                       size="small"
                       sx={{ mt: 0.5 }}
@@ -275,9 +277,11 @@ export function ChronologyDialog({
           (n° et dates) puis rangé automatiquement.
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Box sx={{ mt: -1 }}>
-            <ScanImportButton scanImport={scanImport} hasScan={page.decision_count > 0} />
-          </Box>
+          {canEdit && (
+            <Box sx={{ mt: -1 }}>
+              <ScanImportButton scanImport={scanImport} hasScan={page.decision_count > 0} />
+            </Box>
+          )}
           <Button onClick={close}>Fermer</Button>
         </Stack>
       </DialogActions>

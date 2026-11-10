@@ -5,6 +5,32 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.1] — 2026-11-10
+
+### Ajouté
+- **Classeurs : « À imprimer ».** Pendant la lecture, une page dont le scan existe mais dont
+  la feuille manque dans le classeur papier se marque « À imprimer » (bouton sur la page),
+  puis « Imprimée et rangée ». Le bilan du classeur, l'étagère et le Dashboard comptent les
+  AMM à imprimer, et le filtre « AMM à imprimer » les feuillette. Sans effet sur la
+  conformité : un dossier peut être conforme avant d'être imprimé. Rien n'est supprimé :
+  l'état change et l'historique le garde.
+- **Classeurs : modifier le n° et les dates directement sur la carte** (crayon de la carte
+  « AMM d'origine » ou « Dernier renouvellement », ou clic sur une valeur), avec
+  « Enregistrer » et « Annuler » sur la carte, sans descendre jusqu'à « Corriger ».
+
+### Modifié
+- **Classeurs en lecture seule hors CEO et siège.** Les réglementaires pays consultent les
+  classeurs (pages, chronologie, scans) sans pouvoir les modifier : ni constat, ni
+  correction, ni scan, ni ajout de page. Le serveur refuse aussi ces écritures (droit
+  `binder.edit`). Le téléchargement des classeurs reste réservé au siège et au CEO.
+- **Classeur sans défilement.** La page du classeur tient dans la fenêtre (barre, classeur et
+  feuilletage) ; une feuille trop remplie se réduit juste assez pour être vue en entière au
+  lieu de défiler. Animation et son deviennent deux petits boutons.
+
+### Sécurité
+- Outils de test : Vitest 5 et jsdom 31. Les 2 alertes critiques de `npm audit` (Vitest 3)
+  sont corrigées.
+
 ## [1.2.0] — 2026-11-10
 
 Palier : fin de la remise en ordre de l'architecture commencée en 1.1.8 (revue
