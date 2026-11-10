@@ -5,6 +5,34 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.0] — 2026-11-10
+
+Palier : fin de la remise en ordre de l'architecture commencée en 1.1.8 (revue
+d'architecture du 09/11). Aucun changement de données ; un seul ajout visible pour l'API
+(`actions` dans `/me`). Validation, déploiement et retour arrière : `docs/palier-1.2.0.md`.
+
+### Modifié (architecture)
+- **Plus aucun import qui remonte les couches.** Le test d'architecture n'a plus
+  d'exception. Le catalogue (`catalog/extensions.py`) et la fiche AMM
+  (`amm/extensions.py`) ouvrent des points d'extension que les apps du dessus remplissent :
+  documents d'un pays ou d'un produit, fusion de produits, corrections des dossiers dans
+  l'historique, points à vérifier dans la liste des AMM. `seed_demo` passe dans une app
+  `apps.demo` (couche haute, aucune app ne l'importe).
+- **Lecture des dossiers découpée par sujet.** `recognition.py` (1 066 lignes) devient un
+  paquet : texte, dates, n°, titulaire, tableaux, recueils, fichiers. `preview.py`
+  (1 195 lignes) sort ses briques dans `evidence.py` et `identification.py`.
+- **Interface : gros écrans découpés.** Page du classeur, chronologie et étapes des
+  dossiers de dépôt, un composant par fichier.
+- **Droits lus depuis le backend.** `/me` et la connexion renvoient `actions`, les actions
+  sensibles permises (`apps/accounts/roles.py`) ; l'interface les lit avec `useCan` au lieu
+  de recopier les rôles. Premiers types du frontend dérivés du schéma OpenAPI.
+
+### Sécurité
+- **Dépendances Python figées** (`requirements.in` → `requirements.txt` par `pip-compile`) :
+  la CI, Docker et Render installent exactement les mêmes versions (`docs/dependances.md`).
+- **`pip-audit` sans aucune exception** : Twisted 26.10.0 corrige les 7 CVE ignorées
+  jusqu'ici. `npm audit` : aucune vulnérabilité dans le code livré.
+
 ## [1.1.9] — 2026-11-09
 
 ### Modifié (architecture, sans changement visible)
