@@ -287,27 +287,35 @@ def test_page_title_is_renamed_everywhere_and_old_name_still_matches(
     assert response.status_code == 400 and "fusionnez" in str(response.json())
 
 
-def test_page_is_deleted_everywhere_and_its_scans_are_taken_by_another_record(
-    hq_client, make_amm, alfa, django_capture_on_commit_callbacks
+def test_page_is_deleted_at_once_to_the_trash_and_restored_with_its_scans(
+    hq_client, alfa, django_capture_on_commit_callbacks
 ):
+    """1.2.2 : « Supprimer la page » est immédiat ; la fiche part à la corbeille avec ses
+    pièces, et revient à l'identique."""
     from apps.amm.models import MarketingAuthorization
     from apps.binders.models import BinderDeletedPage
+    from apps.core.models import TrashEntry
 
     amm = alfa["amm"]
-    keep = make_amm(product_obj=Product.objects.create(name="ALFA GH 10MG CPR B30"))
-    url = f"{URL}/pages/{amm.pk}"
-    # Des pièces : il faut une fiche qui les reprend.
-    response = hq_client.delete(url)
-    assert response.status_code == 400 and "3 pièces" in str(response.json())
+    renewals = amm.renewals.count()
     with django_capture_on_commit_callbacks(execute=True):
-        response = hq_client.delete(f"{url}?move_to_amm={keep.pk}")
+        response = hq_client.delete(f"{URL}/pages/{amm.pk}")
     assert response.status_code == 200, response.json()
+    entry = TrashEntry.objects.get(pk=response["X-Trash-Entry"])
+    assert entry.kind == "page du classeur" and entry.label.startswith("ALFA GH SR")
     assert not MarketingAuthorization.objects.filter(pk=amm.pk).exists()
-    assert Document.objects.current().filter(amm=keep).count() == 3
-    deleted = BinderDeletedPage.objects.get()
-    assert (
-        deleted.product_name == "ALFA GH SR 10MG CPR B30" and deleted.moved_to == keep.product.name
-    )
+    assert not Document.objects.filter(amm_id=amm.pk).exists()
+    assert BinderDeletedPage.objects.filter(product_name="ALFA GH SR 10MG CPR B30").exists()
+    # Annuler : tout revient, et la page est de nouveau suivie par les imports.
+    restored = hq_client.post(f"/api/v1/trash/{entry.pk}/restore").json()
+    assert restored["restored_at"] and restored["restored_by"]
+    amm = MarketingAuthorization.objects.get(pk=amm.pk)
+    assert Document.objects.current().filter(amm=amm).count() == 3
+    assert amm.renewals.count() == renewals
+    assert not BinderDeletedPage.objects.exists()
+    # Une entrée restaurée reste dans la corbeille, marquée restaurée ; pas de deuxième fois.
+    again = hq_client.post(f"/api/v1/trash/{entry.pk}/restore")
+    assert again.status_code == 400 and "déjà été restauré" in again.json()["detail"]
 
 
 def test_deleted_page_is_not_recreated_by_the_registry(hq_client, make_amm, countries, tmp_path):

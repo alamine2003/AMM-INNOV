@@ -34,6 +34,7 @@ class Action(StrEnum):
     BINDER_DELETE_PAGE = "binder.delete_page"
     BINDER_REMOVE_PIECE = "binder.remove_piece"
     BINDER_DOWNLOAD = "binder.download"
+    TRASH_RESTORE = "trash.restore"
 
 
 ACTION_ROLES: dict[Action, tuple[str, ...]] = {
@@ -44,6 +45,8 @@ ACTION_ROLES: dict[Action, tuple[str, ...]] = {
     Action.BINDER_DELETE_PAGE: GLOBAL_ROLES,
     Action.BINDER_REMOVE_PIECE: GLOBAL_ROLES,
     Action.BINDER_DOWNLOAD: GLOBAL_ROLES,
+    # Corbeille : voir et restaurer ce qui a été supprimé (CEO et siège).
+    Action.TRASH_RESTORE: GLOBAL_ROLES,
 }
 
 MESSAGES: dict[Action, str] = {
@@ -55,6 +58,7 @@ MESSAGES: dict[Action, str] = {
     Action.BINDER_DELETE_PAGE: "Seuls le CEO et le siège peuvent supprimer.",
     Action.BINDER_REMOVE_PIECE: "Seuls le CEO et le siège peuvent retirer une pièce.",
     Action.BINDER_DOWNLOAD: "Le téléchargement des classeurs est réservé au siège.",
+    Action.TRASH_RESTORE: "La corbeille est réservée au CEO et au siège.",
 }
 
 

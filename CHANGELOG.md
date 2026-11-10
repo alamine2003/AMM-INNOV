@@ -5,6 +5,27 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.2] — 2026-11-10
+
+### Ajouté
+- **Corbeille** (Administration > Corbeille, CEO et siège). Plus rien n'est effacé dans AMM
+  GH : ce qu'on supprime part à la corbeille avec tout ce qui partait avec lui (une fiche AMM
+  avec ses renouvellements, scans, pièces, alertes et imports de dossiers), et se restaure à
+  l'identique, en un clic. La corbeille n'est jamais vidée : une entrée restaurée reste,
+  marquée « restaurée » (qui, quand). Vont à la corbeille : fiche AMM, page du classeur,
+  passage, renouvellement annulé, page en trop, pièce et échantillon d'un dossier de dépôt
+  (le fichier est gardé), pays, gamme, produit, règle d'alerte, type de pièce.
+
+### Modifié
+- **Classeurs : « Supprimer la page » est immédiat.** Plus de fenêtre ni de fiche à choisir
+  pour reprendre les pièces : la page part à la corbeille avec ses scans, et « Annuler », dans
+  le message qui suit, la restaure aussitôt. Les imports ne la recréent pas tant qu'elle n'est
+  pas restaurée.
+- **Utilisateurs : « Supprimer » désactive le compte** au lieu de l'effacer (il ne se connecte
+  plus ; son historique reste attribué).
+- Le contrôle d'intégrité ne compte pas les fichiers des éléments à la corbeille comme des
+  fichiers orphelins.
+
 ## [1.2.1] — 2026-11-10
 
 ### Ajouté

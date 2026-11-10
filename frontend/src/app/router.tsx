@@ -18,6 +18,7 @@ const UsersAdminPage = lazy(() => import('@/features/admin/UsersAdminPage'));
 const CountriesAdminPage = lazy(() => import('@/features/admin/CountriesAdminPage'));
 const RangesAdminPage = lazy(() => import('@/features/admin/RangesAdminPage'));
 const AlertRulesAdminPage = lazy(() => import('@/features/admin/AlertRulesAdminPage'));
+const TrashPage = lazy(() => import('@/features/admin/TrashPage'));
 const ImportsPage = lazy(() => import('@/features/imports/ImportsPage'));
 const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'));
 const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
@@ -73,6 +74,7 @@ export const routes: RouteObject[] = [
               { path: 'countries', element: page(<CountriesAdminPage />) },
               { path: 'ranges', element: page(<RangesAdminPage />) },
               { path: 'alert-rules', element: page(<AlertRulesAdminPage />) },
+              { path: 'corbeille', element: page(<TrashPage />) },
               { path: 'imports', element: page(<ImportsPage />) },
               { path: 'imports/:id', element: page(<ImportDetailPage />) },
             ],

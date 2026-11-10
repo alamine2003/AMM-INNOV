@@ -7,6 +7,11 @@ paths:
   /api/v1/alert-rules/:
     get:
       operationId: v1_alert_rules_list
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: code
@@ -71,6 +76,11 @@ paths:
           description: ''
     post:
       operationId: v1_alert_rules_create
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       tags:
       - v1
       requestBody:
@@ -97,6 +107,11 @@ paths:
   /api/v1/alert-rules/{id}/:
     get:
       operationId: v1_alert_rules_retrieve
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -118,6 +133,11 @@ paths:
           description: ''
     put:
       operationId: v1_alert_rules_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -151,6 +171,11 @@ paths:
           description: ''
     patch:
       operationId: v1_alert_rules_partial_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -183,6 +208,11 @@ paths:
           description: ''
     delete:
       operationId: v1_alert_rules_destroy
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -433,9 +463,10 @@ paths:
     get:
       operationId: v1_amms_list
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: country
@@ -551,9 +582,10 @@ paths:
     post:
       operationId: v1_amms_create
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       tags:
       - v1
       requestBody:
@@ -581,9 +613,10 @@ paths:
     get:
       operationId: v1_amms_retrieve
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -606,9 +639,10 @@ paths:
     put:
       operationId: v1_amms_update
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -643,9 +677,10 @@ paths:
     patch:
       operationId: v1_amms_partial_update
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -679,9 +714,10 @@ paths:
     delete:
       operationId: v1_amms_destroy
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -701,9 +737,10 @@ paths:
     get:
       operationId: v1_amms_documents_retrieve
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: group
@@ -740,9 +777,10 @@ paths:
     post:
       operationId: v1_amms_documents_create
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: group
@@ -792,9 +830,10 @@ paths:
     get:
       operationId: v1_amms_documents_archive.zip_retrieve
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -819,9 +858,10 @@ paths:
     get:
       operationId: v1_amms_history_list
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: country
@@ -945,9 +985,10 @@ paths:
     get:
       operationId: v1_amms_renewals_list
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: country
@@ -1070,9 +1111,10 @@ paths:
     post:
       operationId: v1_amms_renewals_create
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -1545,8 +1587,8 @@ paths:
           description: ''
     delete:
       operationId: v1_binders_pages_destroy
-      description: Titre de la page (nom de la présentation, partout) ; DELETE supprime
-        la page.
+      description: 'Supprime la page tout de suite : la fiche part à la corbeille.
+        L''en-tête `X-Trash-Entry` donne l''entrée de corbeille, pour annuler (restaurer).'
       parameters:
       - in: path
         name: amm_id
@@ -1560,11 +1602,6 @@ paths:
           type: string
           pattern: ^[A-Za-z]{2}(?:-[a-z-]+)?$
         required: true
-      - in: query
-        name: move_to_amm
-        schema:
-          type: string
-        description: Fiche (même pays) qui reprend les pièces de la page supprimée.
       tags:
       - v1
       security:
@@ -3881,6 +3918,11 @@ paths:
   /api/v1/products/:
     get:
       operationId: v1_products_list
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: query
         name: is_active
@@ -3940,6 +3982,11 @@ paths:
           description: ''
     post:
       operationId: v1_products_create
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       tags:
       - v1
       requestBody:
@@ -3966,6 +4013,11 @@ paths:
   /api/v1/products/{id}/:
     get:
       operationId: v1_products_retrieve
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -3987,6 +4039,11 @@ paths:
           description: ''
     put:
       operationId: v1_products_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4020,6 +4077,11 @@ paths:
           description: ''
     patch:
       operationId: v1_products_partial_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4052,6 +4114,11 @@ paths:
           description: ''
     delete:
       operationId: v1_products_destroy
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4070,6 +4137,11 @@ paths:
   /api/v1/products/{id}/documents/:
     get:
       operationId: v1_products_documents_retrieve
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4093,6 +4165,11 @@ paths:
   /api/v1/products/{id}/merge/:
     post:
       operationId: v1_products_merge_create
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4171,6 +4248,11 @@ paths:
   /api/v1/ranges/:
     get:
       operationId: v1_ranges_list
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - name: ordering
         required: false
@@ -4209,6 +4291,11 @@ paths:
           description: ''
     post:
       operationId: v1_ranges_create
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       tags:
       - v1
       requestBody:
@@ -4235,6 +4322,11 @@ paths:
   /api/v1/ranges/{id}/:
     get:
       operationId: v1_ranges_retrieve
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4256,6 +4348,11 @@ paths:
           description: ''
     put:
       operationId: v1_ranges_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4289,6 +4386,11 @@ paths:
           description: ''
     patch:
       operationId: v1_ranges_partial_update
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4321,6 +4423,11 @@ paths:
           description: ''
     delete:
       operationId: v1_ranges_destroy
+      description: |-
+        Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+
+        `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+        imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
       parameters:
       - in: path
         name: id
@@ -4601,6 +4708,102 @@ paths:
               schema:
                 $ref: '#/components/schemas/Renewal'
           description: ''
+  /api/v1/trash/:
+    get:
+      operationId: v1_trash_list
+      description: 'La corbeille n''est jamais vidée : une entrée restaurée reste,
+        marquée restaurée.'
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - deleted
+          - restored
+        description: Filtre
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTrashEntryList'
+          description: ''
+  /api/v1/trash/{id}/:
+    get:
+      operationId: v1_trash_retrieve
+      description: 'La corbeille n''est jamais vidée : une entrée restaurée reste,
+        marquée restaurée.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) élément de la corbeille.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrashEntry'
+          description: ''
+  /api/v1/trash/{id}/restore/:
+    post:
+      operationId: v1_trash_restore_create
+      description: Remet l'élément et tout ce qui partait avec lui, à l'identique.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) élément de la corbeille.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrashEntry'
+          description: ''
   /api/v1/users/:
     get:
       operationId: v1_users_list
@@ -4828,6 +5031,7 @@ components:
       - binder.delete_page
       - binder.remove_piece
       - binder.download
+      - trash.restore
       type: string
       description: |-
         * `binder.edit` - binder.edit
@@ -4836,6 +5040,7 @@ components:
         * `binder.delete_page` - binder.delete_page
         * `binder.remove_piece` - binder.remove_piece
         * `binder.download` - binder.download
+        * `trash.restore` - trash.restore
     AddPageInputRequest:
       type: object
       properties:
@@ -8909,6 +9114,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Renewal'
+    PaginatedTrashEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrashEntry'
     PaginatedUserList:
       type: object
       required:
@@ -9976,6 +10204,68 @@ components:
       required:
       - dossier
       - excel
+    TrashEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          title: Élément
+          maxLength: 300
+        kind:
+          type: string
+          title: Type
+          maxLength: 100
+        model:
+          type: string
+          title: Modèle
+          maxLength: 100
+        object_id:
+          type: string
+          title: Identifiant
+          maxLength: 64
+        country:
+          type: string
+          title: Pays
+          maxLength: 2
+        reason:
+          type: string
+          title: Motif
+          maxLength: 300
+        rows:
+          type: integer
+          readOnly: true
+        deleted_by:
+          type: string
+          nullable: true
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Supprimé le
+        restored_by:
+          type: string
+          nullable: true
+          readOnly: true
+        restored_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Restauré le
+      required:
+      - deleted_at
+      - deleted_by
+      - id
+      - kind
+      - label
+      - model
+      - object_id
+      - restored_by
+      - rows
     UncheckInputRequest:
       type: object
       properties:

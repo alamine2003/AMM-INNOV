@@ -322,4 +322,7 @@ class UserViewSet(viewsets.ModelViewSet):
         self._check_hq_limits(None, instance)
         if instance == self.request.user:
             raise PermissionDenied("Impossible de supprimer son propre compte.")
-        instance.delete()
+        # Aucune suppression : le compte est désactivé (il ne se connecte plus), son historique et
+        # ses actions restent attribués. « Réactiver » le rouvre.
+        instance.is_active = False
+        instance.save(update_fields=["is_active"])

@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import CEO_ONLY, GLOBAL_ROLES, RolePermission
+from apps.core.trash import TrashDestroyMixin
 
 from .extensions import COUNTRY_DOCUMENTS, PRODUCT_DOCUMENTS
 from .models import Country, Product, ProductRange
@@ -19,7 +20,7 @@ from .serializers import (
 from .services import duplicate_groups, merge_duplicates, merge_products
 
 
-class CountryViewSet(viewsets.ModelViewSet):
+class CountryViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     """Countries are addressed by ISO2 code (`/countries/SN`) or by UUID."""
 
     queryset = Country.objects.all()
@@ -47,14 +48,14 @@ class CountryViewSet(viewsets.ModelViewSet):
         return COUNTRY_DOCUMENTS(request, self.get_object())
 
 
-class ProductRangeViewSet(viewsets.ModelViewSet):
+class ProductRangeViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = ProductRange.objects.all()
     serializer_class = ProductRangeSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     write_roles = GLOBAL_ROLES
 
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = Product.objects.select_related("range").prefetch_related("aliases")
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, RolePermission]

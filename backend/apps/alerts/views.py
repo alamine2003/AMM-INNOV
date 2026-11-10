@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.accounts.permissions import GLOBAL_ROLES, CountryScopedQuerysetMixin, RolePermission
+from apps.core.trash import TrashDestroyMixin
 
 from .filters import AlertFilter
 from .models import Alert, AlertRule
@@ -83,7 +84,7 @@ class AlertViewSet(
         return self._save(alert, ["status", "resolution", "resolved_at", "comment"])
 
 
-class AlertRuleViewSet(viewsets.ModelViewSet):
+class AlertRuleViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = AlertRule.objects.select_related("country")
     serializer_class = AlertRuleSerializer
     permission_classes = [IsAuthenticated, RolePermission]

@@ -428,47 +428,28 @@ describe('Classeurs', () => {
       await waitFor(() => expect(sent).toEqual({ product_name: 'AMLODIPINE GH 5MG CPR B/30' }));
     });
 
-    it('supprimer une page avec des pièces demande la fiche qui les reprend', async () => {
+    it('supprime la page tout de suite (corbeille) et « Annuler » la restaure', async () => {
       loginAs('u-ceo');
-      let url = '';
-      const withScan = page({
-        chronology: [
-          {
-            kind: 'origin',
-            label: "AMM d'origine",
-            start_date: '2010-12-22',
-            end_date: '2015-12-22',
-            decisions: [
-              {
-                document_id: 'd1',
-                kind: 'AMM',
-                kind_label: 'Décision',
-                document_date: '2010-12-22',
-                title: '',
-                page_count: 1,
-              },
-            ],
-            others: [],
-            issues: [],
-          },
-        ],
-      });
+      let deleted = false;
+      let restored = '';
       server.use(
-        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, withScan]))),
-        http.delete(`${endpoint}/SN-cardio/pages/amm-1`, ({ request }) => {
-          url = request.url;
-          return HttpResponse.json(binder([checked]));
+        http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))),
+        http.delete(`${endpoint}/SN-cardio/pages/amm-1`, () => {
+          deleted = true;
+          return HttpResponse.json(binder([checked]), { headers: { 'X-Trash-Entry': 'trash-1' } });
+        }),
+        http.post('/api/v1/trash/:id/restore', ({ params }) => {
+          restored = String(params.id);
+          return HttpResponse.json({ id: params.id, restored_at: '2026-11-10T10:00:00Z' });
         }),
       );
       const sheet = await openPage();
       await userEvent.click(within(sheet).getByTestId('delete-page'));
-      const dialog = await screen.findByTestId('delete-page-dialog');
-      expect(dialog).toHaveTextContent('1 pièce');
-      expect(within(dialog).getByTestId('delete-page-confirm')).toBeDisabled();
-      await userEvent.click(within(dialog).getByLabelText('Fiche qui reprend les pièces'));
-      await userEvent.click(await screen.findByRole('option', { name: /ACARBOSE GH 100MG/ }));
-      await userEvent.click(within(dialog).getByTestId('delete-page-confirm'));
-      await waitFor(() => expect(new URL(url).searchParams.get('move_to_amm')).toBe('amm-0'));
+      // Aucune question : la page part à la corbeille.
+      await waitFor(() => expect(deleted).toBe(true));
+      expect(screen.queryByTestId('delete-page-dialog')).not.toBeInTheDocument();
+      await userEvent.click(await screen.findByTestId('undo-delete-page'));
+      await waitFor(() => expect(restored).toBe('trash-1'));
     });
 
     it('un réglementaire pays ne renomme ni ne supprime de page', async () => {

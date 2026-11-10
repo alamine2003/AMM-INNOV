@@ -32,6 +32,7 @@ LAYERS = {
     "imports": 3,
     "binders": 3,
     "analytics": 3,
+    "administration": 3,  # corbeille, audit, permissions : lit toutes les apps
     "demo": 3,  # données de démonstration (seed_demo) : outil, aucune app ne l'importe
 }
 

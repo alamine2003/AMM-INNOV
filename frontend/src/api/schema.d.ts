@@ -11,8 +11,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_alert_rules_list"];
         put?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         post: operations["v1_alert_rules_create"];
         delete?: never;
         options?: never;
@@ -27,12 +39,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_alert_rules_retrieve"];
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         put: operations["v1_alert_rules_update"];
         post?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         delete: operations["v1_alert_rules_destroy"];
         options?: never;
         head?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         patch: operations["v1_alert_rules_partial_update"];
         trace?: never;
     };
@@ -149,16 +185,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_list"];
         put?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         post: operations["v1_amms_create"];
         delete?: never;
@@ -175,30 +213,34 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_retrieve"];
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         put: operations["v1_amms_update"];
         post?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         delete: operations["v1_amms_destroy"];
         options?: never;
         head?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         patch: operations["v1_amms_partial_update"];
         trace?: never;
@@ -211,16 +253,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_documents_retrieve"];
         put?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         post: operations["v1_amms_documents_create"];
         delete?: never;
@@ -237,9 +281,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_documents_archive.zip_retrieve"];
         put?: never;
@@ -258,9 +303,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_history_list"];
         put?: never;
@@ -279,16 +325,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         get: operations["v1_amms_renewals_list"];
         put?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
          *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
          */
         post: operations["v1_amms_renewals_create"];
         delete?: never;
@@ -555,7 +603,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Titre de la page (nom de la présentation, partout) ; DELETE supprime la page. */
+        /** @description Supprime la page tout de suite : la fiche part à la corbeille. L'en-tête `X-Trash-Entry` donne l'entrée de corbeille, pour annuler (restaurer). */
         delete: operations["v1_binders_pages_destroy"];
         options?: never;
         head?: never;
@@ -1692,8 +1740,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_products_list"];
         put?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         post: operations["v1_products_create"];
         delete?: never;
         options?: never;
@@ -1708,12 +1768,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_products_retrieve"];
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         put: operations["v1_products_update"];
         post?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         delete: operations["v1_products_destroy"];
         options?: never;
         head?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         patch: operations["v1_products_partial_update"];
         trace?: never;
     };
@@ -1724,6 +1808,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_products_documents_retrieve"];
         put?: never;
         post?: never;
@@ -1742,6 +1832,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         post: operations["v1_products_merge_create"];
         delete?: never;
         options?: never;
@@ -1790,8 +1886,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_ranges_list"];
         put?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         post: operations["v1_ranges_create"];
         delete?: never;
         options?: never;
@@ -1806,12 +1914,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         get: operations["v1_ranges_retrieve"];
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         put: operations["v1_ranges_update"];
         post?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         delete: operations["v1_ranges_destroy"];
         options?: never;
         head?: never;
+        /**
+         * @description Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
+         *
+         *     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
+         *     imports de dossiers). Sinon, un élément encore utilisé est refusé avec un message clair.
+         */
         patch: operations["v1_ranges_partial_update"];
         trace?: never;
     };
@@ -1914,6 +2046,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/trash/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description La corbeille n'est jamais vidée : une entrée restaurée reste, marquée restaurée. */
+        get: operations["v1_trash_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trash/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description La corbeille n'est jamais vidée : une entrée restaurée reste, marquée restaurée. */
+        get: operations["v1_trash_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trash/{id}/restore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Remet l'élément et tout ce qui partait avec lui, à l'identique. */
+        post: operations["v1_trash_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/": {
         parameters: {
             query?: never;
@@ -1990,9 +2173,10 @@ export interface components {
          *     * `binder.delete_page` - binder.delete_page
          *     * `binder.remove_piece` - binder.remove_piece
          *     * `binder.download` - binder.download
+         *     * `trash.restore` - trash.restore
          * @enum {string}
          */
-        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download";
+        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download" | "trash.restore";
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -3829,6 +4013,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Renewal"][];
         };
+        PaginatedTrashEntryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["TrashEntry"][];
+        };
         PaginatedUserList: {
             /** @example 123 */
             count: number;
@@ -4359,6 +4558,35 @@ export interface components {
         Trace: {
             excel: components["schemas"]["ExcelTrace"] | null;
             dossier: components["schemas"]["DossierTrace"] | null;
+        };
+        TrashEntry: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Élément */
+            label: string;
+            /** Type */
+            kind: string;
+            /** Modèle */
+            model: string;
+            /** Identifiant */
+            object_id: string;
+            /** Pays */
+            country?: string;
+            /** Motif */
+            reason?: string;
+            readonly rows: number;
+            readonly deleted_by: string | null;
+            /**
+             * Supprimé le
+             * Format: date-time
+             */
+            readonly deleted_at: string;
+            readonly restored_by: string | null;
+            /**
+             * Restauré le
+             * Format: date-time
+             */
+            restored_at?: string | null;
         };
         UncheckInputRequest: {
             /** Format: uuid */
@@ -5488,10 +5716,7 @@ export interface operations {
     };
     v1_binders_pages_destroy: {
         parameters: {
-            query?: {
-                /** @description Fiche (même pays) qui reprend les pièces de la page supprimée. */
-                move_to_amm?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 amm_id: string;
@@ -8102,6 +8327,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_trash_list: {
+        parameters: {
+            query?: {
+                /** @description Quel champ utiliser pour classer les résultats. */
+                ordering?: string;
+                /** @description Un numéro de page de l'ensemble des résultats. */
+                page?: number;
+                /** @description Nombre de résultats à retourner par page. */
+                page_size?: number;
+                /** @description Un terme de recherche. */
+                search?: string;
+                /** @description Filtre */
+                state?: "deleted" | "restored";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTrashEntryList"];
+                };
+            };
+        };
+    };
+    v1_trash_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) élément de la corbeille. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrashEntry"];
+                };
+            };
+        };
+    };
+    v1_trash_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) élément de la corbeille. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrashEntry"];
                 };
             };
         };

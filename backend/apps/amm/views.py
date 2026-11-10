@@ -12,6 +12,7 @@ from apps.accounts.permissions import (
     RolePermission,
     ensure_country_in_scope,
 )
+from apps.core.trash import TrashDestroyMixin
 from apps.documents.models import Document
 
 from .extensions import list_annotations
@@ -45,7 +46,13 @@ def amm_base_queryset():
     )
 
 
-class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
+class AmmViewSet(TrashDestroyMixin, CountryScopedQuerysetMixin, viewsets.ModelViewSet):
+    # Supprimer une fiche la met à la corbeille, avec ses imports de dossiers (restaurables).
+    trash_include_protected = True
+
+    def trash_country(self, instance) -> str:
+        return instance.country.iso2
+
     queryset = amm_base_queryset()
     permission_classes = [IsAuthenticated, RolePermission]
     filterset_class = AmmFilter

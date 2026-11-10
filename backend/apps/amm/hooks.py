@@ -11,6 +11,7 @@ from django.db.models import Count
 from apps.catalog.extensions import PRODUCT_COUNTRIES, PRODUCT_MERGE
 from apps.core.integrity import ERROR, WARNING, Check
 from apps.core.registry import INTEGRITY, METRICS
+from apps.core.trash import TRASH_PREPARE, TRASH_RESTORED
 
 # Champs saisis par un utilisateur : l'historique doit toujours refléter la ligne courante.
 # Les champs calculés (statut, urgence…) sont réécrits la nuit par update() sans historique.
@@ -184,3 +185,44 @@ def product_countries(products) -> dict:
     for product_id, iso2 in rows:
         countries[product_id].append(iso2)
     return dict(countries)
+
+
+# --- Corbeille : une fiche ou un renouvellement restauré ------------------------------------
+
+
+@TRASH_PREPARE.register
+def free_renewal_sequence(obj) -> None:
+    """Un renouvellement restauré seul : son n° d'ordre a pu être repris depuis. Il est placé
+    après les autres le temps de la restauration, puis l'ordre des dates est rétabli."""
+    from django.db.models import Max
+
+    from .models import Renewal
+
+    if not isinstance(obj, Renewal):
+        return
+    taken = Renewal.objects.filter(amm_id=obj.amm_id, sequence=obj.sequence).exists()
+    if taken:
+        top = Renewal.objects.filter(amm_id=obj.amm_id).aggregate(top=Max("sequence"))["top"] or 0
+        obj.sequence = top + 1
+
+
+@TRASH_RESTORED.register
+def recompute_restored_amms(entry, objects, user) -> None:
+    """Fiche, renouvellement ou pièce restaurés : ordre, échéance, statut et état recalculés,
+    avec une ligne d'historique « restauré depuis la corbeille »."""
+    from .models import MarketingAuthorization
+    from .services.sequence import resequence
+    from .services.status import apply_state
+
+    ids = set()
+    for obj in objects:
+        if isinstance(obj, MarketingAuthorization):
+            ids.add(obj.pk)
+        elif getattr(obj, "amm_id", None):
+            ids.add(obj.amm_id)
+    for amm in MarketingAuthorization.objects.select_related("country").filter(pk__in=ids):
+        resequence(amm)
+        if user is not None:
+            amm._history_user = user
+        amm._change_reason = "Restauré depuis la corbeille"
+        apply_state(amm)

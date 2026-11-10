@@ -10,6 +10,8 @@ type Schemas = components['schemas'];
 export type Role = Schemas['RoleEnum'];
 /** Action sensible permise à l'utilisateur connecté (`apps/accounts/roles.py`). */
 export type UserAction = Schemas['ActionsEnum'];
+/** Élément de la corbeille (supprimé, jamais effacé ; restaurable). */
+export type TrashEntry = Schemas['TrashEntry'];
 
 export interface User {
   id: string;

@@ -17,7 +17,8 @@ export interface NavItem {
     | 'rules'
     | 'imports'
     | 'binders'
-    | 'deposits';
+    | 'deposits'
+    | 'trash';
   section?: 'admin';
 }
 
@@ -67,6 +68,14 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.imports',
     to: '/admin/imports',
     icon: 'imports',
+    roles: ['CEO_ADMIN', 'HQ_REGULATORY'],
+    section: 'admin',
+  },
+  {
+    key: 'trash',
+    labelKey: 'nav.trash',
+    to: '/admin/corbeille',
+    icon: 'trash',
     roles: ['CEO_ADMIN', 'HQ_REGULATORY'],
     section: 'admin',
   },

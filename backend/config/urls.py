@@ -17,6 +17,7 @@ from apps.accounts.views import (
     RefreshView,
     UserViewSet,
 )
+from apps.administration.views import TrashViewSet
 from apps.alerts.views import AlertRuleViewSet, AlertViewSet
 from apps.amm.views import AmmViewSet, RenewalViewSet
 from apps.analytics.views import AfricaView, CountryView, ExportView, ProductCoverageView
@@ -47,6 +48,7 @@ router.register("binders", BinderViewSet, basename="binder")
 router.register("deposit-pieces", PieceTypeViewSet, basename="deposit-piece")
 router.register("deposits", DepositViewSet, basename="deposit")
 router.register("dossier-review-points", DossierReviewPointViewSet, basename="dossier-review-point")
+router.register("trash", TrashViewSet, basename="trash")
 
 api_v1 = [
     re_path(r"^auth/login/?$", LoginView.as_view(), name="auth-login"),
