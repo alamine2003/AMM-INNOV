@@ -1,4 +1,4 @@
-import type { useChronologyEdits} from '@/api/hooks/useBinders';
+import type { useChronologyEdits } from '@/api/hooks/useBinders';
 import { type ChronologyPeriod } from '@/api/hooks/useBinders';
 import type {
   BinderChronologyDocument,
