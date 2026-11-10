@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { printBlob } from '../print';
 
+// Le `URL` de Node (Vitest 5) refuse les Blob de jsdom : les adresses blob: sont simulées.
+function stubObjectUrls() {
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:scan');
+  vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
+}
+
 describe('impression d’un scan', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -13,8 +19,7 @@ describe('impression d’un scan', () => {
       focus: vi.fn(),
       print,
     } as unknown as Window);
-    if (!URL.createObjectURL) URL.createObjectURL = () => 'blob:scan';
-    if (!URL.revokeObjectURL) URL.revokeObjectURL = () => undefined;
+    stubObjectUrls();
     const done = printBlob(new Blob(['%PDF-1.4'], { type: 'application/pdf' }), 'Décision');
     const frame = document.querySelector('iframe');
     expect(frame).not.toBeNull();
@@ -32,7 +37,7 @@ describe('impression d’un scan', () => {
       },
     } as unknown as Window);
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    if (!URL.createObjectURL) URL.createObjectURL = () => 'blob:scan';
+    stubObjectUrls();
     const done = printBlob(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
     document.querySelector('iframe')!.dispatchEvent(new Event('load'));
     await expect(done).rejects.toThrow('bloqué');

@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom/vitest';
 import type React from 'react';
-import { Blob as NodeBlob, File as NodeFile } from 'node:buffer';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { cleanup, configure } from '@testing-library/react';
 import '@/lib/i18n';
@@ -8,18 +7,19 @@ import { server } from '@/mocks/server';
 import { resetDb } from '@/mocks/handlers';
 import { useAuthStore } from '@/features/auth/authStore';
 
-// jsdom apporte ses propres FormData/File/Blob, que l'implémentation Fetch de Node (celle que
-// MSW utilise pour lire les requêtes) ne reconnaît pas : un envoi multipart y devient le texte
-// « [object FormData] ». Vitest injecte déjà Request/Response/fetch de Node dans jsdom ; on
-// complète la liste par les trois classes de corps pour que les deux moitiés s'accordent.
-const nativeFormData = (
-  await new Response('a=1', {
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-  }).formData()
-).constructor as typeof FormData;
-globalThis.FormData = nativeFormData;
-globalThis.File = NodeFile as unknown as typeof File;
-globalThis.Blob = NodeBlob as unknown as typeof Blob;
+// Vitest 5 + jsdom 31 : FormData, File et Blob de jsdom sont lus directement par MSW. Seule
+// lacune : MSW rend une réponse binaire (scan, PDF) en `Blob` jsdom, que le `Response` de Node
+// lit par `stream()`, absent chez jsdom. On l'ajoute.
+if (typeof Blob.prototype.stream !== 'function') {
+  Blob.prototype.stream = function stream(this: Blob) {
+    return new ReadableStream<Uint8Array>({
+      start: async (controller) => {
+        controller.enqueue(new Uint8Array(await this.arrayBuffer()));
+        controller.close();
+      },
+    });
+  } as Blob['stream'];
+}
 
 // Le premier rendu d'une page charge ses modules (sélecteur de date…) : 1 s ne suffit pas en CI.
 configure({ asyncUtilTimeout: 4000 });
