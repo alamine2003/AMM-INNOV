@@ -1,11 +1,13 @@
 from django.contrib.auth.password_validation import validate_password
 from django.db import models
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.catalog.models import Country
 
 from .models import User
+from .roles import Action, can
 
 
 class HealthStatus(models.TextChoices):
@@ -78,12 +80,31 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+class MeSerializer(UserSerializer):
+    """L'utilisateur connecté, avec les actions sensibles qu'il peut faire.
+
+    L'interface montre ou cache un bouton d'après `actions` (`useCan`), sans recopier les
+    règles de rôles : elles restent dans `apps/accounts/roles.py`.
+    """
+
+    actions = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        fields = [*UserSerializer.Meta.fields, "actions"]
+
+    @extend_schema_field(
+        serializers.ListField(child=serializers.ChoiceField(choices=[a.value for a in Action]))
+    )
+    def get_actions(self, obj) -> list[str]:
+        return [action.value for action in Action if can(obj, action)]
+
 class LoginSerializer(TokenObtainPairSerializer):
     """Returns access, refresh and the serialized user in the JSON body."""
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        data["user"] = UserSerializer(self.user).data
+        data["user"] = MeSerializer(self.user).data
         return data
 
 

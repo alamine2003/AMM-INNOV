@@ -22,7 +22,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { extractErrorMessage } from '@/api/client';
-import { useCurrentUser } from '@/api/hooks/useAuth';
+import { useCan } from '@/features/auth/authStore';
 import { useChronologyEdits, type ChronologyPeriod, type PeriodValues } from '@/api/hooks/useBinders';
 import type {
   BinderChronologyDocument,
@@ -470,8 +470,8 @@ export function ChronologyDialog({
   const [viewed, setViewed] = useState<BinderChronologyDocument | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const edits = useChronologyEdits(binderKey, page.amm_id);
-  const user = useCurrentUser();
-  const canRemove = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const canRemove = useCan('binder.remove_passage');
+  const canRemovePiece = useCan('binder.remove_piece');
   const issues = chronologyIssues(page);
   const periods = page.chronology.filter((entry) => entry.kind !== 'gap');
   const options = periods.map((entry) => ({ value: periodOf(entry), label: entry.label }));
@@ -668,7 +668,7 @@ export function ChronologyDialog({
                       current={here!}
                       options={options}
                       edits={edits}
-                      canRemove={canRemove}
+                      canRemove={canRemovePiece}
                       onDone={done}
                     />
                   )}

@@ -10,7 +10,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useCurrentUser } from '@/api/hooks/useAuth';
+import { useCan } from '@/features/auth/authStore';
 import { extractErrorMessage } from '@/api/client';
 import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
 import { useValidityYears } from '@/api/hooks/useCatalog';
@@ -350,9 +350,9 @@ export function BinderSheet({
   // Pas de renouvellement : le bloc n'apparaît pas (rien à remplir de force) ; en correction, il
   // s'ouvre seulement si le papier porte un renouvellement que la fiche n'a pas.
   const [addingRenewal, setAddingRenewal] = useState(false);
-  const user = useCurrentUser();
-  // Renommer ou supprimer une page touche toute l'application : siège et CEO.
-  const canManage = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  // Renommer ou supprimer une page touche toute l'application : droits donnés par le backend.
+  const canRename = useCan('binder.rename_page');
+  const canDelete = useCan('binder.delete_page');
   const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending;
 
@@ -478,27 +478,31 @@ export function BinderSheet({
           <Typography sx={{ fontSize: 12, color: MUTED }}>
             page {page.section_page} / {section.total} de la gamme
           </Typography>
-          {canManage && (
+          {(canRename || canDelete) && (
             <Stack direction="row" spacing={0.5} sx={{ ml: 'auto !important' }}>
-              <Button
-                size="small"
-                startIcon={<EditIcon fontSize="small" />}
-                onClick={() => setRenaming(true)}
-                sx={{ color: MUTED, fontSize: 12 }}
-                data-testid="rename-page"
-              >
-                Titre
-              </Button>
-              <Button
-                size="small"
-                color="error"
-                startIcon={<DeleteOutlineIcon fontSize="small" />}
-                onClick={() => setDeleting(true)}
-                sx={{ fontSize: 12 }}
-                data-testid="delete-page"
-              >
-                Supprimer la page
-              </Button>
+              {canRename && (
+                <Button
+                  size="small"
+                  startIcon={<EditIcon fontSize="small" />}
+                  onClick={() => setRenaming(true)}
+                  sx={{ color: MUTED, fontSize: 12 }}
+                  data-testid="rename-page"
+                >
+                  Titre
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<DeleteOutlineIcon fontSize="small" />}
+                  onClick={() => setDeleting(true)}
+                  sx={{ fontSize: 12 }}
+                  data-testid="delete-page"
+                >
+                  Supprimer la page
+                </Button>
+              )}
             </Stack>
           )}
         </Stack>

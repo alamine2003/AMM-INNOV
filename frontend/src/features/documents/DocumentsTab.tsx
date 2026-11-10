@@ -18,7 +18,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { saveBlob } from '@/lib/download';
 import { extractErrorMessage } from '@/api/client';
-import { useAuthStore } from '@/features/auth/authStore';
+import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { DocumentTimeline } from './DocumentTimeline';
 import { UploadDocumentDialog } from './UploadDocumentDialog';
 import { PdfViewerDialog } from './PdfViewerDialog';
@@ -108,7 +108,7 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
           onDelete={setDeleting}
           canEdit={editable}
           // Retirer un scan (archivé) : siège et CEO.
-          canDelete={user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY'}
+          canDelete={isHqOrAdmin(user)}
         />
       )}
       {editingDoc && (

@@ -3701,7 +3701,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Me'
           description: ''
   /api/v1/notifications/:
     get:
@@ -4779,6 +4779,20 @@ components:
           minLength: 1
       required:
       - reason
+    ActionsEnum:
+      enum:
+      - binder.remove_passage
+      - binder.rename_page
+      - binder.delete_page
+      - binder.remove_piece
+      - binder.download
+      type: string
+      description: |-
+        * `binder.remove_passage` - binder.remove_passage
+        * `binder.rename_page` - binder.rename_page
+        * `binder.delete_page` - binder.delete_page
+        * `binder.remove_piece` - binder.remove_piece
+        * `binder.download` - binder.download
     AddPageInputRequest:
       type: object
       properties:
@@ -8272,6 +8286,68 @@ components:
       properties:
         refresh:
           type: string
+    Me:
+      type: object
+      description: |-
+        L'utilisateur connecté, avec les actions sensibles qu'il peut faire.
+
+        L'interface montre ou cache un bouton d'après `actions` (`useCan`), sans recopier les
+        règles de rôles : elles restent dans `apps/accounts/roles.py`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          title: Prénom
+          maxLength: 150
+        last_name:
+          type: string
+          title: Nom
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Rôle
+        countries:
+          type: array
+          items:
+            type: string
+            title: Code ISO
+        is_active:
+          type: boolean
+          title: Actif
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Créé le
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Dernière connexion
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionsEnum'
+          readOnly: true
+      required:
+      - actions
+      - date_joined
+      - email
+      - full_name
+      - id
+      - last_login
     MergeDuplicatesRequest:
       type: object
       properties:

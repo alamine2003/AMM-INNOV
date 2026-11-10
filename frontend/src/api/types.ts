@@ -1,4 +1,15 @@
-export type Role = 'CEO_ADMIN' | 'HQ_REGULATORY' | 'COUNTRY_REGULATORY';
+import type { components } from './schema';
+
+/**
+ * Types dérivés du schéma OpenAPI (`schema.d.ts`, généré depuis le backend) : ils suivent
+ * l'API sans être recopiés. Les autres types de ce fichier sont encore écrits à la main et
+ * vérifiés par `contract.ts` ; ils passent au schéma au fil des versions.
+ */
+type Schemas = components['schemas'];
+
+export type Role = Schemas['RoleEnum'];
+/** Action sensible permise à l'utilisateur connecté (`apps/accounts/roles.py`). */
+export type UserAction = Schemas['ActionsEnum'];
 
 export interface User {
   id: string;
@@ -8,6 +19,8 @@ export interface User {
   role: Role;
   countries: string[];
   is_active?: boolean;
+  /** Actions sensibles permises (`/me` et connexion) : voir `useCan`. */
+  actions?: UserAction[];
 }
 
 export interface UserWrite {
@@ -675,16 +688,10 @@ export interface BinderCounts {
   stale: number;
 }
 
-export type BinderCriterionKey = 'digital' | 'paper' | 'scan' | 'data';
+export type BinderCriterionKey = Schemas['KeyEnum'];
 
 /** Les 4 niveaux de vérification d'un dossier (recalculés à chaque lecture). */
-export interface BinderConformity {
-  status: 'CONFORME' | 'NON_CONFORME' | 'NON_VERIFIE';
-  label: string;
-  criteria: { key: BinderCriterionKey; label: string; ok: boolean | null; detail: string }[];
-  to_scan: boolean;
-  stale: boolean;
-}
+export type BinderConformity = Schemas['Conformity'];
 
 export interface BinderSectionSummary extends BinderCounts {
   code: string;

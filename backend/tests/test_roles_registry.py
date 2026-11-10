@@ -163,3 +163,22 @@ def test_provider_without_supplier_says_what_is_missing():
 
     with pytest.raises(RuntimeError, match="essai"):
         Provider("essai")()
+
+
+# --- /me : actions permises, lues par l'interface (useCan) ----------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("role", "expected"),
+    [
+        ("ceo", {a.value for a in Action}),
+        ("hq", {a.value for a in Action}),
+        ("country", set()),
+    ],
+)
+def test_me_lists_the_actions_the_user_can_do(users, role, expected):
+    from tests.conftest import client_for
+
+    body = client_for(users[role]).get("/api/v1/me").json()
+    assert set(body["actions"]) == expected

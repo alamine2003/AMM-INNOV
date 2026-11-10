@@ -1966,6 +1966,15 @@ export interface components {
         AbandonRequest: {
             reason: string;
         };
+        /**
+         * @description * `binder.remove_passage` - binder.remove_passage
+         *     * `binder.rename_page` - binder.rename_page
+         *     * `binder.delete_page` - binder.delete_page
+         *     * `binder.remove_piece` - binder.remove_piece
+         *     * `binder.download` - binder.download
+         * @enum {string}
+         */
+        ActionsEnum: "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download";
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -3489,6 +3498,39 @@ export interface components {
         };
         LogoutRequest: {
             refresh?: string;
+        };
+        /**
+         * @description L'utilisateur connecté, avec les actions sensibles qu'il peut faire.
+         *
+         *     L'interface montre ou cache un bouton d'après `actions` (`useCan`), sans recopier les
+         *     règles de rôles : elles restent dans `apps/accounts/roles.py`.
+         */
+        Me: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            /** Prénom */
+            first_name?: string;
+            /** Nom */
+            last_name?: string;
+            readonly full_name: string;
+            /** Rôle */
+            role?: components["schemas"]["RoleEnum"];
+            countries?: string[];
+            /** Actif */
+            is_active?: boolean;
+            /**
+             * Créé le
+             * Format: date-time
+             */
+            readonly date_joined: string;
+            /**
+             * Dernière connexion
+             * Format: date-time
+             */
+            readonly last_login: string | null;
+            readonly actions: components["schemas"]["ActionsEnum"][];
         };
         MergeDuplicatesRequest: {
             /** @default false */
@@ -7285,7 +7327,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["User"];
+                    "application/json": components["schemas"]["Me"];
                 };
             };
         };
