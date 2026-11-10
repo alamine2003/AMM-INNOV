@@ -29,7 +29,8 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ### Sécurité
 - Outils de test : Vitest 5 et jsdom 31. Les 2 alertes critiques de `npm audit` (Vitest 3)
-  sont corrigées.
+  sont corrigées. En CI, les tests du frontend tournent sur Node 22 (le Fetch de Node 24 ne lit
+  pas les envois multipart de jsdom) ; le build reste sur Node 24.
 
 ## [1.2.0] — 2026-11-10
 
