@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { ChronologyDialog } from './ChronologyDialog';
 import { chronologyIssues } from './chronologyShared';
 import { ConformityPanel } from './ConformityPanel';
-import { DeletePageDialog, RenamePageDialog } from './PageManage';
+import { RenamePageDialog, useDeletePageNow } from './PageManage';
 import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
 import { Holes, INK, LINE, MUTED, Pill, STATUS_COLORS, Stamp, paperSx } from './paper';
 import { ScanThumbnail } from './ScanThumbnail';
@@ -58,7 +58,6 @@ export function BinderSheet({
   const scanImport = usePageScanImport(binder.key, page.amm_id);
   const [chronologyOpen, setChronologyOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   // Pas de renouvellement : le bloc n'apparaît pas (rien à remplir de force) ; en correction, il
   // s'ouvre seulement si le papier porte un renouvellement que la fiche n'a pas.
   const [addingRenewal, setAddingRenewal] = useState(false);
@@ -68,6 +67,8 @@ export function BinderSheet({
   const markPrint = useMarkPrint(binder.key);
   const canRename = useCan('binder.rename_page');
   const canDelete = useCan('binder.delete_page');
+  // Supprimer la page : immédiat, à la corbeille, avec « Annuler » juste après.
+  const deletePage = useDeletePageNow(binder, page);
   const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending || markPrint.isPending;
 
@@ -208,7 +209,8 @@ export function BinderSheet({
                   size="small"
                   color="error"
                   startIcon={<DeleteOutlineIcon fontSize="small" />}
-                  onClick={() => setDeleting(true)}
+                  onClick={deletePage.run}
+                  disabled={deletePage.pending}
                   sx={{ fontSize: 12 }}
                   data-testid="delete-page"
                 >
@@ -219,7 +221,6 @@ export function BinderSheet({
           )}
         </Stack>
         {renaming && <RenamePageDialog binder={binder} page={page} open onClose={() => setRenaming(false)} />}
-        {deleting && <DeletePageDialog binder={binder} page={page} open onClose={() => setDeleting(false)} />}
 
         <Stack direction="row" gap={1.5} flexWrap="wrap">
           {SLOTS.filter(({ slot }) => slot === 'original' || page.renewal || (editing && addingRenewal)).map(

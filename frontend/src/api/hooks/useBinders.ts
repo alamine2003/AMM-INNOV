@@ -265,6 +265,23 @@ export function useBinderLocation(ammId: string | null | undefined) {
  * La page elle-même (siège et CEO) : son titre — le nom de la présentation, partout dans AMM GH —
  * ou sa suppression, ses pièces reprises par une autre fiche du même pays.
  */
+/** Supprimer la page : immédiat, la fiche part à la corbeille ; renvoie l'entrée, pour annuler. */
+function useRemovePage(key: string, page: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await api.delete<BinderDetail>(page);
+      return { binder: response.data, trashEntry: String(response.headers['x-trash-entry'] ?? '') };
+    },
+    onSuccess: ({ binder }) => {
+      client.setQueryData(binderKeys.detail(key), binder);
+      void client.invalidateQueries({ queryKey: binderKeys.shelf });
+      void client.invalidateQueries({ queryKey: ['amms'] });
+      void client.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
 export function usePageEdits(key: string, amm: string) {
   const page = `/binders/${key}/pages/${amm}`;
   return {
@@ -273,14 +290,6 @@ export function usePageEdits(key: string, amm: string) {
       async (productName: string) =>
         (await api.patch<BinderDetail>(page, { product_name: productName })).data,
     ),
-    remove: useBinderMutation(
-      key,
-      async (moveToAmm: string | null) =>
-        (
-          await api.delete<BinderDetail>(page, {
-            params: moveToAmm ? { move_to_amm: moveToAmm } : undefined,
-          })
-        ).data,
-    ),
+    remove: useRemovePage(key, page),
   };
 }

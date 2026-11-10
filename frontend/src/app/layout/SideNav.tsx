@@ -25,6 +25,7 @@ import RuleIcon from '@mui/icons-material/Rule';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { NavLink, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -45,6 +46,7 @@ const ICONS: Record<NavItem['icon'], React.ReactNode> = {
   imports: <UploadFileIcon />,
   binders: <MenuBookIcon />,
   deposits: <AssignmentTurnedInIcon />,
+  trash: <DeleteSweepIcon />,
 };
 
 /** `collapsed` : icônes seules (le libellé passe en info-bulle), pour laisser la place au contenu. */
