@@ -313,7 +313,7 @@ def test_page_is_deleted_at_once_to_the_trash_and_restored_with_its_scans(
     assert Document.objects.current().filter(amm=amm).count() == 3
     assert amm.renewals.count() == renewals
     assert not BinderDeletedPage.objects.exists()
-    # Une entrée restaurée reste dans la corbeille, marquée restaurée ; on ne restaure pas deux fois.
+    # Une entrée restaurée reste dans la corbeille, marquée restaurée ; pas de deuxième fois.
     again = hq_client.post(f"/api/v1/trash/{entry.pk}/restore")
     assert again.status_code == 400 and "déjà été restauré" in again.json()["detail"]
 

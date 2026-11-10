@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.models import MarketingAuthorization
 from apps.catalog.models import Product
 from apps.core.models import TrashEntry
 
