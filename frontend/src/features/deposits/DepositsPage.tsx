@@ -37,7 +37,7 @@ import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useDepositSuggestions, useDeposits, useOpenDeposit } from '@/api/hooks/useDeposits';
 import type { DepositStage, DepositSummary } from '@/api/types';
-import { useAuthStore } from '@/features/auth/authStore';
+import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { Flag } from '@/features/binders/Flag';
 import { KpiCard } from '@/components/KpiCard';
 import { PageHeader } from '@/components/PageHeader';
@@ -280,7 +280,7 @@ function Suggestions() {
 
 export default function DepositsPage() {
   const user = useAuthStore((s) => s.user);
-  const hq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const hq = isHqOrAdmin(user);
   const deposits = useDeposits();
   const [tab, setTab] = useState<'open' | 'closed'>('open');
   const [country, setCountry] = useState('');

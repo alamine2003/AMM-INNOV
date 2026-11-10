@@ -37,7 +37,7 @@ import {
   useDossierImport,
 } from '@/api/hooks/useDossierImports';
 import { useCountries } from '@/api/hooks/useCatalog';
-import { canEditCountry, useAuthStore } from '@/features/auth/authStore';
+import { canEditCountry, isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import {
   hasSummary,
   type Amm,
@@ -92,7 +92,7 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
   const amms = useAmms({ search, country: preview.amm.country_iso2 || undefined, page: 1 });
   const choose = useChooseAmm(batch.id);
   const confirm = useConfirmDossier(batch.id);
-  const isGlobal = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const isGlobal = isHqOrAdmin(user);
   const results = amms.data?.results ?? [];
   const options = chosen && !results.some((amm) => amm.id === chosen.id) ? [chosen, ...results] : results;
   return (

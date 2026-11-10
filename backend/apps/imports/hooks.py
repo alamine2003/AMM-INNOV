@@ -4,7 +4,8 @@
   GHPL en retard ;
 - démarrage du worker : reprise des analyses coupées par un redémarrage (Render gratuit) ;
 - travail en cours : maintien en éveil tant qu'un import ou une analyse attend ;
-- invariants : tâches bloquées, fichiers référencés présents dans le stockage.
+- invariants : tâches bloquées, fichiers référencés présents dans le stockage ;
+- fiche AMM : corrections des dossiers dans l'historique, points à vérifier dans la liste.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.amm.extensions import HISTORY_SOURCES, LIST_ANNOTATIONS
 from apps.core.integrity import ERROR, WARNING, Check
 from apps.core.registry import INTEGRITY, PENDING_WORK, RECOVERY, WORKER_START
 
@@ -278,3 +280,66 @@ def _list_blobs(storage, prefix: str):
         yield f"{prefix}{name}"
     for directory in directories:
         yield from _list_blobs(storage, f"{prefix}{directory}/")
+
+
+# --- Fiche AMM : historique et liste --------------------------------------------------------
+
+
+@HISTORY_SOURCES.register
+def dossier_corrections(amm) -> list[dict]:
+    """Valeurs renseignées ou corrigées par l'import d'un dossier, avec leur preuve."""
+    from apps.amm.history import label_value
+
+    from .models import DossierChange
+
+    entries: list[dict] = []
+    for change in DossierChange.objects.filter(amm=amm).select_related("user", "proof_file"):
+        entries.append(
+            {
+                "date": change.created_at,
+                "user_email": change.user.email if change.user else None,
+                # Une valeur absente OU vide est renseignée, pas corrigée : seul un
+                # désaccord avec une donnée existante est une correction.
+                "type": "documentary_correction"
+                if change.old_value not in (None, "")
+                else "documentary_creation",
+                "model": "renewal" if change.renewal_id else "amm",
+                "object_id": str(change.renewal_id or amm.pk),
+                "changes": [
+                    {
+                        "field": change.field,
+                        "old": label_value(change.old_value),
+                        "new": label_value(change.new_value),
+                    }
+                ],
+                "source": change.source,
+                "reason": change.reason,
+                "confidence": change.confidence,
+                "batch_id": str(change.batch_id),
+                "proof_file_id": str(change.proof_file_id),
+                "document_id": str(change.proof_file.document_id)
+                if change.proof_file.document_id
+                else None,
+            }
+        )
+    return entries
+
+
+@LIST_ANNOTATIONS.register
+def open_review_points() -> dict:
+    """Points à vérifier plus tard laissés par l'import de dossiers (badge de la liste)."""
+    from django.db.models import Count, IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    from .models import DossierReviewPoint
+
+    open_points = (
+        DossierReviewPoint.objects.filter(amm=OuterRef("pk"), status="OPEN")
+        .order_by()
+        .values("amm")
+        .annotate(total=Count("pk"))
+        .values("total")
+    )
+    return {
+        "open_review_points": Coalesce(Subquery(open_points, output_field=IntegerField()), 0)
+    }

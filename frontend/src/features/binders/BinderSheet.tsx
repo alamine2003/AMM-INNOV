@@ -1,20 +1,6 @@
-import { useState } from 'react';
-import { Alert, Box, Button, Link as MuiLink, Stack, TextField, Tooltip, Typography } from '@mui/material';
-import { Link } from 'react-router';
-import CheckIcon from '@mui/icons-material/Check';
-import EditIcon from '@mui/icons-material/Edit';
-import FolderOffIcon from '@mui/icons-material/FolderOff';
-import UndoIcon from '@mui/icons-material/Undo';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useCurrentUser } from '@/api/hooks/useAuth';
 import { extractErrorMessage } from '@/api/client';
 import { useCheckPage, useUncheckPage } from '@/api/hooks/useBinders';
 import { useValidityYears } from '@/api/hooks/useCatalog';
-import { DateInput, ValidityLine } from '@/components/DateInput';
 import type {
   BinderCorrection,
   BinderDetail,
@@ -24,302 +10,26 @@ import type {
   BinderSectionSummary,
   BinderSlot,
 } from '@/api/types';
-import { addValidity, formatDate, formatDateTime } from '@/lib/dates';
-import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
-import { ChronologyDialog, chronologyIssues } from './ChronologyDialog';
-import { ScanThumbnail } from './ScanThumbnail';
+import { useCan } from '@/features/auth/authStore';
+import { formatDate, formatDateTime } from '@/lib/dates';
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import FolderOffIcon from '@mui/icons-material/FolderOff';
+import UndoIcon from '@mui/icons-material/Undo';
+import { Alert, Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { useState } from 'react';
+import { ChronologyDialog } from './ChronologyDialog';
+import { chronologyIssues } from './chronologyShared';
+import { ConformityPanel } from './ConformityPanel';
 import { DeletePageDialog, RenamePageDialog } from './PageManage';
+import { ScanImportButton, ScanImportStatus, usePageScanImport } from './PageScanImport';
 import { Holes, INK, LINE, MUTED, Pill, STATUS_COLORS, Stamp, paperSx } from './paper';
-
-const FIELDS: { field: BinderField; label: string }[] = [
-  { field: 'number', label: "N° d'AMM" },
-  { field: 'start_date', label: 'Date de début' },
-  { field: 'end_date', label: 'Date de fin' },
-];
-const SLOTS: { slot: BinderSlot; title: string }[] = [
-  { slot: 'original', title: "AMM d'origine" },
-  { slot: 'renewal', title: 'Dernier renouvellement' },
-];
-
-type Values = Record<string, string>;
-const id = (slot: BinderSlot, field: BinderField) => `${slot}.${field}`;
-
-function initialValues(page: BinderPage): Values {
-  const values: Values = {};
-  for (const { slot } of SLOTS) {
-    const source = slot === 'original' ? page.original : page.renewal;
-    for (const { field } of FIELDS) values[id(slot, field)] = (source?.[field] as string | null) ?? '';
-  }
-  return values;
-}
-
-function show(field: BinderField, value: unknown): string {
-  if (value === null || value === undefined || value === '') return '—';
-  return field === 'number' ? String(value) : formatDate(String(value));
-}
-
-const VERDICT_COLORS = { CONFORME: '#2e7d32', NON_CONFORME: '#c62828', NON_VERIFIE: MUTED };
-
-/** Les 4 niveaux de vérification du dossier, et le résultat (calculé par AMM GH). */
-function ConformityPanel({ page }: { page: BinderPage }) {
-  const { conformity } = page;
-  const color = VERDICT_COLORS[conformity.status];
-  return (
-    <Box
-      data-testid="page-conformity"
-      sx={{ mt: 1.5, bgcolor: '#fff', border: `1px solid ${LINE}`, borderRadius: 2, p: 1.75 }}
-    >
-      <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, mb: 1 }}>
-        VÉRIFICATION DU DOSSIER
-      </Typography>
-      <Stack spacing={0.5}>
-        {conformity.criteria.map((criterion, index) => (
-          <Stack key={criterion.key} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-            {criterion.ok === true ? (
-              <CheckCircleIcon sx={{ fontSize: 18, color: '#2e7d32', mt: '1px' }} aria-label="juste" />
-            ) : criterion.ok === false ? (
-              <CancelIcon sx={{ fontSize: 18, color: '#c62828', mt: '1px' }} aria-label="à régler" />
-            ) : (
-              <RadioButtonUncheckedIcon
-                sx={{ fontSize: 18, color: MUTED, mt: '1px' }}
-                aria-label="à vérifier"
-              />
-            )}
-            <Typography sx={{ fontSize: 13, color: INK }}>
-              {index + 1}. {criterion.label}
-              <Typography
-                component="span"
-                sx={{ fontSize: 12, color: criterion.ok === false ? '#c62828' : MUTED }}
-              >
-                {' '}
-                — {criterion.detail}
-              </Typography>
-            </Typography>
-          </Stack>
-        ))}
-      </Stack>
-      <Typography
-        data-testid="page-verdict"
-        sx={{ mt: 1.25, fontWeight: 900, fontSize: 15, color, letterSpacing: 0.2 }}
-      >
-        Résultat : {conformity.label}
-      </Typography>
-    </Box>
-  );
-}
-
-function SlotCard({
-  page,
-  slot,
-  title,
-  editing,
-  values,
-  onChange,
-  years,
-}: {
-  page: BinderPage;
-  slot: BinderSlot;
-  title: string;
-  years: number;
-  editing: boolean;
-  values: Values;
-  onChange: (key: string, value: string) => void;
-}) {
-  const source = slot === 'original' ? page.original : page.renewal;
-  const gaps = new Map(page.discrepancies.filter((d) => d.slot === slot).map((d) => [d.field, d]));
-  const initial = initialValues(page);
-  return (
-    <Box
-      sx={{
-        flex: '1 1 220px',
-        bgcolor: '#fff',
-        border: `1px solid ${LINE}`,
-        borderRadius: 2,
-        p: 1.75,
-        minWidth: 0,
-      }}
-    >
-      <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, mb: 1 }}>
-        {title.toUpperCase()}
-      </Typography>
-      {!source && !editing ? (
-        <Typography sx={{ fontStyle: 'italic', color: MUTED, fontSize: 14 }}>
-          Aucun renouvellement enregistré
-        </Typography>
-      ) : (
-        FIELDS.map(({ field, label }) => {
-          const key = id(slot, field);
-          const gap = gaps.get(field);
-          const changed = values[key] !== initial[key];
-          return (
-            <Box key={field} sx={{ py: 0.6, borderBottom: `1px dotted ${LINE}` }}>
-              {editing ? (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  {field === 'number' ? (
-                    <TextField
-                      size="small"
-                      label={label}
-                      value={values[key]}
-                      onChange={(e) => onChange(key, e.target.value)}
-                      slotProps={{ inputLabel: { shrink: true } }}
-                      sx={{
-                        flex: 1,
-                        '& .MuiOutlinedInput-root': { bgcolor: changed ? '#fff3b0' : '#fff' },
-                      }}
-                    />
-                  ) : (
-                    <DateInput
-                      size="small"
-                      label={label}
-                      value={values[key]}
-                      background={changed ? '#fff3b0' : '#fff'}
-                      sx={{ flex: 1 }}
-                      inputProps={{ 'data-testid': `sheet-${key}` }}
-                      onChange={(value) => {
-                        onChange(key, value ?? '');
-                        // Date de début corrigée : la fin se recalcule sur la durée du pays.
-                        if (field === 'start_date')
-                          onChange(id(slot, 'end_date'), addValidity(value, years) ?? '');
-                      }}
-                    />
-                  )}
-                  {gap && (
-                    <Tooltip describeChild title="Reprendre la valeur lue sur le scan">
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          const scanValue = String(gap.scan ?? '');
-                          onChange(key, scanValue);
-                          if (field === 'start_date' && scanValue)
-                            onChange(id(slot, 'end_date'), addValidity(scanValue, years) ?? '');
-                        }}
-                      >
-                        Scan : {show(field, gap.scan)}
-                      </Button>
-                    </Tooltip>
-                  )}
-                </Stack>
-              ) : (
-                <Stack direction="row" alignItems="baseline" spacing={1}>
-                  <Typography sx={{ fontSize: 12, color: MUTED, width: 96, flexShrink: 0 }}>
-                    {label}
-                  </Typography>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      component="span"
-                      sx={{
-                        fontWeight: 800,
-                        fontSize: 15,
-                        px: gap ? 0.5 : 0,
-                        bgcolor: gap ? '#fff3b0' : 'transparent',
-                        wordBreak: 'break-word',
-                        whiteSpace: field === 'number' ? 'normal' : 'nowrap',
-                      }}
-                    >
-                      {show(field, source?.[field])}
-                    </Typography>
-                    {gap && (
-                      <Typography sx={{ fontSize: 11, color: '#b45309' }}>
-                        le scan indique {show(field, gap.scan)}
-                      </Typography>
-                    )}
-                  </Box>
-                </Stack>
-              )}
-            </Box>
-          );
-        })
-      )}
-      {editing && (source || values[id(slot, 'start_date')]) && (
-        <Box sx={{ mt: 1 }}>
-          <ValidityLine
-            start={values[id(slot, 'start_date')] || null}
-            end={values[id(slot, 'end_date')] || null}
-            years={years}
-          />
-        </Box>
-      )}
-    </Box>
-  );
-}
-
-const agedSx = {
-  bgcolor: '#f1e4c3',
-  backgroundImage:
-    'radial-gradient(ellipse at 85% 90%, rgba(150,110,40,0.16), transparent 45%), ' +
-    'radial-gradient(ellipse at 12% 18%, rgba(150,110,40,0.10), transparent 35%), ' +
-    'linear-gradient(90deg, rgba(0,0,0,0.05), transparent 4%)',
-};
-
-/** Pochette plastique transparente : reflets et bord soudé. */
-function Sleeve() {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 1,
-        pointerEvents: 'none',
-        border: '5px solid rgba(255,255,255,0.55)',
-        boxShadow: 'inset 0 0 0 1px rgba(150,170,200,0.35)',
-        background:
-          'linear-gradient(115deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.06) 22%, transparent 34%, ' +
-          'rgba(255,255,255,0.16) 55%, transparent 68%, rgba(255,255,255,0.12) 88%, transparent 100%)',
-      }}
-    />
-  );
-}
-
-function FoldedCorner() {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        zIndex: 2,
-        width: 40,
-        height: 40,
-        pointerEvents: 'none',
-        background: 'linear-gradient(45deg, #e6dcc4 0 50%, #d7c8a3 50% 100%)',
-        boxShadow: '3px -3px 5px rgba(0,0,0,0.18)',
-        borderTopRightRadius: 4,
-      }}
-    />
-  );
-}
-
-/** D'où viennent les valeurs de la page : ligne du Dashboard AMM Afrique et dossier importé. */
-function PageTrace({ page }: { page: BinderPage }) {
-  const { excel, dossier } = page.trace;
-  if (!excel && !dossier) return null;
-  return (
-    <Typography sx={{ fontSize: 11.5, color: MUTED, mt: 1 }} data-testid="page-trace">
-      {excel && (
-        <>
-          Dashboard AMM Afrique : feuille {excel.sheet}, ligne {excel.row} (
-          <MuiLink component={Link} to={`/imports/${excel.batch_id}`}>
-            import du {formatDate(excel.date)}
-          </MuiLink>
-          )
-        </>
-      )}
-      {excel && dossier && ' · '}
-      {dossier && (
-        <>
-          Dossier importé le{' '}
-          <MuiLink component={Link} to={`/dossier-imports/${dossier.batch_id}`}>
-            {formatDate(dossier.date)}
-          </MuiLink>
-          {dossier.auto_applied ? ' (rangé automatiquement)' : ''}
-        </>
-      )}
-    </Typography>
-  );
-}
-
+import { ScanThumbnail } from './ScanThumbnail';
+import { FoldedCorner, PageTrace, Sleeve } from './SheetDecor';
+import { FIELDS, SLOTS, type Values, initialValues, show } from './sheetFields';
+import { SlotCard, agedSx } from './SlotCard';
 /** Une page d'AMM du classeur, avec le constat de l'archiviste. */
 export function BinderSheet({
   binder,
@@ -350,9 +60,9 @@ export function BinderSheet({
   // Pas de renouvellement : le bloc n'apparaît pas (rien à remplir de force) ; en correction, il
   // s'ouvre seulement si le papier porte un renouvellement que la fiche n'a pas.
   const [addingRenewal, setAddingRenewal] = useState(false);
-  const user = useCurrentUser();
-  // Renommer ou supprimer une page touche toute l'application : siège et CEO.
-  const canManage = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  // Renommer ou supprimer une page touche toute l'application : droits donnés par le backend.
+  const canRename = useCan('binder.rename_page');
+  const canDelete = useCan('binder.delete_page');
   const missing = chronologyIssues(page);
   const busy = check.isPending || uncheck.isPending;
 
@@ -478,27 +188,31 @@ export function BinderSheet({
           <Typography sx={{ fontSize: 12, color: MUTED }}>
             page {page.section_page} / {section.total} de la gamme
           </Typography>
-          {canManage && (
+          {(canRename || canDelete) && (
             <Stack direction="row" spacing={0.5} sx={{ ml: 'auto !important' }}>
-              <Button
-                size="small"
-                startIcon={<EditIcon fontSize="small" />}
-                onClick={() => setRenaming(true)}
-                sx={{ color: MUTED, fontSize: 12 }}
-                data-testid="rename-page"
-              >
-                Titre
-              </Button>
-              <Button
-                size="small"
-                color="error"
-                startIcon={<DeleteOutlineIcon fontSize="small" />}
-                onClick={() => setDeleting(true)}
-                sx={{ fontSize: 12 }}
-                data-testid="delete-page"
-              >
-                Supprimer la page
-              </Button>
+              {canRename && (
+                <Button
+                  size="small"
+                  startIcon={<EditIcon fontSize="small" />}
+                  onClick={() => setRenaming(true)}
+                  sx={{ color: MUTED, fontSize: 12 }}
+                  data-testid="rename-page"
+                >
+                  Titre
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<DeleteOutlineIcon fontSize="small" />}
+                  onClick={() => setDeleting(true)}
+                  sx={{ fontSize: 12 }}
+                  data-testid="delete-page"
+                >
+                  Supprimer la page
+                </Button>
+              )}
             </Stack>
           )}
         </Stack>

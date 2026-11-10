@@ -1,450 +1,40 @@
-import { useRef, useState, type ReactNode } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { extractErrorMessage } from '@/api/client';
+import { useChronologyEdits } from '@/api/hooks/useBinders';
+import type { BinderChronologyDocument, BinderPage } from '@/api/types';
+import { useCan } from '@/features/auth/authStore';
+import { PdfViewerDialog } from '@/features/documents/PdfViewerDialog';
+import { formatDate } from '@/lib/dates';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import { extractErrorMessage } from '@/api/client';
-import { useCurrentUser } from '@/api/hooks/useAuth';
-import { useChronologyEdits, type ChronologyPeriod, type PeriodValues } from '@/api/hooks/useBinders';
-import type {
-  BinderChronologyDocument,
-  BinderChronologyEntry,
-  BinderDocumentKind,
-  BinderPage,
-} from '@/api/types';
-import { PdfViewerDialog } from '@/features/documents/PdfViewerDialog';
-import { addValidity, formatDate } from '@/lib/dates';
-import { DateInput, ValidityLine } from '@/components/DateInput';
-import { SCAN_ACCEPT, ScanImportButton, ScanImportStatus, type usePageScanImport } from './PageScanImport';
-import { INK, LINE, MUTED } from './paper';
-
-type ScanImport = ReturnType<typeof usePageScanImport>;
-type Edits = ReturnType<typeof useChronologyEdits>;
-
-const KIND_COLORS: Record<BinderChronologyEntry['kind'], string> = {
-  pending: '#ef6c00',
-  renewal: '#1565c0',
-  origin: '#2e7d32',
-  closed: '#757575',
-  gap: '#c62828',
-};
-
-const DOCUMENT_KINDS: { value: BinderDocumentKind; label: string }[] = [
-  { value: 'AMM', label: 'Décision (AMM)' },
-  { value: 'RECEPISSE', label: 'Récépissé de dépôt' },
-  { value: 'COURRIER', label: "Courrier de l'autorité" },
-  { value: 'AUTRE', label: 'Autre' },
-];
-
-/** Ce qui est ouvert en édition dans la chronologie : une seule chose à la fois. */
-type Editing =
-  | { type: 'period'; period: ChronologyPeriod }
-  | { type: 'cancel'; period: string }
-  | { type: 'add'; period: ChronologyPeriod }
-  | { type: 'document'; period: ChronologyPeriod; doc: BinderChronologyDocument }
-  | null;
-
-/** Nombre de manques sur la page (décisions non scannées, dates, trous de validité…). */
-export function chronologyIssues(page: Pick<BinderPage, 'chronology'>): number {
-  return page.chronology.reduce((total, entry) => total + entry.issues.length, 0);
-}
-
-function period(entry: BinderChronologyEntry): string {
-  if (entry.kind === 'pending') {
-    return entry.filing_date ? `déposé le ${formatDate(entry.filing_date)}` : 'dépôt non daté';
-  }
-  if (!entry.start_date && !entry.end_date) return 'dates inconnues';
-  return `du ${entry.start_date ? formatDate(entry.start_date) : '?'} au ${
-    entry.end_date ? formatDate(entry.end_date) : '?'
-  }`;
-}
-
-const periodOf = (entry: BinderChronologyEntry): ChronologyPeriod => entry.renewal_id ?? 'origin';
-
-/** Petit formulaire posé sous une période, dans le fil de la chronologie. */
-function EditPanel({
-  title,
-  children,
-  onSave,
-  onCancel,
-  saveLabel = 'Enregistrer',
-  saveColor = 'primary',
-  busy,
-  extra,
-}: {
-  title: string;
-  children: ReactNode;
-  onSave: () => void;
-  onCancel: () => void;
-  saveLabel?: string;
-  saveColor?: 'primary' | 'error';
-  busy: boolean;
-  extra?: ReactNode;
-}) {
-  return (
-    <Box
-      component="form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      sx={{ mt: 1, p: 1.5, border: `1px solid ${LINE}`, borderRadius: 2, bgcolor: '#f7f9fc' }}
-      data-testid="chronology-edit"
-    >
-      <Typography sx={{ fontSize: 12, fontWeight: 800, color: MUTED, letterSpacing: 0.4, mb: 1 }}>
-        {title}
-      </Typography>
-      {children}
-      <Stack direction="row" spacing={1} sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button
-          type="submit"
-          size="small"
-          variant="contained"
-          color={saveColor}
-          disabled={busy}
-          startIcon={busy ? <CircularProgress size={14} color="inherit" /> : undefined}
-        >
-          {saveLabel}
-        </Button>
-        <Button size="small" onClick={onCancel} disabled={busy}>
-          Annuler
-        </Button>
-        <Box sx={{ flex: 1 }} />
-        {extra}
-      </Stack>
-    </Box>
-  );
-}
-
-function PeriodForm({
-  entry,
-  edits,
-  years,
-  onDone,
-}: {
-  entry: BinderChronologyEntry;
-  edits: Edits;
-  years: number;
-  onDone: () => void;
-}) {
-  const initial = { number: entry.number ?? '', start: entry.start_date ?? '', end: entry.end_date ?? '' };
-  const [values, setValues] = useState(initial);
-  // Début corrigé : la fin suit (début + durée du pays) tant qu'on ne la retouche pas.
-  const [endFollows, setEndFollows] = useState(false);
-  const save = () => {
-    // Seuls les champs modifiés partent : une fin qui suit le début est recalculée par le serveur.
-    const payload: PeriodValues = {};
-    if (values.number !== initial.number) payload.number = values.number;
-    if (values.start !== initial.start) payload.start_date = values.start || null;
-    if (!endFollows && values.end !== initial.end) payload.end_date = values.end || null;
-    if (!Object.keys(payload).length) return onDone();
-    edits.editPeriod.mutate({ period: periodOf(entry), values: payload }, { onSuccess: onDone });
-  };
-  return (
-    <EditPanel
-      title={`CORRIGER ${entry.label.toUpperCase()}`}
-      onSave={save}
-      onCancel={onDone}
-      busy={edits.editPeriod.isPending}
-    >
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-        <TextField
-          size="small"
-          label="N° d'AMM"
-          value={values.number}
-          onChange={(e) => setValues({ ...values, number: e.target.value })}
-          sx={{ flex: 1 }}
-          autoFocus
-        />
-        <DateInput
-          size="small"
-          fullWidth={false}
-          label="Date de début"
-          value={values.start}
-          onChange={(value) => {
-            setValues({ ...values, start: value ?? '', end: addValidity(value, years) ?? '' });
-            setEndFollows(true);
-          }}
-        />
-        <DateInput
-          size="small"
-          fullWidth={false}
-          label="Date de fin"
-          value={values.end}
-          onChange={(value) => {
-            setValues({ ...values, end: value ?? '' });
-            setEndFollows(false);
-          }}
-        />
-      </Stack>
-      <Box sx={{ mt: 0.75 }}>
-        <ValidityLine start={values.start || null} end={values.end || null} years={years} auto={endFollows} />
-      </Box>
-    </EditPanel>
-  );
-}
-
-function PeriodSelect({
-  value,
-  onChange,
-  options,
-  label,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  label: string;
-}) {
-  return (
-    <TextField
-      select
-      size="small"
-      label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      sx={{ minWidth: 200 }}
-    >
-      {options.map((option) => (
-        <MenuItem key={option.value} value={option.value}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  );
-}
-
-function CancelRenewalForm({
-  entry,
-  options,
-  edits,
-  onDone,
-}: {
-  entry: BinderChronologyEntry;
-  options: { value: string; label: string }[];
-  edits: Edits;
-  onDone: () => void;
-}) {
-  const pieces = (entry.decisions?.length ?? 0) + (entry.others?.length ?? 0);
-  const targets = options.filter((option) => option.value !== entry.renewal_id);
-  const [moveTo, setMoveTo] = useState<string>(
-    targets.find((option) => option.value === 'origin')?.value ?? targets[0]?.value ?? 'origin',
-  );
-  return (
-    <EditPanel
-      title={`SUPPRIMER ${entry.label.toUpperCase()}`}
-      saveLabel="Supprimer le passage"
-      saveColor="error"
-      onSave={() => edits.deletePeriod.mutate({ period: entry.renewal_id!, moveTo }, { onSuccess: onDone })}
-      onCancel={onDone}
-      busy={edits.deletePeriod.isPending}
-    >
-      <Typography sx={{ fontSize: 13, color: INK }}>
-        Pour un passage qui n'existe pas : renouvellement saisi à tort ou en double, dépôt jamais fait. Les
-        scans ne sont pas supprimés. L'échéance, le statut et la numérotation des renouvellements sont
-        recalculés.
-      </Typography>
-      {pieces > 0 && (
-        <Box sx={{ mt: 1.25 }}>
-          <PeriodSelect
-            label={`${pieces} pièce${pieces > 1 ? 's' : ''} à ranger sur`}
-            value={moveTo}
-            onChange={setMoveTo}
-            options={targets}
-          />
-        </Box>
-      )}
-    </EditPanel>
-  );
-}
-
-function DocumentForm({
-  doc,
-  current,
-  options,
-  edits,
-  canRemove,
-  onDone,
-}: {
-  doc: BinderChronologyDocument;
-  current: ChronologyPeriod;
-  options: { value: string; label: string }[];
-  edits: Edits;
-  canRemove: boolean;
-  onDone: () => void;
-}) {
-  const [date, setDate] = useState(doc.document_date);
-  const [kind, setKind] = useState(doc.kind as BinderDocumentKind);
-  const [target, setTarget] = useState<string>(current);
-  const [confirmRemove, setConfirmRemove] = useState(false);
-  const busy = edits.editDocument.isPending || edits.removeDocument.isPending;
-  const save = () => {
-    const values = {
-      ...(date && date !== doc.document_date ? { document_date: date } : {}),
-      ...(kind !== doc.kind ? { kind } : {}),
-      ...(target !== current ? { period: target } : {}),
-    };
-    if (!Object.keys(values).length) return onDone();
-    edits.editDocument.mutate({ document: doc.document_id, values }, { onSuccess: onDone });
-  };
-  return (
-    <EditPanel
-      title={`CORRIGER LA PIÈCE « ${doc.kind_label.toUpperCase()} DU ${formatDate(doc.document_date)} »`}
-      onSave={save}
-      onCancel={onDone}
-      busy={busy}
-      extra={
-        canRemove &&
-        (confirmRemove ? (
-          <Button
-            size="small"
-            color="error"
-            variant="outlined"
-            disabled={busy}
-            onClick={() => edits.removeDocument.mutate(doc.document_id, { onSuccess: onDone })}
-          >
-            Confirmer le retrait
-          </Button>
-        ) : (
-          <Button
-            size="small"
-            color="error"
-            startIcon={<DeleteOutlineIcon />}
-            disabled={busy}
-            onClick={() => setConfirmRemove(true)}
-          >
-            Retirer la pièce
-          </Button>
-        ))
-      }
-    >
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexWrap: 'wrap' }}>
-        <DateInput
-          size="small"
-          fullWidth={false}
-          label="Date du document"
-          value={date}
-          onChange={(value) => setDate(value ?? '')}
-        />
-        <TextField
-          select
-          size="small"
-          label="Type"
-          value={kind}
-          onChange={(e) => setKind(e.target.value as BinderDocumentKind)}
-          sx={{ minWidth: 170 }}
-        >
-          {DOCUMENT_KINDS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-        <PeriodSelect label="Période" value={target} onChange={setTarget} options={options} />
-      </Stack>
-      {confirmRemove && (
-        <Typography sx={{ fontSize: 12, color: '#c62828', mt: 0.75 }}>
-          La pièce quitte la page ; elle reste dans l'historique des documents archivés.
-        </Typography>
-      )}
-    </EditPanel>
-  );
-}
-
-function AddDocumentForm({
-  entry,
-  edits,
-  onDone,
-}: {
-  entry: BinderChronologyEntry;
-  edits: Edits;
-  onDone: () => void;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [kind, setKind] = useState<BinderDocumentKind>(entry.kind === 'pending' ? 'RECEPISSE' : 'AMM');
-  const [date, setDate] = useState((entry.kind === 'pending' ? entry.filing_date : entry.start_date) ?? '');
-  const [missing, setMissing] = useState(false);
-  const save = () => {
-    if (!file || !date) return setMissing(true);
-    edits.addDocument.mutate(
-      { file, kind, document_date: date, period: periodOf(entry) },
-      { onSuccess: onDone },
-    );
-  };
-  return (
-    <EditPanel
-      title={`AJOUTER UNE PIÈCE — ${entry.label.toUpperCase()}`}
-      onSave={save}
-      onCancel={onDone}
-      busy={edits.addDocument.isPending}
-    >
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={1}
-        sx={{ alignItems: { sm: 'center' }, flexWrap: 'wrap' }}
-      >
-        <input
-          ref={input}
-          type="file"
-          accept={SCAN_ACCEPT}
-          hidden
-          data-testid="chronology-file"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
-        <Button size="small" variant="outlined" onClick={() => input.current?.click()} sx={{ maxWidth: 260 }}>
-          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {file ? file.name : 'Choisir le scan (PDF, JPEG, PNG)'}
-          </Box>
-        </Button>
-        <TextField
-          select
-          size="small"
-          label="Type"
-          value={kind}
-          onChange={(e) => setKind(e.target.value as BinderDocumentKind)}
-          sx={{ minWidth: 170 }}
-        >
-          {DOCUMENT_KINDS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-        <DateInput
-          size="small"
-          fullWidth={false}
-          label="Date du document"
-          value={date}
-          onChange={(value) => setDate(value ?? '')}
-        />
-      </Stack>
-      <Typography sx={{ fontSize: 12, color: missing ? '#c62828' : MUTED, mt: 0.75 }}>
-        {missing
-          ? 'Choisissez le scan et indiquez sa date.'
-          : 'Rangée telle quelle sur cette période, à la date saisie (pas de lecture automatique).'}
-      </Typography>
-    </EditPanel>
-  );
-}
-
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useState } from 'react';
+import { AddDocumentForm, CancelRenewalForm, DocumentForm, PeriodForm } from './ChronologyForms';
+import {
+  type Editing,
+  KIND_COLORS,
+  type ScanImport,
+  chronologyIssues,
+  period,
+  periodOf,
+} from './chronologyShared';
+import { ScanImportButton, ScanImportStatus } from './PageScanImport';
+import { INK, MUTED } from './paper';
 /**
  * Chronologie d'une AMM, de la décision la plus récente à l'AMM d'origine : pour chaque période, ses
  * décisions scannées, ses autres pièces (récépissés, courriers) et ce qui manque. Tout s'y corrige :
@@ -470,8 +60,8 @@ export function ChronologyDialog({
   const [viewed, setViewed] = useState<BinderChronologyDocument | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const edits = useChronologyEdits(binderKey, page.amm_id);
-  const user = useCurrentUser();
-  const canRemove = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const canRemove = useCan('binder.remove_passage');
+  const canRemovePiece = useCan('binder.remove_piece');
   const issues = chronologyIssues(page);
   const periods = page.chronology.filter((entry) => entry.kind !== 'gap');
   const options = periods.map((entry) => ({ value: periodOf(entry), label: entry.label }));
@@ -668,7 +258,7 @@ export function ChronologyDialog({
                       current={here!}
                       options={options}
                       edits={edits}
-                      canRemove={canRemove}
+                      canRemove={canRemovePiece}
                       onDone={done}
                     />
                   )}

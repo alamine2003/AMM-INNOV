@@ -15,7 +15,7 @@ from django.utils import timezone
 from apps.catalog.models import Country, Product
 
 from ..models import DossierFile, DossierImport, DossierReviewPoint
-from .preview import COMMON_FOLDER, _focus_on_product
+from .identification import COMMON_FOLDER, _focus_on_product
 from .recognition import recognize_file
 
 logger = logging.getLogger(__name__)

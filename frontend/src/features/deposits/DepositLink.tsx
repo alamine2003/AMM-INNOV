@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { useOpenDeposit } from '@/api/hooks/useDeposits';
 import { useRenewals } from '@/api/hooks/useRenewals';
 import type { AmmStatus } from '@/api/types';
-import { useAuthStore } from '@/features/auth/authStore';
+import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
 import { useFail } from './sections';
 
 const OPEN = ['PLANIFIE', 'EN_PREPARATION', 'DEPOSE', 'EN_INSTRUCTION'];
@@ -19,7 +19,7 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
   const navigate = useNavigate();
   const fail = useFail();
   const user = useAuthStore((s) => s.user);
-  const hq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const hq = isHqOrAdmin(user);
   if (!renewals.data) return null;
   const followed =
     renewals.data.find((r) => r.deposit_id && OPEN.includes(r.workflow_status)) ??

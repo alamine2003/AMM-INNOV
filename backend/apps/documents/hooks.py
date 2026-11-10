@@ -1,4 +1,5 @@
-"""Ce que l'app Documents déclare au socle : rattrapage des aperçus et invariants."""
+"""Ce que l'app Documents déclare au socle : rattrapage des aperçus, invariants, et les
+bibliothèques de documents d'un pays et d'un produit (actions du catalogue)."""
 
 from __future__ import annotations
 
@@ -6,6 +7,7 @@ from datetime import timedelta
 
 from django.db.models import Count, F
 
+from apps.catalog.extensions import COUNTRY_DOCUMENTS, PRODUCT_DOCUMENTS
 from apps.core.integrity import ERROR, Check
 from apps.core.registry import INTEGRITY, RECOVERY
 
@@ -71,3 +73,17 @@ def check_document_links(options) -> Check:
     for pk in crossed.values_list("pk", flat=True):
         check.add(f"document {pk}")
     return check
+
+
+@COUNTRY_DOCUMENTS.register
+def country_documents(request, country):
+    from .views import country_documents
+
+    return country_documents(request, country)
+
+
+@PRODUCT_DOCUMENTS.register
+def product_documents(request, product):
+    from .views import product_documents
+
+    return product_documents(request, product)

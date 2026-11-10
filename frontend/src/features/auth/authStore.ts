@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { User } from '@/api/types';
+import type { User, UserAction } from '@/api/types';
 
 /**
  * Session côté client : le jeton d'accès (15 min) vit en mémoire seulement ; le refresh token est
@@ -47,3 +47,14 @@ export function canEditCountry(user: User | null, iso2: string | undefined): boo
 export const isAdmin = (user: User | null) => user?.role === 'CEO_ADMIN';
 export const isHqOrAdmin = (user: User | null) =>
   user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+
+/**
+ * L'utilisateur peut-il faire cette action sensible ? La réponse vient du backend (`actions` de
+ * `/me` et de la connexion, calculées par `apps/accounts/roles.py`) : les règles de rôles ne sont
+ * pas recopiées dans l'interface.
+ */
+export const can = (user: User | null, action: UserAction) => !!user?.actions?.includes(action);
+
+export function useCan(action: UserAction): boolean {
+  return useAuthStore((state) => can(state.user, action));
+}

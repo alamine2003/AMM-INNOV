@@ -8,11 +8,25 @@ d'architecture du 09/11/2026.
 | --- | --- | --- |
 | 1. Socle | `core`, `accounts`, `catalog`, `realtime` | le socle (`core` : rien) |
 | 2. Métier | `amm`, `documents`, `alerts`, `deposits`, `notifications` | socle et métier |
-| 3. Fonctions transverses | `imports`, `binders`, `analytics` | toutes les couches |
+| 3. Fonctions transverses | `imports`, `binders`, `analytics`, `demo` | toutes les couches |
 
-`tests/test_architecture.py` vérifie ces règles à chaque PR. Les écarts qui restent sont listés
-dans `KNOWN_EXCEPTIONS` du même fichier, et doivent disparaître dans le palier 1.2.0. Cette
-liste ne peut que raccourcir.
+`tests/test_architecture.py` vérifie ces règles à chaque PR. Depuis le palier 1.2.0, il n'y a
+plus aucune exception. `demo` (données de démonstration, `manage.py seed_demo`) n'est importée
+par aucune app.
+
+## Quand une couche basse a besoin d'une couche haute
+
+Elle ouvre un point d'extension, que la couche haute remplit dans son `hooks.py` :
+
+| Point d'extension | Ouvert par | Rempli par | Sert à |
+| --- | --- | --- | --- |
+| `COUNTRY_DOCUMENTS`, `PRODUCT_DOCUMENTS` | `catalog/extensions.py` | `documents` | `/countries/SN/documents`, `/products/<id>/documents` |
+| `PRODUCT_MERGE`, `PRODUCT_COUNTRIES` | `catalog/extensions.py` | `amm` | fusion de produits en double |
+| `HISTORY_SOURCES` | `amm/extensions.py` | `imports` | corrections des dossiers dans l'historique d'une fiche |
+| `LIST_ANNOTATIONS` | `amm/extensions.py` | `imports` | points à vérifier dans la liste des AMM |
+
+`Registry` accepte plusieurs participants (appelés dans l'ordre de `INSTALLED_APPS`) ;
+`Provider` n'en accepte qu'un (`apps/core/registry.py`).
 
 ## Le socle ne connaît pas le métier
 
@@ -52,8 +66,9 @@ rôle : il demande une action.
   403 et le message de l'action.
 
 Ajouter une action, c'est une ligne dans `Action`, une dans `ACTION_ROLES` et une dans
-`MESSAGES`. Les vues DRF gardent `RolePermission` (`write_roles`, `action_roles`) avec les mêmes
-groupes.
+`MESSAGES`. `/me` et la connexion renvoient la liste `actions` permises : l'interface la lit avec
+`useCan('binder.delete_page')` (`features/auth/authStore.ts`) sans recopier les rôles. Les vues
+DRF gardent `RolePermission` (`write_roles`, `action_roles`) avec les mêmes groupes.
 
 ## Conformité des classeurs
 

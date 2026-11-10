@@ -20,7 +20,13 @@ from apps.core.resilience import ResilientCache
 
 from .models import User
 from .permissions import GLOBAL_ROLES, RolePermission
-from .serializers import HealthSerializer, LoginSerializer, LogoutSerializer, UserSerializer
+from .serializers import (
+    HealthSerializer,
+    LoginSerializer,
+    LogoutSerializer,
+    MeSerializer,
+    UserSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,9 +155,9 @@ class LogoutView(APIView):
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses=UserSerializer)
+    @extend_schema(responses=MeSerializer)
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(MeSerializer(request.user).data)
 
 
 # redis-py résout le nom d'hôte par socket.getaddrinfo() AVANT d'appliquer

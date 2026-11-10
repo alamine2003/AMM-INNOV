@@ -138,3 +138,47 @@ def test_conformity_paper_present_but_decision_not_scanned():
         "ok": False,
         "detail": "aucun scan de décision",
     }
+
+
+def test_lower_layers_extension_points_are_filled():
+    """1.2.0 : le catalogue et la fiche AMM ne connaissent plus les couches du dessus."""
+    from apps.amm.extensions import HISTORY_SOURCES, LIST_ANNOTATIONS, list_annotations
+    from apps.catalog.extensions import (
+        COUNTRY_DOCUMENTS,
+        PRODUCT_COUNTRIES,
+        PRODUCT_DOCUMENTS,
+        PRODUCT_MERGE,
+    )
+
+    assert [f.__module__ for f in PRODUCT_MERGE] == ["apps.amm.hooks"]
+    assert [f.__module__ for f in HISTORY_SOURCES] == ["apps.imports.hooks"]
+    assert [f.__module__ for f in LIST_ANNOTATIONS] == ["apps.imports.hooks"]
+    assert set(list_annotations()) == {"open_review_points"}
+    for provider in (COUNTRY_DOCUMENTS, PRODUCT_DOCUMENTS, PRODUCT_COUNTRIES):
+        assert provider._function is not None, provider.name
+
+
+def test_provider_without_supplier_says_what_is_missing():
+    from apps.core.registry import Provider
+
+    with pytest.raises(RuntimeError, match="essai"):
+        Provider("essai")()
+
+
+# --- /me : actions permises, lues par l'interface (useCan) ----------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("role", "expected"),
+    [
+        ("ceo", {a.value for a in Action}),
+        ("hq", {a.value for a in Action}),
+        ("country", set()),
+    ],
+)
+def test_me_lists_the_actions_the_user_can_do(users, role, expected):
+    from tests.conftest import client_for
+
+    body = client_for(users[role]).get("/api/v1/me").json()
+    assert set(body["actions"]) == expected

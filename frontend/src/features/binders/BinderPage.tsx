@@ -21,7 +21,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useSnackbar } from 'notistack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import { useCurrentUser } from '@/api/hooks/useAuth';
+import { useCan } from '@/features/auth/authStore';
 import { useBinder, useBinderPresence } from '@/api/hooks/useBinders';
 import type { BinderDetail, BinderPage as Page } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
@@ -129,8 +129,7 @@ export default function BinderPage() {
 }
 
 function OpenBinder({ binder }: { binder: BinderDetail }) {
-  const user = useCurrentUser();
-  const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const canDownload = useCan('binder.download');
   const [filter, setFilter] = useState<LeafFilter>('all');
   const [animation, setAnimation] = useState(readAnimation);
   const [sound, setSound] = useState(readSound);
@@ -281,7 +280,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           }}
           onAddPage={(prefill) => setAdding({ prefill })}
           downloadButton={
-            isHq ? (
+            canDownload ? (
               <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
             ) : null
           }
@@ -411,7 +410,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
           Ajouter une page
         </Button>
-        {isHq && <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />}
+        {canDownload && (
+          <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
+        )}
       </Stack>
       <AddPageDialog
         binder={binder}

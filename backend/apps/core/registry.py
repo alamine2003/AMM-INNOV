@@ -11,7 +11,9 @@ s'enregistre ici, depuis son module `hooks.py` chargé par `AppConfig.ready()` :
     def recover_previews(now) -> dict[str, int]: ...
 
 Les fonctions sont appelées dans l'ordre d'enregistrement, c'est-à-dire l'ordre des apps dans
-`INSTALLED_APPS`.
+`INSTALLED_APPS`. Une app du socle ou du métier peut aussi ouvrir ses propres points d'extension
+avec `Registry` (plusieurs participants) ou `Provider` (un seul fournisseur) : par exemple
+`apps/catalog/extensions.py`, `apps/amm/extensions.py`.
 """
 
 from __future__ import annotations
@@ -38,6 +40,28 @@ class Registry:
 
     def __len__(self) -> int:
         return len(self._functions)
+
+
+class Provider:
+    """Un seul fournisseur pour un service dont le socle a besoin sans le connaître.
+
+    Une app de couche basse déclare le besoin (`COUNTRY_DOCUMENTS = Provider(...)`), une app
+    de couche supérieure le remplit (`@COUNTRY_DOCUMENTS.register`). Un appel sans fournisseur
+    est une erreur de configuration : l'app qui le remplit n'est pas installée.
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+        self._function: Callable[..., Any] | None = None
+
+    def register(self, function: Callable[..., Any]) -> Callable[..., Any]:
+        self._function = function
+        return function
+
+    def __call__(self, *args, **kwargs):
+        if self._function is None:
+            raise RuntimeError(f"Aucun fournisseur pour « {self.name} »")
+        return self._function(*args, **kwargs)
 
 
 # `f(now) -> dict[str, int]` : republie ou clôt le travail resté en plan (tâche

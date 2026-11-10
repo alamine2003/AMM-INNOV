@@ -25,7 +25,7 @@ from django.core.management import call_command  # noqa: E402
 from django.db import transaction  # noqa: E402
 from simple_history.utils import bulk_create_with_history  # noqa: E402
 
-from apps.accounts.management.commands.seed_demo import PASSWORD  # noqa: E402
+from apps.demo.management.commands.seed_demo import PASSWORD  # noqa: E402
 from apps.accounts.models import User  # noqa: E402
 from apps.alerts.services.engine import evaluate_rules  # noqa: E402
 from apps.amm.models import MarketingAuthorization, Renewal  # noqa: E402
@@ -141,7 +141,7 @@ def main():
         print(f"{len(renewals)} renouvellements créés")
 
     # Scans PDF dans le stockage S3 : un sur quatre, rattaché à la décision en vigueur.
-    from apps.accounts.management.commands.seed_demo import attach_demo_scan
+    from apps.demo.management.commands.seed_demo import attach_demo_scan
 
     obtained = {r.amm_id: r for r in Renewal.objects.filter(workflow_status="OBTENU")}
     scanned = 0

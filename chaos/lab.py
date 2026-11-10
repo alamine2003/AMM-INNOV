@@ -76,7 +76,7 @@ def lab_password() -> str:
     global _password
     if _password is None:
         _password = exec_backend(
-            "from apps.accounts.management.commands.seed_demo import PASSWORD; print(PASSWORD)"
+            "from apps.demo.management.commands.seed_demo import PASSWORD; print(PASSWORD)"
         ).strip().splitlines()[-1]
     return _password
 

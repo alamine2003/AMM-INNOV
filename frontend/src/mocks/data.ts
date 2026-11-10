@@ -143,6 +143,13 @@ export const users: User[] = [
     role: 'CEO_ADMIN',
     countries: [],
     is_active: true,
+    actions: [
+      'binder.remove_passage',
+      'binder.rename_page',
+      'binder.delete_page',
+      'binder.remove_piece',
+      'binder.download',
+    ],
   },
   {
     id: 'u-hq',
@@ -152,6 +159,13 @@ export const users: User[] = [
     role: 'HQ_REGULATORY',
     countries: [],
     is_active: true,
+    actions: [
+      'binder.remove_passage',
+      'binder.rename_page',
+      'binder.delete_page',
+      'binder.remove_piece',
+      'binder.download',
+    ],
   },
   {
     id: 'u-sn',
@@ -161,6 +175,7 @@ export const users: User[] = [
     role: 'COUNTRY_REGULATORY',
     countries: ['SN'],
     is_active: true,
+    actions: [],
   },
   {
     id: 'u-ci',
@@ -170,6 +185,7 @@ export const users: User[] = [
     role: 'COUNTRY_REGULATORY',
     countries: ['CI', 'CM'],
     is_active: true,
+    actions: [],
   },
 ];
 

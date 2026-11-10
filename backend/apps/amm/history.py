@@ -2,10 +2,12 @@
 
 from typing import Any
 
+from .extensions import HISTORY_SOURCES
+
 EXCLUDED = {"updated_at", "created_at"}
 
 
-def _label(value: Any) -> str | None:
+def label_value(value: Any) -> str | None:
     if value is None:
         return None
     return str(value)
@@ -25,7 +27,11 @@ def entries_for_model(instances_history, model_label: str) -> list[dict]:
         if record.history_type == "~" and previous is not None:
             delta = record.diff_against(previous, excluded_fields=EXCLUDED)
             changes = [
-                {"field": change.field, "old": _label(change.old), "new": _label(change.new)}
+                {
+                    "field": change.field,
+                    "old": label_value(change.old),
+                    "new": label_value(change.new),
+                }
                 for change in delta.changes
             ]
         elif record.history_type in ("+", "-"):
@@ -34,8 +40,8 @@ def entries_for_model(instances_history, model_label: str) -> list[dict]:
             changes = [
                 {
                     "field": field.name,
-                    "old": None if created else _label(getattr(record, field.name)),
-                    "new": _label(getattr(record, field.name)) if created else None,
+                    "old": None if created else label_value(getattr(record, field.name)),
+                    "new": label_value(getattr(record, field.name)) if created else None,
                 }
                 for field in record.instance._meta.fields
                 if field.name not in EXCLUDED
@@ -61,39 +67,10 @@ def entries_for_model(instances_history, model_label: str) -> list[dict]:
 def amm_history(amm) -> list[dict]:
     from apps.amm.models import MarketingAuthorization, Renewal
     from apps.documents.models import Document
-    from apps.imports.models import DossierChange
-
     entries = entries_for_model(MarketingAuthorization.history.filter(id=amm.pk), "amm")
     entries += entries_for_model(Renewal.history.filter(amm_id=amm.pk), "renewal")
     entries += entries_for_model(Document.history.filter(amm_id=amm.pk), "document")
-    for change in DossierChange.objects.filter(amm=amm).select_related("user", "proof_file"):
-        entries.append(
-            {
-                "date": change.created_at,
-                "user_email": change.user.email if change.user else None,
-                # Une valeur absente OU vide est renseignée, pas corrigée : seul un
-                # désaccord avec une donnée existante est une correction.
-                "type": "documentary_correction"
-                if change.old_value not in (None, "")
-                else "documentary_creation",
-                "model": "renewal" if change.renewal_id else "amm",
-                "object_id": str(change.renewal_id or amm.pk),
-                "changes": [
-                    {
-                        "field": change.field,
-                        "old": _label(change.old_value),
-                        "new": _label(change.new_value),
-                    }
-                ],
-                "source": change.source,
-                "reason": change.reason,
-                "confidence": change.confidence,
-                "batch_id": str(change.batch_id),
-                "proof_file_id": str(change.proof_file_id),
-                "document_id": str(change.proof_file.document_id)
-                if change.proof_file.document_id
-                else None,
-            }
-        )
+    for source in HISTORY_SOURCES:  # corrections des imports de dossiers (apps/imports/hooks.py)
+        entries += source(amm)
     entries.sort(key=lambda e: e["date"], reverse=True)
     return entries

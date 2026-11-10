@@ -1,4 +1,5 @@
-"""Ce que l'app AMM déclare au socle : invariants (check_integrity) et métriques."""
+"""Ce que l'app AMM déclare au socle : invariants (check_integrity), métriques, et sa part
+de la fusion de produits du catalogue."""
 
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ from collections import defaultdict
 from django.db import connection
 from django.db.models import Count
 
+from apps.catalog.extensions import PRODUCT_COUNTRIES, PRODUCT_MERGE
 from apps.core.integrity import ERROR, WARNING, Check
 from apps.core.registry import INTEGRITY, METRICS
 
@@ -147,3 +149,38 @@ def amm_by_status():
     except Exception:  # base indisponible pendant la collecte
         return
     yield gauge
+
+
+# --- Catalogue : fusion de produits ---------------------------------------------------------
+
+
+@PRODUCT_MERGE.register
+def merge_product_amms(keep, duplicate) -> None:
+    """Les AMM du doublon passent au produit gardé. Si les deux avaient une AMM dans le même
+    pays, l'AMM gardée reprend renouvellements, documents et alertes : l'historique reste."""
+    from .models import MarketingAuthorization
+
+    for amm in MarketingAuthorization.objects.filter(product=duplicate):
+        existing = MarketingAuthorization.objects.filter(product=keep, country=amm.country).first()
+        if existing is None:
+            amm.product = keep
+            amm.save()
+        else:
+            amm.renewals.update(amm=existing)
+            amm.documents.update(amm=existing)
+            amm.alerts.update(amm=existing)
+            amm.delete()
+            existing.save()
+
+
+@PRODUCT_COUNTRIES.register
+def product_countries(products) -> dict:
+    from .models import MarketingAuthorization
+
+    countries: dict = defaultdict(list)
+    rows = MarketingAuthorization.objects.filter(product__in=products).values_list(
+        "product_id", "country__iso2"
+    )
+    for product_id, iso2 in rows:
+        countries[product_id].append(iso2)
+    return dict(countries)

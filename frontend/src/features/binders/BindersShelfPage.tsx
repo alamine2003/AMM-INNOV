@@ -2,6 +2,7 @@ import { Box, LinearProgress, Stack, Tooltip, Typography } from '@mui/material';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { Link } from 'react-router';
 import { useCurrentUser } from '@/api/hooks/useAuth';
+import { isHqOrAdmin, useCan } from '@/features/auth/authStore';
 import { useBinders } from '@/api/hooks/useBinders';
 import type { BinderSummary } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
@@ -177,7 +178,8 @@ function Spine({ binder }: { binder: BinderSummary }) {
 export default function BindersShelfPage() {
   const shelf = useBinders();
   const user = useCurrentUser();
-  const isHq = user?.role === 'CEO_ADMIN' || user?.role === 'HQ_REGULATORY';
+  const isHq = isHqOrAdmin(user);
+  const canDownload = useCan('binder.download');
 
   const binders = shelf.data ?? [];
   const totals = binders.reduce(
@@ -263,7 +265,7 @@ export default function BindersShelfPage() {
                   boxShadow: '0 8px 10px -4px rgba(60,35,10,0.55)',
                 }}
               />
-              {isHq && (
+              {canDownload && (
                 <BinderDownload
                   binderKey={binder.key}
                   label={`${binder.country_name} ${binder.title}`}
