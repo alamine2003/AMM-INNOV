@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import CEO_ONLY, GLOBAL_ROLES, RolePermission
 
+from .extensions import COUNTRY_DOCUMENTS, PRODUCT_DOCUMENTS
 from .models import Country, Product, ProductRange
 from .serializers import (
     CountrySerializer,
@@ -43,9 +44,7 @@ class CountryViewSet(viewsets.ModelViewSet):
     @extend_schema(responses={200: dict})
     @action(detail=True, methods=["get"], url_path="documents")
     def documents(self, request, iso2=None):
-        from apps.documents.views import country_documents
-
-        return country_documents(request, self.get_object())
+        return COUNTRY_DOCUMENTS(request, self.get_object())
 
 
 class ProductRangeViewSet(viewsets.ModelViewSet):
@@ -84,9 +83,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     @extend_schema(responses={200: dict})
     @action(detail=True, methods=["get"], url_path="documents")
     def documents(self, request, pk=None):
-        from apps.documents.views import product_documents
-
-        return product_documents(request, self.get_object())
+        return PRODUCT_DOCUMENTS(request, self.get_object())
 
     @extend_schema(responses={200: dict})
     @action(detail=False, methods=["get"])

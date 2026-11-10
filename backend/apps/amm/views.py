@@ -1,7 +1,6 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Exists, IntegerField, OuterRef, Prefetch, Subquery
-from django.db.models.functions import Coalesce
+from django.db.models import Exists, OuterRef, Prefetch
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -15,6 +14,7 @@ from apps.accounts.permissions import (
 )
 from apps.documents.models import Document
 
+from .extensions import list_annotations
 from .filters import AmmFilter, RenewalFilter
 from .history import amm_history
 from .models import MarketingAuthorization, Renewal
@@ -33,28 +33,15 @@ from .services.workflow import lock_amm
 
 
 def amm_base_queryset():
-    from apps.imports.models import DossierReviewPoint
-
     current_scan = Document.objects.filter(
         amm=OuterRef("pk"), kind=Document.Kind.AMM, is_current=True, archived_at__isnull=True
-    )
-    # Points à vérifier plus tard laissés par l'import de dossiers (badge de la liste).
-    open_points = (
-        DossierReviewPoint.objects.filter(amm=OuterRef("pk"), status="OPEN")
-        .order_by()
-        .values("amm")
-        .annotate(total=Count("pk"))
-        .values("total")
     )
     return (
         MarketingAuthorization.objects.select_related(
             "product", "product__range", "country", "owner"
         )
         .prefetch_related(Prefetch("renewals", queryset=Renewal.objects.order_by("sequence")))
-        .annotate(
-            has_current_scan=Exists(current_scan),
-            open_review_points=Coalesce(Subquery(open_points, output_field=IntegerField()), 0),
-        )
+        .annotate(has_current_scan=Exists(current_scan))
     )
 
 
@@ -89,7 +76,9 @@ class AmmViewSet(CountryScopedQuerysetMixin, viewsets.ModelViewSet):
         return AmmListSerializer
 
     def get_queryset(self):
-        return super().get_queryset().distinct()
+        # Colonnes calculées par d'autres apps (points à vérifier des imports de dossiers) :
+        # ajoutées à la requête, pas au module, pour qu'elles soient déjà déclarées.
+        return super().get_queryset().annotate(**list_annotations()).distinct()
 
     def perform_create(self, serializer):
         ensure_country_in_scope(self.request.user, serializer.validated_data.get("country"))

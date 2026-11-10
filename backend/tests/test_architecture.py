@@ -7,11 +7,11 @@ Trois couches ; une app n'importe que sa couche ou celles du dessous :
 3. fonctions transverses : imports, binders, analytics.
 
 `core` est plus strict encore : il n'importe aucune autre app. Les apps s'y déclarent
-(`apps/core/registry.py`).
+(`apps/core/registry.py`). Quand une couche basse a besoin d'une couche haute, elle ouvre un
+point d'extension (`apps/catalog/extensions.py`, `apps/amm/extensions.py`) que la couche haute
+remplit dans son `hooks.py`.
 
-Les écarts qui existent encore sont listés dans `KNOWN_EXCEPTIONS`, à corriger dans le palier
-1.2.0. La liste ne peut que raccourcir : un nouvel écart fait échouer le test, et un écart
-corrigé aussi, tant qu'il reste dans la liste.
+Depuis le palier 1.2.0, il n'y a plus aucune exception.
 """
 
 import ast
@@ -32,23 +32,8 @@ LAYERS = {
     "imports": 3,
     "binders": 3,
     "analytics": 3,
+    "demo": 3,  # données de démonstration (seed_demo) : outil, aucune app ne l'importe
 }
-
-# (fichier, app importée) : imports qui remontent les couches, à supprimer en 1.2.0.
-KNOWN_EXCEPTIONS = {
-    # Données de démonstration : l'outil de développement remplit toutes les apps.
-    ("accounts/management/commands/seed_demo.py", "alerts"),
-    ("accounts/management/commands/seed_demo.py", "amm"),
-    ("accounts/management/commands/seed_demo.py", "documents"),
-    ("accounts/management/commands/seed_demo.py", "imports"),
-    # L'historique et la liste des AMM lisent les changements et points des imports de dossiers.
-    ("amm/history.py", "imports"),
-    ("amm/views.py", "imports"),
-    # Le référentiel produits compte les AMM et documents d'un produit (fusion de doublons).
-    ("catalog/services.py", "amm"),
-    ("catalog/views.py", "documents"),
-}
-
 
 def _imports():
     """(fichier relatif à apps/, app qui importe, app importée) pour chaque import absolu."""
@@ -85,10 +70,15 @@ def test_core_imports_no_other_app():
 
 
 def test_apps_only_import_their_layer_or_below():
-    upward = {
+    upward = sorted(
         (path, target) for path, app, target in _imports() if LAYERS[target] > LAYERS[app]
-    }
-    new = sorted(upward - KNOWN_EXCEPTIONS)
-    fixed = sorted(KNOWN_EXCEPTIONS - upward)
-    assert not new, f"Import vers une couche supérieure : {new}"
-    assert not fixed, f"Écart corrigé : retirez-le de KNOWN_EXCEPTIONS : {fixed}"
+    )
+    assert upward == [], (
+        "Import vers une couche supérieure : ouvrez un point d'extension dans l'app du dessous "
+        f"et remplissez-le dans le hooks.py de l'app du dessus. {upward}"
+    )
+
+
+def test_no_app_imports_the_demo_tools():
+    found = sorted({(path, app) for path, app, target in _imports() if target == "demo"})
+    assert found == []

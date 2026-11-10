@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "apps.imports",
     "apps.binders",
     "apps.deposits",
+    "apps.demo",
 ]
 
 MIDDLEWARE = [

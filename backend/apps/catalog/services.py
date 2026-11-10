@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from django.db import transaction
 from django.db.models import Count
 
+from .extensions import PRODUCT_COUNTRIES, PRODUCT_MERGE
 from .models import Product, ProductAlias
 
 
@@ -18,21 +19,8 @@ from .models import Product, ProductAlias
 def merge_products(keep: Product, duplicate: Product) -> Product:
     if keep.pk == duplicate.pk:
         raise ValueError("Impossible de fusionner un produit avec lui-même.")
-    from apps.amm.models import MarketingAuthorization
-
-    for amm in MarketingAuthorization.objects.filter(product=duplicate):
-        existing = MarketingAuthorization.objects.filter(product=keep, country=amm.country).first()
-        if existing is None:
-            amm.product = keep
-            amm.save()
-        else:
-            # Both products had an AMM in that country: keep the surviving AMM, move
-            # renewals and documents so that history is preserved.
-            amm.renewals.update(amm=existing)
-            amm.documents.update(amm=existing)
-            amm.alerts.update(amm=existing)
-            amm.delete()
-            existing.save()
+    for merge in PRODUCT_MERGE:  # les AMM du doublon (apps/amm/hooks.py)
+        merge(keep, duplicate)
     ProductAlias.objects.filter(product=duplicate).update(product=keep)
     ProductAlias.objects.get_or_create(product=keep, raw_name=duplicate.name)
     if keep.range_id is None and duplicate.range_id is not None:
@@ -51,8 +39,6 @@ def _primary(products: list[dict]) -> dict:
 
 def duplicate_groups() -> list[dict]:
     """Groups of products sharing the same key, with AMM counts, countries and conflict flag."""
-    from apps.amm.models import MarketingAuthorization
-
     keys = [
         row["key"]
         for row in Product.objects.values("key").annotate(n=Count("id")).filter(n__gt=1)
@@ -66,11 +52,7 @@ def duplicate_groups() -> list[dict]:
         .annotate(alias_count=Count("aliases", distinct=True))
         .order_by("key", "name")
     )
-    countries_by_product: dict = defaultdict(list)
-    for product_id, iso2 in MarketingAuthorization.objects.filter(
-        product__in=products
-    ).values_list("product_id", "country__iso2"):
-        countries_by_product[product_id].append(iso2)
+    countries_by_product: dict = defaultdict(list, PRODUCT_COUNTRIES(products))
     by_key: dict[str, list[dict]] = defaultdict(list)
     for product in products:
         by_key[product.key].append(
