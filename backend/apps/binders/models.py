@@ -56,6 +56,42 @@ class BinderCheck(models.Model):
         return self.result != self.Result.ABSENT
 
 
+
+class BinderPrintMark(models.Model):
+    """« À imprimer » : le scan existe, mais sa feuille manque dans le classeur papier.
+
+    Marqué par l'archiviste pendant la lecture, compté dans le bilan. Sans effet sur la
+    conformité : un dossier peut être conforme avant d'avoir été imprimé. Rien n'est supprimé :
+    une feuille imprimée et rangée passe simplement `to_print` à faux (l'historique garde tout).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    amm = models.OneToOneField(
+        "amm.MarketingAuthorization",
+        on_delete=models.CASCADE,
+        related_name="print_mark",
+        verbose_name="AMM",
+    )
+    to_print = models.BooleanField("à imprimer", default=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="marqué par",
+    )
+    updated_at = models.DateTimeField("marqué le", auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "page à imprimer"
+        verbose_name_plural = "pages à imprimer"
+
+    def __str__(self) -> str:
+        return f"{self.amm} — {'à imprimer' if self.to_print else 'imprimée'}"
+
+
 class BinderExtraPage(models.Model):
     """Dossier trouvé dans un classeur papier sans AMM correspondante dans l'application."""
 

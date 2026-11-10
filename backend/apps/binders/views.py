@@ -13,6 +13,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
 from apps.accounts.permissions import ensure_can
@@ -44,6 +45,7 @@ from .serializers import (
     PageScanInputSerializer,
     PageScanResultSerializer,
     PeriodInputSerializer,
+    PrintMarkInputSerializer,
     UncheckInputSerializer,
 )
 
@@ -51,6 +53,15 @@ from .serializers import (
 class BinderViewSet(viewsets.ViewSet):
     lookup_field = "key"
     lookup_value_regex = r"[A-Za-z]{2}(?:-[a-z-]+)?"
+    # Écritures sans droit de modifier : la présence (« classeur ouvert ») et la préparation du
+    # classeur avec décisions, qui a son propre droit (téléchargement).
+    READ_ONLY_EXEMPT = {"presence", "exports"}
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        # Lecture seule pour qui n'a pas le droit de modifier les classeurs (CEO et siège).
+        if request.method not in SAFE_METHODS and self.action not in self.READ_ONLY_EXEMPT:
+            ensure_can(request.user, Action.BINDER_EDIT)
 
     @extend_schema(responses=BinderSummarySerializer(many=True))
     def list(self, request):
@@ -117,6 +128,19 @@ class BinderViewSet(viewsets.ViewSet):
             )
         )
         return Response(BinderDetailSerializer(binder_detail(binder)).data)
+
+    @extend_schema(request=PrintMarkInputSerializer, responses=BinderDetailSerializer)
+    @action(detail=True, methods=["post"], url_path=r"pages/(?P<amm_id>[0-9a-f-]{36})/print")
+    def page_print(self, request, key=None, amm_id=None):
+        """« À imprimer » : le scan existe mais sa feuille manque dans le classeur papier."""
+        serializer = PrintMarkInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        to_print = serializer.validated_data["to_print"]
+        return self._chronology(
+            request,
+            key,
+            lambda binder: actions.mark_print(binder, amm_id, to_print=to_print, user=request.user),
+        )
 
     @extend_schema(request=UncheckInputSerializer, responses=BinderDetailSerializer)
     @action(detail=True, methods=["post"])
