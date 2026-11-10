@@ -5,7 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import CEO_ONLY, GLOBAL_ROLES, RolePermission
+from apps.accounts.permissions import RolePermission
+from apps.accounts.roles import Action
 from apps.core.trash import TrashDestroyMixin
 
 from .extensions import COUNTRY_DOCUMENTS, PRODUCT_DOCUMENTS
@@ -26,7 +27,7 @@ class CountryViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    write_roles = GLOBAL_ROLES
+    write_action = Action.CATALOG_MANAGE
     lookup_field = "iso2"
     lookup_value_regex = "[^/]+"
     search_fields = ["iso2", "name", "authority"]
@@ -52,15 +53,19 @@ class ProductRangeViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = ProductRange.objects.all()
     serializer_class = ProductRangeSerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    write_roles = GLOBAL_ROLES
+    write_action = Action.CATALOG_MANAGE
 
 
 class ProductViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = Product.objects.select_related("range").prefetch_related("aliases")
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    write_roles = GLOBAL_ROLES
-    action_roles = {"merge": CEO_ONLY, "duplicates": GLOBAL_ROLES, "merge_duplicates": CEO_ONLY}
+    write_action = Action.CATALOG_MANAGE
+    action_permissions = {
+        "merge": Action.CATALOG_MERGE,
+        "duplicates": Action.CATALOG_MANAGE,
+        "merge_duplicates": Action.CATALOG_MERGE,
+    }
     filterset_fields = {"range": ["exact"], "range__code": ["exact"], "is_active": ["exact"]}
     search_fields = ["name", "dci", "aliases__raw_name"]
     ordering_fields = ["name"]

@@ -8,7 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import User
-from apps.accounts.permissions import GLOBAL_ROLES, CountryScopedQuerysetMixin, RolePermission
+from apps.accounts.permissions import CountryScopedQuerysetMixin, RolePermission
+from apps.accounts.roles import Action
 from apps.core.trash import TrashDestroyMixin
 
 from .filters import AlertFilter
@@ -88,7 +89,7 @@ class AlertRuleViewSet(TrashDestroyMixin, viewsets.ModelViewSet):
     queryset = AlertRule.objects.select_related("country")
     serializer_class = AlertRuleSerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    write_roles = GLOBAL_ROLES
+    write_action = Action.ALERT_RULES_MANAGE
     filterset_fields = ["code", "country", "severity", "is_active"]
     ordering_fields = ["code", "offset_days", "severity"]
 

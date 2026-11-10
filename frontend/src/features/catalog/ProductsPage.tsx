@@ -8,17 +8,18 @@ import { useProductDuplicates, useProducts } from '@/api/hooks/useCatalog';
 import { DuplicatesDialog } from './DuplicatesDialog';
 import type { Product } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
-import { isAdmin, isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
+import { useCan } from '@/features/auth/authStore';
 import { ProductFormDialog } from './ProductFormDialog';
 
 export default function ProductsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
+  const canManage = useCan('catalog.manage');
+  const canMerge = useCan('catalog.merge');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const products = useProducts(search ? { search } : {});
-  const duplicates = useProductDuplicates(isHqOrAdmin(user));
+  const duplicates = useProductDuplicates(canManage);
   const [duplicatesOpen, setDuplicatesOpen] = useState(false);
 
   const columns: GridColDef<Product>[] = [
@@ -63,7 +64,7 @@ export default function ProductsPage() {
       <PageHeader
         title={t('products.title')}
         actions={
-          isHqOrAdmin(user) && (
+          canManage && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
               {t('products.create')}
             </Button>
@@ -106,7 +107,7 @@ export default function ProductsPage() {
         open={duplicatesOpen}
         onClose={() => setDuplicatesOpen(false)}
         groups={duplicates.data ?? []}
-        canMerge={isAdmin(user)}
+        canMerge={canMerge}
       />
     </Box>
   );

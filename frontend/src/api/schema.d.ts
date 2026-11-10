@@ -410,6 +410,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Qui a fait quoi, quand : créations, modifications, connexions, mises à la corbeille et
+         *     restaurations, dans toute l'application, du plus récent au plus ancien.
+         */
+        get: operations["v1_audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/filters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Valeurs proposées dans les filtres de l'audit. */
+        get: operations["v1_audit_filters_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login/": {
         parameters: {
             query?: never;
@@ -1733,6 +1770,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/permissions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Qui peut faire quoi : rôles × actions. Le CEO seul les consulte et les règle.
+         *
+         *     Le CEO garde toujours tous les droits et le droit de régler les permissions ne se règle pas :
+         *     personne ne peut s'enfermer dehors. Chaque changement est gardé dans l'historique (audit).
+         */
+        get: operations["v1_permissions_retrieve"];
+        /**
+         * @description Qui peut faire quoi : rôles × actions. Le CEO seul les consulte et les règle.
+         *
+         *     Le CEO garde toujours tous les droits et le droit de régler les permissions ne se règle pas :
+         *     personne ne peut s'enfermer dehors. Chaque changement est gardé dans l'historique (audit).
+         */
+        put: operations["v1_permissions_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/": {
         parameters: {
             query?: never;
@@ -2167,6 +2232,15 @@ export interface components {
             reason: string;
         };
         /**
+         * @description * `created` - created
+         *     * `updated` - updated
+         *     * `login` - login
+         *     * `deleted` - deleted
+         *     * `restored` - restored
+         * @enum {string}
+         */
+        ActionEnum: "created" | "updated" | "login" | "deleted" | "restored";
+        /**
          * @description * `binder.edit` - binder.edit
          *     * `binder.remove_passage` - binder.remove_passage
          *     * `binder.rename_page` - binder.rename_page
@@ -2174,9 +2248,16 @@ export interface components {
          *     * `binder.remove_piece` - binder.remove_piece
          *     * `binder.download` - binder.download
          *     * `trash.restore` - trash.restore
+         *     * `catalog.manage` - catalog.manage
+         *     * `catalog.merge` - catalog.merge
+         *     * `documents.delete` - documents.delete
+         *     * `alerts.manage_rules` - alerts.manage_rules
+         *     * `deposits.manage_pieces` - deposits.manage_pieces
+         *     * `audit.view` - audit.view
+         *     * `permissions.manage` - permissions.manage
          * @enum {string}
          */
-        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download" | "trash.restore";
+        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download" | "trash.restore" | "catalog.manage" | "catalog.merge" | "documents.delete" | "alerts.manage_rules" | "deposits.manage_pieces" | "audit.view" | "permissions.manage";
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -2543,6 +2624,48 @@ export interface components {
             /** Format: date */
             document_date: string;
             filename: string;
+        };
+        AuditChange: {
+            field: string;
+            old: string | null;
+            new: string | null;
+        };
+        AuditEvent: {
+            id: string;
+            /** Format: date-time */
+            at: string;
+            action: components["schemas"]["ActionEnum"];
+            action_label: string;
+            user: string | null;
+            user_id: string | null;
+            model: string;
+            type: string;
+            object_id: string;
+            label: string;
+            country: string;
+            reason: string;
+            changes: components["schemas"]["AuditChange"][];
+            rows: number;
+        };
+        AuditFilters: {
+            types: components["schemas"]["AuditOption"][];
+            actions: components["schemas"]["AuditOption"][];
+            people: components["schemas"]["AuditPerson"][];
+        };
+        AuditOption: {
+            value: string;
+            label: string;
+        };
+        AuditPage: {
+            count: number;
+            page: number;
+            pages: number;
+            results: components["schemas"]["AuditEvent"][];
+        };
+        AuditPerson: {
+            id: string;
+            name: string;
+            active: boolean;
         };
         BinderDetail: {
             total: number;
@@ -4224,6 +4347,33 @@ export interface components {
             /** Format: date */
             filing_date: string | null;
         };
+        PermissionAction: {
+            action: string;
+            group: string;
+            label: string;
+            locked: boolean;
+            defaults: string[];
+            roles: {
+                [key: string]: boolean;
+            };
+        };
+        PermissionGrantRequest: {
+            action: string;
+            role: string;
+            allowed: boolean;
+        };
+        PermissionMatrix: {
+            roles: components["schemas"]["PermissionRole"][];
+            actions: components["schemas"]["PermissionAction"][];
+        };
+        PermissionRole: {
+            value: string;
+            label: string;
+            editable: boolean;
+        };
+        PermissionUpdateRequest: {
+            grants: components["schemas"]["PermissionGrantRequest"][];
+        };
         PieceType: {
             /** Format: uuid */
             readonly id: string;
@@ -5432,6 +5582,55 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    v1_audit_retrieve: {
+        parameters: {
+            query?: {
+                action?: "created" | "deleted" | "login" | "restored" | "updated";
+                /** @description Code ISO2 */
+                country?: string;
+                /** @description Type (ex. amm.Renewal) */
+                model?: string;
+                page?: number;
+                since?: string;
+                until?: string;
+                /** @description Identifiant de la personne */
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+        };
+    };
+    v1_audit_filters_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditFilters"];
                 };
             };
         };
@@ -7726,6 +7925,50 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    v1_permissions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMatrix"];
+                };
+            };
+        };
+    };
+    v1_permissions_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PermissionUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PermissionUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMatrix"];
                 };
             };
         };

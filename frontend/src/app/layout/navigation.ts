@@ -1,10 +1,13 @@
-import type { Role } from '@/api/types';
+import type { Role, User, UserAction } from '@/api/types';
+import { can } from '@/features/auth/authStore';
 
 export interface NavItem {
   key: string;
   labelKey: string;
   to: string;
   roles?: Role[];
+  /** Droit réglable par le CEO : l'entrée suit le droit, pas le rôle. */
+  action?: UserAction;
   icon:
     | 'dashboard'
     | 'amms'
@@ -18,7 +21,9 @@ export interface NavItem {
     | 'imports'
     | 'binders'
     | 'deposits'
-    | 'trash';
+    | 'trash'
+    | 'audit'
+    | 'permissions';
   section?: 'admin';
 }
 
@@ -76,11 +81,35 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.trash',
     to: '/admin/corbeille',
     icon: 'trash',
-    roles: ['CEO_ADMIN', 'HQ_REGULATORY'],
+    action: 'trash.restore',
+    section: 'admin',
+  },
+  {
+    key: 'audit',
+    labelKey: 'nav.audit',
+    to: '/admin/audit',
+    icon: 'audit',
+    action: 'audit.view',
+    section: 'admin',
+  },
+  {
+    key: 'permissions',
+    labelKey: 'nav.permissions',
+    to: '/admin/permissions',
+    icon: 'permissions',
+    action: 'permissions.manage',
     section: 'admin',
   },
 ];
 
 export function navItemsForRole(role: Role | undefined): NavItem[] {
-  return NAV_ITEMS.filter((item) => !item.roles || (role && item.roles.includes(role)));
+  return NAV_ITEMS.filter((item) => !item.action && (!item.roles || (role && item.roles.includes(role))));
+}
+
+/** Entrées du menu pour l'utilisateur connecté : par rôle, ou par droit réglé par le CEO. */
+export function navItemsFor(user: User | null): NavItem[] {
+  return NAV_ITEMS.filter((item) => {
+    if (item.action) return can(user, item.action);
+    return !item.roles || (!!user && item.roles.includes(user.role));
+  });
 }

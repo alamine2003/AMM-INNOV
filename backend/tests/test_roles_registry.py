@@ -8,7 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from apps.accounts.models import User
 from apps.accounts.permissions import ensure_can
-from apps.accounts.roles import ACTION_ROLES, MESSAGES, Action, can
+from apps.accounts.roles import ACTION_ROLES, LABELS, MESSAGES, Action, can
 from apps.binders.conformity import CRITERIA, conformity
 from apps.core.registry import INTEGRITY, METRICS, PENDING_WORK, RECOVERY, WORKER_START, Registry
 
@@ -19,14 +19,16 @@ def _user(role, active=True, authenticated=True):
     return SimpleNamespace(role=role, is_active=active, is_authenticated=authenticated)
 
 
-def test_every_action_has_roles_and_a_message():
-    assert set(ACTION_ROLES) == set(Action) == set(MESSAGES)
+def test_every_action_has_roles_a_message_and_a_label():
+    assert set(ACTION_ROLES) == set(Action) == set(MESSAGES) == set(LABELS)
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize("action", list(Action))
-def test_binder_actions_belong_to_hq_and_ceo(action):
+def test_defaults_ceo_everything_hq_but_merge_and_permissions_country_nothing(action):
     assert can(_user(User.Role.CEO_ADMIN), action)
-    assert can(_user(User.Role.HQ_REGULATORY), action)
+    ceo_only = {Action.CATALOG_MERGE, Action.PERMISSIONS_MANAGE}
+    assert can(_user(User.Role.HQ_REGULATORY), action) is (action not in ceo_only)
     assert not can(_user(User.Role.COUNTRY_REGULATORY), action)
 
 
@@ -36,6 +38,7 @@ def test_inactive_or_anonymous_users_can_do_nothing():
     assert not can(None, Action.BINDER_DELETE_PAGE)
 
 
+@pytest.mark.django_db
 def test_ensure_can_refuses_with_the_action_message():
     with pytest.raises(PermissionDenied) as error:
         ensure_can(_user(User.Role.COUNTRY_REGULATORY), Action.BINDER_DOWNLOAD)
@@ -173,7 +176,7 @@ def test_provider_without_supplier_says_what_is_missing():
     ("role", "expected"),
     [
         ("ceo", {a.value for a in Action}),
-        ("hq", {a.value for a in Action}),
+        ("hq", {a.value for a in Action} - {"catalog.merge", "permissions.manage"}),
         ("country", set()),
     ],
 )

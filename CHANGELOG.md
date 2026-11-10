@@ -5,6 +5,29 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.3] — 2026-11-10
+
+### Ajouté
+- **Audit et traçabilité** (Administration > Audit, CEO et siège). Qui a fait quoi, quand,
+  dans toute l'application : créations, modifications (champ par champ, avant → après),
+  connexions, mises à la corbeille (avec les éléments liés) et restaurations. Filtres par
+  personne, action, type, pays et période. Rien n'est saisi pour l'audit : il relit
+  l'historique et la corbeille.
+- **Permissions** (Administration > Permissions, CEO seul). Un tableau rôles × actions : le CEO
+  coche ce que le siège et les pays peuvent faire (classeurs, référentiels, fusion de produits,
+  retrait d'un scan, règles d'alerte, pièces demandées, corbeille, audit). Les droits viennent
+  de la base, en partant des réglages d'avant ; chaque changement est tracé dans l'audit. Le
+  CEO garde toujours tous les droits et lui seul règle les permissions : personne ne peut
+  s'enfermer dehors. Un droit accordé à un rôle pays reste limité à ses pays (corbeille,
+  audit).
+- Historique des comptes utilisateurs (création, modification, désactivation, connexions),
+  sans le mot de passe.
+
+### Modifié
+- Les boutons des référentiels (produits, gammes), de fusion et de retrait d'un scan suivent
+  les permissions au lieu du rôle. La gamme se supprime avec le droit « Gérer pays, gammes et
+  produits » (avant : CEO seul dans l'interface, alors que l'API l'acceptait du siège).
+
 ## [1.2.2] — 2026-11-10
 
 ### Ajouté

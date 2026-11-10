@@ -17,7 +17,12 @@ from apps.accounts.views import (
     RefreshView,
     UserViewSet,
 )
-from apps.administration.views import TrashViewSet
+from apps.administration.views import (
+    AuditFiltersView,
+    AuditView,
+    PermissionsView,
+    TrashViewSet,
+)
 from apps.alerts.views import AlertRuleViewSet, AlertViewSet
 from apps.amm.views import AmmViewSet, RenewalViewSet
 from apps.analytics.views import AfricaView, CountryView, ExportView, ProductCoverageView
@@ -69,6 +74,9 @@ api_v1 = [
         name="analytics-product-coverage",
     ),
     re_path(r"^analytics/export/?$", ExportView.as_view(), name="analytics-export"),
+    re_path(r"^audit/?$", AuditView.as_view(), name="audit"),
+    re_path(r"^audit/filters/?$", AuditFiltersView.as_view(), name="audit-filters"),
+    re_path(r"^permissions/?$", PermissionsView.as_view(), name="permissions"),
     *router.urls,
 ]
 

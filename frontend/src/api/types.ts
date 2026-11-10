@@ -12,6 +12,14 @@ export type Role = Schemas['RoleEnum'];
 export type UserAction = Schemas['ActionsEnum'];
 /** Élément de la corbeille (supprimé, jamais effacé ; restaurable). */
 export type TrashEntry = Schemas['TrashEntry'];
+/** Audit : un événement (création, modification, connexion, corbeille, restauration). */
+export type AuditEvent = Schemas['AuditEvent'];
+export type AuditAction = Schemas['ActionEnum'];
+export type AuditPage = Schemas['AuditPage'];
+export type AuditFilters = Schemas['AuditFilters'];
+/** Permissions : rôles × actions, réglées par le CEO. */
+export type PermissionMatrix = Schemas['PermissionMatrix'];
+export type PermissionGrant = Schemas['PermissionGrantRequest'];
 
 export interface User {
   id: string;

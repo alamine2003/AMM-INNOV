@@ -22,7 +22,7 @@ import { DateField } from '@/components/DateField';
 import { DateInput, ValidityLine } from '@/components/DateInput';
 import { addValidity } from '@/lib/dates';
 import { extractErrorMessage } from '@/api/client';
-import { isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
+import { useAuthStore, useCan } from '@/features/auth/authStore';
 import { ammSchema, type AmmFormValues } from './ammSchema';
 
 export function AmmCreateDialog({
@@ -47,7 +47,7 @@ export function AmmCreateDialog({
   const allowedCountries = (countries.data ?? []).filter(
     (c) => user?.role !== 'COUNTRY_REGULATORY' || user.countries.includes(c.iso2),
   );
-  const canCreateProduct = isHqOrAdmin(user);
+  const canCreateProduct = useCan('catalog.manage');
 
   const { control, handleSubmit, register, reset, formState, setValue } = useForm<AmmFormValues>({
     resolver: zodResolver(ammSchema),
