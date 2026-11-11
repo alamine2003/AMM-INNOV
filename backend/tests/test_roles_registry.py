@@ -27,7 +27,7 @@ def test_every_action_has_roles_a_message_and_a_label():
 @pytest.mark.parametrize("action", list(Action))
 def test_defaults_ceo_everything_hq_but_merge_and_permissions_country_nothing(action):
     assert can(_user(User.Role.CEO_ADMIN), action)
-    ceo_only = {Action.CATALOG_MERGE, Action.PERMISSIONS_MANAGE}
+    ceo_only = {Action.CATALOG_MERGE, Action.PERMISSIONS_MANAGE, Action.ERRORS_VIEW}
     assert can(_user(User.Role.HQ_REGULATORY), action) is (action not in ceo_only)
     assert not can(_user(User.Role.COUNTRY_REGULATORY), action)
 
@@ -79,6 +79,7 @@ def test_apps_declare_their_work_to_core():
         "apps.documents.hooks",
         "apps.notifications.hooks",
         "apps.imports.hooks",
+        "apps.core.redis_usage",  # déclaré par apps/administration/hooks.py
     }
     assert names[WORKER_START.name] == names[PENDING_WORK.name] == {"apps.imports.hooks"}
     assert names[METRICS.name] == {"apps.amm.hooks"}
@@ -98,6 +99,7 @@ def test_integrity_checks_keep_their_order():
         "check_unsent_emails",
         "check_stuck_jobs",
         "check_storage",
+        "check_redis_memory",
     ]
 
 
@@ -176,7 +178,7 @@ def test_provider_without_supplier_says_what_is_missing():
     ("role", "expected"),
     [
         ("ceo", {a.value for a in Action}),
-        ("hq", {a.value for a in Action} - {"catalog.merge", "permissions.manage"}),
+        ("hq", {a.value for a in Action} - {"catalog.merge", "permissions.manage", "errors.view"}),
         ("country", set()),
     ],
 )

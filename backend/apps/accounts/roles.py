@@ -48,6 +48,7 @@ class Action(StrEnum):
     PIECE_TYPES_MANAGE = "deposits.manage_pieces"
     AUDIT_VIEW = "audit.view"
     PERMISSIONS_MANAGE = "permissions.manage"
+    ERRORS_VIEW = "errors.view"
 
 
 ACTION_ROLES: dict[Action, tuple[str, ...]] = {
@@ -71,6 +72,8 @@ ACTION_ROLES: dict[Action, tuple[str, ...]] = {
     Action.AUDIT_VIEW: GLOBAL_ROLES,
     # Régler les permissions : le CEO seul, et ce droit ne se règle pas.
     Action.PERMISSIONS_MANAGE: CEO_ONLY,
+    # Journal des erreurs de production (serveur, tâches, interface).
+    Action.ERRORS_VIEW: CEO_ONLY,
 }
 
 # Actions que la page Permissions ne modifie pas.
@@ -95,6 +98,7 @@ MESSAGES: dict[Action, str] = {
     Action.PIECE_TYPES_MANAGE: "Vous ne pouvez pas modifier les pièces demandées.",
     Action.AUDIT_VIEW: "Vous n'avez pas accès à l'audit.",
     Action.PERMISSIONS_MANAGE: "Seul le CEO règle les permissions.",
+    Action.ERRORS_VIEW: "Le journal des erreurs est réservé au CEO.",
 }
 
 # (rubrique, libellé) affichés sur la page Permissions.
@@ -113,6 +117,7 @@ LABELS: dict[Action, tuple[str, str]] = {
     Action.TRASH_RESTORE: ("Administration", "Voir la corbeille et restaurer"),
     Action.AUDIT_VIEW: ("Administration", "Consulter l'audit"),
     Action.PERMISSIONS_MANAGE: ("Administration", "Régler les permissions"),
+    Action.ERRORS_VIEW: ("Administration", "Consulter le journal des erreurs"),
 }
 
 

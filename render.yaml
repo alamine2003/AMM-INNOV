@@ -72,6 +72,8 @@ services:
         value: auto
       - key: S3_ADDRESSING_STYLE
         value: path
+      - key: REDIS_MAXMEMORY_MB     # Key Value gratuit : 25 Mo (alerte à 80 %)
+        value: "25"
       - key: DOCUMENT_MAX_MB
         value: "25"
       - key: WAIT_TIMEOUT

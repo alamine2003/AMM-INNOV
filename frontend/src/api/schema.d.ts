@@ -826,6 +826,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/client-errors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description L'interface signale une erreur d'affichage (tout utilisateur connecté, débit limité). */
+        post: operations["v1_client_errors_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/countries/": {
         parameters: {
             query?: never;
@@ -1509,6 +1526,57 @@ export interface paths {
         put?: never;
         /** @description « Ignorer » : la fiche reste telle quelle, le point est fermé. */
         post: operations["v1_dossier_review_points_ignore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/errors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Erreurs de production (serveur, tâches de fond, interface), les plus récentes d'abord. */
+        get: operations["v1_errors_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/errors/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Erreurs de production (serveur, tâches de fond, interface), les plus récentes d'abord. */
+        get: operations["v1_errors_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/errors/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marque l'erreur résolue ; si elle revient, elle est rouverte automatiquement. */
+        post: operations["v1_errors_resolve_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2255,9 +2323,10 @@ export interface components {
          *     * `deposits.manage_pieces` - deposits.manage_pieces
          *     * `audit.view` - audit.view
          *     * `permissions.manage` - permissions.manage
+         *     * `errors.view` - errors.view
          * @enum {string}
          */
-        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download" | "trash.restore" | "catalog.manage" | "catalog.merge" | "documents.delete" | "alerts.manage_rules" | "deposits.manage_pieces" | "audit.view" | "permissions.manage";
+        ActionsEnum: "binder.edit" | "binder.remove_passage" | "binder.rename_page" | "binder.delete_page" | "binder.remove_piece" | "binder.download" | "trash.restore" | "catalog.manage" | "catalog.merge" | "documents.delete" | "alerts.manage_rules" | "deposits.manage_pieces" | "audit.view" | "permissions.manage" | "errors.view";
         AddPageInputRequest: {
             product_name: string;
             range_code?: (components["schemas"]["RangeCodeEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -2865,6 +2934,14 @@ export interface components {
          * @enum {string}
          */
         ChronologyIssueCodeEnum: "no_scan" | "no_date" | "no_number" | "no_receipt" | "gap";
+        /** @description Erreur de l'interface : ce que le navigateur sait, rien de plus (ni données saisies). */
+        ClientErrorRequest: {
+            kind?: string;
+            message: string;
+            stack?: string;
+            path?: string;
+            version?: string;
+        };
         /** @description Les 4 niveaux de vérification du dossier et le résultat (recalculé à chaque lecture). */
         Conformity: {
             status: components["schemas"]["ConformityStatusEnum"];
@@ -3577,6 +3654,40 @@ export interface components {
             /** Format: date-time */
             at: string;
         };
+        ErrorEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Origine */
+            source: components["schemas"]["SourceEnum"];
+            readonly source_label: string;
+            /** Type */
+            kind: string;
+            message: string;
+            /** Détail */
+            detail?: string;
+            /** Où */
+            location?: string;
+            version?: string;
+            /** Occurrences */
+            count?: number;
+            /**
+             * Première fois
+             * Format: date-time
+             */
+            readonly first_seen: string;
+            /**
+             * Dernière fois
+             * Format: date-time
+             */
+            last_seen: string;
+            readonly last_user: string | null;
+            /**
+             * Résolue le
+             * Format: date-time
+             */
+            resolved_at?: string | null;
+            readonly resolved_by: string | null;
+        };
         EventInputRequest: {
             kind: components["schemas"]["DepositEventKindEnum"];
             /** Format: date */
@@ -4030,6 +4141,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["DossierImport"][];
+        };
+        PaginatedErrorEventList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ErrorEvent"][];
         };
         PaginatedHistoryEntryList: {
             /** @example 123 */
@@ -4667,6 +4793,13 @@ export interface components {
          * @enum {string}
          */
         SlotEnum: "original" | "renewal";
+        /**
+         * @description * `server` - Serveur
+         *     * `worker` - Tâche de fond
+         *     * `interface` - Interface
+         * @enum {string}
+         */
+        SourceEnum: "server" | "worker" | "interface";
         Suggestion: {
             /** Format: uuid */
             readonly id: string;
@@ -6284,6 +6417,30 @@ export interface operations {
             };
         };
     };
+    v1_client_errors_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientErrorRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientErrorRequest"];
+                "multipart/form-data": components["schemas"]["ClientErrorRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     v1_countries_list: {
         parameters: {
             query?: {
@@ -7552,6 +7709,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DossierReviewPoint"];
+                };
+            };
+        };
+    };
+    v1_errors_list: {
+        parameters: {
+            query?: {
+                /** @description Quel champ utiliser pour classer les résultats. */
+                ordering?: string;
+                /** @description Un numéro de page de l'ensemble des résultats. */
+                page?: number;
+                /** @description Nombre de résultats à retourner par page. */
+                page_size?: number;
+                /** @description Un terme de recherche. */
+                search?: string;
+                source?: "interface" | "server" | "worker";
+                state?: "open" | "resolved";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedErrorEventList"];
+                };
+            };
+        };
+    };
+    v1_errors_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) erreur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEvent"];
+                };
+            };
+        };
+    };
+    v1_errors_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un(une) Chaîne UUID identifiant ce(cette) erreur. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEvent"];
                 };
             };
         };

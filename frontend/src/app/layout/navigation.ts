@@ -23,7 +23,8 @@ export interface NavItem {
     | 'deposits'
     | 'trash'
     | 'audit'
-    | 'permissions';
+    | 'permissions'
+    | 'errors';
   section?: 'admin';
 }
 
@@ -90,6 +91,14 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/admin/audit',
     icon: 'audit',
     action: 'audit.view',
+    section: 'admin',
+  },
+  {
+    key: 'errors',
+    labelKey: 'nav.errors',
+    to: '/admin/erreurs',
+    icon: 'errors',
+    action: 'errors.view',
     section: 'admin',
   },
   {

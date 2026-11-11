@@ -6,6 +6,8 @@ class CoreConfig(AppConfig):
     verbose_name = "Socle"
 
     def ready(self):
+        from .errors import connect
         from .metrics import register_collector
 
         register_collector()
+        connect()  # journal des erreurs (serveur et tâches de fond)

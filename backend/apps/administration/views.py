@@ -5,11 +5,13 @@ from datetime import date
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.models import ActionGrant, User
@@ -23,13 +25,16 @@ from apps.accounts.roles import (
     Action,
     matrix,
 )
-from apps.core.models import TrashEntry
+from apps.core import errors as error_journal
+from apps.core.models import ErrorEvent, TrashEntry
 from apps.core.trash import restore
 
 from . import audit
 from .serializers import (
     AuditFiltersSerializer,
     AuditPageSerializer,
+    ClientErrorSerializer,
+    ErrorEventSerializer,
     PermissionMatrixSerializer,
     PermissionUpdateSerializer,
     TrashEntrySerializer,
@@ -259,3 +264,79 @@ class AuditFiltersView(APIView):
                 }
             ).data
         )
+
+
+# --- Journal des erreurs --------------------------------------------------------------------
+
+
+class ErrorEventViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """Erreurs de production (serveur, tâches de fond, interface), les plus récentes d'abord."""
+
+    serializer_class = ErrorEventSerializer
+    permission_classes = [IsAuthenticated]
+    search_fields = ["kind", "message", "location"]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        ensure_can(request.user, Action.ERRORS_VIEW)
+
+    def get_queryset(self):
+        queryset = ErrorEvent.objects.select_related("last_user", "resolved_by")
+        state = self.request.query_params.get("state")
+        if state == "open":
+            queryset = queryset.filter(resolved_at__isnull=True)
+        elif state == "resolved":
+            queryset = queryset.filter(resolved_at__isnull=False)
+        source = self.request.query_params.get("source")
+        if source:
+            queryset = queryset.filter(source=source)
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("state", str, required=False, enum=["open", "resolved"]),
+            OpenApiParameter(
+                "source", str, required=False, enum=[c for c, _ in ErrorEvent.Source.choices]
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(request=None, responses=ErrorEventSerializer)
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, pk=None):
+        """Marque l'erreur résolue ; si elle revient, elle est rouverte automatiquement."""
+        event = self.get_object()
+        event.resolved_at = timezone.now()
+        event.resolved_by = request.user
+        event.save(update_fields=["resolved_at", "resolved_by"])
+        return Response(ErrorEventSerializer(event).data)
+
+
+class ClientErrorThrottle(UserRateThrottle):
+    scope = "client_errors"
+    rate = "20/min"  # une page qui boucle sur une erreur ne remplit pas le journal
+
+
+class ClientErrorView(APIView):
+    """L'interface signale une erreur d'affichage (tout utilisateur connecté, débit limité)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ClientErrorThrottle]
+
+    @extend_schema(request=ClientErrorSerializer, responses={204: None})
+    def post(self, request):
+        serializer = ClientErrorSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        error_journal.record(
+            source=ErrorEvent.Source.INTERFACE,
+            kind=data.get("kind") or "Error",
+            message=data["message"],
+            detail=data.get("stack", ""),
+            location=data.get("path", ""),
+            user=request.user,
+            version=data.get("version", ""),
+        )
+        return Response(status=204)

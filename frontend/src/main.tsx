@@ -7,10 +7,12 @@ import { createAppRouter } from '@/app/router';
 import { configurePdfWorker } from '@/features/documents/pdfWorker';
 import { initSentry } from '@/lib/sentry';
 import { installStaleChunkReload } from '@/lib/staleChunks';
+import { installErrorReporting } from '@/lib/reportError';
 
 async function bootstrap() {
   initSentry(); // avant le rendu : une erreur au démarrage est remontée aussi
   installStaleChunkReload(); // onglet ouvert pendant un déploiement : recharge la nouvelle version
+  installErrorReporting(); // erreurs non rattrapées → journal des erreurs (Administration)
   if (import.meta.env.VITE_USE_MOCKS === '1') {
     const { startMockWorker } = await import('@/mocks/browser');
     await startMockWorker();

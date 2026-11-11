@@ -11,7 +11,7 @@
 #   scripts/render_db.sh status               # âge de la base, jours restants
 #   scripts/render_db.sh backup               # pg_dump dans $BACKUP_DIR
 #   scripts/render_db.sh ensure               # crée la base si aucune n'existe, et branche l'API
-#   scripts/render_db.sh rotate [--force]     # renouvelle si âge >= ROTATE_AFTER_DAYS (25)
+#   scripts/render_db.sh rotate [--force]     # renouvelle si âge >= ROTATE_AFTER_DAYS (25), la nuit
 #   scripts/render_db.sh import <DATABASE_URL> # copie une base externe (Railway) dans Render
 #   scripts/render_db.sh restore <fichier.dump> # restaure une sauvegarde dans la base Render
 #
@@ -27,6 +27,12 @@ SERVICE_NAME="${RENDER_SERVICE:-amm-innov-api}"
 DB_NAME="${RENDER_DB_NAME:-amm-innov-db}"
 REGION="${RENDER_REGION:-frankfurt}"
 ROTATE_AFTER_DAYS="${ROTATE_AFTER_DAYS:-25}"
+# Le renouvellement redéploie l'API (une minute d'indisponibilité) : de ROTATE_AFTER_DAYS à
+# ROTATE_FORCE_AFTER_DAYS, seulement entre ROTATE_NIGHT_FROM et ROTATE_NIGHT_TO heures à Dakar ;
+# au-delà, à n'importe quelle heure (Render supprime la base à 30 jours).
+ROTATE_FORCE_AFTER_DAYS="${ROTATE_FORCE_AFTER_DAYS:-28}"
+ROTATE_NIGHT_FROM="${ROTATE_NIGHT_FROM:-0}"
+ROTATE_NIGHT_TO="${ROTATE_NIGHT_TO:-7}"
 PG_VERSION="${PG_VERSION:-18}"   # même version majeure que la base Railway d'origine
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 
@@ -166,6 +172,12 @@ case "$cmd" in
     age=$(age_days "$db")
     if [ "${1:-}" != "--force" ] && [ "$age" -lt "$ROTATE_AFTER_DAYS" ]; then
       log "âge ${age} j < ${ROTATE_AFTER_DAYS} j : rien à faire"; exit 0
+    fi
+    hour=$((10#$(TZ=Africa/Dakar date +%H)))
+    if [ "${1:-}" != "--force" ] && [ "$age" -lt "$ROTATE_FORCE_AFTER_DAYS" ] \
+      && { [ "$hour" -lt "$ROTATE_NIGHT_FROM" ] || [ "$hour" -ge "$ROTATE_NIGHT_TO" ]; }; then
+      log "âge ${age} j : renouvellement reporté à la nuit (${hour} h à Dakar, fenêtre ${ROTATE_NIGHT_FROM} h - ${ROTATE_NIGHT_TO} h)"
+      exit 0
     fi
     file=$(backup)
     old=$(jq -r .id <<<"$db")

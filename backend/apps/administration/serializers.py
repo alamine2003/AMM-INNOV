@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.models import TrashEntry
+from apps.core.models import ErrorEvent, TrashEntry
 
 
 class TrashEntrySerializer(serializers.ModelSerializer):
@@ -122,3 +122,47 @@ class AuditFiltersSerializer(serializers.Serializer):
     types = AuditOptionSerializer(many=True)
     actions = AuditOptionSerializer(many=True)
     people = AuditPersonSerializer(many=True)
+
+
+# --- Journal des erreurs --------------------------------------------------------------------
+
+
+class ErrorEventSerializer(serializers.ModelSerializer):
+    last_user = serializers.SerializerMethodField()
+    resolved_by = serializers.SerializerMethodField()
+    source_label = serializers.CharField(source="get_source_display", read_only=True)
+
+    class Meta:
+        model = ErrorEvent
+        fields = [
+            "id",
+            "source",
+            "source_label",
+            "kind",
+            "message",
+            "detail",
+            "location",
+            "version",
+            "count",
+            "first_seen",
+            "last_seen",
+            "last_user",
+            "resolved_at",
+            "resolved_by",
+        ]
+
+    def get_last_user(self, obj) -> str | None:
+        return obj.last_user.full_name if obj.last_user else None
+
+    def get_resolved_by(self, obj) -> str | None:
+        return obj.resolved_by.full_name if obj.resolved_by else None
+
+
+class ClientErrorSerializer(serializers.Serializer):
+    """Erreur de l'interface : ce que le navigateur sait, rien de plus (ni données saisies)."""
+
+    kind = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    message = serializers.CharField(max_length=500)
+    stack = serializers.CharField(max_length=8000, required=False, allow_blank=True)
+    path = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    version = serializers.CharField(max_length=20, required=False, allow_blank=True)

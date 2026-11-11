@@ -5,6 +5,30 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.5] — 2026-11-11
+
+Suite de l'audit d'infrastructure du 11/11/2026 : constats moyens et à vérifier
+(`docs/audit-infrastructure-1.2.4.md`). Les constats critique et hauts sont réglés (1.2.4 et
+gestes dans les comptes : 55 copies de la base supprimées, Worker Cloudflare de réveil créé).
+
+### Ajouté
+- **Journal des erreurs** (Administration › Erreurs, CEO ; droit `errors.view` réglable).
+  Les erreurs du serveur, des tâches de fond et de l'interface sont gardées dans AMM GH, sans
+  service externe : type, message, pile, page ou tâche, version, dernier utilisateur. La même
+  erreur se compte au lieu de se répéter ; résolue, elle se rouvre si elle revient. L'interface
+  envoie ses erreurs d'affichage (dix par session au plus, jamais ce qui a été saisi).
+- **Surveillance de Redis** (25 Mo gratuits, sans éviction) : contrôle d'intégrité et, à 80 %,
+  un avertissement dans l'application au CEO, une fois par jour au plus.
+
+### Modifié
+- **Renouvellement de la base de nuit seulement** (0 h - 7 h à Dakar) tant qu'elle a moins de
+  28 jours : il redéploie l'API et tombait en pleine journée, GitHub retardant ses tâches
+  planifiées de plusieurs heures. Une vérification horaire le lance dans la fenêtre.
+- **E-mails d'alerte, de rappel et digest hebdomadaire coupés** par défaut
+  (`ALERT_EMAILS_ENABLED`), conformément à la décision « alertes dans l'application
+  seulement » ; ils partaient dès qu'`EMAIL_URL` était renseigné. Les alertes et rappels restent
+  dans l'application.
+
 ## [1.2.4] — 2026-11-11
 
 Corrective issue de l'audit d'infrastructure du 11/11/2026 (`docs/audit-infrastructure-1.2.4.md`).
