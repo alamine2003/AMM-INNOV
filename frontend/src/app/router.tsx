@@ -4,6 +4,7 @@ import { Box, CircularProgress } from '@mui/material';
 import { AppLayout } from './layout/AppLayout';
 import { RequireAction, RequireAuth, RequireRole } from './guards';
 import { NotFoundPage } from '@/components/NotFoundPage';
+import { RouteError } from './RouteError';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const AfricaDashboardPage = lazy(() => import('@/features/dashboard/AfricaDashboardPage'));
@@ -40,68 +41,75 @@ const Fallback = () => (
 const page = (element: React.ReactNode) => <Suspense fallback={<Fallback />}>{element}</Suspense>;
 
 export const routes: RouteObject[] = [
-  { path: '/login', element: page(<LoginPage />) },
+  { path: '/login', element: page(<LoginPage />), errorElement: <RouteError /> },
   {
     element: <RequireAuth />,
+    errorElement: <RouteError />,
     children: [
       {
         element: <AppLayout />,
         children: [
-          { index: true, element: page(<AfricaDashboardPage />) },
-          { path: 'countries/:iso2', element: page(<CountryDashboardPage />) },
-          { path: 'amms', element: page(<AmmListPage />) },
-          { path: 'amms/:id', element: page(<AmmDetailPage />) },
-          { path: 'renewals/:renewalId', element: page(<AmmDetailPage />) },
-          { path: 'alerts', element: page(<AlertsPage />) },
-          { path: 'documents', element: page(<DocumentsLibraryPage />) },
-          { path: 'dossier-imports', element: page(<DossierImportsPage />) },
-          { path: 'dossier-imports/:id', element: page(<DossierImportDetailPage />) },
-          { path: 'classeurs', element: page(<BindersShelfPage />) },
-          { path: 'classeurs/:binderKey', element: page(<BinderPage />) },
-          { path: 'depots', element: page(<DepositsPage />) },
           {
-            path: 'depots/pieces',
-            element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
-            children: [{ index: true, element: page(<PieceTypesPage />) }],
-          },
-          { path: 'depots/:id', element: page(<DepositDetailPage />) },
-          { path: 'products', element: page(<ProductsPage />) },
-          { path: 'products/:id', element: page(<ProductDetailPage />) },
-          {
-            path: 'admin',
+            // Erreur d'une page : le message s'affiche dans la mise en page (menu conservé).
+            errorElement: <RouteError />,
             children: [
+              { index: true, element: page(<AfricaDashboardPage />) },
+              { path: 'countries/:iso2', element: page(<CountryDashboardPage />) },
+              { path: 'amms', element: page(<AmmListPage />) },
+              { path: 'amms/:id', element: page(<AmmDetailPage />) },
+              { path: 'renewals/:renewalId', element: page(<AmmDetailPage />) },
+              { path: 'alerts', element: page(<AlertsPage />) },
+              { path: 'documents', element: page(<DocumentsLibraryPage />) },
+              { path: 'dossier-imports', element: page(<DossierImportsPage />) },
+              { path: 'dossier-imports/:id', element: page(<DossierImportDetailPage />) },
+              { path: 'classeurs', element: page(<BindersShelfPage />) },
+              { path: 'classeurs/:binderKey', element: page(<BinderPage />) },
+              { path: 'depots', element: page(<DepositsPage />) },
               {
+                path: 'depots/pieces',
                 element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
+                children: [{ index: true, element: page(<PieceTypesPage />) }],
+              },
+              { path: 'depots/:id', element: page(<DepositDetailPage />) },
+              { path: 'products', element: page(<ProductsPage />) },
+              { path: 'products/:id', element: page(<ProductDetailPage />) },
+              {
+                path: 'admin',
                 children: [
-                  { index: true, element: <Navigate to="/admin/users" replace /> },
-                  { path: 'users', element: page(<UsersAdminPage />) },
-                  { path: 'countries', element: page(<CountriesAdminPage />) },
-                  { path: 'ranges', element: page(<RangesAdminPage />) },
-                  { path: 'alert-rules', element: page(<AlertRulesAdminPage />) },
-                  { path: 'imports', element: page(<ImportsPage />) },
-                  { path: 'imports/:id', element: page(<ImportDetailPage />) },
+                  {
+                    element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
+                    children: [
+                      { index: true, element: <Navigate to="/admin/users" replace /> },
+                      { path: 'users', element: page(<UsersAdminPage />) },
+                      { path: 'countries', element: page(<CountriesAdminPage />) },
+                      { path: 'ranges', element: page(<RangesAdminPage />) },
+                      { path: 'alert-rules', element: page(<AlertRulesAdminPage />) },
+                      { path: 'imports', element: page(<ImportsPage />) },
+                      { path: 'imports/:id', element: page(<ImportDetailPage />) },
+                    ],
+                  },
+                  // Réglables par le CEO : la page suit le droit, pas le rôle.
+                  {
+                    path: 'corbeille',
+                    element: <RequireAction action="trash.restore" />,
+                    children: [{ index: true, element: page(<TrashPage />) }],
+                  },
+                  {
+                    path: 'audit',
+                    element: <RequireAction action="audit.view" />,
+                    children: [{ index: true, element: page(<AuditPage />) }],
+                  },
+                  {
+                    path: 'permissions',
+                    element: <RequireAction action="permissions.manage" />,
+                    children: [{ index: true, element: page(<PermissionsPage />) }],
+                  },
                 ],
               },
-              // Réglables par le CEO : la page suit le droit, pas le rôle.
-              {
-                path: 'corbeille',
-                element: <RequireAction action="trash.restore" />,
-                children: [{ index: true, element: page(<TrashPage />) }],
-              },
-              {
-                path: 'audit',
-                element: <RequireAction action="audit.view" />,
-                children: [{ index: true, element: page(<AuditPage />) }],
-              },
-              {
-                path: 'permissions',
-                element: <RequireAction action="permissions.manage" />,
-                children: [{ index: true, element: page(<PermissionsPage />) }],
-              },
+              { path: 'imports/:id', element: page(<ImportDetailPage />) },
+              { path: '*', element: <NotFoundPage /> },
             ],
           },
-          { path: 'imports/:id', element: page(<ImportDetailPage />) },
-          { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],

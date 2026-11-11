@@ -5,6 +5,32 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.4] — 2026-11-11
+
+Corrective issue de l'audit d'infrastructure du 11/11/2026 (`docs/audit-infrastructure-1.2.4.md`).
+
+### Sécurité
+- **Sauvegardes de la base chiffrées.** Le dépôt est public : le workflow « Base Render »
+  publiait chaque jour une copie complète de la base en artefact, lisible par tout compte
+  GitHub. Les copies sont maintenant chiffrées (AES-256, secret `BACKUP_PASSPHRASE`) et gardées
+  30 jours ; sans ce secret, rien n'est publié. Les anciens artefacts sont à supprimer à la main.
+- `/metrics` n'est plus public en production sans `METRICS_TOKEN` (404).
+
+### Corrigé
+- **Après un déploiement, un onglet resté ouvert se recharge seul** au lieu d'afficher
+  « Unexpected Application Error » (fichier de l'ancienne version demandé à Cloudflare). Toute
+  autre erreur d'affichage montre un message clair, avec le menu, « Recharger » et « Accueil ».
+- **Worker Celery surveillé** (Render, conteneur unique) : s'il s'arrête, il est relancé
+  (5 s, puis jusqu'à 60 s) au lieu de laisser imports et rappels en attente jusqu'au
+  prochain redémarrage.
+- **Sonde de santé Render sur `/api/v1/health/live`** : une base ou un Redis lents ne font plus
+  redémarrer une API saine.
+
+### Ajouté
+- Réveil de l'API par un Worker Cloudflare toutes les 5 minutes
+  (`scripts/cloudflare/keepalive-worker.js`) : le réveil GitHub Actions ne partait que 3 à 7
+  fois par jour au lieu de 144. Il reste en secours.
+
 ## [1.2.3] — 2026-11-10
 
 ### Ajouté

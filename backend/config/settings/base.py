@@ -538,6 +538,8 @@ DATA_UPLOAD_MAX_NUMBER_FILES = DOSSIER_MAX_FILES
 DOCUMENT_RETENTION_YEARS = 5
 # /metrics (Prometheus) : public si vide, sinon exige `Authorization: Bearer <METRICS_TOKEN>`.
 METRICS_TOKEN = env("METRICS_TOKEN", "")
+# Sans jeton, /metrics n'est public qu'en développement (prod.py le ferme, audit du 11/11/2026).
+METRICS_PUBLIC = env_bool("METRICS_PUBLIC", True)
 # Déluge d'alertes au premier lancement : une alerte dont l'échéance est plus ancienne que ce
 # délai est créée (tableaux de bord, liste des alertes) mais ne déclenche pas de notification,
 # sauf s'il s'agit de la plus récente d'une AMM encore actionnable (non expirée).

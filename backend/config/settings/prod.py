@@ -4,6 +4,8 @@ from .base import *  # noqa: F403
 from .base import env, env_bool
 
 DEBUG = False
+# /metrics fermé sans METRICS_TOKEN (audit d'infrastructure du 11/11/2026 : il était public).
+METRICS_PUBLIC = env_bool("METRICS_PUBLIC", False)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 SESSION_COOKIE_SECURE = True

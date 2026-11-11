@@ -17,7 +17,10 @@ services:
     branch: main
     dockerfilePath: ./docker/backend.Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
+    # Vivacité seulement : une base ou un Redis lents ne doivent pas faire redémarrer une API
+    # saine (chaque redémarrage = une minute de démarrage à froid). L'état des dépendances
+    # reste lisible sur /api/v1/health.
+    healthCheckPath: /api/v1/health/live
     autoDeploy: true
     envVars:
       - key: DJANGO_SETTINGS_MODULE

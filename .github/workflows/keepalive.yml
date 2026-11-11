@@ -4,6 +4,12 @@ name: Réveil API
 # s'arrête avec elle et les alertes nocturnes ne partent plus. Un appel toutes les 10 minutes
 # la garde éveillée (un seul service : 720 h par mois, sous les 750 h gratuites).
 # Variable de dépôt : API_HEALTH_URL (défaut https://amm-innov-api.onrender.com/api/v1/health).
+#
+# Attention (audit du 11/11/2026) : GitHub ne garantit pas les horaires planifiés. Ce réveil
+# n'a tourné que 3 à 7 fois par jour au lieu de 144 : entre deux visites, l'API s'endormait et
+# la visite suivante commençait par environ une minute de démarrage. Le réveil principal est désormais le
+# Worker Cloudflare de scripts/cloudflare/keepalive-worker.js (toutes les 5 minutes, fiable) ;
+# celui-ci reste en secours et signale une API en panne (exécution en échec).
 
 on:
   schedule:

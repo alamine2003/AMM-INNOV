@@ -125,6 +125,11 @@ def test_metrics_requires_token_when_configured(anon_client):
         assert anon_client.get("/metrics", HTTP_AUTHORIZATION="Bearer s3cret").status_code == 200
 
 
+def test_metrics_closed_in_production_without_token(anon_client):
+    with override_settings(METRICS_TOKEN="", METRICS_PUBLIC=False):
+        assert anon_client.get("/metrics").status_code == 404
+
+
 def test_export_matches_filtered_list(hq_client, make_amm):
     make_amm(country="SN", start=date(2024, 1, 1))
     make_amm(country="CI", start=date(2024, 1, 1))

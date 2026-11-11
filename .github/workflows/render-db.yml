@@ -55,11 +55,33 @@ jobs:
             *)              scripts/render_db.sh "$ACTION" ;;
           esac
           scripts/render_db.sh status
-      - name: Sauvegardes (artefact)
+      # Le dépôt est public : un artefact se télécharge par n'importe quel compte GitHub.
+      # Jusqu'à la 1.2.3 les copies de la base y étaient publiées en clair (audit du 11/11/2026).
+      # Elles sont désormais chiffrées (AES-256, phrase secrète BACKUP_PASSPHRASE créée par
+      # l'administrateur) ; sans ce secret, rien n'est publié.
+      - name: Chiffrer les sauvegardes
+        if: always()
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          shopt -s nullglob
+          files=(backups/*.dump)
+          if [ "${#files[@]}" -eq 0 ]; then exit 0; fi
+          if [ -z "${BACKUP_PASSPHRASE}" ]; then
+            echo "::warning::Secret BACKUP_PASSPHRASE absent : sauvegardes non publiées (dépôt public)."
+            rm -f backups/*.dump
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0 \
+              --symmetric --cipher-algo AES256 --output "${f}.gpg" "${f}" <<< "${BACKUP_PASSPHRASE}"
+            rm -f "${f}"
+          done
+      - name: Sauvegardes chiffrées (artefact)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: amm-db-${{ github.run_number }}
-          path: backups/*.dump
+          path: backups/*.dump.gpg
           if-no-files-found: ignore
-          retention-days: 90
+          retention-days: 30

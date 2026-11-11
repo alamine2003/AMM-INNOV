@@ -86,6 +86,9 @@ def metrics(request):
     from django_prometheus.exports import ExportToDjangoView
 
     token = settings.METRICS_TOKEN
+    if not token and not settings.METRICS_PUBLIC:
+        # Production sans jeton : les compteurs (AMM par statut, e-mails…) ne sont pas publics.
+        return HttpResponse(status=404)
     if token and request.headers.get("Authorization") != f"Bearer {token}":
         return HttpResponse(status=401)
     return ExportToDjangoView(request)
