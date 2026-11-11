@@ -88,7 +88,17 @@ jobs:
           pip-audit -r requirements.txt
 
       - name: "Outils système (qpdf : classeurs avec décisions officielles)"
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends qpdf
+        # Miroir Ubuntu parfois indisponible (code 100 sur la PR #100) : trois essais espacés.
+        run: |
+          for attempt in 1 2 3; do
+            if sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends \
+              -o Acquire::Retries=3 qpdf; then
+              exit 0
+            fi
+            echo "apt indisponible (essai ${attempt}/3), nouvel essai dans 20 s"
+            sleep 20
+          done
+          exit 1
 
       - name: Lint (ruff)
         run: ruff check .

@@ -17,6 +17,13 @@ Corrective issue de l'audit d'infrastructure du 11/11/2026 (`docs/audit-infrastr
 - `/metrics` n'est plus public en production sans `METRICS_TOKEN` (404).
 
 ### Corrigé
+- **Classeurs lisibles sur les petits écrans.** Sur écran large, la feuille s'étale sur les deux
+  pages du classeur ouvert : identité, cartes et situation à gauche, vérification et constat à
+  droite. Chaque moitié est beaucoup moins réduite qu'une feuille entière (navigateur de
+  1280 × 585 px, un écran 1280 × 720 : réduction 0,66 et 0,85 au lieu de 0,55, et le bas de la
+  feuille n'était plus visible). Pendant que
+  la page tourne, et sur téléphone, la feuille reste sur une seule page.
+- CI : l'installation de `qpdf` est retentée quand le miroir Ubuntu ne répond pas.
 - **Après un déploiement, un onglet resté ouvert se recharge seul** au lieu d'afficher
   « Unexpected Application Error » (fichier de l'ancienne version demandé à Cloudflare). Toute
   autre erreur d'affichage montre un message clair, avec le menu, « Recharger » et « Accueil ».

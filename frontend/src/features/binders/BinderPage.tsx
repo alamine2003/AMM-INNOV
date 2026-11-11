@@ -11,6 +11,8 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
+  type Theme,
 } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -139,6 +141,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [current, setCurrent] = useState(0);
   const [flip, setFlip] = useState<Flip | null>(null);
+  // Page de gauche du classeur ouvert : la feuille courante y place sa première moitié.
+  const twoPages = useMediaQuery((theme: Theme) => theme.breakpoints.up('md'));
+  const [facing, setFacing] = useState<HTMLDivElement | null>(null);
   const [jumped, setJumped] = useState(0);
   // Lien depuis la fiche AMM ou un import (`?amm=`) : le classeur s'ouvre sur sa page.
   const [searchParams] = useSearchParams();
@@ -255,7 +260,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   const resumeLabel =
     resumeLeaf?.kind === 'page' ? (pages.get(resumeLeaf.ammId)?.product_name ?? null) : null;
 
-  const renderLeaf = (at: number) => {
+  const renderLeaf = (at: number, facing: HTMLElement | null = null) => {
     const leaf = leaves[at];
     if (!leaf) return null;
     if (leaf.kind === 'title') {
@@ -307,6 +312,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         page={page}
         section={section}
         total={total}
+        facing={facing}
         onChecked={() => {
           // Le tampon s'imprime, puis la page se tourne toute seule (si on n'a pas bougé).
           const from = at;
@@ -332,6 +338,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
   // Sous la feuille qui tourne : la nouvelle page (en avant) ou l'ancienne (en arrière).
   const rightIndex = flip?.dir === 'prev' ? flip.from : index;
   const leftIndex = flip?.dir === 'next' ? flip.from - 1 : index - 1;
+  // Écran large, classeur à l'arrêt, page d'AMM : la feuille s'étale sur les deux pages ouvertes
+  // (moitié gauche, moitié droite), au lieu de tout réduire dans la page de droite.
+  const spread = twoPages && !flip && leaves[rightIndex]?.kind === 'page';
   const flipping = flip ? (flip.dir === 'next' ? flip.from : index) : null;
   const currentCode = (() => {
     const leaf = leaves[index];
@@ -506,6 +515,20 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             >
               {leftIndex >= 0 ? <LeafBack label={leafLabel(leftIndex)} /> : <InsideCover />}
             </Box>
+            {spread && (
+              <Box
+                ref={setFacing}
+                data-leaf="facing"
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 1,
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  boxShadow: 'inset -14px 0 18px -12px rgba(0,0,0,0.5)',
+                }}
+              />
+            )}
           </Box>
           {/* Anneaux du mécanisme. */}
           <Box
@@ -555,7 +578,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
                 animation: !flip && jumped ? `${fadeIn} 160ms ease-out` : 'none',
               }}
             >
-              {renderLeaf(rightIndex)}
+              {renderLeaf(rightIndex, spread ? facing : null)}
               {flip && (
                 <Box
                   aria-hidden
