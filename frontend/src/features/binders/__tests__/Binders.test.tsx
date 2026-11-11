@@ -243,6 +243,29 @@ describe('Classeurs', () => {
     expect(screen.queryByRole('button', { name: 'Enregistrer' })).not.toBeInTheDocument();
   });
 
+  it("s'étale sur les deux pages du classeur ouvert, sur écran large", async () => {
+    loginAs('u-hq');
+    const media = window.matchMedia;
+    // Écran large : la requête « min-width » de MUI (breakpoint md) répond oui.
+    window.matchMedia = ((query: string) => ({
+      ...media(query),
+      matches: query.includes('min-width') || query.includes('pointer: fine'),
+    })) as typeof window.matchMedia;
+    try {
+      server.use(http.get(`${endpoint}/SN-cardio`, () => HttpResponse.json(binder([checked, page()]))));
+      renderApp('/classeurs/SN-cardio');
+      const facing = await screen.findByTestId('binder-sheet-facing', {}, { timeout: 5000 });
+      // À gauche : l'identité de la page et ses cartes ; à droite : la vérification et le constat.
+      expect(within(facing).getByText('AMLODIPINE GH 5MG')).toBeInTheDocument();
+      expect(within(facing).queryByTestId('page-conformity')).not.toBeInTheDocument();
+      const right = screen.getAllByTestId('binder-sheet')[0];
+      expect(within(right).getByTestId('page-conformity')).toBeInTheDocument();
+      expect(within(right).queryByText('AMLODIPINE GH 5MG')).not.toBeInTheDocument();
+    } finally {
+      window.matchMedia = media;
+    }
+  });
+
   it('un pays ne voit pas le téléchargement', async () => {
     loginAs('u-sn');
     server.use(http.get(endpoint, () => HttpResponse.json([summary])));

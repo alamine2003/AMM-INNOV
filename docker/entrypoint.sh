@@ -80,9 +80,28 @@ fi
 # tuée « Ran out of memory », 24/09/2026).
 if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "all" ]; then
   export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
-  echo "[entrypoint] worker Celery en arrière-plan (pool solo, beat intégré)"
-  celery -A config worker -l info --pool solo --without-gossip --without-mingle \
-    --without-heartbeat -B --scheduler django_celery_beat.schedulers:DatabaseScheduler &
+  # Surveillé : avant la 1.2.4, un worker arrêté (mémoire, Redis coupé) ne repartait jamais
+  # tant que le web restait vivant ; imports et rappels attendaient en silence (audit du
+  # 11/11/2026). Il est relancé, après 5 s puis jusqu'à 60 s s'il s'arrête aussitôt.
+  supervise_celery() {
+    local delay=5 started code
+    while true; do
+      started=$(date +%s)
+      echo "[entrypoint] worker Celery en arrière-plan (pool solo, beat intégré)"
+      if celery -A config worker -l info --pool solo --without-gossip --without-mingle \
+        --without-heartbeat -B --scheduler django_celery_beat.schedulers:DatabaseScheduler; then
+        code=0
+      else
+        code=$?
+      fi
+      # Un worker qui a tourné plus de 5 minutes repart vite ; sinon l'attente double.
+      if [ $(( $(date +%s) - started )) -gt 300 ]; then delay=5; fi
+      echo "[entrypoint] worker Celery arrêté (code ${code}), relance dans ${delay} s"
+      sleep "${delay}"
+      if [ "${delay}" -lt 60 ]; then delay=$(( delay * 2 )); fi
+    done
+  }
+  supervise_celery &
 fi
 
 if [ "${1:-}" = "serve" ]; then

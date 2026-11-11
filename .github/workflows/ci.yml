@@ -88,7 +88,22 @@ jobs:
           pip-audit -r requirements.txt
 
       - name: "Outils système (qpdf : classeurs avec décisions officielles)"
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends qpdf
+        # Miroir Ubuntu parfois indisponible ou figé (code 100 puis attente sans fin sur la
+        # PR #100) : chaque appel est borné, trois essais, et l'étape ne bloque jamais la CI.
+        # Sans qpdf, seul le test d'assemblage du classeur est sauté (skipif dans test_binders.py).
+        timeout-minutes: 6
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3; do
+            if timeout 90 sudo apt-get update -qq \
+              && timeout 90 sudo apt-get install -y -qq --no-install-recommends qpdf; then
+              exit 0
+            fi
+            echo "apt indisponible (essai ${attempt}/3), nouvel essai dans 15 s"
+            sleep 15
+          done
+          echo "::warning::qpdf non installé : le test d'assemblage des classeurs sera sauté."
+          exit 1
 
       - name: Lint (ruff)
         run: ruff check .
