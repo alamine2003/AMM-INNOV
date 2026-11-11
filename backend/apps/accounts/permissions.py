@@ -24,24 +24,43 @@ __all__ = [
 
 
 class RolePermission(BasePermission):
-    """Checks the request method against the view's role attributes.
+    """Checks the request method against the view's permission attributes.
 
-    View attributes (all optional):
+    Réglables par le CEO (1.2.3, `apps/accounts/roles.py`) — à préférer :
+    - `write_action`: `Action` requise pour POST/PUT/PATCH (et DELETE par défaut) ;
+    - `delete_action`: `Action` requise pour DELETE ;
+    - `action_permissions`: {nom d'action DRF: `Action`} pour les actions personnalisées.
+
+    Fixes (rôles écrits dans le code) :
     - `write_roles`: roles allowed for POST/PUT/PATCH (default: every role);
     - `delete_roles`: roles allowed for DELETE (default: `write_roles`);
     - `action_roles`: {action_name: roles} for custom actions.
     """
+
+    def _check(self, user, action: Action) -> bool:
+        if can(user, action):
+            return True
+        self.message = MESSAGES[action]
+        return False
 
     def has_permission(self, request, view) -> bool:
         user = request.user
         if not user or not user.is_authenticated:
             return False
         action = getattr(view, "action", None)
+        action_permissions = getattr(view, "action_permissions", {})
+        if action in action_permissions:
+            return self._check(user, action_permissions[action])
         action_roles = getattr(view, "action_roles", {})
         if action in action_roles:
             return user.role in action_roles[action]
         if request.method in SAFE_METHODS:
             return True
+        required = getattr(view, "write_action", None)
+        if request.method == "DELETE":
+            required = getattr(view, "delete_action", required)
+        if required is not None:
+            return self._check(user, required)
         roles = getattr(view, "write_roles", ALL_ROLES)
         if request.method == "DELETE":
             roles = getattr(view, "delete_roles", roles)

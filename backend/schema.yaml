@@ -1244,6 +1244,78 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/audit/:
+    get:
+      operationId: v1_audit_retrieve
+      description: |-
+        Qui a fait quoi, quand : créations, modifications, connexions, mises à la corbeille et
+        restaurations, dans toute l'application, du plus récent au plus ancien.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          enum:
+          - created
+          - deleted
+          - login
+          - restored
+          - updated
+      - in: query
+        name: country
+        schema:
+          type: string
+        description: Code ISO2
+      - in: query
+        name: model
+        schema:
+          type: string
+        description: Type (ex. amm.Renewal)
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: since
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: until
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: user
+        schema:
+          type: string
+        description: Identifiant de la personne
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+          description: ''
+  /api/v1/audit/filters/:
+    get:
+      operationId: v1_audit_filters_retrieve
+      description: Valeurs proposées dans les filtres de l'audit.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditFilters'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: v1_auth_login_create
@@ -3915,6 +3987,55 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/permissions/:
+    get:
+      operationId: v1_permissions_retrieve
+      description: |-
+        Qui peut faire quoi : rôles × actions. Le CEO seul les consulte et les règle.
+
+        Le CEO garde toujours tous les droits et le droit de régler les permissions ne se règle pas :
+        personne ne peut s'enfermer dehors. Chaque changement est gardé dans l'historique (audit).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionMatrix'
+          description: ''
+    put:
+      operationId: v1_permissions_update
+      description: |-
+        Qui peut faire quoi : rôles × actions. Le CEO seul les consulte et les règle.
+
+        Le CEO garde toujours tous les droits et le droit de régler les permissions ne se règle pas :
+        personne ne peut s'enfermer dehors. Chaque changement est gardé dans l'historique (audit).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PermissionUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PermissionUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionMatrix'
+          description: ''
   /api/v1/products/:
     get:
       operationId: v1_products_list
@@ -5023,6 +5144,20 @@ components:
           minLength: 1
       required:
       - reason
+    ActionEnum:
+      enum:
+      - created
+      - updated
+      - login
+      - deleted
+      - restored
+      type: string
+      description: |-
+        * `created` - created
+        * `updated` - updated
+        * `login` - login
+        * `deleted` - deleted
+        * `restored` - restored
     ActionsEnum:
       enum:
       - binder.edit
@@ -5032,6 +5167,13 @@ components:
       - binder.remove_piece
       - binder.download
       - trash.restore
+      - catalog.manage
+      - catalog.merge
+      - documents.delete
+      - alerts.manage_rules
+      - deposits.manage_pieces
+      - audit.view
+      - permissions.manage
       type: string
       description: |-
         * `binder.edit` - binder.edit
@@ -5041,6 +5183,13 @@ components:
         * `binder.remove_piece` - binder.remove_piece
         * `binder.download` - binder.download
         * `trash.restore` - trash.restore
+        * `catalog.manage` - catalog.manage
+        * `catalog.merge` - catalog.merge
+        * `documents.delete` - documents.delete
+        * `alerts.manage_rules` - alerts.manage_rules
+        * `deposits.manage_pieces` - deposits.manage_pieces
+        * `audit.view` - audit.view
+        * `permissions.manage` - permissions.manage
     AddPageInputRequest:
       type: object
       properties:
@@ -5736,6 +5885,132 @@ components:
       - document_date
       - filename
       - id
+    AuditChange:
+      type: object
+      properties:
+        field:
+          type: string
+        old:
+          type: string
+          nullable: true
+        new:
+          type: string
+          nullable: true
+      required:
+      - field
+      - new
+      - old
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        action_label:
+          type: string
+        user:
+          type: string
+          nullable: true
+        user_id:
+          type: string
+          nullable: true
+        model:
+          type: string
+        type:
+          type: string
+        object_id:
+          type: string
+        label:
+          type: string
+        country:
+          type: string
+        reason:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditChange'
+        rows:
+          type: integer
+      required:
+      - action
+      - action_label
+      - at
+      - changes
+      - country
+      - id
+      - label
+      - model
+      - object_id
+      - reason
+      - rows
+      - type
+      - user
+      - user_id
+    AuditFilters:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditOption'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditOption'
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditPerson'
+      required:
+      - actions
+      - people
+      - types
+    AuditOption:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+      required:
+      - label
+      - value
+    AuditPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+      required:
+      - count
+      - page
+      - pages
+      - results
+    AuditPerson:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+      required:
+      - active
+      - id
+      - name
     BinderDetail:
       type: object
       properties:
@@ -9478,6 +9753,83 @@ components:
       - filing_date
       - workflow_label
       - workflow_status
+    PermissionAction:
+      type: object
+      properties:
+        action:
+          type: string
+        group:
+          type: string
+        label:
+          type: string
+        locked:
+          type: boolean
+        defaults:
+          type: array
+          items:
+            type: string
+        roles:
+          type: object
+          additionalProperties:
+            type: boolean
+      required:
+      - action
+      - defaults
+      - group
+      - label
+      - locked
+      - roles
+    PermissionGrantRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+        allowed:
+          type: boolean
+      required:
+      - action
+      - allowed
+      - role
+    PermissionMatrix:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionRole'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionAction'
+      required:
+      - actions
+      - roles
+    PermissionRole:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        editable:
+          type: boolean
+      required:
+      - editable
+      - label
+      - value
+    PermissionUpdateRequest:
+      type: object
+      properties:
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionGrantRequest'
+      required:
+      - grants
     PieceType:
       type: object
       properties:

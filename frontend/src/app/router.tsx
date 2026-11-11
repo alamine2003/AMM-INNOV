@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { lazy, Suspense } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { AppLayout } from './layout/AppLayout';
-import { RequireAuth, RequireRole } from './guards';
+import { RequireAction, RequireAuth, RequireRole } from './guards';
 import { NotFoundPage } from '@/components/NotFoundPage';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
@@ -19,6 +19,8 @@ const CountriesAdminPage = lazy(() => import('@/features/admin/CountriesAdminPag
 const RangesAdminPage = lazy(() => import('@/features/admin/RangesAdminPage'));
 const AlertRulesAdminPage = lazy(() => import('@/features/admin/AlertRulesAdminPage'));
 const TrashPage = lazy(() => import('@/features/admin/TrashPage'));
+const AuditPage = lazy(() => import('@/features/admin/AuditPage'));
+const PermissionsPage = lazy(() => import('@/features/admin/PermissionsPage'));
 const ImportsPage = lazy(() => import('@/features/imports/ImportsPage'));
 const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'));
 const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
@@ -67,16 +69,35 @@ export const routes: RouteObject[] = [
           { path: 'products/:id', element: page(<ProductDetailPage />) },
           {
             path: 'admin',
-            element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
             children: [
-              { index: true, element: <Navigate to="/admin/users" replace /> },
-              { path: 'users', element: page(<UsersAdminPage />) },
-              { path: 'countries', element: page(<CountriesAdminPage />) },
-              { path: 'ranges', element: page(<RangesAdminPage />) },
-              { path: 'alert-rules', element: page(<AlertRulesAdminPage />) },
-              { path: 'corbeille', element: page(<TrashPage />) },
-              { path: 'imports', element: page(<ImportsPage />) },
-              { path: 'imports/:id', element: page(<ImportDetailPage />) },
+              {
+                element: <RequireRole roles={['CEO_ADMIN', 'HQ_REGULATORY']} />,
+                children: [
+                  { index: true, element: <Navigate to="/admin/users" replace /> },
+                  { path: 'users', element: page(<UsersAdminPage />) },
+                  { path: 'countries', element: page(<CountriesAdminPage />) },
+                  { path: 'ranges', element: page(<RangesAdminPage />) },
+                  { path: 'alert-rules', element: page(<AlertRulesAdminPage />) },
+                  { path: 'imports', element: page(<ImportsPage />) },
+                  { path: 'imports/:id', element: page(<ImportDetailPage />) },
+                ],
+              },
+              // Réglables par le CEO : la page suit le droit, pas le rôle.
+              {
+                path: 'corbeille',
+                element: <RequireAction action="trash.restore" />,
+                children: [{ index: true, element: page(<TrashPage />) }],
+              },
+              {
+                path: 'audit',
+                element: <RequireAction action="audit.view" />,
+                children: [{ index: true, element: page(<AuditPage />) }],
+              },
+              {
+                path: 'permissions',
+                element: <RequireAction action="permissions.manage" />,
+                children: [{ index: true, element: page(<PermissionsPage />) }],
+              },
             ],
           },
           { path: 'imports/:id', element: page(<ImportDetailPage />) },

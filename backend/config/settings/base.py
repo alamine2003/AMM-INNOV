@@ -354,7 +354,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=12),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
+    "UPDATE_LAST_LOGIN": False,  # fait par LoginSerializer, avec le motif « Connexion »
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 

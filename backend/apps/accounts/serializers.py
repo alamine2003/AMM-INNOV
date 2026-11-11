@@ -1,12 +1,13 @@
 from django.contrib.auth.password_validation import validate_password
 from django.db import models
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.catalog.models import Country
 
-from .models import User
+from .models import LOGIN_REASON, User
 from .roles import Action, can
 
 
@@ -104,6 +105,11 @@ class LoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        # Date de dernière connexion, avec un motif que l'audit reconnaît (« Connexion »).
+        # Remplace UPDATE_LAST_LOGIN de simplejwt, qui ne donne pas de motif.
+        self.user.last_login = timezone.now()
+        self.user._change_reason = LOGIN_REASON
+        self.user.save(update_fields=["last_login"])
         data["user"] = MeSerializer(self.user).data
         return data
 

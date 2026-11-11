@@ -26,11 +26,13 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { NavLink, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
 import { BrandLogo } from '@/components/BrandLogo';
-import { navItemsForRole, type NavItem } from './navigation';
+import { navItemsFor, type NavItem } from './navigation';
 import { DRAWER_WIDTH, useDrawerWidth, useSidebarStore } from './sidebarStore';
 
 const ICONS: Record<NavItem['icon'], React.ReactNode> = {
@@ -47,6 +49,8 @@ const ICONS: Record<NavItem['icon'], React.ReactNode> = {
   binders: <MenuBookIcon />,
   deposits: <AssignmentTurnedInIcon />,
   trash: <DeleteSweepIcon />,
+  audit: <ManageSearchIcon />,
+  permissions: <AdminPanelSettingsIcon />,
 };
 
 /** `collapsed` : icônes seules (le libellé passe en info-bulle), pour laisser la place au contenu. */
@@ -54,7 +58,7 @@ function NavList({ collapsed = false }: { collapsed?: boolean }) {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
-  const items = navItemsForRole(user?.role);
+  const items = navItemsFor(user);
   const main = items.filter((i) => !i.section);
   const admin = items.filter((i) => i.section === 'admin');
   const isActive = (to: string) =>

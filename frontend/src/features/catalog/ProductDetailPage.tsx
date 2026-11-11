@@ -41,7 +41,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { STATUS_COLORS } from '@/lib/urgency';
 import { formatDate } from '@/lib/dates';
-import { isAdmin, isHqOrAdmin, useAuthStore } from '@/features/auth/authStore';
+import { useCan } from '@/features/auth/authStore';
 import { ProductFormDialog } from './ProductFormDialog';
 import { StatusChip, UrgencyChip } from '@/components/chips';
 import type { Product } from '@/api/types';
@@ -51,7 +51,8 @@ export default function ProductDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const user = useAuthStore((s) => s.user);
+  const canManage = useCan('catalog.manage');
+  const canMerge = useCan('catalog.merge');
   const product = useProduct(id);
   const coverage = useProductCoverage(id);
   const documents = useProductDocuments(id);
@@ -82,12 +83,12 @@ export default function ProductDetailPage() {
         }
         actions={
           <>
-            {isHqOrAdmin(user) && (
+            {canManage && (
               <Button variant="outlined" startIcon={<EditIcon />} onClick={() => setEditOpen(true)}>
                 {t('app.edit')}
               </Button>
             )}
-            {isAdmin(user) && (
+            {canMerge && (
               <Button
                 variant="outlined"
                 color="warning"

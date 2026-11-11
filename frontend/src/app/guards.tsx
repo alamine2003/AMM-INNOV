@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { Alert, Box, Button, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/features/auth/authStore';
+import { can, useAuthStore } from '@/features/auth/authStore';
 import { useMe } from '@/api/hooks/useAuth';
 import { refreshAccessToken } from '@/api/client';
-import type { Role } from '@/api/types';
+import type { Role, UserAction } from '@/api/types';
 
 /**
  * Restaure la session au chargement : un rafraîchissement silencieux avec le cookie httpOnly,
@@ -43,9 +43,20 @@ export function RequireAuth({ children }: { children?: ReactNode }) {
 
 export function RequireRole({ roles, children }: { roles: Role[]; children?: ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  const { t } = useTranslation();
   if (!user) return <Navigate to="/login" replace />;
-  if (!roles.includes(user.role)) {
+  return <Allowed ok={roles.includes(user.role)}>{children}</Allowed>;
+}
+
+/** Page réservée à une action réglable par le CEO (Administration › Permissions). */
+export function RequireAction({ action, children }: { action: UserAction; children?: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return <Navigate to="/login" replace />;
+  return <Allowed ok={can(user, action)}>{children}</Allowed>;
+}
+
+function Allowed({ ok, children }: { ok: boolean; children?: ReactNode }) {
+  const { t } = useTranslation();
+  if (!ok) {
     return (
       <Box sx={{ p: 4 }}>
         <Alert

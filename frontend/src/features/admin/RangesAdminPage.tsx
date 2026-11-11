@@ -26,7 +26,7 @@ import type { ProductRange } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { extractErrorMessage } from '@/api/client';
-import { isAdmin, useAuthStore } from '@/features/auth/authStore';
+import { useCan } from '@/features/auth/authStore';
 
 const schema = z.object({ code: z.string().min(1).toUpperCase(), label: z.string().min(1) });
 type Values = z.infer<typeof schema>;
@@ -86,7 +86,7 @@ function RangeDialog({
 export default function RangesAdminPage() {
   const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
-  const user = useAuthStore((s) => s.user);
+  const canManage = useCan('catalog.manage');
   const ranges = useRanges();
   const { remove } = useRangeMutations();
   const [dialog, setDialog] = useState<{ open: boolean; range: ProductRange | null }>({
@@ -111,7 +111,7 @@ export default function RangesAdminPage() {
           >
             <EditIcon fontSize="small" />
           </IconButton>
-          {isAdmin(user) && (
+          {canManage && (
             <IconButton
               size="small"
               color="error"

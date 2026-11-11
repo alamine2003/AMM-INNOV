@@ -6,6 +6,10 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
+
+# Motif d'historique d'une connexion : l'audit les reconnaît (et les filtre) par ce motif.
+LOGIN_REASON = "Connexion"
 
 
 class UserManager(BaseUserManager):
@@ -55,6 +59,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField("créé le", default=timezone.now)
 
     objects = UserManager()
+    # Audit : création, modification, désactivation et connexions (last_login). Le mot de passe
+    # n'est jamais copié dans l'historique.
+    history = HistoricalRecords(excluded_fields=["password"])
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
@@ -84,3 +91,37 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def scoped_country_ids(self) -> list:
         return list(self.countries.values_list("pk", flat=True))
+
+
+class ActionGrant(models.Model):
+    """Droit d'un rôle sur une action sensible, réglé par le CEO (Administration › Permissions).
+
+    Sans ligne, le réglage par défaut de `apps/accounts/roles.py` s'applique. Chaque changement
+    est conservé dans l'historique (audit).
+    """
+
+    action = models.CharField("action", max_length=64)
+    role = models.CharField("rôle", max_length=32, choices=User.Role.choices)
+    allowed = models.BooleanField("autorisé")
+    updated_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="modifié par",
+    )
+    updated_at = models.DateTimeField("modifié le", auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "permission"
+        verbose_name_plural = "permissions"
+        ordering = ["action", "role"]
+        constraints = [
+            models.UniqueConstraint(fields=["action", "role"], name="unique_action_grant"),
+        ]
+
+    def __str__(self) -> str:
+        state = "autorisé" if self.allowed else "refusé"
+        return f"{self.action} · {self.get_role_display()} : {state}"

@@ -21,7 +21,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from apps.accounts.permissions import GLOBAL_ROLES, RolePermission
+from apps.accounts.permissions import RolePermission
+from apps.accounts.roles import Action
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
@@ -367,7 +368,7 @@ class PieceTypeViewSet(
 
     serializer_class = PieceTypeSerializer
     permission_classes = [RolePermission]
-    write_roles = GLOBAL_ROLES
+    write_action = Action.PIECE_TYPES_MANAGE
     pagination_class = None
     queryset = (
         PieceType.objects.select_related("country")

@@ -18,11 +18,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import (
-    GLOBAL_ROLES,
     CountryScopedQuerysetMixin,
     RolePermission,
     ensure_country_in_scope,
 )
+from apps.accounts.roles import Action
 from apps.amm.models import Renewal
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.exceptions import StorageUnavailable, StoredFileLost
@@ -235,7 +235,7 @@ class DocumentViewSet(
     serializer_class = DocumentDetailSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     # Retirer un scan l'archive (il reste dans l'historique) : siège et CEO.
-    delete_roles = GLOBAL_ROLES
+    delete_action = Action.DOCUMENT_DELETE
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     country_lookup = "amm__country"
     filterset_fields = {

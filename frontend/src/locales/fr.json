@@ -53,6 +53,8 @@
     "alertRules": "Règles d'alerte",
     "imports": "Imports Excel",
     "trash": "Corbeille",
+    "audit": "Audit",
+    "permissions": "Permissions",
     "dossierImports": "Import de dossiers AMM",
     "binders": "Classeurs",
     "logout": "Se déconnecter",
