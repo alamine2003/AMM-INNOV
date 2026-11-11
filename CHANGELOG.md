@@ -23,7 +23,8 @@ Corrective issue de l'audit d'infrastructure du 11/11/2026 (`docs/audit-infrastr
   1280 × 585 px, un écran 1280 × 720 : réduction 0,66 et 0,85 au lieu de 0,55, et le bas de la
   feuille n'était plus visible). Pendant que
   la page tourne, et sur téléphone, la feuille reste sur une seule page.
-- CI : l'installation de `qpdf` est retentée quand le miroir Ubuntu ne répond pas.
+- CI : l'installation de `qpdf` est bornée (6 min, trois essais) et ne bloque plus la CI quand
+  le miroir Ubuntu ne répond pas ; sans qpdf, seul le test d'assemblage des classeurs est sauté.
 - **Après un déploiement, un onglet resté ouvert se recharge seul** au lieu d'afficher
   « Unexpected Application Error » (fichier de l'ancienne version demandé à Cloudflare). Toute
   autre erreur d'affichage montre un message clair, avec le menu, « Recharger » et « Accueil ».
