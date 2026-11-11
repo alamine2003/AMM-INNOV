@@ -17,6 +17,8 @@ from .recognition import country_labels, normalize, recognize_file, specialty_ke
 
 # Décisions posées à la racine d'un dossier pays : jointes par le navigateur à chaque produit.
 COMMON_FOLDER = "Documents communs"
+
+
 def _identify_by_folder(batch, files, rows, products, country, issues, warnings):
     """Produit désigné par le nom du dossier (nommé d'après le catalogue), confirmé par les pièces.
 
@@ -248,6 +250,23 @@ GENERIC_FOLDER = re.compile(
     r"^(amm|amm produit|dossiers?|documents?( communs)?|decisions?|renouvellements?|origine|"
     r"scans?|pieces?|autres?|produits?|nouveau dossier|pret a importer|gamme.*|.*afrique)$"
 )
+# Plan du classement AMM GHPL à l'intérieur d'une présentation (« 1_AMM ORIGINE - 2016 - N° …»,
+# « 2_RENOUVELLEMENTS », « 4_DEPOTS - COURRIERS », « _DOCUMENT COMPLET … ») et dossiers d'une
+# année ou d'un n° : ils rangent les pièces d'un produit, ils ne nomment pas un produit. Avant la
+# 1.2.5, « COURRIERS » ou « 1_AMM ORIGINE » étaient pris pour le nom du produit.
+SECTION_FOLDER = re.compile(
+    r"^[\d\s_]*(?:amm\b|origine|original|initiale?|renouv|renewal|depots?\b|variations?"
+    r"|rectificatifs?|courriers?|recepisses?|rcp\b|annexes?|document complet|doublons"
+    r"|pages separees|(?:19|20)\d{2}\b|n\b)"
+)
+# « N° E-2015-2001 », « N° 22-0755 » dans un nom de dossier du classement.
+FOLDER_NUMBER = re.compile(
+    r"\bN(?:\s?[°º]|o\.?\s)\s*([A-Z0-9][A-Z0-9/.-]{1,29}\d[A-Z0-9/.-]*)", re.I
+)
+
+
+def _is_section(part: str) -> bool:
+    return bool(SECTION_FOLDER.match(normalize(part).replace("_", " ").strip()))
 
 
 def _folder_label(batch, country) -> str:
@@ -257,6 +276,10 @@ def _folder_label(batch, country) -> str:
     « Documents ») ou un nom de pays ne désigne pas un produit.
     """
     parts = [part.strip() for part in batch.root_name.split(" - ") if part.strip()]
+    # Le plus profond qui n'est pas une rubrique du classement (« METRO-GH 500MG CPR B30 -
+    # 1_AMM ORIGINE - 2016 - N° E-2015-2001 » → « METRO-GH 500MG CPR B30 »).
+    while parts and _is_section(parts[-1]):
+        parts.pop()
     label = parts[-1] if parts else ""
     key = normalize(label).replace("_", " ").strip()
     countries = {normalize(item) for item in country_labels(country)} if country else set()
@@ -283,3 +306,38 @@ def _majority(values):
     return max(counts, key=lambda value: counts[value]) if counts else None
 
 
+def country_by_number(batch, files, rows, products):
+    """Pays d'un dossier qui ne le nomme pas, retrouvé par le produit ET le n° d'AMM.
+
+    Un dossier déposé sans son dossier pays (« METRO-GH/METRO-GH 500MG CPR B30/1_AMM ORIGINE -
+    2016 - N° E-2015-2001/… ») ne dit pas le pays, et un scan illisible non plus. Le produit
+    (nom du dossier ou des décisions) et un n° (dossier ou décision) qui sont tous deux ceux d'une
+    seule AMM suivie le désignent : deux critères, jamais le n° seul. None si rien ne concorde
+    ou si plusieurs pays concordent.
+    """
+    labels = [part for part in batch.root_name.split(" - ") if part.strip()]
+    for upload in files:
+        labels.extend(upload.relative_path.split("/")[1:-1])
+    product, _reason = folder_product(
+        [label for label in labels if not _is_section(label)], products
+    )
+    product_ids = (
+        {str(product.pk)} if product else {pk for row in rows for pk in row["product_ids"]}
+    )
+    numbers = {normalize(row["number"]) for row in rows if row.get("number")}
+    for text in [batch.root_name, *(upload.relative_path for upload in files)]:
+        numbers.update(normalize(match.group(1)) for match in FOLDER_NUMBER.finditer(text))
+    numbers.discard("")
+    if not product_ids or not numbers:
+        return None
+    found = set()
+    amms = MarketingAuthorization.objects.filter(product_id__in=product_ids).prefetch_related(
+        "renewals"
+    )
+    for amm in amms:
+        own = {normalize(amm.original_number)} | {
+            normalize(renewal.number) for renewal in amm.renewals.all() if renewal.number
+        }
+        if own & numbers:
+            found.add(amm.country)
+    return found.pop() if len(found) == 1 else None

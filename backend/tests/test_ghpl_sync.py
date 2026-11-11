@@ -140,6 +140,14 @@ def test_manifest_rows_follow_the_classement_rules():
     assert rows[3]["date"] == "2026"  # année seule mise en forme de date dans Excel
 
 
+def test_registry_rows_naming_a_folder_are_not_pieces():
+    """« 4_DEPOTS - COURRIERS » listé comme pièce : rien à télécharger (1.2.5)."""
+    folder = dict(ORIGIN, Chemin=f"{BASE}/4_DEPOTS - COURRIERS", **{"Nom du fichier": ""})
+    alias = dict(ORIGIN, Chemin=f"{BASE}/1_AMM ORIGINE - 2019 - N° 885/scan.pdf alias")
+    rows = manifest_rows([ORIGIN, folder, alias], [])
+    assert [row["chemin"] for row in rows] == [ORIGIN["Chemin"], alias["Chemin"]]
+
+
 def test_not_configured_does_nothing(settings):
     settings.NEXTCLOUD_USER = ""
     run = run_sync()
