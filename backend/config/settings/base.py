@@ -297,7 +297,22 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.imports.tasks.sync_ghpl",
         "schedule": crontab(minute=20),
     },
+    # Redis gratuit (25 Mo, sans éviction) : avertir le CEO dans l'application avant qu'il soit
+    # plein (audit d'infrastructure du 11/11/2026, constat 9).
+    "watch-redis-memory": {
+        "task": "apps.administration.tasks.watch_redis_memory",
+        "schedule": crontab(minute=40),
+    },
 }
+
+# Mémoire de Redis : limite si Redis ne la donne pas (Render gratuit : 25), seuil d'alerte.
+REDIS_MAXMEMORY_BYTES = int(env("REDIS_MAXMEMORY_MB", "0") or 0) * 1024 * 1024
+REDIS_WARN_PCT = int(env("REDIS_WARN_PCT", "80"))
+
+# E-mails d'alerte, de rappel et digest hebdomadaire : coupés tant que la direction ne les veut
+# pas (décision de septembre 2026 : alertes dans l'application seulement). Avant la 1.2.5, ils
+# partaient dès qu'EMAIL_URL était renseigné (audit du 11/11/2026, constat 10).
+ALERT_EMAILS_ENABLED = env_bool("ALERT_EMAILS_ENABLED", False)
 
 # ---------------------------------------------------------------------------
 # Auth, API

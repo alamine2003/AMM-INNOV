@@ -2100,6 +2100,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/BinderLocation'
           description: ''
+  /api/v1/client-errors/:
+    post:
+      operationId: v1_client_errors_create
+      description: L'interface signale une erreur d'affichage (tout utilisateur connecté,
+        débit limité).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientErrorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientErrorRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientErrorRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/countries/:
     get:
       operationId: v1_countries_list
@@ -3583,6 +3607,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierReviewPoint'
+          description: ''
+  /api/v1/errors/:
+    get:
+      operationId: v1_errors_list
+      description: Erreurs de production (serveur, tâches de fond, interface), les
+        plus récentes d'abord.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Quel champ utiliser pour classer les résultats.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Nombre de résultats à retourner par page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un terme de recherche.
+        schema:
+          type: string
+      - in: query
+        name: source
+        schema:
+          type: string
+          enum:
+          - interface
+          - server
+          - worker
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - open
+          - resolved
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedErrorEventList'
+          description: ''
+  /api/v1/errors/{id}/:
+    get:
+      operationId: v1_errors_retrieve
+      description: Erreurs de production (serveur, tâches de fond, interface), les
+        plus récentes d'abord.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) erreur.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEvent'
+          description: ''
+  /api/v1/errors/{id}/resolve/:
+    post:
+      operationId: v1_errors_resolve_create
+      description: Marque l'erreur résolue ; si elle revient, elle est rouverte automatiquement.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) erreur.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEvent'
           description: ''
   /api/v1/ghpl-sync/:
     get:
@@ -5174,6 +5301,7 @@ components:
       - deposits.manage_pieces
       - audit.view
       - permissions.manage
+      - errors.view
       type: string
       description: |-
         * `binder.edit` - binder.edit
@@ -5190,6 +5318,7 @@ components:
         * `deposits.manage_pieces` - deposits.manage_pieces
         * `audit.view` - audit.view
         * `permissions.manage` - permissions.manage
+        * `errors.view` - errors.view
     AddPageInputRequest:
       type: object
       properties:
@@ -6494,6 +6623,29 @@ components:
         * `no_number` - no_number
         * `no_receipt` - no_receipt
         * `gap` - gap
+    ClientErrorRequest:
+      type: object
+      description: 'Erreur de l''interface : ce que le navigateur sait, rien de plus
+        (ni données saisies).'
+      properties:
+        kind:
+          type: string
+          maxLength: 120
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+        stack:
+          type: string
+          maxLength: 8000
+        path:
+          type: string
+          maxLength: 300
+        version:
+          type: string
+          maxLength: 20
+      required:
+      - message
     Conformity:
       type: object
       description: Les 4 niveaux de vérification du dossier et le résultat (recalculé
@@ -8251,6 +8403,74 @@ components:
       required:
       - at
       - user
+    ErrorEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          title: Origine
+        source_label:
+          type: string
+          readOnly: true
+        kind:
+          type: string
+          title: Type
+          maxLength: 120
+        message:
+          type: string
+          maxLength: 500
+        detail:
+          type: string
+          title: Détail
+        location:
+          type: string
+          title: Où
+          maxLength: 300
+        version:
+          type: string
+          maxLength: 20
+        count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Occurrences
+        first_seen:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Première fois
+        last_seen:
+          type: string
+          format: date-time
+          title: Dernière fois
+        last_user:
+          type: string
+          nullable: true
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          title: Résolue le
+        resolved_by:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - first_seen
+      - id
+      - kind
+      - last_seen
+      - last_user
+      - message
+      - resolved_by
+      - source
+      - source_label
     EventInputRequest:
       type: object
       properties:
@@ -9228,6 +9448,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DossierImport'
+    PaginatedErrorEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorEvent'
     PaginatedHistoryEntryList:
       type: object
       required:
@@ -10452,6 +10695,16 @@ components:
       description: |-
         * `original` - AMM d'origine
         * `renewal` - Dernier renouvellement
+    SourceEnum:
+      enum:
+      - server
+      - worker
+      - interface
+      type: string
+      description: |-
+        * `server` - Serveur
+        * `worker` - Tâche de fond
+        * `interface` - Interface
     Suggestion:
       type: object
       properties:

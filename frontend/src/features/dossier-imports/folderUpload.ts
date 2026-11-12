@@ -122,8 +122,28 @@ export async function filesFromDrop(items: DataTransferItemList): Promise<Folder
   return files;
 }
 
-/** Sous-dossiers qui décrivent une période d'un même produit, pas un autre produit. */
-const PERIOD_FOLDER = /^(amm[\s_-]*)?(origine|original|initial|renouv|renouvellement|renewal)/i;
+/** Sans accents ni casse : « DÉPÔTS » = « depots ». */
+const plain = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/**
+ * Sous-dossiers qui rangent les pièces d'un même produit, jamais un autre produit : périodes
+ * (« ORIGINE », « RENOUVELLEMENT 2020 ») et plan du classement AMM GHPL (« 1_AMM ORIGINE - 2016 -
+ * N° … », « 2_RENOUVELLEMENTS », « 3_VARIATIONS - RECTIFICATIFS », « 4_DEPOTS - COURRIERS »,
+ * « 5_RCP - ANNEXES »), dossier d'une année. Avant la 1.2.5, seuls les noms commençant par
+ * « origine » ou « renouvellement » étaient reconnus : un produit du classement était découpé
+ * en un import par rubrique (« … - 4_DEPOTS - COURRIERS »), sans son nom ni son pays.
+ */
+const SECTION_FOLDER =
+  /^[\d\s_.-]*(amm\b|origine|original|initial|renouv|renewal|depots?\b|variations?|rectificatifs?|courriers?|recepisses?|rcp\b|annexes?|(19|20)\d{2}\b)/;
+export const isSectionFolder = (name: string) => SECTION_FOLDER.test(plain(name).replace(/_/g, ' '));
+
+/** Copies du classement AMM GHPL : jamais importées (les originaux sont à côté). */
+const COPY_FOLDER = /^_\s*(doublons|pages separees|document complet)/;
+export const isCopyFolder = (name: string) => COPY_FOLDER.test(plain(name));
 
 export interface ProductGroup {
   name: string;
@@ -139,7 +159,9 @@ export function setAside(files: FolderFile[]): { kept: FolderFile[]; ignored: st
   const kept: FolderFile[] = [];
   const ignored: string[] = [];
   for (const entry of files) {
-    if (!/\.(pdf|jpe?g|png)$/i.test(entry.file.name)) ignored.push(`${entry.path} (format non lu)`);
+    if (entry.path.split('/').slice(1, -1).some(isCopyFolder))
+      ignored.push(`${entry.path} (copie du classement, non importée)`);
+    else if (!/\.(pdf|jpe?g|png)$/i.test(entry.file.name)) ignored.push(`${entry.path} (format non lu)`);
     else if (!entry.file.size) ignored.push(`${entry.path} (fichier vide)`);
     else if (entry.file.size > FOLDER_LIMITS.fileBytes) ignored.push(`${entry.path} (plus de 25 Mo)`);
     else kept.push(entry);
@@ -160,10 +182,11 @@ export function setAside(files: FolderFile[]): { kept: FolderFile[]; ignored: st
 export function splitByProduct(files: FolderFile[]): ProductGroup[] {
   if (!files.length) return [];
   const root = files[0].path.split('/')[0];
+  // Le dossier produit s'arrête à la première rubrique : tout ce qui est dessous lui appartient.
   const productDirs = (parts: string[]) => {
     const dirs = parts.slice(1, -1);
-    while (dirs.length && PERIOD_FOLDER.test(dirs[dirs.length - 1])) dirs.pop();
-    return dirs;
+    const section = dirs.findIndex(isSectionFolder);
+    return section < 0 ? dirs : dirs.slice(0, section);
   };
   const entries = [];
   for (const entry of files) {

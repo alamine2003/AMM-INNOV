@@ -1,7 +1,7 @@
-# Audit d'infrastructure — 11/11/2026 (version 1.2.4)
+# Audit d'infrastructure — 11/11/2026 (versions 1.2.4 et 1.2.5)
 
 Rapport complet : document « Audit d'infrastructure — AMM GH » (Claude Docs). Ce fichier garde
-les constats, ce que la 1.2.4 corrige, et les gestes à faire à la main.
+les constats, ce que les versions 1.2.4 et 1.2.5 corrigent, et les gestes faits à la main.
 
 ## Infrastructure en place
 
@@ -16,34 +16,34 @@ les constats, ce que la 1.2.4 corrige, et les gestes à faire à la main.
 
 ## Constats
 
-| # | Gravité | Constat | 1.2.4 |
+| # | Gravité | Constat | Correction |
 |---|---|---|---|
-| 1 | Critique | 56 copies complètes de la base publiées en clair en artefacts d'un dépôt public. | Workflow corrigé ; **suppression manuelle** |
-| 2 | Haute | Réveil GitHub parti 3 à 7 fois par jour au lieu de 144 : veille, démarrages à froid (~1 min), Celery arrêté entre deux visites. | Worker Cloudflare ; **installation manuelle** |
-| 3 | Haute | Sonde Render sur `/health` (base comprise) : une base lente fait redémarrer l'API. | `render.yaml` ; **vérifier le tableau de bord** |
+| 1 | Critique | 56 copies complètes de la base publiées en clair en artefacts d'un dépôt public. | 1.2.4 : chiffrement ; 55 copies supprimées le 11/11, `amm-db-58` gardée en attendant la première sauvegarde chiffrée |
+| 2 | Haute | Réveil GitHub parti 3 à 7 fois par jour au lieu de 144 : veille, démarrages à froid (~1 min), Celery arrêté entre deux visites. | Worker `amm-gh-keepalive` créé le 11/11 (Cron `*/5 * * * *`) |
+| 3 | Haute | Sonde Render sur `/health` (base comprise) : une base lente fait redémarrer l'API. | 1.2.4 ; vérifié dans Render le 11/11 |
 | 4 | Haute | Celery lancé en arrière-plan sans surveillance : s'il meurt, rien ne le relance. | Relance automatique |
 | 5 | Haute | Après chaque déploiement, les onglets ouverts plantent (« Unexpected Application Error »). | Rechargement automatique, page d'erreur |
 | 6 | Moyenne | `/metrics` public (nombre d'AMM par statut, e-mails…). | Fermé sans jeton |
-| 7 | Moyenne | Web, worker et beat dans 512 Mo : l'analyse d'un dossier pays a déjà tué l'instance (24/09). | Limite de l'offre : voir « Suite » |
-| 8 | Moyenne | Base renouvelée tous les 25 jours : redéploiement, et l'horaire GitHub dérive (exécutée vers 9-10 h au lieu de 2 h 30). | Voir « Suite » |
-| 9 | Moyenne | Redis 25 Mo partagé (broker, cache, temps réel) sans éviction : plein, les écritures échouent. | À surveiller |
-| 10 | À vérifier | Compteur de 1 099 e-mails envoyés alors qu'aucun e-mail d'alerte n'est voulu. | Vérifier `EMAIL_URL` sur Render |
-| 11 | À vérifier | Sans `SENTRY_DSN` / `VITE_SENTRY_DSN`, les plantages ne sont vus par personne. | Créer un projet Sentry |
+| 7 | Moyenne | Web, worker et beat dans 512 Mo : l'analyse d'un dossier pays a déjà tué l'instance (24/09). | Limite de l'offre ; journal des erreurs (1.2.5) pour voir les pannes |
+| 8 | Moyenne | Base renouvelée tous les 25 jours : redéploiement, et l'horaire GitHub dérive (exécutée vers 9-10 h au lieu de 2 h 30). | 1.2.5 : renouvellement de nuit seulement (0 h - 7 h), forcé à 28 jours |
+| 9 | Moyenne | Redis 25 Mo partagé (broker, cache, temps réel) sans éviction : plein, les écritures échouent. | 1.2.5 : contrôle d'intégrité et avertissement au CEO à 80 % |
+| 10 | À vérifier | Compteur de 1 099 e-mails envoyés alors qu'aucun e-mail d'alerte n'est voulu. | 1.2.5 : e-mails d'alerte coupés par défaut (`ALERT_EMAILS_ENABLED`) |
+| 11 | À vérifier | Sans `SENTRY_DSN` / `VITE_SENTRY_DSN`, les plantages ne sont vus par personne. | 1.2.5 : journal des erreurs dans AMM GH (Administration › Erreurs) |
 
 ## Gestes manuels
 
-1. **Supprimer les artefacts `amm-db-*`** : GitHub › Actions › « Base Render » › chaque
-   exécution › Artifacts › corbeille.
+1. ~~Supprimer les artefacts `amm-db-*`~~ : fait le 11/11 (55 sur 56). `amm-db-58` reste
+   jusqu'à la première sauvegarde chiffrée, puis se supprime (GitHub › Actions › « Base
+   Render » › exécution › Artifacts › corbeille).
 2. **Créer le secret `BACKUP_PASSPHRASE`** (GitHub › Settings › Secrets and variables ›
    Actions) : une longue phrase secrète, gardée aussi hors de GitHub (sans elle, les
    sauvegardes sont illisibles). Déchiffrer :
    `gpg --decrypt amm-render-AAAAMMJJ-HHMMSS.dump.gpg > amm.dump`.
-3. **Installer le réveil Cloudflare** : Workers & Pages › Créer › Worker « amm-gh-keepalive »
-   › coller `scripts/cloudflare/keepalive-worker.js` › Déployer › Paramètres › Déclencheurs ›
-   Cron `*/5 * * * *`.
-4. **Render › amm-innov-api › Settings › Health Check Path** : `/api/v1/health/live` (si le
-   blueprint ne l'a pas mis à jour).
-5. Vérifier `EMAIL_URL` et `SENTRY_DSN` dans l'onglet Environment de Render.
+3. ~~Installer le réveil Cloudflare~~ : fait le 11/11 (Worker `amm-gh-keepalive`, Cron
+   `*/5 * * * *`, code de `scripts/cloudflare/keepalive-worker.js`).
+4. ~~Sonde de santé Render~~ : déjà `/api/v1/health/live` (vérifié le 11/11).
+5. Ne pas renseigner `ALERT_EMAILS_ENABLED` tant que la direction ne veut pas d'e-mails
+   d'alerte. Sentry n'est plus nécessaire : le journal des erreurs est dans l'application.
 
 ## Suite recommandée
 

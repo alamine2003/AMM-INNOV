@@ -158,6 +158,7 @@ export const users: User[] = [
       'deposits.manage_pieces',
       'audit.view',
       'permissions.manage',
+      'errors.view',
     ],
   },
   {

@@ -5,6 +5,46 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.5] — 2026-11-11
+
+Suite de l'audit d'infrastructure du 11/11/2026 (constats moyens et à vérifier), et rangement
+des AMM par l'import de dossiers et la synchronisation GHPL. Audit :
+(`docs/audit-infrastructure-1.2.4.md`). Les constats critique et hauts sont réglés (1.2.4 et
+gestes dans les comptes : 55 copies de la base supprimées, Worker Cloudflare de réveil créé).
+
+### Ajouté
+- **Journal des erreurs** (Administration › Erreurs, CEO ; droit `errors.view` réglable).
+  Les erreurs du serveur, des tâches de fond et de l'interface sont gardées dans AMM GH, sans
+  service externe : type, message, pile, page ou tâche, version, dernier utilisateur. La même
+  erreur se compte au lieu de se répéter ; résolue, elle se rouvre si elle revient. L'interface
+  envoie ses erreurs d'affichage (dix par session au plus, jamais ce qui a été saisi).
+- **Surveillance de Redis** (25 Mo gratuits, sans éviction) : contrôle d'intégrité et, à 80 %,
+  un avertissement dans l'application au CEO, une fois par jour au plus.
+
+### Corrigé
+- **Import de dossiers : plan du classement AMM GHPL.** Un dossier du classement (« METRO-GH »
+  déposé seul) était découpé en un import par rubrique (« … - 1_AMM ORIGINE - 2016 - N° … »,
+  « … - 4_DEPOTS - COURRIERS »), et « COURRIERS » ou « 1_AMM ORIGINE » étaient pris pour le
+  nom du produit. Les rubriques (`1_AMM ORIGINE`, `2_RENOUVELLEMENTS`, `3_VARIATIONS`,
+  `4_DEPOTS`, `5_RCP`, dossiers d'année) restent maintenant dans leur présentation : un import
+  par présentation, avec son vrai nom. Les copies (`_DOUBLONS`, `_PAGES SEPAREES`,
+  `_DOCUMENT COMPLET`) ne sont plus envoyées.
+- **Import de dossiers : pays retrouvé par le produit et le n° d'AMM** quand ni le dossier ni
+  un scan lisible ne le donnent (« N° E-2015-2001 » d'une AMM ivoirienne suivie de ce
+  produit). Deux critères, jamais le n° seul. Les dossiers restés en question sont relus d'eux-
+  mêmes après la mise à jour.
+- **Synchronisation GHPL** : les lignes du registre qui désignent un dossier et non une pièce
+  ne sont plus « laissées de côté (format sans extension) ».
+
+### Modifié
+- **Renouvellement de la base de nuit seulement** (0 h - 7 h à Dakar) tant qu'elle a moins de
+  28 jours : il redéploie l'API et tombait en pleine journée, GitHub retardant ses tâches
+  planifiées de plusieurs heures. Une vérification horaire le lance dans la fenêtre.
+- **E-mails d'alerte, de rappel et digest hebdomadaire coupés** par défaut
+  (`ALERT_EMAILS_ENABLED`), conformément à la décision « alertes dans l'application
+  seulement » ; ils partaient dès qu'`EMAIL_URL` était renseigné. Les alertes et rappels restent
+  dans l'application.
+
 ## [1.2.4] — 2026-11-11
 
 Corrective issue de l'audit d'infrastructure du 11/11/2026 (`docs/audit-infrastructure-1.2.4.md`).

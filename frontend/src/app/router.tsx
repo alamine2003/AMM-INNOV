@@ -22,6 +22,7 @@ const AlertRulesAdminPage = lazy(() => import('@/features/admin/AlertRulesAdminP
 const TrashPage = lazy(() => import('@/features/admin/TrashPage'));
 const AuditPage = lazy(() => import('@/features/admin/AuditPage'));
 const PermissionsPage = lazy(() => import('@/features/admin/PermissionsPage'));
+const ErrorsPage = lazy(() => import('@/features/admin/ErrorsPage'));
 const ImportsPage = lazy(() => import('@/features/imports/ImportsPage'));
 const ImportDetailPage = lazy(() => import('@/features/imports/ImportDetailPage'));
 const DossierImportsPage = lazy(() => import('@/features/dossier-imports/DossierImportsPage'));
@@ -98,6 +99,11 @@ export const routes: RouteObject[] = [
                     path: 'audit',
                     element: <RequireAction action="audit.view" />,
                     children: [{ index: true, element: page(<AuditPage />) }],
+                  },
+                  {
+                    path: 'erreurs',
+                    element: <RequireAction action="errors.view" />,
+                    children: [{ index: true, element: page(<ErrorsPage />) }],
                   },
                   {
                     path: 'permissions',

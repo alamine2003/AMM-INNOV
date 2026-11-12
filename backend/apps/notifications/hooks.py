@@ -20,9 +20,13 @@ EMAIL_RETRY_AFTER = timedelta(minutes=15)  # laisse finir les relances Celery (‚
 @RECOVERY.register
 def recover_emails(now) -> dict[str, int]:
     """E-mails d'alerte jamais partis (Redis ou Gmail en panne) : renvoy√©s."""
+    from django.conf import settings
+
     from .models import Notification
     from .tasks import send_alert_email
 
+    if not settings.ALERT_EMAILS_ENABLED:
+        return {"emails": 0}
     emails = Notification.objects.filter(
         channel=Notification.Channel.EMAIL,
         sent_at__isnull=True,

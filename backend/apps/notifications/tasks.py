@@ -41,6 +41,8 @@ def send_alert_email(self, notification_id: str) -> dict:
         return {"status": "missing"}
     if notification.sent_at is not None:
         return {"status": "already-sent"}
+    if not settings.ALERT_EMAILS_ENABLED:
+        return {"status": "disabled"}  # créé avant la coupure : il ne part pas
     message = render_to_string(
         "notifications/alert_email.txt",
         {
@@ -114,6 +116,8 @@ def digest_for_user(user: User, today=None) -> dict | None:
 def send_weekly_digest(today: str | None = None) -> dict:
     from datetime import date
 
+    if not settings.ALERT_EMAILS_ENABLED:
+        return {"status": "disabled", "sent": 0, "failed": 0}
     reference = date.fromisoformat(today) if today else reference_today()
     title = f"Digest hebdomadaire du {reference:%d/%m/%Y}"
     already = set(

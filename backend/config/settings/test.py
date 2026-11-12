@@ -26,6 +26,8 @@ if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3" and not os.env
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 CELERY_TASK_ALWAYS_EAGER = True
+# Les tests des e-mails (envoi, relances, digest) les exercent ; la coupure a son propre test.
+ALERT_EMAILS_ENABLED = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = "memory://"
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

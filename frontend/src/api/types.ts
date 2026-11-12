@@ -20,6 +20,8 @@ export type AuditFilters = Schemas['AuditFilters'];
 /** Permissions : rôles × actions, réglées par le CEO. */
 export type PermissionMatrix = Schemas['PermissionMatrix'];
 export type PermissionGrant = Schemas['PermissionGrantRequest'];
+/** Journal des erreurs de production (serveur, tâches de fond, interface). */
+export type ErrorEvent = Schemas['ErrorEvent'];
 
 export interface User {
   id: string;

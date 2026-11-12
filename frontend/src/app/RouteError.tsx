@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { reportError } from '@/lib/reportError';
 import { isStaleChunkError, reloadForNewVersion } from '@/lib/staleChunks';
 
 /**
@@ -14,7 +15,8 @@ export function RouteError() {
 
   useEffect(() => {
     if (stale) reloadForNewVersion();
-  }, [stale]);
+    else reportError(error); // au journal des erreurs (Administration › Erreurs)
+  }, [stale, error]);
 
   if (reloading) {
     return (

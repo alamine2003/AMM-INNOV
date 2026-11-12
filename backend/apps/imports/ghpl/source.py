@@ -104,6 +104,11 @@ def manifest_rows(docs: list[dict], records: list[dict]) -> list[dict]:
         path = _text(doc.get("Chemin")).replace("\\", "/")
         if not path:
             continue
+        # Ligne du registre qui désigne un dossier (« 4_DEPOTS - COURRIERS », « RENOUVELLEMENT 2
+        # - 2024-07-05 ») et non une pièce : elle n'a rien à télécharger. Avant la 1.2.5, elle
+        # finissait « laissée de côté : format non accepté (sans extension) ».
+        if "." not in path.rsplit("/", 1)[-1]:
+            continue
         country = _plain(doc.get("Pays"))
         presentation = _text(doc.get("Presentation"))
         period, kind = period_of(_text(doc.get("Type")), _text(doc.get("Rangement")))

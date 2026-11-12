@@ -73,7 +73,12 @@ def reminder_body(amm, today: date) -> str:
 
 def reminder_channels() -> list[str]:
     channels = getattr(settings, "RENEWAL_REMINDER_CHANNELS", [Notification.Channel.IN_APP])
-    return [c for c in channels if c in Notification.Channel.values]
+    return [
+        c
+        for c in channels
+        if c in Notification.Channel.values
+        and (c != Notification.Channel.EMAIL or settings.ALERT_EMAILS_ENABLED)
+    ]
 
 
 def _create_once(user, amm, channel, today, title, body, link) -> Notification | None:

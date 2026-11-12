@@ -20,6 +20,8 @@ from apps.accounts.views import (
 from apps.administration.views import (
     AuditFiltersView,
     AuditView,
+    ClientErrorView,
+    ErrorEventViewSet,
     PermissionsView,
     TrashViewSet,
 )
@@ -54,6 +56,7 @@ router.register("deposit-pieces", PieceTypeViewSet, basename="deposit-piece")
 router.register("deposits", DepositViewSet, basename="deposit")
 router.register("dossier-review-points", DossierReviewPointViewSet, basename="dossier-review-point")
 router.register("trash", TrashViewSet, basename="trash")
+router.register("errors", ErrorEventViewSet, basename="error-event")
 
 api_v1 = [
     re_path(r"^auth/login/?$", LoginView.as_view(), name="auth-login"),
@@ -77,6 +80,7 @@ api_v1 = [
     re_path(r"^audit/?$", AuditView.as_view(), name="audit"),
     re_path(r"^audit/filters/?$", AuditFiltersView.as_view(), name="audit-filters"),
     re_path(r"^permissions/?$", PermissionsView.as_view(), name="permissions"),
+    re_path(r"^client-errors/?$", ClientErrorView.as_view(), name="client-errors"),
     *router.urls,
 ]
 

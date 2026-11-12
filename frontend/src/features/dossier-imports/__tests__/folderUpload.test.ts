@@ -148,6 +148,44 @@ describe('upload de dossiers', () => {
     ]);
   });
 
+  it('suit le plan du classement AMM GHPL : une présentation = un import, rubriques comprises', () => {
+    // Cas réel du 11/11/2026 : « METRO-GH » déposé seul, découpé jusque-là par rubrique.
+    const groups = splitByProduct(
+      filesFromPicker([
+        fileAt('METRO-GH/METRO-GH 500MG CPR B30/1_AMM ORIGINE - 2016 - N° E-2015-2001/2016 - AMM.pdf'),
+        fileAt('METRO-GH/METRO-GH 500MG CPR B30/2_RENOUVELLEMENTS/RENOUVELLEMENT 1 - 2021-03-01/R1.pdf'),
+        fileAt('METRO-GH/METRO-GH 500MG CPR B30/4_DEPOTS - COURRIERS/courrier.pdf'),
+        fileAt('METRO-GH/METRO-GH 500MG-100 PERF 100ML/1_AMM ORIGINE - 2016 - N° E-2015-2002/AMM.pdf'),
+        fileAt('METRO-GH/METRO-GH 200MG-5ML SIROP-SUSP BUV 120ML/4_DEPOTS - COURRIERS/c.pdf'),
+      ]),
+    );
+    expect(groups.map((g) => g.name)).toEqual([
+      'METRO-GH - METRO-GH 500MG CPR B30',
+      'METRO-GH - METRO-GH 500MG-100 PERF 100ML',
+      'METRO-GH - METRO-GH 200MG-5ML SIROP-SUSP BUV 120ML',
+    ]);
+    expect(groups[0].files.map((f) => f.path)).toEqual([
+      'METRO-GH - METRO-GH 500MG CPR B30/1_AMM ORIGINE - 2016 - N° E-2015-2001/2016 - AMM.pdf',
+      'METRO-GH - METRO-GH 500MG CPR B30/2_RENOUVELLEMENTS/RENOUVELLEMENT 1 - 2021-03-01/R1.pdf',
+      'METRO-GH - METRO-GH 500MG CPR B30/4_DEPOTS - COURRIERS/courrier.pdf',
+    ]);
+  });
+
+  it('ne garde pas les copies du classement (_DOUBLONS, _PAGES SEPAREES, _DOCUMENT COMPLET)', () => {
+    const { kept, ignored } = setAside(
+      filesFromPicker([
+        fileAt('P/1_AMM ORIGINE - 2016/AMM.pdf'),
+        fileAt('P/_DOCUMENT COMPLET (avant separation)/tout.pdf'),
+        fileAt('P/1_AMM ORIGINE - 2016/_DOUBLONS (autres scans)/AMM.pdf'),
+      ]),
+    );
+    expect(kept.map((f) => f.path)).toEqual(['P/1_AMM ORIGINE - 2016/AMM.pdf']);
+    expect(ignored).toEqual([
+      'P/_DOCUMENT COMPLET (avant separation)/tout.pdf (copie du classement, non importée)',
+      'P/1_AMM ORIGINE - 2016/_DOUBLONS (autres scans)/AMM.pdf (copie du classement, non importée)',
+    ]);
+  });
+
   it('met de côté les formats non lus et les fichiers trop lourds sans bloquer le reste', () => {
     const big = fileAt('PAYS/B/scan.pdf');
     Object.defineProperty(big, 'size', { value: 26 * 1024 ** 2 });

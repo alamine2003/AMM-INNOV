@@ -1,7 +1,11 @@
 name: Base Render
 
 # Base Postgres gratuite de Render (supprimée par Render après 30 jours) :
-#  - chaque jour : sauvegarde (artefact téléchargeable 90 jours) et renouvellement dès 25 jours ;
+#  - chaque jour : sauvegarde chiffrée (artefact 30 jours) et renouvellement dès 25 jours ;
+#  - chaque heure : renouvellement seulement, et seulement la nuit (0 h - 7 h à Dakar) tant que
+#    la base a moins de 28 jours. GitHub retarde souvent les tâches planifiées de plusieurs heures
+#    (exécutée vers 9-10 h au lieu de 2 h 30, audit du 11/11/2026) : le renouvellement, qui
+#    redéploie l'API, tombait en pleine journée de travail.
 #  - à la demande : status, backup, ensure (première création), rotate --force,
 #    import depuis Railway (secret SOURCE_DATABASE_URL).
 # Secrets : RENDER_API_KEY (obligatoire), SOURCE_DATABASE_URL (pour l'import seulement).
@@ -9,7 +13,8 @@ name: Base Render
 
 on:
   schedule:
-    - cron: "30 2 * * *"   # 02:30 UTC = 02:30 à Dakar
+    - cron: "30 2 * * *"   # 02:30 UTC = 02:30 à Dakar : sauvegarde + renouvellement si dû
+    - cron: "15 * * * *"   # chaque heure : renouvellement de nuit seulement (sans sauvegarde à part)
   workflow_dispatch:
     inputs:
       action:
@@ -45,11 +50,12 @@ jobs:
         run: docker run --rm postgres:18 pg_dump --version
       - name: Base Render
         env:
-          ACTION: ${{ inputs.action || 'rotate' }}
+          ACTION: ${{ inputs.action || (github.event.schedule == '15 * * * *' && 'rotate-night' || 'rotate') }}
           SOURCE_DATABASE_URL: ${{ secrets.SOURCE_DATABASE_URL }}
         run: |
           case "$ACTION" in
             rotate)         scripts/render_db.sh backup; scripts/render_db.sh rotate ;;
+            rotate-night)   scripts/render_db.sh rotate ;;
             rotate-force)   scripts/render_db.sh rotate --force ;;
             import-railway) scripts/render_db.sh import "$SOURCE_DATABASE_URL" ;;
             *)              scripts/render_db.sh "$ACTION" ;;

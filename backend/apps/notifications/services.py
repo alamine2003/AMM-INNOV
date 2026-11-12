@@ -69,6 +69,8 @@ def dispatch(alert: Alert) -> list[Notification]:
         for channel in channels:
             if channel not in Notification.Channel.values:
                 continue
+            if channel == Notification.Channel.EMAIL and not settings.ALERT_EMAILS_ENABLED:
+                continue  # e-mails coupés : l'alerte reste dans l'application
             notification = Notification.objects.create(
                 user=user,
                 alert=alert,

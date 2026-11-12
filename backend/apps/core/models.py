@@ -1,4 +1,4 @@
-"""Modèles du socle : la corbeille."""
+"""Modèles du socle : la corbeille, le journal des erreurs."""
 
 import uuid
 
@@ -50,3 +50,53 @@ class TrashEntry(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} : {self.label}"
+
+
+class ErrorEvent(models.Model):
+    """Une erreur survenue en production (serveur, worker ou interface), regroupée par empreinte.
+
+    Remplace Sentry sans compte externe (audit du 11/11/2026, constat 11) : rien ne sort
+    d'AMM GH. La même erreur qui se répète incrémente `count` au lieu d'ajouter des lignes.
+    """
+
+    class Source(models.TextChoices):
+        SERVER = "server", "Serveur"
+        WORKER = "worker", "Tâche de fond"
+        INTERFACE = "interface", "Interface"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    fingerprint = models.CharField("empreinte", max_length=64, unique=True)
+    source = models.CharField("origine", max_length=16, choices=Source.choices)
+    kind = models.CharField("type", max_length=120)  # ValueError, TypeError…
+    message = models.CharField("message", max_length=500)
+    detail = models.TextField("détail", blank=True)  # pile d'appels, tronquée
+    location = models.CharField("où", max_length=300, blank=True)  # chemin ou tâche
+    version = models.CharField("version", max_length=20, blank=True)
+    count = models.PositiveIntegerField("occurrences", default=1)
+    first_seen = models.DateTimeField("première fois", auto_now_add=True)
+    last_seen = models.DateTimeField("dernière fois", db_index=True)
+    last_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="dernier utilisateur",
+    )
+    resolved_at = models.DateTimeField("résolue le", null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="résolue par",
+    )
+
+    class Meta:
+        verbose_name = "erreur"
+        verbose_name_plural = "journal des erreurs"
+        ordering = ["-last_seen"]
+
+    def __str__(self) -> str:
+        return f"{self.kind} : {self.message[:80]}"

@@ -28,6 +28,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import { NavLink, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -51,6 +52,7 @@ const ICONS: Record<NavItem['icon'], React.ReactNode> = {
   trash: <DeleteSweepIcon />,
   audit: <ManageSearchIcon />,
   permissions: <AdminPanelSettingsIcon />,
+  errors: <BugReportIcon />,
 };
 
 /** `collapsed` : icônes seules (le libellé passe en info-bulle), pour laisser la place au contenu. */

@@ -29,6 +29,7 @@ from .identification import (
     _name,
     _path_country,
     _read_grouped_rows,
+    country_by_number,
     is_common,
 )
 from .labels import FIELD_LABELS, fr_date, period_label, show
@@ -48,7 +49,8 @@ UNPLACED = "unplaced"
 # 4 : AMM absente créée d'office quand la décision d'origine est lisible.
 # 5 : classement autonome (doutes tranchés seuls, la décision officielle corrige la fiche).
 # 6 : dates relues (tampons sénégalais, n° daté, AMM d'origine citée par un renouvellement).
-PREVIEW_VERSION = 6
+# 7 : plan du classement GHPL (rubriques ≠ produit), pays retrouvé par produit + n° (1.2.5).
+PREVIEW_VERSION = 7
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
 CREATABLE = {"no_amm", "product_absent"}
 UNKNOWN_PRODUCT = "produit du dossier non identifié"
@@ -143,6 +145,14 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
                     ("country_conflict", "Le pays choisi contredit le pays lu dans les documents.")
                 )
             country = batch.country
+    if not forced and not country:
+        inferred = country_by_number(batch, files, rows, products)
+        if inferred is not None:
+            country = inferred
+            _decision(
+                decisions,
+                f"Pays retrouvé par le produit et le n° d'AMM : {country.name}.",
+            )
     if not forced and not country:
         questions.append(("country", "Pays non reconnu dans les documents."))
     if country and (not user or not user.can_access_country(country)):
