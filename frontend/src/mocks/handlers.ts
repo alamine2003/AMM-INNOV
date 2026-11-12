@@ -356,7 +356,7 @@ export const handlers = [
     url('/ranges/:id'),
     withAuth((_u, { params }) => {
       db.ranges = db.ranges.filter((x) => x.id !== params.id);
-      return new HttpResponse(null, { status: 204 });
+      return new HttpResponse(null, { status: 204, headers: { 'X-Trash-Entry': `trash-${params.id}` } });
     }),
   ),
 
@@ -544,6 +544,74 @@ export const handlers = [
         decisions: [],
         filed: [],
       });
+    }),
+  ),
+  // Plan d'action : manques des fiches, les plus urgentes d'abord (simplifié pour la démo).
+  http.get(
+    url('/amms/action-plan'),
+    withAuth((user, { request }) => {
+      const country = new URL(request.url).searchParams.get('country');
+      const amms = scopedAmms(user).filter((a) => !country || a.country_iso2 === country);
+      const rank: Record<string, number> = { EXPIRE: 0, A_RENOUVELER: 1, VALIDE: 2 };
+      const ordered = [...amms].sort(
+        (a, b) =>
+          (rank[a.status] ?? 3) - (rank[b.status] ?? 3) ||
+          (a.effective_end_date ?? '9999').localeCompare(b.effective_end_date ?? '9999'),
+      );
+      const item = (a: (typeof amms)[number]) => ({
+        id: a.id,
+        product_name: a.product_name,
+        country_iso2: a.country_iso2,
+        country_name: a.country_name,
+        status: a.status,
+        effective_end_date: a.effective_end_date,
+        original_number: a.original_number,
+        original_start_date: a.original_start_date,
+      });
+      const gaps = [
+        {
+          gap: 'no_original',
+          label: 'Origine non identifiée',
+          hint: 'N° ou date de l’AMM d’origine absents.',
+          action: 'Compléter l’origine',
+          match: (a: (typeof amms)[number]) => !a.original_number || !a.original_start_date,
+        },
+        {
+          gap: 'missing_renewal',
+          label: 'Sans renouvellement',
+          hint: 'Origine échue, aucun renouvellement enregistré.',
+          action: 'Ajouter le renouvellement',
+          match: () => false,
+        },
+        {
+          gap: 'to_file',
+          label: 'Renouvellement à déposer',
+          hint: 'Expirée ou à renouveler, sans renouvellement en cours.',
+          action: 'Lancer le dépôt',
+          match: (a: (typeof amms)[number]) => a.status === 'EXPIRE',
+        },
+        {
+          gap: 'original_scan',
+          label: 'Décision d’origine sans scan',
+          hint: 'La fiche n’a pas le scan de la décision d’origine.',
+          action: 'Ajouter le scan',
+          match: (a: (typeof amms)[number]) => !a.has_current_scan,
+        },
+        {
+          gap: 'renewal_scan',
+          label: 'Renouvellement sans scan',
+          hint: 'Un renouvellement obtenu n’a pas le scan de sa décision.',
+          action: 'Ajouter le scan',
+          match: () => false,
+        },
+      ];
+      const limit = Number(new URL(request.url).searchParams.get('limit') ?? 10);
+      const categories = gaps.map(({ match, ...text }) => {
+        const found = ordered.filter(match);
+        return { ...text, count: found.length, items: found.slice(0, limit).map(item) };
+      });
+      const total = amms.filter((a) => gaps.some((g) => g.match(a))).length;
+      return HttpResponse.json({ total, categories });
     }),
   ),
   http.get(
@@ -1013,7 +1081,7 @@ export const handlers = [
     url('/alert-rules/:id'),
     withAuth((_u, { params }) => {
       db.alertRules = db.alertRules.filter((r) => r.id !== params.id);
-      return new HttpResponse(null, { status: 204 });
+      return new HttpResponse(null, { status: 204, headers: { 'X-Trash-Entry': `trash-${params.id}` } });
     }),
   ),
 

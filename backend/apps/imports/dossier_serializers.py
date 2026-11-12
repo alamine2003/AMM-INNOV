@@ -103,7 +103,21 @@ class DossierImportSerializer(serializers.ModelSerializer):
     audit = DossierChangeSerializer(many=True, read_only=True)
     review_points = DossierReviewPointSerializer(many=True, read_only=True)
     open_points_count = serializers.SerializerMethodField()
+    status_reason = serializers.SerializerMethodField()
     amm_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    def get_status_reason(self, obj) -> str:
+        """Pourquoi le dossier n'est pas (encore) rangé ; vide une fois rangé ou en cours."""
+        from .dossier.report import ready_reason
+
+        if obj.status == DossierImport.Status.READY:
+            return ready_reason(obj)
+        if obj.status == DossierImport.Status.QUESTION:
+            reasons = ((obj.preview or {}).get("question") or {}).get("reasons") or []
+            return " ".join(reasons) or "AMM non identifiée."
+        if obj.status == DossierImport.Status.FAILED:
+            return obj.error or "L'analyse a échoué."
+        return ""
 
     def get_open_points_count(self, obj) -> int:
         return sum(
@@ -121,6 +135,7 @@ class DossierImportSerializer(serializers.ModelSerializer):
             "created_at",
             "finished_at",
             "error",
+            "status_reason",
             "amm_id",
             "files",
             "audit",

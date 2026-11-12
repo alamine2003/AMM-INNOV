@@ -496,6 +496,10 @@ paths:
           type: string
           format: date
       - in: query
+        name: gap
+        schema:
+          type: string
+      - in: query
         name: has_current_scan
         schema:
           type: boolean
@@ -891,6 +895,10 @@ paths:
           type: string
           format: date
       - in: query
+        name: gap
+        schema:
+          type: string
+      - in: query
         name: has_current_scan
         schema:
           type: boolean
@@ -1017,6 +1025,10 @@ paths:
         schema:
           type: string
           format: date
+      - in: query
+        name: gap
+        schema:
+          type: string
       - in: query
         name: has_current_scan
         schema:
@@ -1151,6 +1163,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/Renewal'
           description: 'Même décision déjà enregistrée : le renouvellement existant.'
+  /api/v1/amms/action-plan/:
+    get:
+      operationId: v1_amms_action_plan_retrieve
+      description: 'Plan d''action : les AMM à compléter, par manque (origine non
+        identifiée, sans renouvellement, renouvellement à déposer, scans absents),
+        les plus urgentes d''abord. Accepte les filtres de la liste (pays, gamme…).'
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: AMM par manque (10).
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionPlan'
+          description: ''
   /api/v1/analytics/africa/:
     get:
       operationId: v1_analytics_africa_retrieve
@@ -4695,9 +4730,8 @@ paths:
     get:
       operationId: v1_renewals_list
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: query
         name: amm
@@ -4765,9 +4799,8 @@ paths:
     get:
       operationId: v1_renewals_retrieve
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -4790,9 +4823,8 @@ paths:
     put:
       operationId: v1_renewals_update
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -4826,9 +4858,8 @@ paths:
     patch:
       operationId: v1_renewals_partial_update
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -4862,9 +4893,8 @@ paths:
     delete:
       operationId: v1_renewals_destroy
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -4884,9 +4914,8 @@ paths:
     post:
       operationId: v1_renewals_documents_create
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -4922,9 +4951,8 @@ paths:
     post:
       operationId: v1_renewals_transition_create
       description: |-
-        Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-
-        `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+        Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+        renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
       parameters:
       - in: path
         name: id
@@ -5285,6 +5313,76 @@ components:
         * `login` - login
         * `deleted` - deleted
         * `restored` - restored
+    ActionPlan:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: AMM ayant au moins un manque.
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionPlanCategory'
+      required:
+      - categories
+      - total
+    ActionPlanCategory:
+      type: object
+      properties:
+        gap:
+          type: string
+        label:
+          type: string
+        hint:
+          type: string
+        action:
+          type: string
+        count:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionPlanItem'
+      required:
+      - action
+      - count
+      - gap
+      - hint
+      - items
+      - label
+    ActionPlanItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+        country_iso2:
+          type: string
+        country_name:
+          type: string
+        status:
+          type: string
+        effective_end_date:
+          type: string
+          format: date
+          nullable: true
+        original_number:
+          type: string
+        original_start_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - country_iso2
+      - country_name
+      - effective_end_date
+      - id
+      - original_number
+      - original_start_date
+      - product_name
+      - status
     ActionsEnum:
       enum:
       - binder.edit
@@ -7926,6 +8024,11 @@ components:
         error:
           type: string
           readOnly: true
+        status_reason:
+          type: string
+          description: Pourquoi le dossier n'est pas (encore) rangé ; vide une fois
+            rangé ou en cours.
+          readOnly: true
         amm_id:
           type: string
           format: uuid
@@ -7969,6 +8072,7 @@ components:
       - review_points
       - root_name
       - status
+      - status_reason
       - summary
     DossierImportStatusEnum:
       enum:

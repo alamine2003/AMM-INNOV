@@ -24,7 +24,7 @@ import { useSnackbar } from 'notistack';
 import { useRangeMutations, useRanges } from '@/api/hooks/useCatalog';
 import type { ProductRange } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useDeletedNotice } from '@/lib/deleteNow';
 import { extractErrorMessage } from '@/api/client';
 import { useCan } from '@/features/auth/authStore';
 
@@ -93,7 +93,13 @@ export default function RangesAdminPage() {
     open: false,
     range: null,
   });
-  const [deleting, setDeleting] = useState<ProductRange | null>(null);
+  const notice = useDeletedNotice();
+  // Supprimer : immédiat, à la corbeille, « Annuler » juste après (pas de question).
+  const removeNow = (item: ProductRange) =>
+    remove.mutate(item.id, {
+      onSuccess: (trashEntry) => notice(`Gamme « ${item.label} » mise à la corbeille.`, trashEntry),
+      onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
+    });
   const columns: GridColDef<ProductRange>[] = [
     { field: 'code', headerName: t('admin.ranges.code'), width: 160 },
     { field: 'label', headerName: t('admin.ranges.label'), flex: 1, minWidth: 200 },
@@ -115,7 +121,8 @@ export default function RangesAdminPage() {
             <IconButton
               size="small"
               color="error"
-              onClick={() => setDeleting(p.row)}
+              onClick={() => removeNow(p.row)}
+              disabled={remove.isPending}
               aria-label={t('app.delete')}
             >
               <DeleteIcon fontSize="small" />
@@ -152,20 +159,6 @@ export default function RangesAdminPage() {
       {dialog.open && (
         <RangeDialog open onClose={() => setDialog({ open: false, range: null })} range={dialog.range} />
       )}
-      <ConfirmDialog
-        open={!!deleting}
-        title={t('app.confirmDelete')}
-        text={deleting?.label}
-        onClose={() => setDeleting(null)}
-        loading={remove.isPending}
-        onConfirm={() =>
-          deleting &&
-          remove.mutate(deleting.id, {
-            onSuccess: () => setDeleting(null),
-            onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
-          })
-        }
-      />
     </Box>
   );
 }

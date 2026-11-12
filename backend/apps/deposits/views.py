@@ -27,7 +27,7 @@ from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
 from apps.core.exceptions import StorageUnavailable
-from apps.core.trash import move_to_trash
+from apps.core.trash import IdempotentDestroyMixin, move_to_trash
 from apps.documents.services.archive import aiter_blocks, iter_zip
 from apps.documents.views import open_stored_file
 
@@ -175,7 +175,7 @@ class DepositViewSet(viewsets.ViewSet):
         dossier = self._get(pk)
         piece = dossier.pieces.filter(pk=piece_id).first()
         if piece is None:
-            raise Http404("Pièce inconnue.")
+            return self._detail(pk)  # déjà retirée : rien à refaire, pas d'erreur
         _run(lambda: actions.remove_piece(piece, request.user))
         return self._detail(pk)
 
@@ -211,7 +211,7 @@ class DepositViewSet(viewsets.ViewSet):
         dossier = self._get(pk)
         sample = dossier.samples.filter(pk=sample_id).first()
         if sample is None:
-            raise Http404("Échantillon inconnu.")
+            return self._detail(pk)  # déjà retiré : rien à refaire, pas d'erreur
         _run(lambda: actions.remove_sample(sample, request.user))
         return self._detail(pk)
 
@@ -358,6 +358,7 @@ class DepositViewSet(viewsets.ViewSet):
 
 
 class PieceTypeViewSet(
+    IdempotentDestroyMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
@@ -384,4 +385,4 @@ class PieceTypeViewSet(
             instance.active = False
             instance.save(update_fields=["active"])
         else:
-            move_to_trash(instance, user=self.request.user)
+            self.trash_entry = move_to_trash(instance, user=self.request.user)

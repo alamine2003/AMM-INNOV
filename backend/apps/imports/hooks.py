@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.conf import settings
 from django.db.models import Q
@@ -83,13 +83,17 @@ def reread_stale_dossiers() -> int:
 
     if not getattr(settings, "DOSSIER_AUTO_APPLY", False):
         return 0
-    waiting = DossierImport.objects.filter(
-        status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION],
-        created_by__is_active=True,
-        attempts__lt=MAX_ATTEMPTS,
-    ).order_by("created_at")
+    waiting = list(
+        DossierImport.objects.filter(
+            status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION],
+            created_by__is_active=True,
+            attempts__lt=MAX_ATTEMPTS,
+        )
+        .order_by("created_at")
+        .only("pk", "status", "preview", "created_at")[:200]
+    )
     reread = 0
-    for batch in waiting.only("pk", "status", "preview")[:200]:
+    for batch in by_regulatory_urgency(waiting):
         version = (batch.preview or {}).get("version", 0)
         stale = version < PREVIEW_VERSION
         retry = batch.status == DossierImport.Status.READY
@@ -155,6 +159,20 @@ def recover_ghpl_sync(now) -> int:
 
 
 # --- Démarrage du worker et maintien en éveil ---------------------------------------------
+
+
+def by_regulatory_urgency(batches: list) -> list:
+    """Les dossiers à ranger, le plus urgent d'abord : AMM expirée, puis à renouveler, puis
+    valide (échéance la plus proche devant), puis AMM pas encore identifiée ; à égalité, le
+    dépôt le plus ancien."""
+    from apps.amm.services.priority import UNKNOWN_RANK, amm_urgency
+
+    def target(batch) -> str | None:
+        return ((batch.preview or {}).get("amm") or {}).get("id")
+
+    keys = amm_urgency({target(batch) for batch in batches if target(batch)})
+    unknown = (UNKNOWN_RANK + 1, date.max)
+    return sorted(batches, key=lambda b: (keys.get(target(b) or "", unknown), b.created_at))
 
 
 @WORKER_START.register

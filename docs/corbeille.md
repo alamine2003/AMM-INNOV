@@ -32,8 +32,26 @@ Un compte utilisateur n'est pas supprimé : il est désactivé.
 - les vues DRF qui suppriment utilisent `TrashDestroyMixin`.
 
 API : `GET /api/v1/trash?state=deleted|restored`, `POST /api/v1/trash/<id>/restore` (droit
-`trash.restore`). Supprimer une page du classeur renvoie l'en-tête `X-Trash-Entry`, utilisé par
-« Annuler ».
+`trash.restore`). Une suppression qui met à la corbeille renvoie l'en-tête `X-Trash-Entry`,
+utilisé par « Annuler ».
+
+## Suppressions idempotentes (1.2.6)
+
+« Quand on supprime, on supprime » :
+
+- **sans question** : gammes, règles d'alerte, scans, pièces de dépôt, pages du classeur se
+  suppriment au clic ; un message propose « Annuler » une dizaine de secondes (droit
+  `trash.restore`). Restent confirmées : la désactivation d'un compte et l'annulation d'un
+  renouvellement (ses scans sont archivés, « Annuler » ne les rétablirait pas) ;
+- **deux fois sans erreur** : `IdempotentDestroyMixin` (base de `TrashDestroyMixin`, et
+  renouvellements, types de pièce) répond 204 avec la même `X-Trash-Entry` quand l'élément est
+  déjà à la corbeille ; pages, passages, pièces et pages en trop du classeur, pièces et
+  échantillons d'un dépôt, scans archivés font de même. Un identifiant inconnu, ou à la
+  corbeille d'un pays hors du périmètre de l'utilisateur, reste 404 ;
+- **pas de retour par un import** : `apps/amm/services/deleted.py` lit les AMM à la corbeille
+  (`trashed_values`) ; l'import Excel, le registre et les scans classés GHPL sautent leur ligne,
+  un dossier pays pose la question `deleted_amm` (« restaurez-la si elle existe bien »), sans
+  création d'office. Restaurée, l'AMM est de nouveau suivie.
 
 Ne restent effacés que des éléments techniques sans valeur d'archive : signal « classeur
 ouvert », journaux de synchronisation de plus de 120 jours, notifications lues anciennes.

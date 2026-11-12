@@ -12,7 +12,7 @@ from apps.accounts.permissions import (
     RolePermission,
     ensure_country_in_scope,
 )
-from apps.core.trash import TrashDestroyMixin
+from apps.core.trash import IdempotentDestroyMixin, TrashDestroyMixin
 from apps.documents.models import Document
 
 from .extensions import list_annotations
@@ -20,6 +20,7 @@ from .filters import AmmFilter, RenewalFilter
 from .history import amm_history
 from .models import MarketingAuthorization, Renewal
 from .serializers import (
+    ActionPlanSerializer,
     AmmDetailSerializer,
     AmmListSerializer,
     HistoryEntrySerializer,
@@ -28,6 +29,8 @@ from .serializers import (
     django_to_drf_validation_error,
 )
 from .services import workflow
+from .services.gaps import GAPS, with_gaps
+from .services.priority import by_urgency
 from .services.sequence import resequence
 from .services.status import apply_state
 from .services.workflow import lock_amm
@@ -107,6 +110,57 @@ class AmmViewSet(TrashDestroyMixin, CountryScopedQuerysetMixin, viewsets.ModelVi
             lock_amm(kwargs[self.lookup_url_kwarg or self.lookup_field])
             return super().update(request, *args, **kwargs)
 
+    @extend_schema(
+        responses=ActionPlanSerializer,
+        parameters=[
+            OpenApiParameter("limit", int, required=False, description="AMM par manque (10)."),
+        ],
+        description=(
+            "Plan d'action : les AMM à compléter, par manque (origine non identifiée, sans "
+            "renouvellement, renouvellement à déposer, scans absents), les plus urgentes "
+            "d'abord. Accepte les filtres de la liste (pays, gamme…)."
+        ),
+    )
+    @action(detail=False, methods=["get"], url_path="action-plan")
+    def action_plan(self, request):
+        try:
+            limit = max(1, min(int(request.query_params.get("limit", 10)), 50))
+        except ValueError:
+            limit = 10
+        base = self.filter_queryset(
+            CountryScopedQuerysetMixin.get_queryset(self).select_related("product", "country")
+        )
+        ids = base.order_by().values("pk")
+        scope = MarketingAuthorization.objects.filter(pk__in=ids).select_related(
+            "product", "country"
+        )
+        categories = []
+        for gap, text in GAPS.items():
+            matching = with_gaps(scope, [gap])
+            items = by_urgency(matching)[:limit]
+            categories.append(
+                {
+                    "gap": gap,
+                    **text,
+                    "count": matching.count(),
+                    "items": [
+                        {
+                            "id": amm.pk,
+                            "product_name": amm.product.name,
+                            "country_iso2": amm.country.iso2,
+                            "country_name": amm.country.name,
+                            "status": amm.status,
+                            "effective_end_date": amm.effective_end_date,
+                            "original_number": amm.original_number,
+                            "original_start_date": amm.original_start_date,
+                        }
+                        for amm in items
+                    ],
+                }
+            )
+        total = with_gaps(scope, list(GAPS)).count()
+        return Response(ActionPlanSerializer({"total": total, "categories": categories}).data)
+
     @extend_schema(responses=HistoryEntrySerializer(many=True))
     @action(detail=True, methods=["get"])
     def history(self, request, pk=None):
@@ -164,6 +218,7 @@ class AmmViewSet(TrashDestroyMixin, CountryScopedQuerysetMixin, viewsets.ModelVi
 
 
 class RenewalViewSet(
+    IdempotentDestroyMixin,
     CountryScopedQuerysetMixin,
     viewsets.mixins.RetrieveModelMixin,
     viewsets.mixins.UpdateModelMixin,
@@ -171,6 +226,9 @@ class RenewalViewSet(
     viewsets.mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+    renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien."""
+
     queryset = Renewal.objects.select_related("amm", "amm__country", "amm__product")
     serializer_class = RenewalSerializer
     permission_classes = [IsAuthenticated, RolePermission]
@@ -203,7 +261,7 @@ class RenewalViewSet(
     def perform_destroy(self, instance):
         """Annule le dernier renouvellement : l'AMM est recalculée, ses scans sont archivés."""
         try:
-            workflow.delete_renewal(instance, actor=self.request.user)
+            self.trash_entry = workflow.delete_renewal(instance, actor=self.request.user)
         except DjangoValidationError as exc:
             raise django_to_drf_validation_error(exc)
 

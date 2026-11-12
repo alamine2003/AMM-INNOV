@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.accounts.permissions import ensure_country_in_scope
 from apps.amm.models import MarketingAuthorization, Renewal
-from apps.core.trash import move_to_trash
+from apps.core.trash import move_to_trash, trashed_entry
 from apps.imports.dossier.application import _reconcile_after_commit, _save_with_actor
 from apps.imports.models import DossierReviewPoint
 
@@ -206,6 +206,8 @@ def remove_extra(binder: Binder, extra_id, *, user) -> None:
     ensure_country_in_scope(user, binder.country)
     extra = BinderExtraPage.objects.filter(pk=extra_id, binder_key=binder.key).first()
     if extra is None:
+        if trashed_entry(BinderExtraPage, extra_id, user=user) is not None:
+            return  # déjà retirée : rien à refaire
         raise ValidationError("Page en trop introuvable.")
     move_to_trash(
         extra,

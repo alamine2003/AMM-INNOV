@@ -16,6 +16,30 @@ from apps.imports.models import DossierImport, DossierReviewPoint
 ATTENTION_CODES = {"incomplete", "unreadable"}
 
 
+def ready_reason(batch) -> str:
+    """Un dossier analysé mais pas rangé dit toujours pourquoi, et ce qui va se passer."""
+    from django.conf import settings
+
+    from .preview import PREVIEW_VERSION
+
+    if batch.error:
+        return batch.error
+    preview = batch.preview or {}
+    if not getattr(settings, "DOSSIER_AUTO_APPLY", False):
+        return (
+            "Rangement automatique désactivé : vérifiez l'aperçu puis rangez-le depuis la page de "
+            "l'import."
+        )
+    if not (preview.get("amm") or {}).get("id"):
+        return "AMM non identifiée : indiquez à quelle AMM ranger ce dossier."
+    if (preview.get("version") or 0) < PREVIEW_VERSION:
+        return (
+            "Analysé avec des règles plus anciennes : relu puis rangé automatiquement au prochain "
+            "passage."
+        )
+    return "En file d'attente : rangé automatiquement au prochain passage, par ordre d'urgence."
+
+
 def _identity(batch) -> dict:
     summary = batch.summary or {}
     preview = batch.preview or {}
@@ -82,13 +106,7 @@ def build_report(queryset, *, days: int = 7) -> dict:
             )
             continue
         if batch.status == DossierImport.Status.READY:
-            attention.append(
-                {
-                    **who,
-                    "kind": "ready",
-                    "reason": "Analysé mais pas rangé automatiquement : relancez l'analyse.",
-                }
-            )
+            attention.append({**who, "kind": "ready", "reason": ready_reason(batch)})
             continue
         summary = batch.summary or {}
         fields = summary.get("fields_changed") or []

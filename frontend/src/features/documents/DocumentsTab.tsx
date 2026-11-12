@@ -15,7 +15,6 @@ import {
 import { useRenewals } from '@/api/hooks/useRenewals';
 import type { Amm, AmmDocument } from '@/api/types';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { saveBlob } from '@/lib/download';
 import { extractErrorMessage } from '@/api/client';
 import { useCan } from '@/features/auth/authStore';
@@ -35,7 +34,12 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
   const [uploadOpen, setUploadOpen] = useState(false);
   const [replaceTarget, setReplaceTarget] = useState<AmmDocument | null>(null);
   const [viewing, setViewing] = useState<AmmDocument | null>(null);
-  const [deleting, setDeleting] = useState<AmmDocument | null>(null);
+  // Retirer un scan : immédiat, sans question (il est archivé, l'historique le garde).
+  const removeNow = (doc: AmmDocument) =>
+    remove.mutate(doc.id, {
+      onSuccess: () => enqueueSnackbar(t('documents.deleted'), { variant: 'success' }),
+      onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
+    });
   const [editingDoc, setEditingDoc] = useState<AmmDocument | null>(null);
   const [zipping, setZipping] = useState(false);
 
@@ -105,7 +109,7 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
             setUploadOpen(true);
           }}
           onEdit={setEditingDoc}
-          onDelete={setDeleting}
+          onDelete={removeNow}
           canEdit={editable}
           // Retirer un scan (archivé) : siège et CEO.
           canDelete={canDeleteScan}
@@ -137,23 +141,6 @@ export function DocumentsTab({ amm, editable }: { amm: Amm; editable: boolean })
         open={!!viewing}
         onClose={() => setViewing(null)}
         fileName={viewing ? fileName(viewing) : undefined}
-      />
-      <ConfirmDialog
-        open={!!deleting}
-        title={t('app.confirmDelete')}
-        text={t('documents.deleteConfirm')}
-        onClose={() => setDeleting(null)}
-        loading={remove.isPending}
-        onConfirm={() =>
-          deleting &&
-          remove.mutate(deleting.id, {
-            onSuccess: () => {
-              enqueueSnackbar(t('documents.deleted'), { variant: 'success' });
-              setDeleting(null);
-            },
-            onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
-          })
-        }
       />
     </Box>
   );

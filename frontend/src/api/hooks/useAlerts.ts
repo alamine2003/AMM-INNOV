@@ -1,3 +1,4 @@
+import { trashEntryOf } from '@/lib/trashEntry';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
@@ -65,9 +66,7 @@ export function useAlertRuleMutations() {
     onSuccess,
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/alert-rules/${id}`);
-    },
+    mutationFn: async (id: string) => trashEntryOf((await api.delete(`/alert-rules/${id}`)).headers),
     onSuccess,
   });
   return { create, update, remove };

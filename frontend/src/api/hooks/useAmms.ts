@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
-import type { Alert, Amm, AmmFilters, AmmWrite, HistoryEntry, Paginated } from '@/api/types';
+import type { ActionPlan, Alert, Amm, AmmFilters, AmmWrite, HistoryEntry, Paginated } from '@/api/types';
 
 function cleanParams(filters: AmmFilters | Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -14,6 +14,15 @@ export function useAmms(filters: AmmFilters = {}) {
     queryKey: queryKeys.amms.list(filters),
     queryFn: async () => (await api.get<Paginated<Amm>>('/amms', { params: cleanParams(filters) })).data,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Plan d'action : AMM à compléter par manque, les plus urgentes d'abord (filtre pays possible). */
+export function useActionPlan(params: { country?: string; limit?: number } = {}) {
+  return useQuery({
+    queryKey: [...queryKeys.amms.all, 'action-plan', params] as const,
+    queryFn: async () =>
+      (await api.get<ActionPlan>('/amms/action-plan', { params: cleanParams(params) })).data,
   });
 }
 

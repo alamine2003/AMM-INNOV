@@ -16,6 +16,7 @@ import {
   TableRow,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -206,12 +207,20 @@ function HistoryRow({ batch }: { batch: DossierImportBatch }) {
         )}
       </TableCell>
       <TableCell>
-        <Chip
-          size="small"
-          label={state.label}
-          color={state.tone}
-          variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
-        />
+        <Tooltip title={batch.status_reason ?? ''}>
+          <Chip
+            size="small"
+            label={state.label}
+            color={state.tone}
+            variant={batch.status === 'APPLIED' ? 'filled' : 'outlined'}
+          />
+        </Tooltip>
+        {batch.status_reason && batch.status !== 'QUESTION' && (
+          // Pas rangé : la raison est toujours dite, sans ouvrir le dossier.
+          <Typography variant="caption" display="block" color="text.secondary" sx={{ maxWidth: 280 }}>
+            {batch.status_reason}
+          </Typography>
+        )}
       </TableCell>
       <TableCell align="right">
         {batch.open_points_count ? (

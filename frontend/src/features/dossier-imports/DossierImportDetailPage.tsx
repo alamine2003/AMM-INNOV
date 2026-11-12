@@ -300,7 +300,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
             <Typography variant="body2" color="text.secondary">
               {legacy
                 ? 'Ce dossier a été lu avant le rangement automatique.'
-                : 'L’AMM est identifiée ; le rangement automatique n’a pas eu lieu.'}
+                : batch.status_reason || 'L’AMM est identifiée ; le rangement automatique n’a pas eu lieu.'}
             </Typography>
           </Stack>
         )}

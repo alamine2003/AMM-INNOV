@@ -6,6 +6,7 @@ describe('menu par rôle', () => {
     const keys = navItemsForRole('COUNTRY_REGULATORY').map((i) => i.key);
     expect(keys).toEqual([
       'dashboard',
+      'action-plan',
       'amms',
       'alerts',
       'documents',

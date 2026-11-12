@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.core.models import TrashEntry
 from apps.core.trash import move_to_trash
 
 S = Renewal.WorkflowStatus
@@ -139,7 +140,7 @@ def create_renewal(amm: MarketingAuthorization, actor=None, **fields) -> Renewal
 
 
 @transaction.atomic
-def delete_renewal(renewal: Renewal, actor=None) -> None:
+def delete_renewal(renewal: Renewal, actor=None) -> TrashEntry:
     """Revient en arrière sur le dernier renouvellement d'une AMM.
 
     Seul le plus récent s'annule : on défait la dernière étape, on ne troue pas l'historique.
@@ -178,7 +179,7 @@ def delete_renewal(renewal: Renewal, actor=None) -> None:
     if actor is not None:
         renewal._transition_actor = actor
     # À la corbeille, pas effacé : un administrateur peut le restaurer.
-    move_to_trash(
+    return move_to_trash(
         renewal,
         user=actor,
         kind="renouvellement",

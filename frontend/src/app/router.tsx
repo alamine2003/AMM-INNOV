@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const AfricaDashboardPage = lazy(() => import('@/features/dashboard/AfricaDashboardPage'));
 const CountryDashboardPage = lazy(() => import('@/features/dashboard/CountryDashboardPage'));
 const AmmListPage = lazy(() => import('@/features/amm/AmmListPage'));
+const ActionPlanPage = lazy(() => import('@/features/action-plan/ActionPlanPage'));
 const AmmDetailPage = lazy(() => import('@/features/amm/AmmDetailPage'));
 const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
 const DocumentsLibraryPage = lazy(() => import('@/features/documents/DocumentsLibraryPage'));
@@ -56,6 +57,7 @@ export const routes: RouteObject[] = [
             children: [
               { index: true, element: page(<AfricaDashboardPage />) },
               { path: 'countries/:iso2', element: page(<CountryDashboardPage />) },
+              { path: 'plan-action', element: page(<ActionPlanPage />) },
               { path: 'amms', element: page(<AmmListPage />) },
               { path: 'amms/:id', element: page(<AmmDetailPage />) },
               { path: 'renewals/:renewalId', element: page(<AmmDetailPage />) },

@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { AMM_STATUSES, STATUS_COLORS } from '@/lib/urgency';
 import { formatMonth } from '@/lib/dates';
+import { ActionPlanCard } from '@/features/action-plan/ActionPlanCard';
 import { PrioritiesTable } from './PrioritiesTable';
 
 export default function CountryDashboardPage() {
@@ -43,6 +44,7 @@ export default function CountryDashboardPage() {
           </Button>
         }
       />
+      <ActionPlanCard country={iso2} />
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 5 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>

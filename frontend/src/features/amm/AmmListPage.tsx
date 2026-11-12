@@ -29,6 +29,7 @@ const FILTER_KEYS: (keyof Filters)[] = [
   'dossier_state',
   'expires_before',
   'has_current_scan',
+  'gap',
   'search',
   'ordering',
 ];

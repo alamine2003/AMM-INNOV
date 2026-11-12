@@ -170,7 +170,88 @@ def trashed_files() -> set[str]:
     return names
 
 
-class TrashDestroyMixin:
+def trashed_entry(model, pk, *, user=None) -> TrashEntry | None:
+    """L'entrée de corbeille (non restaurée) de cet élément, s'il y est déjà.
+
+    Sert à rendre les suppressions idempotentes : supprimer deux fois ne lève pas d'erreur. Avec
+    `user`, une entrée d'un pays hors de son périmètre n'est pas renvoyée.
+    """
+    label = model if isinstance(model, str) else model._meta.label
+    entry = (
+        TrashEntry.objects.filter(model=label, object_id=str(pk), restored_at__isnull=True)
+        .order_by("-deleted_at")
+        .first()
+    )
+    if entry is None or user is None or getattr(user, "is_global", True) or not entry.country:
+        return entry
+    countries = set(user.countries.values_list("iso2", flat=True))
+    return entry if entry.country in countries else None
+
+
+def trashed_values(model, *fields: str) -> set[tuple]:
+    """Les valeurs de `fields` des lignes de `model` à la corbeille (non restaurées), en texte.
+
+    Par exemple `trashed_values(MarketingAuthorization, "product", "country")` : les couples
+    produit × pays des AMM supprimées. Les imports ne recréent pas ce qui a été supprimé.
+    """
+    label = (model if isinstance(model, str) else model._meta.label).lower()
+
+    def text(value):
+        return None if value is None else str(value)
+
+    found: set[tuple] = set()
+    payloads = TrashEntry.objects.filter(
+        restored_at__isnull=True, payload__objects__contains=[{"model": label}]
+    ).values_list("payload", flat=True)
+    for payload in payloads:
+        for row in payload.get("objects", []):
+            if row.get("model", "").lower() == label:
+                values = row.get("fields", {})
+                found.add(tuple(text(values.get(field)) for field in fields))
+    return found
+
+
+def is_trashed(model, **match) -> bool:
+    """Un élément de `model` répondant à `match` (par exemple `product=…, country=…`) est à la
+    corbeille, non restauré."""
+    wanted = tuple(None if value is None else str(value) for value in match.values())
+    return wanted in trashed_values(model, *match.keys())
+
+
+class IdempotentDestroyMixin:
+    """Pour une vue DRF : supprimer un élément déjà supprimé (déjà à la corbeille) réussit.
+
+    Un double clic, un onglet en retard ou une requête rejouée ne montrent jamais d'erreur :
+    « quand on supprime, on supprime ». L'en-tête `X-Trash-Entry` donne l'entrée de corbeille,
+    pour annuler (restaurer) ; il est absent quand l'élément n'est pas à la corbeille (scan
+    archivé, pièce désactivée).
+    """
+
+    def destroy(self, request, *args, **kwargs):
+        from django.http import Http404
+        from rest_framework import status
+        from rest_framework.response import Response
+
+        lookup = self.lookup_url_kwarg or self.lookup_field
+        try:
+            instance = self.get_object()
+        except Http404:
+            model = self.get_queryset().model
+            entry = trashed_entry(model, kwargs.get(lookup), user=request.user)
+            if entry is None:
+                raise
+            response = Response(status=status.HTTP_204_NO_CONTENT)
+            response["X-Trash-Entry"] = str(entry.pk)
+            return response
+        self.trash_entry = None
+        self.perform_destroy(instance)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        if getattr(self, "trash_entry", None) is not None:
+            response["X-Trash-Entry"] = str(self.trash_entry.pk)
+        return response
+
+
+class TrashDestroyMixin(IdempotentDestroyMixin):
     """Pour une vue DRF : DELETE met à la corbeille au lieu d'effacer.
 
     `trash_include_protected` : faire suivre les lignes qui protègent l'élément (une AMM et ses
@@ -186,7 +267,7 @@ class TrashDestroyMixin:
         from rest_framework.exceptions import ValidationError as DrfValidationError
 
         try:
-            move_to_trash(
+            self.trash_entry = move_to_trash(
                 instance,
                 user=self.request.user,
                 country=self.trash_country(instance),

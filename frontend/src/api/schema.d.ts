@@ -345,6 +345,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/amms/action-plan/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Plan d'action : les AMM à compléter, par manque (origine non identifiée, sans renouvellement, renouvellement à déposer, scans absents), les plus urgentes d'abord. Accepte les filtres de la liste (pays, gamme…). */
+        get: operations["v1_amms_action_plan_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analytics/africa/": {
         parameters: {
             query?: never;
@@ -2088,9 +2105,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         get: operations["v1_renewals_list"];
         put?: never;
@@ -2109,30 +2125,26 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         get: operations["v1_renewals_retrieve"];
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         put: operations["v1_renewals_update"];
         post?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         delete: operations["v1_renewals_destroy"];
         options?: never;
         head?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         patch: operations["v1_renewals_partial_update"];
         trace?: never;
@@ -2147,9 +2159,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         post: operations["v1_renewals_documents_create"];
         delete?: never;
@@ -2168,9 +2179,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Filters the queryset on `user.countries` for COUNTRY_REGULATORY users.
-         *
-         *     `country_lookup` is the ORM path to the country FK (e.g. "country", "amm__country").
+         * @description Renouvellements des AMM, limités aux pays de l'utilisateur. Annuler le dernier
+         *     renouvellement le met à la corbeille ; l'annuler une deuxième fois ne fait rien.
          */
         post: operations["v1_renewals_transition_create"];
         delete?: never;
@@ -2308,6 +2318,32 @@ export interface components {
          * @enum {string}
          */
         ActionEnum: "created" | "updated" | "login" | "deleted" | "restored";
+        ActionPlan: {
+            /** @description AMM ayant au moins un manque. */
+            total: number;
+            categories: components["schemas"]["ActionPlanCategory"][];
+        };
+        ActionPlanCategory: {
+            gap: string;
+            label: string;
+            hint: string;
+            action: string;
+            count: number;
+            items: components["schemas"]["ActionPlanItem"][];
+        };
+        ActionPlanItem: {
+            /** Format: uuid */
+            id: string;
+            product_name: string;
+            country_iso2: string;
+            country_name: string;
+            status: string;
+            /** Format: date */
+            effective_end_date: string | null;
+            original_number: string;
+            /** Format: date */
+            original_start_date: string | null;
+        };
         /**
          * @description * `binder.edit` - binder.edit
          *     * `binder.remove_passage` - binder.remove_passage
@@ -3479,6 +3515,8 @@ export interface components {
             /** Format: date-time */
             readonly finished_at: string | null;
             readonly error: string;
+            /** @description Pourquoi le dossier n'est pas (encore) rangé ; vide une fois rangé ou en cours. */
+            readonly status_reason: string;
             /** Format: uuid */
             readonly amm_id: string | null;
             readonly files: components["schemas"]["DossierFile"][];
@@ -5256,6 +5294,7 @@ export interface operations {
                 dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
+                gap?: string;
                 has_current_scan?: boolean;
                 /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
@@ -5507,6 +5546,7 @@ export interface operations {
                 dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
+                gap?: string;
                 has_current_scan?: boolean;
                 /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
@@ -5551,6 +5591,7 @@ export interface operations {
                 dossier_state?: ("COMPLET" | "INCOMPLET")[];
                 expires_after?: string;
                 expires_before?: string;
+                gap?: string;
                 has_current_scan?: boolean;
                 /** @description Quel champ utiliser pour classer les résultats. */
                 ordering?: string;
@@ -5620,6 +5661,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Renewal"];
+                };
+            };
+        };
+    };
+    v1_amms_action_plan_retrieve: {
+        parameters: {
+            query?: {
+                /** @description AMM par manque (10). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
                 };
             };
         };

@@ -1,10 +1,19 @@
 import { Box, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { AmmFilters as Filters } from '@/api/types';
+import type { AmmGap, AmmFilters as Filters } from '@/api/types';
 import { useCountries, useRanges } from '@/api/hooks/useCatalog';
 import { AMM_STATUSES, DOSSIER_STATES, URGENCIES } from '@/lib/urgency';
 import { useAuthStore } from '@/features/auth/authStore';
 import { DateInput } from '@/components/DateInput';
+
+/** Manques du plan d'action, pour cibler la liste (`?gap=`). */
+export const AMM_GAPS: { value: AmmGap; label: string }[] = [
+  { value: 'no_original', label: 'Origine non identifiée' },
+  { value: 'missing_renewal', label: 'Sans renouvellement' },
+  { value: 'to_file', label: 'Renouvellement à déposer' },
+  { value: 'original_scan', label: "Décision d'origine sans scan" },
+  { value: 'renewal_scan', label: 'Renouvellement sans scan' },
+];
 
 export function AmmFilters({ value, onChange }: { value: Filters; onChange: (next: Filters) => void }) {
   const { t } = useTranslation();
@@ -90,6 +99,12 @@ export function AmmFilters({ value, onChange }: { value: Filters; onChange: (nex
           { value: 'true', label: t('amm.filters.scanPresent') },
         ],
         'filter-scan',
+      )}
+      {select(
+        'Manque',
+        'gap',
+        AMM_GAPS.map((gap) => ({ value: gap.value, label: gap.label })),
+        'filter-gap',
       )}
       <DateInput
         size="small"

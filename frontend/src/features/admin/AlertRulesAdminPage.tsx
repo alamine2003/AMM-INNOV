@@ -31,7 +31,7 @@ import { useAlertRuleMutations, useAlertRules } from '@/api/hooks/useAlerts';
 import { useCountries } from '@/api/hooks/useCatalog';
 import type { AlertRule, Role } from '@/api/types';
 import { PageHeader } from '@/components/PageHeader';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useDeletedNotice } from '@/lib/deleteNow';
 import { SeverityChip } from '@/components/chips';
 import { extractErrorMessage } from '@/api/client';
 
@@ -232,7 +232,13 @@ export default function AlertRulesAdminPage() {
     open: false,
     rule: null,
   });
-  const [deleting, setDeleting] = useState<AlertRule | null>(null);
+  const notice = useDeletedNotice();
+  // Supprimer : immédiat, à la corbeille, « Annuler » juste après (pas de question).
+  const removeNow = (item: AlertRule) =>
+    remove.mutate(item.id, {
+      onSuccess: (trashEntry) => notice(`Règle ${item.code} mise à la corbeille.`, trashEntry),
+      onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
+    });
   const columns: GridColDef<AlertRule>[] = [
     { field: 'code', headerName: t('admin.rules.code'), width: 110 },
     {
@@ -299,7 +305,8 @@ export default function AlertRulesAdminPage() {
           <IconButton
             size="small"
             color="error"
-            onClick={() => setDeleting(p.row)}
+            onClick={() => removeNow(p.row)}
+            disabled={remove.isPending}
             aria-label={t('app.delete')}
           >
             <DeleteIcon fontSize="small" />
@@ -335,23 +342,6 @@ export default function AlertRulesAdminPage() {
       {dialog.open && (
         <RuleDialog open onClose={() => setDialog({ open: false, rule: null })} rule={dialog.rule} />
       )}
-      <ConfirmDialog
-        open={!!deleting}
-        title={t('app.confirmDelete')}
-        text={deleting ? `${deleting.code}` : undefined}
-        onClose={() => setDeleting(null)}
-        loading={remove.isPending}
-        onConfirm={() =>
-          deleting &&
-          remove.mutate(deleting.id, {
-            onSuccess: () => {
-              enqueueSnackbar(t('admin.rules.deleted'), { variant: 'success' });
-              setDeleting(null);
-            },
-            onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
-          })
-        }
-      />
     </Box>
   );
 }
