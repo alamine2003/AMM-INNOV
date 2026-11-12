@@ -5,6 +5,50 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.6] — 2026-11-12
+
+Rangements et suppressions idempotents, et un plan d'action pour agir vite sur les fiches
+incomplètes. Chaque AMM est traitée pour elle-même, sans la comparer à une autre.
+
+### Ajouté
+- **Plan d'action** (menu, juste sous le Dashboard ; aussi en carte sur le Dashboard Afrique
+  et le Dashboard pays). Les AMM à compléter, par manque : **origine non identifiée** (n° ou
+  date d'origine absents), **sans renouvellement** (origine échue, aucun renouvellement
+  enregistré), **renouvellement à déposer** (expirée ou à renouveler, rien en cours),
+  **décision d'origine sans scan**, **renouvellement sans scan**. Les plus urgentes d'abord ;
+  chaque ligne mène à l'onglet de la fiche qui corrige le manque. Filtre pays.
+- **Filtre « Manque » de la liste des AMM** (`?gap=no_original`, `missing_renewal`,
+  `to_file`, `original_scan`, `renewal_scan`) : le plan d'action y renvoie pour la liste
+  complète, exportable.
+- API : `GET /api/v1/amms/action-plan`, filtre `gap` sur `/api/v1/amms`, champ
+  `status_reason` des imports de dossiers.
+
+### Modifié
+- **Suppressions immédiates et sans erreur.** Gammes, règles d'alerte, scans, pièces de dépôt :
+  plus de boîte de confirmation ; l'élément part à la corbeille et « Annuler » le remet
+  aussitôt (pour qui peut restaurer). Supprimer deux fois (double clic, onglet en retard) ne
+  montre plus jamais d'erreur : AMM, produits, pays, gammes, règles, renouvellements, scans,
+  pièces, pages et passages du classeur répondent « déjà fait ». La désactivation d'un compte
+  garde sa confirmation. L'annulation d'un renouvellement garde la sienne (ses scans sont
+  archivés).
+- **Ce qui est supprimé ne revient pas par un import.** Une AMM mise à la corbeille (depuis la
+  liste, la fiche ou le classeur) n'est recréée ni par l'import Excel, ni par le registre GHPL,
+  ni par les scans classés, ni par un dossier pays : la ligne est notée « supprimée (à la
+  corbeille) », le dossier pose la question « restaurez-la si elle existe bien ». Restaurée,
+  elle est de nouveau suivie.
+- **Rangement : rangé, ou la raison est dite.** Un dossier analysé mais pas rangé dit
+  pourquoi, sur sa page, dans l'historique et le récapitulatif (fiche changée pendant
+  l'analyse, accès au pays, preuve manquante, rangement automatique désactivé, en file
+  d'attente…), au lieu de « relancez l'analyse ». Un échec inattendu est noté dans le journal
+  des erreurs.
+- **Rangement par ordre d'urgence** : les dossiers en attente sont rangés AMM expirées
+  d'abord, puis à renouveler, puis valides (échéance la plus proche devant), à égalité le plus
+  ancien dépôt.
+
+### Retiré
+- `backend/apps/imports/dump.rdb`, instantané Redis de test versionné par erreur (`*.rdb`
+  ignoré désormais).
+
 ## [1.2.5] — 2026-11-11
 
 Suite de l'audit d'infrastructure du 11/11/2026 (constats moyens et à vérifier), et rangement

@@ -1,3 +1,4 @@
+import { trashEntryOf } from '@/lib/trashEntry';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
@@ -102,10 +103,9 @@ function useCrud<T extends { id: string }>(resource: string, invalidate: readonl
       (await api.patch<T>(`/${resource}/${id}`, payload)).data,
     onSuccess,
   });
+  // Renvoie l'entrée de corbeille, pour « Annuler » juste après.
   const remove = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/${resource}/${id}`);
-    },
+    mutationFn: async (id: string) => trashEntryOf((await api.delete(`/${resource}/${id}`)).headers),
     onSuccess,
   });
   return { create, update, remove };

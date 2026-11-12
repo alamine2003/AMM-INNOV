@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.services.deleted import DELETED_REASON, deleted_pairs, is_deleted
 from apps.amm.services.status import IN_FORCE_STATUSES, compute_amm_state
 from apps.catalog.models import Country, Product, ProductAlias, ProductRange
 from apps.catalog.normalize import product_key
@@ -125,8 +126,12 @@ def _apply_renewal(amm: MarketingAuthorization, row: ParsedRow) -> bool:
 
 
 def _apply_row(
-    row: ParsedRow, country: Country, range_cache: dict, today: date
-) -> tuple[str, str, MarketingAuthorization]:
+    row: ParsedRow,
+    country: Country,
+    range_cache: dict,
+    today: date,
+    deleted: set[tuple[str, str]] | None = None,
+) -> tuple[str, str, MarketingAuthorization | None]:
     range_obj = _range_for(row.range_code, range_cache)
     product = _product_for(row, range_obj)
     amm = (
@@ -134,6 +139,9 @@ def _apply_row(
         .filter(product=product, country=country)
         .first()
     )
+    if amm is None and is_deleted(product, country, deleted):
+        # Supprimée par quelqu'un : un import ne la fait pas revenir.
+        return "SKIPPED", DELETED_REASON, None
     created = amm is None
     if created:
         amm = MarketingAuthorization(product=product, country=country)
@@ -226,10 +234,13 @@ def _import_sheet(
                 iso2=sheet.country_iso2, defaults={"name": sheet.country_name}
             )
             range_cache: dict = {}
+            deleted = deleted_pairs()
             for row in sheet.rows:
                 counters["rows"] += 1
                 try:
-                    outcome, message, amm = _apply_row(row, country, range_cache, today)
+                    outcome, message, amm = _apply_row(
+                        row, country, range_cache, today, deleted
+                    )
                 except Exception as exc:  # unexpected data problem: keep going, report the row
                     logger.exception("Erreur d'import %s!%s", sheet.name, row.row_number)
                     outcome, message, amm = "ERROR", f"erreur inattendue : {exc}", None
@@ -241,7 +252,7 @@ def _import_sheet(
                     counters["created"] += 1
                 elif "AMM mise à jour" in message:
                     counters["updated"] += 1
-                elif "AMM inchangée" in message:
+                elif "AMM inchangée" in message or message == DELETED_REASON:
                     counters["skipped"] += 1
                 if "statut Excel" in message:
                     counters["status_mismatch"] += 1

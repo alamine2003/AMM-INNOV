@@ -123,9 +123,37 @@ def can_auto_create(preview: dict) -> bool:
     )
 
 
+def filing_reason(exc: Exception) -> str:
+    """Pourquoi un dossier n'a pas été rangé automatiquement, dit simplement."""
+    from django.core.exceptions import ValidationError
+    from rest_framework.exceptions import PermissionDenied
+
+    from .dossier.application import StalePreview
+
+    if isinstance(exc, StalePreview):
+        return (
+            "Non rangé : la fiche a changé pendant l'analyse. Le dossier est relu et rangé "
+            "automatiquement au prochain passage."
+        )
+    if isinstance(exc, PermissionDenied):
+        return (
+            "Non rangé : l'auteur de l'import n'a pas (ou plus) accès à ce pays. Le siège peut le "
+            "ranger depuis cette page."
+        )
+    if isinstance(exc, ValidationError):
+        return "Non rangé : " + " ".join(exc.messages)
+    return (
+        f"Non rangé : erreur inattendue ({type(exc).__name__}). Elle est notée dans le journal "
+        "des erreurs ; relancez l'analyse."
+    )
+
+
 def _auto_apply(batch, token: str, create: bool = False) -> bool:
-    """Rangement au nom de l'auteur ; en cas d'échec le lot reste « prêt à ranger » (READY)."""
-    from .dossier.application import LostScan, apply_dossier
+    """Rangement au nom de l'auteur ; en cas d'échec le lot reste « prêt à ranger » (READY), avec
+    la raison écrite sur le lot (`error`) : jamais un « pas rangé » sans dire pourquoi."""
+    from apps.core.errors import record
+
+    from .dossier.application import LostScan, StalePreview, apply_dossier
     from .models import DossierImport
 
     try:
@@ -139,8 +167,21 @@ def _auto_apply(batch, token: str, create: bool = False) -> bool:
             status=DossierImport.Status.FAILED, finished_at=timezone.now(), error=exc.messages[0]
         )
         return False
-    except Exception:
+    except Exception as exc:
         logger.exception("Rangement automatique du dossier %s impossible", batch.pk)
+        reason = filing_reason(exc)
+        DossierImport.objects.filter(
+            pk=batch.pk, status__in=[DossierImport.Status.READY, DossierImport.Status.QUESTION]
+        ).update(error=reason[:2000])
+        if not isinstance(exc, StalePreview):
+            record(
+                source="worker",
+                kind="Rangement automatique",
+                message=reason[:500],
+                detail=f"Import de dossier {batch.pk} : {exc!r}",
+                location="apps.imports.tasks._auto_apply",
+                user=batch.created_by,
+            )
         return False
     logger.info("Dossier %s rangé automatiquement", batch.pk)
     return True

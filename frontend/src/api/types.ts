@@ -22,6 +22,12 @@ export type PermissionMatrix = Schemas['PermissionMatrix'];
 export type PermissionGrant = Schemas['PermissionGrantRequest'];
 /** Journal des erreurs de production (serveur, tâches de fond, interface). */
 export type ErrorEvent = Schemas['ErrorEvent'];
+/** Plan d'action : AMM à compléter, par manque, les plus urgentes d'abord. */
+export type ActionPlan = Schemas['ActionPlan'];
+export type ActionPlanCategory = Schemas['ActionPlanCategory'];
+export type ActionPlanItem = Schemas['ActionPlanItem'];
+/** Manques d'une fiche (filtre `gap` de la liste des AMM). */
+export type AmmGap = 'no_original' | 'missing_renewal' | 'to_file' | 'original_scan' | 'renewal_scan';
 
 export interface User {
   id: string;
@@ -152,6 +158,8 @@ export interface AmmFilters {
   dossier_state?: DossierState | '';
   expires_before?: string;
   has_current_scan?: 'true' | 'false' | '';
+  /** Manque à traiter (plan d'action), ou plusieurs séparés par des virgules. */
+  gap?: AmmGap | string;
   search?: string;
   ordering?: string;
   page?: number;
@@ -573,6 +581,8 @@ export interface DossierImportBatch {
   created_at: string;
   finished_at: string | null;
   error: string;
+  /** Pourquoi le dossier n'est pas (encore) rangé ; vide une fois rangé ou en cours. */
+  status_reason?: string;
   amm_id: string | null;
   files: DossierImportFile[];
   audit: DossierImportAudit[];

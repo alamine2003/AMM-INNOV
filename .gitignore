@@ -61,3 +61,6 @@ Claude outputs/
 
 # Base SQLite des tests (pytest)
 backend/.test-db.sqlite3
+
+# Instantanés Redis lancés depuis un dossier du dépôt
+*.rdb

@@ -1,7 +1,9 @@
 import django_filters
 from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 
 from .models import MarketingAuthorization, Renewal
+from .services.gaps import GAPS, with_gaps
 
 
 class AmmFilter(django_filters.FilterSet):
@@ -15,6 +17,8 @@ class AmmFilter(django_filters.FilterSet):
     product = django_filters.UUIDFilter(field_name="product_id")
     owner = django_filters.UUIDFilter(field_name="owner_id")
     has_current_scan = django_filters.BooleanFilter(field_name="has_current_scan")
+    # Manques à traiter (plan d'action), séparés par des virgules : au moins un des manques.
+    gap = django_filters.CharFilter(method="filter_gap")
 
     class Meta:
         model = MarketingAuthorization
@@ -29,6 +33,15 @@ class AmmFilter(django_filters.FilterSet):
             else:
                 query |= Q(country_id=v)
         return queryset.filter(query) if values else queryset
+
+    def filter_gap(self, queryset, name, value):
+        gaps = [v.strip() for v in value.split(",") if v.strip()]
+        unknown = [gap for gap in gaps if gap not in GAPS]
+        if unknown:
+            raise ValidationError(
+                {"gap": f"Manque inconnu : {', '.join(unknown)} (attendu : {', '.join(GAPS)})."}
+            )
+        return with_gaps(queryset, gaps) if gaps else queryset
 
     def filter_range(self, queryset, name, value):
         values = [v.strip().upper() for v in value.split(",") if v.strip()]

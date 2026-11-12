@@ -24,6 +24,7 @@ from django.utils import timezone
 from apps.accounts.permissions import ensure_can, ensure_country_in_scope
 from apps.accounts.roles import Action
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.core.trash import trashed_entry
 from apps.documents.models import Document
 from apps.documents.services.ingest import ingest_document
 from apps.imports.dossier.application import _reconcile_after_commit, _save_with_actor
@@ -177,6 +178,10 @@ def delete_period(binder: Binder, amm_id, renewal_id, *, move_to: str | None, us
     ensure_can(user, Action.BINDER_REMOVE_PASSAGE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
+        if not Renewal.objects.filter(pk=renewal_id).exists() and trashed_entry(
+            Renewal, renewal_id, user=user
+        ):
+            return amm  # passage déjà supprimé : rien à refaire
         renewal = _renewal(amm, renewal_id)
         destination = _target_period(amm, move_to or "origin")
         if destination is not None and destination.pk == renewal.pk:
@@ -261,6 +266,11 @@ def delete_page(binder: Binder, amm_id, *, user):
 
     ensure_can(user, Action.BINDER_DELETE_PAGE)
     with transaction.atomic():
+        if not MarketingAuthorization.objects.filter(pk=amm_id).exists():
+            # Déjà supprimée (double clic, onglet en retard) : rien à refaire, pas d'erreur.
+            entry = trashed_entry(MarketingAuthorization, amm_id, user=user)
+            if entry is not None:
+                return entry
         amm = _page(binder, amm_id, user)
         if Renewal.objects.filter(amm=amm, deposit__isnull=False).exists():
             raise ValidationError(
@@ -316,6 +326,8 @@ def remove_document(binder: Binder, amm_id, document_id, *, user):
     ensure_can(user, Action.BINDER_REMOVE_PIECE)
     with transaction.atomic():
         amm = _page(binder, amm_id, user)
+        if Document.objects.filter(pk=document_id, amm=amm, archived_at__isnull=False).exists():
+            return amm  # pièce déjà retirée : rien à refaire
         document = _document(amm, document_id)
         document.archived_at = timezone.now()
         document._history_user = user

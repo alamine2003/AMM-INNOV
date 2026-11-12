@@ -24,6 +24,7 @@ from django.db import transaction
 from openpyxl import load_workbook
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.services.deleted import deleted_pairs, is_deleted
 from apps.catalog.models import Country, Product, ProductAlias, ProductRange
 from apps.catalog.normalize import normalize_product_name, product_key
 
@@ -127,9 +128,14 @@ class _Catalog:
 
         # Pages supprimées des classeurs : la présentation n'existe pas dans ce pays.
         self.deleted = set(BinderDeletedPage.objects.values_list("country_id", "product_key"))
+        # AMM mises à la corbeille (depuis la liste, la fiche ou le classeur) : pas recréées.
+        self.trashed = deleted_pairs()
 
     def deleted_page(self, labels: list[str], product, country) -> bool:
-        """La page de cette présentation a été supprimée du classeur du pays : pas recréée."""
+        """La fiche de cette présentation a été supprimée dans ce pays (page du classeur ou AMM
+        à la corbeille) : un import ne la recrée pas."""
+        if is_deleted(product, country, self.trashed):
+            return True
         keys = {product_key(label) for label in labels if label}
         if product is not None:
             keys.add(product.key)
@@ -312,7 +318,7 @@ def _apply(
     product = catalog.find(labels, country)
     amm = catalog.amm(product, country)
     if amm is None and catalog.deleted_page(labels, product, country):
-        return "SKIPPED", "Page supprimée du classeur : la fiche n'est pas recréée.", None
+        return "SKIPPED", "Fiche supprimée (classeur ou corbeille) : elle n'est pas recréée.", None
     if amm is None and record.get("Source") != "Classement seul":
         return "WARNING", DASHBOARD_MISSING, None
     args = (record, deposits, ranges, catalog, country, presentation, product, amm)

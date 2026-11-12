@@ -36,6 +36,7 @@ import type { PieceType } from '@/api/types';
 import { Flag } from '@/features/binders/Flag';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
+import { useDeletedNotice } from '@/lib/deleteNow';
 import { useFail } from './sections';
 
 type Draft = Partial<PieceType> & { label: string };
@@ -119,6 +120,7 @@ export default function PieceTypesPage() {
   const save = useSavePieceType();
   const remove = useDeletePieceType();
   const fail = useFail();
+  const notice = useDeletedNotice();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [country, setCountry] = useState('SN');
 
@@ -151,7 +153,20 @@ export default function PieceTypesPage() {
         <IconButton
           size="small"
           aria-label={`Retirer ${piece.label}`}
-          onClick={() => remove.mutate(piece.id, { onError: fail })}
+          disabled={remove.isPending}
+          onClick={() =>
+            remove.mutate(piece.id, {
+              // Déjà jointe à des dossiers : désactivée (pas de corbeille, pas d'« Annuler »).
+              onSuccess: (trashEntry) =>
+                notice(
+                  trashEntry
+                    ? `Pièce « ${piece.label} » mise à la corbeille.`
+                    : `Pièce « ${piece.label} » retirée : les dossiers déjà montés la gardent.`,
+                  trashEntry,
+                ),
+              onError: fail,
+            })
+          }
         >
           <DeleteOutlineIcon fontSize="small" />
         </IconButton>

@@ -316,7 +316,11 @@ class _Group:
         self.amm = MarketingAuthorization.objects.get(pk=found.pk) if found else None
         origin = self.by_period("ORIGINE")
         if self.amm is None and catalog.deleted_page(labels, product, country):
-            self.warn(self.pieces, "Page supprimée du classeur : pièces non rangées.")
+            self.warn(
+                self.pieces,
+                "Fiche supprimée (classeur ou corbeille) : pièces non rangées. Restaurez-la "
+                "depuis la corbeille si elle existe bien.",
+            )
             return
         if self.amm is None:
             self._create_amm(product, country, origin)

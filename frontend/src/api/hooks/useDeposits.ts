@@ -1,3 +1,4 @@
+import { trashEntryOf } from '@/lib/trashEntry';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, fetchBlob } from '@/api/client';
 import type {
@@ -155,9 +156,7 @@ export function useSavePieceType() {
 export function useDeletePieceType() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/deposit-pieces/${id}`);
-    },
+    mutationFn: async (id: string) => trashEntryOf((await api.delete(`/deposit-pieces/${id}`)).headers),
     onSuccess: () => void client.invalidateQueries({ queryKey: depositKeys.all }),
   });
 }

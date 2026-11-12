@@ -292,3 +292,28 @@ def django_to_drf_validation_error(exc: DjangoValidationError) -> serializers.Va
     if hasattr(exc, "message_dict"):
         return serializers.ValidationError(exc.message_dict)
     return serializers.ValidationError(exc.messages)
+
+
+class ActionPlanItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    product_name = serializers.CharField()
+    country_iso2 = serializers.CharField()
+    country_name = serializers.CharField()
+    status = serializers.CharField()
+    effective_end_date = serializers.DateField(allow_null=True)
+    original_number = serializers.CharField()
+    original_start_date = serializers.DateField(allow_null=True)
+
+
+class ActionPlanCategorySerializer(serializers.Serializer):
+    gap = serializers.CharField()
+    label = serializers.CharField()
+    hint = serializers.CharField()
+    action = serializers.CharField()
+    count = serializers.IntegerField()
+    items = ActionPlanItemSerializer(many=True)
+
+
+class ActionPlanSerializer(serializers.Serializer):
+    total = serializers.IntegerField(help_text="AMM ayant au moins un manque.")
+    categories = ActionPlanCategorySerializer(many=True)

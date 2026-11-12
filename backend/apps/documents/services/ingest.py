@@ -170,6 +170,9 @@ def ingest_document(
 
 
 def archive_document(document: Document, user=None) -> Document:
+    """Retire un scan (archivé, gardé dans l'historique). Le retirer deux fois ne change rien."""
+    if document.archived_at is not None:
+        return document
     document.archived_at = timezone.now()
     if user is not None:
         document._history_user = user

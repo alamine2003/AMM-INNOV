@@ -14,6 +14,7 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 
 from apps.amm.models import MarketingAuthorization, Renewal
+from apps.amm.services.deleted import is_deleted
 from apps.catalog.models import Country, Product
 from apps.documents.models import Document
 
@@ -50,7 +51,8 @@ UNPLACED = "unplaced"
 # 5 : classement autonome (doutes tranchés seuls, la décision officielle corrige la fiche).
 # 6 : dates relues (tampons sénégalais, n° daté, AMM d'origine citée par un renouvellement).
 # 7 : plan du classement GHPL (rubriques ≠ produit), pays retrouvé par produit + n° (1.2.5).
-PREVIEW_VERSION = 7
+# 8 : une AMM à la corbeille n'est pas recréée par un dossier (1.2.6).
+PREVIEW_VERSION = 8
 # Seuls motifs de question qui laissent au siège l'option de créer l'AMM depuis le dossier.
 CREATABLE = {"no_amm", "product_absent"}
 UNKNOWN_PRODUCT = "produit du dossier non identifié"
@@ -364,6 +366,15 @@ def build_preview(batch) -> dict:  # noqa: C901 — un seul parcours lisible, é
         elif candidates:
             amm = MarketingAuthorization.objects.select_related("product", "country").get(
                 pk=candidates[0]["id"]
+            )
+        elif product and country and not questions and is_deleted(product, country):
+            # Supprimée par quelqu'un : le dossier ne la fait pas revenir d'office.
+            questions.append(
+                (
+                    "deleted_amm",
+                    f"L'AMM {country.name} de « {product.name} » a été supprimée (corbeille) : "
+                    "restaurez-la depuis la corbeille si elle existe bien, puis relancez.",
+                )
             )
         elif product and country and not questions:
             questions.append(

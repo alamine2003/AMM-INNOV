@@ -1,3 +1,4 @@
+import { trashEntryOf } from '@/lib/trashEntry';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
@@ -55,9 +56,8 @@ export function useCreateRenewal(ammId: string) {
 export function useDeleteRenewal(ammId: string) {
   const invalidate = useInvalidateAmm(ammId);
   return useMutation({
-    mutationFn: async (renewalId: string) => {
-      await api.delete(`/renewals/${renewalId}`);
-    },
+    mutationFn: async (renewalId: string) =>
+      trashEntryOf((await api.delete(`/renewals/${renewalId}`)).headers),
     onSuccess: invalidate,
   });
 }

@@ -14,6 +14,7 @@ import {
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -38,6 +39,7 @@ import { DRAWER_WIDTH, useDrawerWidth, useSidebarStore } from './sidebarStore';
 
 const ICONS: Record<NavItem['icon'], React.ReactNode> = {
   dashboard: <DashboardIcon />,
+  plan: <ChecklistIcon />,
   amms: <TableChartIcon />,
   alerts: <NotificationsActiveIcon />,
   documents: <FolderIcon />,

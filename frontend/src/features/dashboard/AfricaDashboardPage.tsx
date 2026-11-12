@@ -23,6 +23,7 @@ import { KpiCard } from '@/components/KpiCard';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { PRIORITY_URGENCIES, STATUS_COLORS } from '@/lib/urgency';
 import type { AfricaRow } from '@/api/types';
+import { ActionPlanCard } from '@/features/action-plan/ActionPlanCard';
 import { BindersDashboardCard } from '@/features/binders/BindersDashboardCard';
 import { PrioritiesTable } from './PrioritiesTable';
 
@@ -145,6 +146,7 @@ export default function AfricaDashboardPage() {
         ))}
       </Grid>
 
+      <ActionPlanCard />
       <BindersDashboardCard />
 
       <Card variant="outlined" sx={{ mb: 3 }}>

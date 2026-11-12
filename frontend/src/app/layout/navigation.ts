@@ -10,6 +10,7 @@ export interface NavItem {
   action?: UserAction;
   icon:
     | 'dashboard'
+    | 'plan'
     | 'amms'
     | 'alerts'
     | 'documents'
@@ -30,6 +31,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', labelKey: 'nav.dashboard', to: '/', icon: 'dashboard' },
+  { key: 'action-plan', labelKey: 'nav.actionPlan', to: '/plan-action', icon: 'plan' },
   { key: 'amms', labelKey: 'nav.amms', to: '/amms', icon: 'amms' },
   { key: 'alerts', labelKey: 'nav.alerts', to: '/alerts', icon: 'alerts' },
   { key: 'documents', labelKey: 'nav.documents', to: '/documents', icon: 'documents' },
