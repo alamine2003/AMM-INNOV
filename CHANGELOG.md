@@ -5,6 +5,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.7] — 2026-11-13
+
+Premier écart du rapport d'architecture (ISO 25010, fiabilité : récupérabilité) : une
+sauvegarde n'est fiable que si elle a été restaurée.
+
+### Ajouté
+- **Restauration d'essai de chaque sauvegarde chiffrée.** Après le chiffrement, le workflow
+  « Base Render » déchiffre la sauvegarde, la restaure dans une base PostgreSQL jetable et
+  contrôle son contenu (tables, migrations, fiches AMM, produits, pays, comptes). Si elle ne se
+  relit pas, l'exécution passe au rouge et GitHub prévient par e-mail. Aucun chiffre métier
+  n'est écrit dans le journal, qui est public.
+- `scripts/verify_backup.sh <sauvegarde.dump.gpg>` : le même essai sur un poste, avec Docker
+  pour seul outil. La phrase secrète est demandée au clavier ; rien n'est écrit sur le disque
+  ni dans la base de production.
+
+### Modifié
+- `docs/deploiement-render.md` : sauvegardes chiffrées, essai de restauration, restauration
+  réelle.
+
 ## [1.2.6] — 2026-11-12
 
 Rangements et suppressions idempotents, et un plan d'action pour agir vite sur les fiches

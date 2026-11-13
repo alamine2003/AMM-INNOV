@@ -42,7 +42,10 @@ les constats, ce que les versions 1.2.4 et 1.2.5 corrigent, et les gestes faits 
 3. ~~Installer le réveil Cloudflare~~ : fait le 11/11 (Worker `amm-gh-keepalive`, Cron
    `*/5 * * * *`, code de `scripts/cloudflare/keepalive-worker.js`).
 4. ~~Sonde de santé Render~~ : déjà `/api/v1/health/live` (vérifié le 11/11).
-5. Ne pas renseigner `ALERT_EMAILS_ENABLED` tant que la direction ne veut pas d'e-mails
+5. **Restauration d'essai** (1.2.7) : chaque sauvegarde chiffrée est restaurée dans une base
+   jetable par le workflow (`scripts/verify_backup.sh`). Sur un poste, le même script prouve
+   que la copie de la phrase secrète gardée hors de GitHub fonctionne.
+6. Ne pas renseigner `ALERT_EMAILS_ENABLED` tant que la direction ne veut pas d'e-mails
    d'alerte. Sentry n'est plus nécessaire : le journal des erreurs est dans l'application.
 
 ## Suite recommandée
