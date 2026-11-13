@@ -5,6 +5,31 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.8] — 2026-11-13
+
+Deuxième écart du rapport d'architecture (hébergement) : essai d'AMM GH sur le Serveur 01
+Stellarix, à côté de JUSTI GH. Render reste la production pendant l'essai.
+
+### Ajouté
+- **Installation sur un serveur partagé** (`docker-compose.partage.yml`,
+  `docs/deploiement-serveur-partage.md`) : AMM GH tourne sans Caddy ni Grafana propres, sans
+  port public (nginx sur `127.0.0.1:8081`), mémoire plafonnée par service, projet Compose
+  `amm-gh` distinct des voisins.
+- `scripts/serveur/preparer_env.sh` (fichier `.env` avec des secrets tirés au hasard sur
+  place), `scripts/serveur/restaurer_base.sh` (restaure une sauvegarde chiffrée dans la base du
+  serveur ; refuse une base déjà remplie sans `--remplacer`), `scripts/serveur/compose.sh`.
+
+### Corrigé
+- **Image de l'interface (nginx)** : derrière un relais qui termine TLS (Caddy), Django se
+  croyait en clair, car nginx remplaçait `X-Forwarded-Proto` par « http » : les liens de
+  l'API partaient en `http://`. Le protocole du relais est maintenant transmis, ainsi que le
+  port de l'adresse demandée (`Host`).
+- `docker-compose.prod.yml` : PostgreSQL 18 (les sauvegardes sont écrites par `pg_dump` 18,
+  qu'un serveur 16 ne relit pas), volume monté sous `/var/lib/postgresql`.
+
+### Modifié
+- `docs/deploiement-render.md` : sur macOS, décompresser un artefact avec `ditto`.
+
 ## [1.2.7] — 2026-11-13
 
 Premier écart du rapport d'architecture (ISO 25010, fiabilité : récupérabilité) : une

@@ -38,14 +38,16 @@ x-backend-common: &backend-common
 
 services:
   postgres:
-    image: postgres:16
+    # PostgreSQL 18 : les sauvegardes de la base Render sont écrites par pg_dump 18, qu'un
+    # serveur 16 ne sait pas relire. L'image 18 range ses données sous /var/lib/postgresql.
+    image: postgres:${POSTGRES_VERSION:-18}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-amm}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
       POSTGRES_DB: ${POSTGRES_DB:-amm}
       TZ: Africa/Dakar
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amm} -d ${POSTGRES_DB:-amm}"]
       interval: 10s
@@ -197,7 +199,7 @@ services:
 
   # ---- Sauvegarde quotidienne (pg_dump gzip + tar des médias, rétention 30 j) ----
   backup:
-    image: postgres:16
+    image: postgres:${POSTGRES_VERSION:-18}
     environment:
       PGHOST: postgres
       PGPORT: "5432"

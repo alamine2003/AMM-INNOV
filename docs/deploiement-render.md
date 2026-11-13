@@ -65,7 +65,8 @@ Chaque nuit, le workflow *Base Render* :
    **Artifacts**.
 
 **Essai sur un poste** (Docker seulement ; à refaire après tout changement de phrase secrète) :
-télécharger l'artefact, le décompresser, puis
+télécharger l'artefact, le décompresser (sur macOS : `ditto -x -k amm-db-65.zip dossier`, car
+`unzip` refuse ces archives), puis
 
 ```bash
 scripts/verify_backup.sh amm-render-20261113-023000.dump.gpg
