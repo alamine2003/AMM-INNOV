@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# AMM GH sur un serveur partagé : une autre application tient déjà les ports 80 et 443
+# (JUSTI GH et son Caddy sur le Serveur 01 Stellarix).
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.partage.yml up -d
+#
+# Ce que ce fichier change par rapport à docker-compose.prod.yml :
+#  - pas de Caddy propre : AMM GH n'ouvre aucun port public. Son nginx écoute sur
+#    AMM_BIND (par défaut 127.0.0.1:8081, donc visible de la machine seulement) ; le portier
+#    déjà en place lui transmet les visites, ou un tunnel SSH pendant un essai ;
+#  - pas de Grafana propre (profil `supervision`) : la machine en porte déjà ;
+#  - mémoire plafonnée par service, pour ne jamais gêner l'application voisine ;
+#  - projet Compose `amm-gh` : conteneurs et volumes à ce nom, distincts des voisins.
+#
+# Guide pas à pas : docs/deploiement-serveur-partage.md
+# ---------------------------------------------------------------------------
+name: amm-gh
+
+services:
+  caddy:
+    profiles: ["caddy-propre"]
+
+  grafana:
+    profiles: ["supervision"]
+
+  frontend:
+    depends_on: !override
+      - backend
+    ports:
+      - "${AMM_BIND:-127.0.0.1:8081}:80"
+    mem_limit: 128m
+
+  backend:
+    mem_limit: ${AMM_MEM_BACKEND:-1g}
+
+  worker:
+    mem_limit: ${AMM_MEM_WORKER:-1536m}
+
+  beat:
+    mem_limit: 384m
+
+  postgres:
+    mem_limit: ${AMM_MEM_POSTGRES:-1g}
+
+  redis:
+    mem_limit: 320m
+
+  backup:
+    mem_limit: 256m
