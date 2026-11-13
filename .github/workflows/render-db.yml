@@ -1,14 +1,16 @@
 name: Base Render
 
 # Base Postgres gratuite de Render (supprimée par Render après 30 jours) :
-#  - chaque jour : sauvegarde chiffrée (artefact 30 jours) et renouvellement dès 25 jours ;
+#  - chaque jour : sauvegarde chiffrée (artefact 30 jours), restaurée à l'essai dans une base
+#    jetable, et renouvellement dès 25 jours ;
 #  - chaque heure : renouvellement seulement, et seulement la nuit (0 h - 7 h à Dakar) tant que
 #    la base a moins de 28 jours. GitHub retarde souvent les tâches planifiées de plusieurs heures
 #    (exécutée vers 9-10 h au lieu de 2 h 30, audit du 11/11/2026) : le renouvellement, qui
 #    redéploie l'API, tombait en pleine journée de travail.
 #  - à la demande : status, backup, ensure (première création), rotate --force,
 #    import depuis Railway (secret SOURCE_DATABASE_URL).
-# Secrets : RENDER_API_KEY (obligatoire), SOURCE_DATABASE_URL (pour l'import seulement).
+# Secrets : RENDER_API_KEY (obligatoire), BACKUP_PASSPHRASE (sans lui, aucune sauvegarde n'est
+# publiée), SOURCE_DATABASE_URL (pour l'import seulement).
 # Guide : docs/deploiement-render.md
 
 on:
@@ -83,6 +85,17 @@ jobs:
               --symmetric --cipher-algo AES256 --output "${f}.gpg" "${f}" <<< "${BACKUP_PASSPHRASE}"
             rm -f "${f}"
           done
+      # Une sauvegarde jamais restaurée n'en est pas une (ISO 25010, récupérabilité) : chaque
+      # copie chiffrée est déchiffrée puis restaurée dans une base jetable, et son contenu est
+      # contrôlé (scripts/verify_backup.sh). En cas d'échec le run passe au rouge et GitHub
+      # prévient par e-mail ; l'artefact est quand même publié, pour le diagnostic.
+      - name: "Restauration d'essai de la sauvegarde chiffrée"
+        if: always()
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          shopt -s nullglob
+          for f in backups/*.dump.gpg; do scripts/verify_backup.sh "$f"; done
       - name: Sauvegardes chiffrées (artefact)
         if: always()
         uses: actions/upload-artifact@v7

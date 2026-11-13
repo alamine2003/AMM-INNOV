@@ -8,7 +8,7 @@ Remplace Railway (septembre 2026, fin du crédit). Tout le backend tient dans l'
 | API + WebSocket + Celery (beat intégré) | Render, service web Docker gratuit `amm-innov-api`, `AMM_ROLE=all` | [render.yaml](../render.yaml) |
 | Redis (broker, channel layer, cache) | Render Key Value gratuit `amm-innov-redis` (25 Mo, `noeviction`) | [render.yaml](../render.yaml) |
 | PostgreSQL 16 | Render Postgres gratuit `amm-innov-db` (1 Go) | [scripts/render_db.sh](../scripts/render_db.sh), workflow **Base Render** |
-| Sauvegardes | Artefacts GitHub Actions (90 jours), à télécharger sur le poste admin | [.github/workflows/render-db.yml](../.github/workflows/render-db.yml) |
+| Sauvegardes | Artefacts GitHub Actions chiffrés (30 jours), restaurés à l'essai chaque nuit | [.github/workflows/render-db.yml](../.github/workflows/render-db.yml) |
 
 ## Les limites de l'offre gratuite, et ce qui les compense
 
@@ -48,19 +48,43 @@ Remplace Railway (septembre 2026, fin du crédit). Tout le backend tient dans l'
 4. Contrôler dans l'application (nombre d'AMM, derniers renouvellements), puis supprimer le
    secret `SOURCE_DATABASE_URL` et le projet Railway.
 
-## 3. Sauvegardes sur le poste admin
+## 3. Sauvegardes chiffrées et restauration
 
-Chaque run du workflow *Base Render* publie la sauvegarde (`amm-render-AAAAMMJJ-HHMMSS.dump`,
-format `pg_dump -Fc`) en artefact, gardée 90 jours : **Actions, Base Render**, dernier run,
-**Artifacts**, télécharger. Pour la remettre en place :
+Le dépôt est public : une sauvegarde n'est publiée que **chiffrée** (AES-256), avec la phrase
+secrète du secret GitHub `BACKUP_PASSPHRASE`. Sans ce secret, rien n'est publié. La phrase est
+gardée aussi hors de GitHub (gestionnaire de mots de passe, et une deuxième personne) : GitHub
+ne la réaffiche jamais, et sans elle les sauvegardes sont illisibles.
+
+Chaque nuit, le workflow *Base Render* :
+
+1. écrit la sauvegarde (`amm-render-AAAAMMJJ-HHMMSS.dump`, format `pg_dump -Fc`) ;
+2. la chiffre (`.dump.gpg`) ;
+3. la **restaure à l'essai** dans une base jetable et contrôle son contenu
+   (`scripts/verify_backup.sh`) : si elle ne se relit pas, le run passe au rouge ;
+4. la publie en artefact `amm-db-<n°>`, gardé 30 jours : **Actions, Base Render**, dernier run,
+   **Artifacts**.
+
+**Essai sur un poste** (Docker seulement ; à refaire après tout changement de phrase secrète) :
+télécharger l'artefact, le décompresser, puis
 
 ```bash
-RENDER_API_KEY=... scripts/render_db.sh restore amm-render-20261020-023000.dump
+scripts/verify_backup.sh amm-render-20261113-023000.dump.gpg
 ```
 
-(depuis Linux ou la CI ; sur macOS, lancer le workflow, ou `docker run` l'image `postgres:16`.)
+La phrase est demandée au clavier (ni affichée ni enregistrée). Le script répond
+« OK : … se déchiffre et se restaure » ou dit ce qui a échoué.
 
-Actions manuelles : `status`, `backup`, `rotate-force` (renouveler tout de suite).
+**Restauration réelle** (remplace tout le contenu de la base Render) :
+
+```bash
+gpg --decrypt amm-render-20261113-023000.dump.gpg > amm-render-20261113-023000.dump
+RENDER_API_KEY=... scripts/render_db.sh restore amm-render-20261113-023000.dump
+rm amm-render-20261113-023000.dump   # la copie en clair ne reste pas sur le poste
+```
+
+(depuis Linux ou la CI ; sur macOS, `docker run` l'image `postgres:18`.)
+
+Actions manuelles du workflow : `status`, `backup`, `rotate-force` (renouveler tout de suite).
 
 ## 4. Scans PDF : stockage S3 gratuit (recommandé)
 
