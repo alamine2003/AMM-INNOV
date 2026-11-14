@@ -55,24 +55,47 @@ Pendant l'essai :
 - la synchronisation GHPL est inactive (pas d'identifiants Nextcloud) ;
 - aucun e-mail ne part ; la production (Render) n'est pas touchée.
 
-## 2. Ouverture publique (à faire quand l'essai est concluant)
+## 2. Ouverture publique (quand l'essai est concluant)
 
-1. **Caddy de JUSTI GH.** Les fichiers de `/home/deploy/justi-innov` sont remplacés à chaque
-   livraison : la modification se fait dans le dépôt de JUSTI GH, pas sur le serveur. Il faut
-   un bloc de site pour `amm.102-203-86-8.sslip.io` qui transmet au nginx d'AMM GH, avec
-   `request_body { max_size 260MB }` (dossiers pays) et un délai de lecture long.
-   Ne pas brancher les deux applications sur un même réseau Docker : leurs services portent
-   les mêmes noms (`frontend`, `backend`) et Caddy enverrait des visites de l'une à l'autre.
-   Passer par un port de la machine (`AMM_BIND` sur l'adresse de la passerelle Docker,
-   `host.docker.internal` côté Caddy).
-2. **`.env` d'AMM GH** : `FRONTEND_URL=https://amm.102-203-86-8.sslip.io`,
-   `AUTH_REFRESH_COOKIE_SECURE=1`, retirer les origines `http://localhost:8081` ; renseigner le
-   stockage S3 (`DOCUMENT_STORAGE=s3`, `S3_*` : les scans restent sur Cloudflare R2, rien à
-   déplacer) et Nextcloud (`NEXTCLOUD_USER`, `NEXTCLOUD_APP_PASSWORD`).
-3. **Bascule** : arrêter les écritures sur Render, lancer une dernière sauvegarde (workflow
-   « Base Render », action `backup`), `restaurer_base.sh … --remplacer`, `compose.sh up -d`,
-   contrôler, puis faire pointer l'interface vers la nouvelle adresse.
-4. **Retour arrière** : Render reste en place tant que la bascule n'est pas validée.
+```bash
+cd /home/deploy/amm-gh
+sudo scripts/serveur/ouvrir_public.sh
+```
+
+Le script ouvre `https://<DOMAIN du .env>` à travers le Caddy déjà en place (le « portier »),
+en cinq étapes, et s'arrête à la première anomalie :
+
+1. le nginx d'AMM GH écoute sur la passerelle Docker (`172.17.0.1:8081`) au lieu de la boucle
+   locale : joignable de la machine et de ses conteneurs, jamais de l'extérieur ;
+2. le portier doit le joindre : c'est contrôlé **avant** de toucher à sa configuration ;
+3. chez le portier (`/home/deploy/justi-innov`) : le fichier `caddy/voisins/amm-gh.caddy` et,
+   une seule fois, la ligne `import caddy/voisins/*.caddy` à la fin de son Caddyfile (copie de
+   sauvegarde `Caddyfile.avant-amm-gh`) ;
+4. Caddy valide la configuration ; refusée, le fichier est retiré et rien n'est rechargé ;
+   acceptée, il la recharge sans couper les visites en cours ;
+5. AMM GH passe en HTTPS : adresse publique, cookie de session réservé à HTTPS.
+
+Les deux applications ne partagent aucun réseau Docker : leurs services portent les mêmes
+noms (`frontend`, `backend`) et Caddy enverrait des visites de l'une à l'autre. Le portier
+joint AMM GH par un port de la machine.
+
+`sudo scripts/serveur/ouvrir_public.sh --fermer` retire le site et revient à l'essai privé.
+Le script se relance sans risque : à refaire après toute mise à jour des fichiers du portier
+qui remplacerait son Caddyfile (un acte d'exploitation côté JUSTI GH, jamais une livraison).
+
+Une fois ouverte, l'accès par tunnel passe par la passerelle :
+`ssh -L 8081:172.17.0.1:8081 compte@serveur`.
+
+**Avant la mise en service réelle**, il reste à faire dans `.env` (puis
+`scripts/serveur/compose.sh up -d`) :
+
+- le stockage des scans : `DOCUMENT_STORAGE=s3` et les `S3_*` (les scans restent sur
+  Cloudflare R2, rien à déplacer) ;
+- la synchronisation GHPL : `NEXTCLOUD_USER`, `NEXTCLOUD_APP_PASSWORD` ;
+- la bascule : arrêter les écritures sur Render, lancer une dernière sauvegarde (workflow
+  « Base Render », action `backup`), `restaurer_base.sh … --remplacer`, contrôler, puis faire
+  pointer les utilisateurs vers la nouvelle adresse. Render reste le retour arrière tant que
+  la bascule n'est pas validée.
 
 ## 3. Mettre à jour
 
