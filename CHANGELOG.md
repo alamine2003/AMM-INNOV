@@ -5,6 +5,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.2.9] — 2026-11-14
+
+Suite de l'essai sur le Serveur 01 Stellarix : essai privé réussi le 14/11 (copie de la base
+du 13/11, 1 860 AMM, temps réel actif), ouverture publique préparée.
+
+### Ajouté
+- `scripts/serveur/ouvrir_public.sh` : ouvre AMM GH sur son adresse HTTPS à travers le Caddy
+  déjà en place sur la machine (celui de JUSTI GH), ou la referme (`--fermer`). Le portier
+  est testé avant d'être touché, sa configuration validée avant d'être rechargée, et tout
+  refus laisse le voisin exactement comme avant.
+
+### Corrigé
+- **Contrôle de santé de l'image d'interface** : il interrogeait `localhost`, résolu en IPv6
+  sur certaines machines alors que nginx n'écoute qu'en IPv4. Le conteneur était marqué
+  « unhealthy » alors que l'application répondait. Il interroge `127.0.0.1`.
+- `docs/deploiement-serveur-partage.md` : les fichiers d'exploitation de JUSTI GH ne sont pas
+  remplacés à chaque livraison (seules les images le sont) ; l'ouverture publique se fait
+  par le script ci-dessus.
+
 ## [1.2.8] — 2026-11-13
 
 Deuxième écart du rapport d'architecture (hébergement) : essai d'AMM GH sur le Serveur 01
