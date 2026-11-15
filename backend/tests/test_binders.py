@@ -269,11 +269,28 @@ def test_full_binder_joins_official_decisions(hq_client, users, shelf_data, make
     lost = _attach(amlo, _pdf("Decision AMLO"), "application/pdf")
     lost.file.storage.delete(lost.file.name)
 
-    response = hq_client.post("/api/v1/binders/ML/exports")
+    import re
+    import subprocess
+    from unittest import mock
+
+    real_run, calls = subprocess.run, []
+
+    def spy(args, **kwargs):
+        calls.append(args)
+        return real_run(args, **kwargs)
+
+    with mock.patch("apps.binders.export.subprocess.run", side_effect=spy):
+        response = hq_client.post("/api/v1/binders/ML/exports")
     assert response.status_code == 202
     export = BinderExport.objects.get(pk=response.json()["id"])
     assert export.status == "READY", export.error
     assert (export.decisions, export.unavailable, export.without_scan) == (2, 1, 1)
+    # Ubuntu 26.04 confine qpdf (AppArmor) : il ne lit et n'écrit que des .pdf, .qdf et .json.
+    # Tout fichier qu'on lui remet se termine donc par .pdf, sans fichier d'arguments (@…).
+    assert calls
+    for args in calls:
+        files = [a for a in args[1:] if not a.startswith("-") and not re.fullmatch(r"[\d-]+", a)]
+        assert files and all(name.endswith(".pdf") for name in files), args
 
     listed = hq_client.get("/api/v1/binders/ML/exports").json()
     assert listed[0]["id"] == str(export.pk) and listed[0]["has_file"]

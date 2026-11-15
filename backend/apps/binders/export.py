@@ -71,17 +71,22 @@ def _placeholder(path: Path, document: Document, reason: str) -> None:
 
 
 def _to_pdf(document: Document, workdir: Path) -> Path:
-    """Copie le scan sur disque (PDF tel quel, image convertie) et renvoie son chemin."""
-    raw = workdir / f"{document.pk}.src"
+    """Copie le scan sur disque (PDF tel quel, image convertie) et renvoie son chemin.
+
+    Tout fichier remis à qpdf se termine par `.pdf` : sur Ubuntu 26.04, son profil AppArmor ne
+    lui laisse lire que des `.pdf`, `.qdf` et `.json` (un `.src` lui était refusé).
+    """
+    target = workdir / f"{document.pk}.pdf"
+    is_pdf = document.content_type == "application/pdf"
+    raw = target if is_pdf else workdir / f"{document.pk}.src"
     document.file.open("rb")
     try:
         with raw.open("wb") as out:
             shutil.copyfileobj(document.file, out, length=1024 * 1024)
     finally:
         document.file.close()
-    if document.content_type == "application/pdf":
-        return raw
-    target = workdir / f"{document.pk}.pdf"
+    if is_pdf:
+        return target
     try:
         target.write_bytes(img2pdf.convert(str(raw)))
     except Exception:
@@ -112,16 +117,19 @@ def _npages(path: Path) -> int:
 def _assemble(plan: list[tuple[Path, str | None]], output: Path, workdir: Path) -> None:
     """Assemble les pages avec qpdf, qui lit chaque scan au moment d'écrire (moins de 100 Mo
     de mémoire pour 207 décisions et 720 Mo de PDF), là où une bibliothèque Python les tient
-    tous en mémoire."""
-    args = ["--empty", "--pages"]
+    tous en mémoire.
+
+    Les fichiers sont nommés sans leur dossier (qpdf est lancé dans `workdir`) : la ligne de
+    commande reste courte, une cinquantaine d'octets par scan, loin de la limite du système.
+    Pas de fichier d'arguments : le profil AppArmor de qpdf (Ubuntu 26.04) refuse de le lire.
+    """
+    args = ["qpdf", "--empty", "--pages"]
     for path, pages in plan:
-        args.append(str(path))
+        args.append(path.name)
         if pages:
             args.append(pages)
-    args += ["--", str(output)]
-    argfile = workdir / "qpdf.args"
-    argfile.write_text("\n".join(args), encoding="utf-8")
-    result = subprocess.run(["qpdf", f"@{argfile}"], capture_output=True, text=True, timeout=1500)
+    args += ["--", output.name]
+    result = subprocess.run(args, capture_output=True, text=True, timeout=1500, cwd=workdir)
     if result.returncode not in (0, 3):
         raise RuntimeError(f"qpdf : {result.stderr.strip()[:500]}")
 

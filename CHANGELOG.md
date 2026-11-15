@@ -5,6 +5,44 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.0] — 2026-11-15
+
+Palier : AMM GH prête à quitter Render pour le Serveur 01 Stellarix, l'interface restant sur
+Cloudflare Pages. Validation, déploiement et retour arrière : `docs/palier-1.3.0.md`.
+
+### Ajouté
+- **Sauvegarde chiffrée et vérifiée de la base sur le serveur**, chaque nuit
+  (`scripts/serveur/sauvegarder.sh`) : `pg_dump` chiffré au vol (aucune copie en clair sur le
+  disque, refus sans phrase secrète), puis essai de restauration du fichier chiffré dans une
+  base d'essai avant de le compter comme sauvegarde. Même format que les sauvegardes de Render.
+- **Copie hors de la machine** : chaque heure, le worker envoie les sauvegardes vérifiées dans
+  le stockage des scans (S3), sous `sauvegardes/base/`, contrôle la taille reçue et applique la
+  rétention (30 jours, jamais les 7 dernières).
+- **Surveillance des sauvegardes** : un avertissement dans l'application à chaque CEO si la
+  sauvegarde échoue, ne tourne plus depuis 30 heures ou n'est plus copiée hors machine ; deux
+  contrôles d'intégrité (`backup_verified`, `backup_offsite`). Inactif sur Render.
+- `scripts/serveur/configurer.sh` : règle `.env` sans l'éditer ; un secret est toujours saisi
+  au clavier, masqué, jamais sur la ligne de commande. La phrase secrète des sauvegardes va
+  dans `.env.sauvegarde`, lu par le seul service de sauvegarde.
+- `scripts/serveur/brancher_interface.sh` : autorise l'interface Cloudflare Pages sur l'API
+  du serveur (origines, liens des notifications, cookie de session entre deux adresses), avec
+  contrôle de la réponse de l'API ; `--retirer` fait l'inverse.
+
+### Corrigé
+- **Classeur avec décisions officielles sur Ubuntu 26.04** : ce système confine `qpdf`
+  (profil AppArmor), qui ne lit plus que des fichiers `.pdf`, `.qdf` et `.json`. La copie de
+  travail d'un scan PDF s'appelait `.src` et la liste des pages passait par un fichier
+  d'arguments : les deux lui étaient refusés et la préparation du classeur échouait. Les
+  fichiers remis à `qpdf` se terminent tous par `.pdf` et la liste des pages passe en ligne de
+  commande. Vu par la CI, dont les machines sont passées à Ubuntu 26.04 le 15/11/2026 ; la
+  production (image Debian, sans ce confinement) n'était pas touchée.
+
+### Modifié
+- `docker-compose.prod.yml` : le script lancé chaque nuit par le service `backup` se choisit
+  par `BACKUP_SCRIPT` (inchangé par défaut). `docker-compose.partage.yml` : le worker lit le
+  dossier des sauvegardes en lecture seule.
+- `docs/deploiement-serveur-partage.md` : sauvegardes, et bascule depuis Render pas à pas.
+
 ## [1.2.9] — 2026-11-14
 
 Suite de l'essai sur le Serveur 01 Stellarix : essai privé réussi le 14/11 (copie de la base

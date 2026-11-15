@@ -303,7 +303,20 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.administration.tasks.watch_redis_memory",
         "schedule": crontab(minute=40),
     },
+    # Sur un serveur : copie hors machine des sauvegardes de la base et avertissement si la
+    # sauvegarde échoue ou ne tourne plus (inactive sans BACKUP_DIR, donc sur Render).
+    "ship-backups": {
+        "task": "apps.administration.tasks.ship_backups",
+        "schedule": crontab(minute=50),
+    },
 }
+
+# Sauvegardes de la base sur un serveur (apps/core/backups.py) : dossier où le service `backup`
+# écrit, lu ici en lecture seule. Vide : rien n'est copié ni surveillé (Render).
+BACKUP_DIR = env("BACKUP_DIR") or ""
+BACKUP_MAX_AGE_HOURS = int(env("BACKUP_MAX_AGE_HOURS", "30"))
+BACKUP_REMOTE_PREFIX = "sauvegardes/base/"
+BACKUP_REMOTE_RETENTION_DAYS = int(env("BACKUP_REMOTE_RETENTION_DAYS", "30"))
 
 # Mémoire de Redis : limite si Redis ne la donne pas (Render gratuit : 25), seuil d'alerte.
 REDIS_MAXMEMORY_BYTES = int(env("REDIS_MAXMEMORY_MB", "0") or 0) * 1024 * 1024

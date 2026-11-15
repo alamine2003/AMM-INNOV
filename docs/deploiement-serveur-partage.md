@@ -86,18 +86,119 @@ qui remplacerait son Caddyfile (un acte d'exploitation côté JUSTI GH, jamais u
 Une fois ouverte, l'accès par tunnel passe par la passerelle :
 `ssh -L 8081:172.17.0.1:8081 compte@serveur`.
 
-**Avant la mise en service réelle**, il reste à faire dans `.env` (puis
-`scripts/serveur/compose.sh up -d`) :
+La mise en service réelle (sauvegardes, scans, bascule depuis Render) est décrite aux
+sections 3 et 4.
 
-- le stockage des scans : `DOCUMENT_STORAGE=s3` et les `S3_*` (les scans restent sur
-  Cloudflare R2, rien à déplacer) ;
-- la synchronisation GHPL : `NEXTCLOUD_USER`, `NEXTCLOUD_APP_PASSWORD` ;
-- la bascule : arrêter les écritures sur Render, lancer une dernière sauvegarde (workflow
-  « Base Render », action `backup`), `restaurer_base.sh … --remplacer`, contrôler, puis faire
-  pointer les utilisateurs vers la nouvelle adresse. Render reste le retour arrière tant que
-  la bascule n'est pas validée.
+## 3. Sauvegardes (palier 1.3.0)
 
-## 3. Mettre à jour
+Chaque nuit à `BACKUP_HOUR` (2 h), le service `backup` lance `scripts/serveur/sauvegarder.sh` :
+
+1. `pg_dump` de la base, **chiffré au vol** (gpg AES256). Aucune copie en clair n'est écrite
+   sur le disque. Sans phrase secrète, la sauvegarde est refusée, et c'est dit.
+2. **Essai de restauration** : le fichier chiffré est relu et restauré dans une base d'essai
+   (`amm_essai_restauration`), à côté de la vraie, puis contrôlé (tables, migrations, fiches
+   AMM, produits, pays, comptes). La base d'essai est supprimée. Une sauvegarde qui ne se relit
+   pas est mise de côté (`.echec`) et ne compte pas.
+3. Le fichier vérifié, `backups/amm-vm-AAAAMMJJ-HHMMSS.dump.gpg`, a le format des sauvegardes de
+   Render : `scripts/verify_backup.sh` et `restaurer_base.sh` le relisent tels quels.
+4. `backups/etat.json` dit ce qui s'est passé.
+
+Le worker lit ce dossier en lecture seule (tâche `ship_backups`, chaque heure) :
+
+- il **copie hors de la machine** chaque sauvegarde vérifiée, dans le stockage des scans (S3),
+  sous `sauvegardes/base/`. Actif dès que `DOCUMENT_STORAGE=s3` ;
+- il **avertit dans l'application** chaque CEO (une fois par jour au plus) si la sauvegarde a
+  échoué, n'a pas tourné depuis 30 heures, ou n'est plus copiée hors de la machine. Les mêmes
+  constats figurent au contrôle d'intégrité de 5 h (`backup_verified`, `backup_offsite`).
+
+Rétention : 30 jours sur le serveur (`BACKUP_RETENTION_DAYS`) comme hors machine
+(`BACKUP_REMOTE_RETENTION_DAYS`), et jamais les 7 dernières, même plus anciennes.
+
+**La phrase secrète** est celle des sauvegardes de Render (`BACKUP_PASSPHRASE`). Elle est
+saisie une fois, sans s'afficher, et rangée dans `.env.sauvegarde` : seul le service `backup`
+la lit, l'application ne la connaît pas.
+
+```bash
+cd /home/deploy/amm-gh
+sudo scripts/serveur/configurer.sh BACKUP_PASSPHRASE          # demandée deux fois, masquée
+sudo scripts/serveur/compose.sh up -d
+sudo scripts/serveur/compose.sh exec backup /scripts/serveur/sauvegarder.sh   # première sauvegarde
+```
+
+La dernière ligne doit finir par `OK : amm-vm-… relue et restaurée`.
+
+Relire une sauvegarde ailleurs (un poste avec Docker) : `scripts/verify_backup.sh fichier.dump.gpg`.
+La restaurer sur le serveur : `sudo scripts/serveur/restaurer_base.sh fichier.dump.gpg --remplacer`.
+
+Limites connues : les scans ne sont pas dans ces sauvegardes (ils vivent sur le stockage S3,
+qui est leur lieu de conservation) ; la copie hors machine utilise les mêmes droits S3 que
+l'application ; perdre la phrase secrète rend toutes les sauvegardes illisibles (en garder
+une copie hors du serveur, chez deux personnes).
+
+`scripts/serveur/configurer.sh` règle toute autre valeur de `.env` sans l'éditer à la main :
+un secret (nom contenant KEY, SECRET, PASSWORD, PASSPHRASE ou TOKEN) est toujours demandé au
+clavier, jamais accepté sur la ligne de commande ; une valeur ordinaire s'écrit `CLE=valeur`.
+
+## 4. Bascule depuis Render (palier 1.3.0)
+
+L'interface reste sur Cloudflare Pages (`https://amm-gh.pages.dev`) : les utilisateurs gardent
+leur adresse. Seule l'API change de machine. Render reste intact jusqu'à la fin : c'est le
+retour arrière.
+
+**a. Scans** (avant la bascule ; les scans restent sur Cloudflare R2, rien à déplacer). Les
+valeurs sont celles du service Render (tableau de bord, *Environment*) :
+
+```bash
+sudo scripts/serveur/configurer.sh DOCUMENT_STORAGE=s3 S3_REGION=auto S3_ADDRESSING_STYLE=path
+sudo scripts/serveur/configurer.sh S3_ENDPOINT_URL=https://<compte>.r2.cloudflarestorage.com S3_BUCKET=<bucket>
+sudo scripts/serveur/configurer.sh S3_ACCESS_KEY
+sudo scripts/serveur/configurer.sh S3_SECRET_KEY
+sudo scripts/serveur/compose.sh up -d
+```
+
+Contrôle : un scan s'ouvre dans l'application du serveur, et dans l'heure la sauvegarde
+apparaît hors machine (`sudo scripts/serveur/compose.sh exec worker python manage.py
+check_integrity` : `backup_offsite` est `OK`). Tant que le serveur porte une copie d'essai de
+la base, ne pas y travailler (import, suppression, export de classeur) : les deux instances
+partagent les mêmes scans.
+
+**b. Interface Cloudflare Pages autorisée sur l'API du serveur** :
+
+```bash
+sudo scripts/serveur/brancher_interface.sh https://amm-gh.pages.dev
+```
+
+Le script ajoute l'adresse aux origines acceptées (appels, formulaires, temps réel), fait
+mener les liens des notifications à cette interface, passe le cookie de session en
+`SameSite=None`, redémarre, puis contrôle que l'API répond bien à cette origine. `--retirer`
+fait l'inverse.
+
+**c. Bascule**, à une heure creuse, dans cet ordre :
+
+1. Render : suspendre le service `amm-innov-api` (plus aucune écriture possible).
+2. GitHub : workflow « Base Render », action `backup` ; télécharger l'artefact, le copier sur
+   le serveur (`scp`).
+3. Serveur : `sudo scripts/serveur/restaurer_base.sh amm-render-….dump.gpg --remplacer`.
+4. Serveur : synchronisation GHPL, une seule instance à la fois :
+   `sudo scripts/serveur/configurer.sh NEXTCLOUD_USER=<compte>`, puis
+   `sudo scripts/serveur/configurer.sh NEXTCLOUD_APP_PASSWORD`, puis
+   `sudo scripts/serveur/compose.sh up -d`.
+5. Serveur : `sudo scripts/serveur/compose.sh exec backup /scripts/serveur/sauvegarder.sh`
+   (première sauvegarde de la vraie base).
+6. Cloudflare Pages, projet `amm-gh`, *Settings → Environment variables* :
+   `VITE_API_BASE=https://<DOMAIN>` et `VITE_WS_URL=wss://<DOMAIN>/ws/`, puis redéployer.
+7. Contrôles : connexion, nombre d'AMM, un scan, pastille « Live », une saisie puis sa
+   relecture.
+
+**Retour arrière** (tant que rien d'important n'a été saisi sur le serveur) : Cloudflare
+Pages, *Deployments*, « Rollback to this deployment » sur le déploiement d'avant (il pointe
+vers Render), puis reprendre le service Render. Ce qui a été saisi sur le serveur entre-temps
+n'est pas sur Render : au-delà de quelques heures, on répare en avant plutôt que de revenir.
+
+**Après quelques jours sans incident** : arrêter le service Render, le Worker Cloudflare qui
+le réveille, et le workflow « Base Render ».
+
+## 5. Mettre à jour
 
 ```bash
 cd /home/deploy/amm-gh
@@ -108,7 +209,7 @@ sudo scripts/serveur/compose.sh up -d
 
 `TAG` dans `.env` choisit l'image (`latest`, ou le début d'un commit pour figer une version).
 
-## 4. Tout enlever
+## 6. Tout enlever
 
 ```bash
 cd /home/deploy/amm-gh && sudo scripts/serveur/compose.sh down     # garde les données
@@ -116,9 +217,3 @@ sudo scripts/serveur/compose.sh down -v                            # efface auss
 ```
 
 JUSTI GH n'est concernée par aucune de ces commandes.
-
-## Sauvegardes sur le serveur
-
-Le service `backup` écrit chaque nuit une copie locale dans `./backups` (30 jours). Elle ne
-remplace pas une copie hors machine : à la mise en service, prévoir l'envoi chiffré vers un
-autre lieu (le Serveur 02, ou le stockage S3), avec la même phrase secrète.
