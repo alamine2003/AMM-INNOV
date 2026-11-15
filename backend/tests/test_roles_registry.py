@@ -80,6 +80,7 @@ def test_apps_declare_their_work_to_core():
         "apps.notifications.hooks",
         "apps.imports.hooks",
         "apps.core.redis_usage",  # déclaré par apps/administration/hooks.py
+        "apps.core.backups",  # déclaré par apps/administration/hooks.py
     }
     assert names[WORKER_START.name] == names[PENDING_WORK.name] == {"apps.imports.hooks"}
     assert names[METRICS.name] == {"apps.amm.hooks"}
@@ -100,6 +101,7 @@ def test_integrity_checks_keep_their_order():
         "check_stuck_jobs",
         "check_storage",
         "check_redis_memory",
+        "check_backups",
     ]
 
 

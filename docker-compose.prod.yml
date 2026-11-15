@@ -210,6 +210,7 @@ services:
       MEDIA_DIR: /media
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       BACKUP_HOUR: ${BACKUP_HOUR:-02}
+      BACKUP_SCRIPT: ${BACKUP_SCRIPT:-/scripts/backup.sh}
       TZ: Africa/Dakar
     volumes:
       - ./backups:/backups
@@ -219,7 +220,7 @@ services:
       postgres:
         condition: service_healthy
     entrypoint: ["/bin/bash"]
-    # Cron minimaliste : dort jusqu'à BACKUP_HOUR:00 puis lance backup.sh, chaque jour.
+    # Cron minimaliste : dort jusqu'à BACKUP_HOUR:00 puis lance BACKUP_SCRIPT, chaque jour.
     command:
       - -c
       - |
@@ -230,7 +231,7 @@ services:
           if [ "$$next" -le "$$now" ]; then next=$$(date -d "tomorrow $${BACKUP_HOUR}:00" +%s); fi
           echo "[backup] prochaine sauvegarde à $$(date -d @$$next '+%F %T')"
           sleep $$((next - now))
-          /scripts/backup.sh || echo "[backup] ECHEC de la sauvegarde"
+          $${BACKUP_SCRIPT} || echo "[backup] ECHEC de la sauvegarde"
         done
     restart: unless-stopped
     logging: *json-logging

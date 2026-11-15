@@ -10,6 +10,8 @@
 #    déjà en place lui transmet les visites, ou un tunnel SSH pendant un essai ;
 #  - pas de Grafana propre (profil `supervision`) : la machine en porte déjà ;
 #  - mémoire plafonnée par service, pour ne jamais gêner l'application voisine ;
+#  - sauvegarde chiffrée et vérifiée chaque nuit (scripts/serveur/sauvegarder.sh), que le
+#    worker copie hors de la machine et surveille ;
 #  - projet Compose `amm-gh` : conteneurs et volumes à ce nom, distincts des voisins.
 #
 # Guide pas à pas : docs/deploiement-serveur-partage.md
@@ -33,8 +35,14 @@ services:
   backend:
     mem_limit: ${AMM_MEM_BACKEND:-1g}
 
+  # Le worker lit le dossier des sauvegardes (lecture seule) : il les copie hors de la machine
+  # et avertit dans l'application si la sauvegarde échoue ou ne tourne plus.
   worker:
     mem_limit: ${AMM_MEM_WORKER:-1536m}
+    environment:
+      BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups:ro
 
   beat:
     mem_limit: 384m
@@ -45,5 +53,12 @@ services:
   redis:
     mem_limit: 320m
 
+  # La phrase secrète des sauvegardes vit dans .env.sauvegarde, lu par ce service seulement :
+  # l'application ne la connaît pas (scripts/serveur/configurer.sh BACKUP_PASSPHRASE).
   backup:
     mem_limit: 256m
+    env_file:
+      - path: .env.sauvegarde
+        required: false
+    environment:
+      BACKUP_SCRIPT: /scripts/serveur/sauvegarder.sh
