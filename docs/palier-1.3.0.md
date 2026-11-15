@@ -71,6 +71,12 @@ Essais de bout en bout, dans des conteneurs (images `postgres:18`, backend et in
 | Origine inconnue | aucun en-tête d'autorisation |
 | `brancher_interface.sh … --retirer` | configuration d'avant retrouvée |
 
+La CI de la PR a d'abord échoué sur un test sans rapport avec ce palier (assemblage d'un
+classeur) : ses machines sont passées d'Ubuntu 24.04 à 26.04 entre le 14 et le 15 novembre, et
+ce système confine `qpdf` (AppArmor) aux fichiers `.pdf`, `.qdf` et `.json`. Corrigé dans ce
+palier (voir `CHANGELOG.md`), avec un test qui tient sans ce confinement : tout fichier remis
+à `qpdf` doit se terminer par `.pdf`. La production n'était pas touchée.
+
 Non essayé ici, à contrôler pendant la bascule : la copie vers le vrai Cloudflare R2, le temps
 réel depuis l'interface Cloudflare Pages, la synchronisation GHPL depuis le serveur.
 

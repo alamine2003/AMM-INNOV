@@ -28,6 +28,15 @@ Cloudflare Pages. Validation, déploiement et retour arrière : `docs/palier-1.3
   du serveur (origines, liens des notifications, cookie de session entre deux adresses), avec
   contrôle de la réponse de l'API ; `--retirer` fait l'inverse.
 
+### Corrigé
+- **Classeur avec décisions officielles sur Ubuntu 26.04** : ce système confine `qpdf`
+  (profil AppArmor), qui ne lit plus que des fichiers `.pdf`, `.qdf` et `.json`. La copie de
+  travail d'un scan PDF s'appelait `.src` et la liste des pages passait par un fichier
+  d'arguments : les deux lui étaient refusés et la préparation du classeur échouait. Les
+  fichiers remis à `qpdf` se terminent tous par `.pdf` et la liste des pages passe en ligne de
+  commande. Vu par la CI, dont les machines sont passées à Ubuntu 26.04 le 15/11/2026 ; la
+  production (image Debian, sans ce confinement) n'était pas touchée.
+
 ### Modifié
 - `docker-compose.prod.yml` : le script lancé chaque nuit par le service `backup` se choisit
   par `BACKUP_SCRIPT` (inchangé par défaut). `docker-compose.partage.yml` : le worker lit le
