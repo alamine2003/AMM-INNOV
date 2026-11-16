@@ -281,11 +281,11 @@ prompt-toolkit==3.0.53
     # via
     #   -c requirements.txt
     #   click-repl
-psycopg==3.3.8
+psycopg==3.3.9
     # via
     #   -c requirements.txt
     #   -r requirements.in
-psycopg-binary==3.3.8
+psycopg-binary==3.3.9
     # via
     #   -c requirements.txt
     #   psycopg
@@ -307,7 +307,7 @@ pyopenssl==26.4.0
     # via
     #   -c requirements.txt
     #   twisted
-pypdf==7.0.0
+pypdf==7.0.1
     # via
     #   -c requirements.txt
     #   -r requirements.in
@@ -317,7 +317,7 @@ pytest==9.2.0
     #   pytest-asyncio
     #   pytest-cov
     #   pytest-django
-pytest-asyncio==1.4.1.post1
+pytest-asyncio==1.5.0
     # via -r requirements-dev.in
 pytest-cov==7.1.0
     # via -r requirements-dev.in
@@ -361,13 +361,13 @@ rpds-py==2026.9.1
     #   -c requirements.txt
     #   jsonschema
     #   referencing
-ruff==0.17.4
+ruff==0.17.5
     # via -r requirements-dev.in
 s3transfer==0.19.3
     # via
     #   -c requirements.txt
     #   boto3
-sentry-sdk==2.74.0
+sentry-sdk==2.75.0
     # via
     #   -c requirements.txt
     #   -r requirements.in
