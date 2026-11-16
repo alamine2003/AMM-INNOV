@@ -5,6 +5,18 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.2] — 2026-11-16
+
+### Corrigé
+- **Erreur 500 en supprimant une fiche rangée par un import de dossier** (« Supprimer la page »
+  d'un classeur, ou suppression d'une AMM). L'import de dossier, ses fichiers source et sa
+  traçabilité protègent la fiche, son renouvellement et son scan ; la corbeille devait les
+  emporter avec elle, mais les rassemblait d'un seul coup, tous modèles mélangés, ce que Django
+  refuse. Ils partent maintenant à la corbeille par étapes, ceux qui protègent d'abord, dans une
+  seule entrée, et reviennent ensemble à la restauration. Le défaut datait de la corbeille
+  (1.2.2) et touchait toute fiche rattachée à un import de dossier ; rien n'était supprimé à
+  moitié (l'erreur annulait tout). Vu en production le 16/11/2026.
+
 ## [1.3.1] — 2026-11-16
 
 AMM GH en anglais, première étape (décision du 16/11/2026 : anglais pour tous les utilisateurs,

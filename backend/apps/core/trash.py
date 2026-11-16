@@ -32,7 +32,8 @@ TRASH_PREPARE = Registry("préparation d'une restauration")
 # `f(entry, objects, user)` : appelé après une restauration, avec les objets remis en place.
 TRASH_RESTORED = Registry("restauration depuis la corbeille")
 
-MAX_PROTECTED_ROUNDS = 6
+# Garde-fou : nombre de groupes de lignes traités pour une seule suppression.
+MAX_PROTECTED_STEPS = 50
 
 
 def _label(obj) -> str:
@@ -43,20 +44,64 @@ def _kind(obj) -> str:
     return str(obj._meta.verbose_name)
 
 
-def _collect(roots: list, include_protected: bool) -> Collector:
-    """Ce que la suppression emporterait. Avec `include_protected`, les lignes qui protègent
-    l'élément (imports de dossiers…) partent aussi à la corbeille, avec lui."""
+def _by_model(objects) -> list[list]:
+    """Les lignes regroupées par modèle : Django ne rassemble qu'un modèle à la fois."""
+    groups: dict[type, list] = {}
+    for obj in objects:
+        groups.setdefault(type(obj), []).append(obj)
+    return list(groups.values())
+
+
+def _take(roots: list, user, include_protected: bool) -> dict:
+    """Copie puis supprime `roots` et ce qui part avec eux ; renvoie la copie (`payload`).
+
+    Avec `include_protected`, les lignes qui protègent l'élément (imports de dossiers et leur
+    traçabilité, fichiers source d'un scan…) partent aussi à la corbeille, AVANT lui : Django
+    refuse de rassembler un élément tant qu'une ligne le protège en base, même si elle est
+    promise à la suppression. On traite donc une pile de groupes d'un seul modèle : un groupe
+    protégé attend que ceux qui le protègent soient partis. (Jusqu'à la 1.3.1, tout était
+    rassemblé d'un coup, modèles mélangés : erreur 500 dès qu'un import de dossier était rattaché
+    à la fiche.)
+    """
     using = router.db_for_write(type(roots[0]))
-    for _ in range(MAX_PROTECTED_ROUNDS):
+    taken: list[dict] = []
+    pending = [roots]
+    for _ in range(MAX_PROTECTED_STEPS):
+        if not pending:
+            # L'élément d'abord, ce qui le protégeait ensuite : l'ordre de la restauration.
+            taken.reverse()
+            return {
+                "objects": [row for part in taken for row in part["objects"]],
+                "updates": [row for part in taken for row in part["updates"]],
+            }
+        group = pending[-1]
+        model = type(group[0])
+        # Une ligne déjà partie avec un groupe précédent (cascade) n'est pas copiée deux fois.
+        alive = set(
+            model._base_manager.using(using)
+            .filter(pk__in=[o.pk for o in group])
+            .values_list("pk", flat=True)
+        )
+        group = [o for o in group if o.pk in alive]
+        if not group:
+            pending.pop()
+            continue
         collector = Collector(using=using)
         try:
-            collector.collect(roots)
-            return collector
+            collector.collect(group)
         except ProtectedError as error:
             if not include_protected:
                 raise
-            known = {(type(o), o.pk) for o in roots}
-            roots = [o for o in error.protected_objects if (type(o), o.pk) not in known] + roots
+            pending[-1] = group
+            pending.extend(_by_model(error.protected_objects))
+            continue
+        taken.append(_snapshot(collector))
+        if user is not None:
+            for objs in collector.data.values():
+                for row in objs:
+                    row._history_user = user  # l'historique dit qui a supprimé
+        collector.delete()
+        pending.pop()
     raise ValidationError("Suppression impossible : trop de liens à suivre.")
 
 
@@ -96,23 +141,22 @@ def move_to_trash(
     include_protected: bool = False,
 ) -> TrashEntry:
     """Met `obj` (et ce qui part avec lui) à la corbeille, puis le supprime."""
+    # Relevés avant la suppression : Django vide l'identifiant de l'objet supprimé.
+    described = {
+        "label": (label or _label(obj))[:300],
+        "kind": (kind or _kind(obj))[:100],
+        "model": obj._meta.label,
+        "object_id": str(obj.pk),
+    }
     with transaction.atomic():
-        collector = _collect([obj], include_protected)
+        payload = _take([obj], user, include_protected)
         entry = TrashEntry.objects.create(
-            label=(label or _label(obj))[:300],
-            kind=(kind or _kind(obj))[:100],
-            model=obj._meta.label,
-            object_id=str(obj.pk),
+            **described,
             country=country,
             reason=reason[:300],
-            payload=_snapshot(collector),
+            payload=payload,
             deleted_by=user if getattr(user, "pk", None) else None,
         )
-        if user is not None:
-            for objs in collector.data.values():
-                for row in objs:
-                    row._history_user = user  # l'historique dit qui a supprimé
-        collector.delete()
     return entry
 
 
