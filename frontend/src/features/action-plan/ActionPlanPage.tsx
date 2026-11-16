@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Link, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useActionPlan } from '@/api/hooks/useAmms';
 import { useCountries } from '@/api/hooks/useCatalog';
 import type { ActionPlanCategory, ActionPlanItem, AmmStatus } from '@/api/types';
@@ -44,6 +45,7 @@ const TONE: Record<string, 'error' | 'warning' | 'info'> = {
 };
 
 function Item({ item, category }: { item: ActionPlanItem; category: ActionPlanCategory }) {
+  const { t } = useTranslation();
   return (
     <ListItem
       disableGutters
@@ -57,8 +59,10 @@ function Item({ item, category }: { item: ActionPlanItem; category: ActionPlanCa
         </MuiLink>
         <Typography variant="caption" color="text.secondary" component="div">
           {item.country_name}
-          {item.original_number ? ` · N° ${item.original_number}` : ''}
-          {item.effective_end_date ? ` · échéance ${formatDate(item.effective_end_date)}` : ''}
+          {item.original_number ? ` · ${t('actionPlan.number', { number: item.original_number })}` : ''}
+          {item.effective_end_date
+            ? ` · ${t('actionPlan.expiry', { date: formatDate(item.effective_end_date) })}`
+            : ''}
         </Typography>
       </Box>
       <StatusChip value={item.status as AmmStatus} size="small" />
@@ -76,6 +80,7 @@ function Item({ item, category }: { item: ActionPlanItem; category: ActionPlanCa
 }
 
 function CategoryCard({ category, country }: { category: ActionPlanCategory; country: string }) {
+  const { t } = useTranslation();
   const list = `/amms?gap=${category.gap}${country ? `&country=${country}` : ''}`;
   return (
     <Card variant="outlined" sx={{ display: 'flex', flexDirection: 'column' }} id={category.gap}>
@@ -97,7 +102,7 @@ function CategoryCard({ category, country }: { category: ActionPlanCategory; cou
         {category.count === 0 ? (
           <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 2, color: 'success.main' }}>
             <CheckCircleOutlineIcon fontSize="small" />
-            <Typography variant="body2">Rien à faire ici.</Typography>
+            <Typography variant="body2">{t('actionPlan.nothingToDo')}</Typography>
           </Stack>
         ) : (
           <List dense sx={{ mt: 1 }}>
@@ -110,7 +115,7 @@ function CategoryCard({ category, country }: { category: ActionPlanCategory; cou
       {category.count > category.items.length && (
         <CardActions sx={{ pt: 0, px: 2, pb: 1.5 }}>
           <Button size="small" component={Link} to={list}>
-            Voir les {category.count} dans la liste des AMM
+            {t('actionPlan.seeAll', { count: category.count })}
           </Button>
         </CardActions>
       )}
@@ -125,6 +130,7 @@ function CategoryCard({ category, country }: { category: ActionPlanCategory; cou
  * fiche qui corrige le manque.
  */
 export default function ActionPlanPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const country = searchParams.get('country') ?? '';
   const plan = useActionPlan({ country: country || undefined, limit: 8 });
@@ -137,13 +143,13 @@ export default function ActionPlanPage() {
   return (
     <Box>
       <PageHeader
-        title="Plan d'action"
-        subtitle="Les AMM à compléter, les plus urgentes d'abord : un clic mène à l'endroit où agir."
+        title={t('nav.actionPlan')}
+        subtitle={t('actionPlan.subtitle')}
         actions={
           <TextField
             select
             size="small"
-            label="Pays"
+            label={t('amm.filters.country')}
             value={country}
             onChange={(event) => setSearchParams(event.target.value ? { country: event.target.value } : {})}
             sx={{ minWidth: 180 }}
@@ -151,7 +157,7 @@ export default function ActionPlanPage() {
             InputLabelProps={{ shrink: true }}
             inputProps={{ 'data-testid': 'plan-country' }}
           >
-            <MenuItem value="">Tous les pays</MenuItem>
+            <MenuItem value="">{t('actionPlan.allCountries')}</MenuItem>
             {visible.map((c) => (
               <MenuItem key={c.iso2} value={c.iso2}>
                 {c.name}
@@ -166,7 +172,9 @@ export default function ActionPlanPage() {
         <>
           <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }} data-testid="plan-summary">
             <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center', mr: 1 }}>
-              {plan.data.total ? `${plan.data.total} AMM à compléter` : 'Toutes les fiches sont complètes.'}
+              {plan.data.total
+                ? t('actionPlan.summaryTotal', { count: plan.data.total })
+                : t('actionPlan.allComplete')}
             </Typography>
             {plan.data.categories
               .filter((category) => category.count > 0)
@@ -178,7 +186,7 @@ export default function ActionPlanPage() {
                   clickable
                   variant="outlined"
                   color={TONE[category.gap]}
-                  label={`${category.label} : ${category.count}`}
+                  label={t('actionPlan.chip', { label: category.label, count: category.count })}
                 />
               ))}
           </Stack>

@@ -3,6 +3,7 @@ import { Box, ButtonBase, CircularProgress, IconButton, Tooltip, Typography } fr
 import PrintIcon from '@mui/icons-material/Print';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Document, Page } from 'react-pdf';
 import { fetchDocumentBlob, usePrintDocument } from '@/api/hooks/useDocuments';
 import { PdfViewerDialog } from '@/features/documents/PdfViewerDialog';
@@ -51,6 +52,7 @@ export function ScanThumbnail({
   /** Petit bouton « Imprimer » dans le coin de la miniature. */
   printable?: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const printing = usePrintDocument();
   const [printError, setPrintError] = useState(false);
@@ -100,7 +102,7 @@ export function ScanThumbnail({
       />
       <ButtonBase
         onClick={() => (onOpen ? onOpen() : setOpen(true))}
-        aria-label={label ?? `Ouvrir le scan du ${formatDate(documentDate)}`}
+        aria-label={label ?? t('binders.thumbnail.open', { date: formatDate(documentDate) })}
         sx={{
           position: 'relative',
           width,
@@ -118,7 +120,7 @@ export function ScanThumbnail({
       >
         {blob.isError ? (
           <Typography variant="caption" sx={{ color: MUTED, p: 1 }}>
-            Scan indisponible
+            {t('binders.thumbnail.unavailable')}
           </Typography>
         ) : !scan ? (
           <Box sx={{ m: 'auto' }}>
@@ -138,16 +140,10 @@ export function ScanThumbnail({
         )}
       </ButtonBase>
       {printable && !blob.isError && (
-        <Tooltip
-          title={
-            printError
-              ? "Impression impossible ici : le scan s'est ouvert dans un onglet"
-              : 'Imprimer le scan'
-          }
-        >
+        <Tooltip title={printError ? t('binders.thumbnail.printFailed') : t('binders.thumbnail.print')}>
           <IconButton
             size="small"
-            aria-label={`Imprimer le scan du ${formatDate(documentDate)}`}
+            aria-label={t('binders.thumbnail.printDated', { date: formatDate(documentDate) })}
             data-testid="scan-print"
             disabled={printing.printing === documentId}
             onClick={(event) => {

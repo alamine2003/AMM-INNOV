@@ -64,9 +64,9 @@ export function formatMonthsSpan(totalMonths: number): string {
   const months = Math.abs(totalMonths);
   const years = Math.floor(months / 12);
   const rest = months % 12;
-  const y = years ? `${years} an${years > 1 ? 's' : ''}` : '';
-  const m = rest ? `${rest} mois` : '';
-  return y && m ? `${y} et ${m}` : y || m || '0 mois';
+  const y = years ? i18n.t('time.year', { count: years }) : '';
+  const m = rest ? i18n.t('time.month', { count: rest }) : '';
+  return y && m ? i18n.t('time.span', { years: y, months: m }) : y || m || i18n.t('time.month', { count: 0 });
 }
 
 /** « 45 j (1 mois) », « 872 j (2 ans et 4 mois) », « −12 j » … */
@@ -77,7 +77,7 @@ export function formatRemaining(value: string | null | undefined, today = new Da
   const d = parseApiDate(value) as Date;
   const t = startOfDay(today);
   const months = days < 0 ? differenceInMonths(t, d) : differenceInMonths(d, t);
-  return `${sign}${Math.abs(days)} j${months >= 1 ? ` (${sign}${formatMonthsSpan(months)})` : ''}`;
+  return `${sign}${i18n.t('time.daysShort', { count: Math.abs(days) })}${months >= 1 ? ` (${sign}${formatMonthsSpan(months)})` : ''}`;
 }
 
 /** Fin de validité calculée : début + durée de validité du pays (5 ans en général). */
@@ -93,7 +93,7 @@ export function formatSpan(start: string | null | undefined, end: string | null 
   if (!a || !b) return null;
   const months = differenceInMonths(b, a);
   if (months < 0) return null;
-  if (months === 0) return `${differenceInCalendarDays(b, a)} j`;
+  if (months === 0) return i18n.t('time.daysShort', { count: differenceInCalendarDays(b, a) });
   return formatMonthsSpan(months);
 }
 

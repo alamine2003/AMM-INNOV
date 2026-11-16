@@ -23,14 +23,11 @@ import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useErrors, useResolveError, type ErrorState } from '@/api/hooks/useErrors';
 import type { ErrorEvent } from '@/api/types';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/PageHeader';
 import { formatDateTime } from '@/lib/dates';
 
-const STATES: { value: ErrorState; label: string }[] = [
-  { value: 'open', label: 'À traiter' },
-  { value: 'resolved', label: 'Résolues' },
-  { value: 'all', label: 'Tout' },
-];
+const STATES: ErrorState[] = ['open', 'resolved', 'all'];
 
 const SOURCE_COLORS: Record<ErrorEvent['source'], 'error' | 'warning' | 'info'> = {
   server: 'error',
@@ -44,6 +41,7 @@ const SOURCE_COLORS: Record<ErrorEvent['source'], 'error' | 'warning' | 'info'> 
  * revient. Rien ne sort d'AMM GH (pas de service externe).
  */
 export default function ErrorsPage() {
+  const { t } = useTranslation();
   const [state, setState] = useState<ErrorState>('open');
   const [page, setPage] = useState(1);
   const [opened, setOpened] = useState<string | null>(null);
@@ -54,10 +52,7 @@ export default function ErrorsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Journal des erreurs"
-        subtitle="Ce qui a planté en production : serveur, tâches de fond et interface. Une erreur résolue qui revient est rouverte."
-      />
+      <PageHeader title={t('adminPages.errors.title')} subtitle={t('adminPages.errors.subtitle')} />
       <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
         <ToggleButtonGroup
           size="small"
@@ -71,14 +66,14 @@ export default function ErrorsPage() {
           }}
         >
           {STATES.map((option) => (
-            <ToggleButton key={option.value} value={option.value}>
-              {option.label}
+            <ToggleButton key={option} value={option}>
+              {t(`adminPages.errors.states.${option}`)}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
         {errors.data && (
           <Typography variant="body2" color="text.secondary">
-            {errors.data.count} erreur{errors.data.count > 1 ? 's' : ''}
+            {t('adminPages.errors.count', { count: errors.data.count })}
           </Typography>
         )}
       </Stack>
@@ -88,12 +83,12 @@ export default function ErrorsPage() {
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox" />
-              <TableCell>Dernière fois</TableCell>
-              <TableCell>Origine</TableCell>
-              <TableCell>Erreur</TableCell>
-              <TableCell>Où</TableCell>
-              <TableCell align="right">Fois</TableCell>
-              <TableCell align="right">État</TableCell>
+              <TableCell>{t('adminPages.errors.columns.lastSeen')}</TableCell>
+              <TableCell>{t('adminPages.errors.columns.source')}</TableCell>
+              <TableCell>{t('adminPages.errors.columns.error')}</TableCell>
+              <TableCell>{t('adminPages.errors.columns.where')}</TableCell>
+              <TableCell align="right">{t('adminPages.errors.columns.times')}</TableCell>
+              <TableCell align="right">{t('adminPages.errors.columns.state')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -101,7 +96,7 @@ export default function ErrorsPage() {
               <TableRow>
                 <TableCell colSpan={7}>
                   <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                    {state === 'open' ? 'Aucune erreur à traiter.' : 'Aucune erreur.'}
+                    {state === 'open' ? t('adminPages.errors.emptyOpen') : t('adminPages.errors.empty')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -112,7 +107,11 @@ export default function ErrorsPage() {
                   <TableCell padding="checkbox">
                     <IconButton
                       size="small"
-                      aria-label={opened === event.id ? 'Masquer le détail' : 'Voir le détail'}
+                      aria-label={
+                        opened === event.id
+                          ? t('adminPages.errors.hideDetail')
+                          : t('adminPages.errors.showDetail')
+                      }
                       onClick={() => setOpened(opened === event.id ? null : event.id)}
                     >
                       {opened === event.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -145,7 +144,7 @@ export default function ErrorsPage() {
                         size="small"
                         color="success"
                         variant="outlined"
-                        label={`Résolue le ${formatDateTime(event.resolved_at)}`}
+                        label={t('adminPages.errors.resolvedOn', { date: formatDateTime(event.resolved_at) })}
                       />
                     ) : (
                       <Button
@@ -155,13 +154,13 @@ export default function ErrorsPage() {
                         onClick={() =>
                           resolve.mutate(event.id, {
                             onSuccess: () =>
-                              enqueueSnackbar('Erreur marquée résolue.', { variant: 'success' }),
+                              enqueueSnackbar(t('adminPages.errors.resolvedToast'), { variant: 'success' }),
                             onError: (error) =>
                               enqueueSnackbar(extractErrorMessage(error), { variant: 'error' }),
                           })
                         }
                       >
-                        Résolue
+                        {t('adminPages.errors.resolve')}
                       </Button>
                     )}
                   </TableCell>
@@ -171,8 +170,13 @@ export default function ErrorsPage() {
                     <Collapse in={opened === event.id} unmountOnExit>
                       <Box sx={{ py: 1.5 }}>
                         <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 1 }}>
-                          Première fois le {formatDateTime(event.first_seen)} · version {event.version || '—'}
-                          {event.last_user ? ` · dernier utilisateur : ${event.last_user}` : ''}
+                          {t('adminPages.errors.firstSeen', {
+                            date: formatDateTime(event.first_seen),
+                            version: event.version || '—',
+                          })}
+                          {event.last_user
+                            ? ` · ${t('adminPages.errors.lastUser', { user: event.last_user })}`
+                            : ''}
                         </Typography>
                         <Box
                           component="pre"
@@ -187,7 +191,7 @@ export default function ErrorsPage() {
                             whiteSpace: 'pre-wrap',
                           }}
                         >
-                          {event.detail || 'Pas de détail.'}
+                          {event.detail || t('adminPages.errors.noDetail')}
                         </Box>
                       </Box>
                     </Collapse>
@@ -201,10 +205,10 @@ export default function ErrorsPage() {
       {errors.data && (errors.data.next || page > 1) && (
         <Stack direction="row" justifyContent="flex-end" gap={1} sx={{ mt: 1 }}>
           <Button size="small" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Précédent
+            {t('common.pagination.previous')}
           </Button>
           <Button size="small" disabled={!errors.data.next} onClick={() => setPage(page + 1)}>
-            Suivant
+            {t('common.pagination.next')}
           </Button>
         </Stack>
       )}

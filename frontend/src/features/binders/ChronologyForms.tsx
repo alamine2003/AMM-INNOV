@@ -5,6 +5,7 @@ import { addValidity, formatDate } from '@/lib/dates';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DOCUMENT_KINDS, type Edits, periodOf } from './chronologyShared';
 import { SCAN_ACCEPT } from './PageScanImport';
 import { INK, LINE, MUTED } from './paper';
@@ -17,7 +18,7 @@ export function EditPanel({
   children,
   onSave,
   onCancel,
-  saveLabel = 'Enregistrer',
+  saveLabel,
   saveColor = 'primary',
   busy,
   extra,
@@ -31,6 +32,7 @@ export function EditPanel({
   busy: boolean;
   extra?: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <Box
       component="form"
@@ -54,10 +56,10 @@ export function EditPanel({
           disabled={busy}
           startIcon={busy ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
-          {saveLabel}
+          {saveLabel ?? t('app.save')}
         </Button>
         <Button size="small" onClick={onCancel} disabled={busy}>
-          Annuler
+          {t('app.cancel')}
         </Button>
         <Box sx={{ flex: 1 }} />
         {extra}
@@ -77,6 +79,7 @@ export function PeriodForm({
   years: number;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const initial = { number: entry.number ?? '', start: entry.start_date ?? '', end: entry.end_date ?? '' };
   const [values, setValues] = useState(initial);
   // Début corrigé : la fin suit (début + durée du pays) tant qu'on ne la retouche pas.
@@ -92,7 +95,7 @@ export function PeriodForm({
   };
   return (
     <EditPanel
-      title={`CORRIGER ${entry.label.toUpperCase()}`}
+      title={t('binders.forms.fixTitle', { label: entry.label.toUpperCase() })}
       onSave={save}
       onCancel={onDone}
       busy={edits.editPeriod.isPending}
@@ -100,7 +103,7 @@ export function PeriodForm({
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
         <TextField
           size="small"
-          label="N° d'AMM"
+          label={t('binders.fields.number')}
           value={values.number}
           onChange={(e) => setValues({ ...values, number: e.target.value })}
           sx={{ flex: 1 }}
@@ -109,7 +112,7 @@ export function PeriodForm({
         <DateInput
           size="small"
           fullWidth={false}
-          label="Date de début"
+          label={t('binders.fields.startDate')}
           value={values.start}
           onChange={(value) => {
             setValues({ ...values, start: value ?? '', end: addValidity(value, years) ?? '' });
@@ -119,7 +122,7 @@ export function PeriodForm({
         <DateInput
           size="small"
           fullWidth={false}
-          label="Date de fin"
+          label={t('binders.fields.endDate')}
           value={values.end}
           onChange={(value) => {
             setValues({ ...values, end: value ?? '' });
@@ -174,6 +177,7 @@ export function CancelRenewalForm({
   edits: Edits;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const pieces = (entry.decisions?.length ?? 0) + (entry.others?.length ?? 0);
   const targets = options.filter((option) => option.value !== entry.renewal_id);
   const [moveTo, setMoveTo] = useState<string>(
@@ -181,22 +185,18 @@ export function CancelRenewalForm({
   );
   return (
     <EditPanel
-      title={`SUPPRIMER ${entry.label.toUpperCase()}`}
-      saveLabel="Supprimer le passage"
+      title={t('binders.forms.deleteTitle', { label: entry.label.toUpperCase() })}
+      saveLabel={t('binders.forms.deletePassage')}
       saveColor="error"
       onSave={() => edits.deletePeriod.mutate({ period: entry.renewal_id!, moveTo }, { onSuccess: onDone })}
       onCancel={onDone}
       busy={edits.deletePeriod.isPending}
     >
-      <Typography sx={{ fontSize: 13, color: INK }}>
-        Pour un passage qui n'existe pas : renouvellement saisi à tort ou en double, dépôt jamais fait. Les
-        scans ne sont pas supprimés. L'échéance, le statut et la numérotation des renouvellements sont
-        recalculés.
-      </Typography>
+      <Typography sx={{ fontSize: 13, color: INK }}>{t('binders.forms.deleteHelp')}</Typography>
       {pieces > 0 && (
         <Box sx={{ mt: 1.25 }}>
           <PeriodSelect
-            label={`${pieces} pièce${pieces > 1 ? 's' : ''} à ranger sur`}
+            label={t('binders.forms.moveTo', { count: pieces })}
             value={moveTo}
             onChange={setMoveTo}
             options={targets}
@@ -222,6 +222,7 @@ export function DocumentForm({
   canRemove: boolean;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const [date, setDate] = useState(doc.document_date);
   const [kind, setKind] = useState(doc.kind as BinderDocumentKind);
   const [target, setTarget] = useState<string>(current);
@@ -238,7 +239,10 @@ export function DocumentForm({
   };
   return (
     <EditPanel
-      title={`CORRIGER LA PIÈCE « ${doc.kind_label.toUpperCase()} DU ${formatDate(doc.document_date)} »`}
+      title={t('binders.forms.fixDocTitle', {
+        kind: doc.kind_label.toUpperCase(),
+        date: formatDate(doc.document_date),
+      })}
       onSave={save}
       onCancel={onDone}
       busy={busy}
@@ -252,7 +256,7 @@ export function DocumentForm({
             disabled={busy}
             onClick={() => edits.removeDocument.mutate(doc.document_id, { onSuccess: onDone })}
           >
-            Confirmer le retrait
+            {t('binders.forms.confirmRemove')}
           </Button>
         ) : (
           <Button
@@ -262,7 +266,7 @@ export function DocumentForm({
             disabled={busy}
             onClick={() => setConfirmRemove(true)}
           >
-            Retirer la pièce
+            {t('binders.forms.removeDoc')}
           </Button>
         ))
       }
@@ -271,29 +275,34 @@ export function DocumentForm({
         <DateInput
           size="small"
           fullWidth={false}
-          label="Date du document"
+          label={t('binders.forms.documentDate')}
           value={date}
           onChange={(value) => setDate(value ?? '')}
         />
         <TextField
           select
           size="small"
-          label="Type"
+          label={t('binders.forms.type')}
           value={kind}
           onChange={(e) => setKind(e.target.value as BinderDocumentKind)}
           sx={{ minWidth: 170 }}
         >
           {DOCUMENT_KINDS.map((option) => (
             <MenuItem key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </MenuItem>
           ))}
         </TextField>
-        <PeriodSelect label="Période" value={target} onChange={setTarget} options={options} />
+        <PeriodSelect
+          label={t('binders.forms.period')}
+          value={target}
+          onChange={setTarget}
+          options={options}
+        />
       </Stack>
       {confirmRemove && (
         <Typography sx={{ fontSize: 12, color: '#c62828', mt: 0.75 }}>
-          La pièce quitte la page ; elle reste dans l'historique des documents archivés.
+          {t('binders.forms.removeNote')}
         </Typography>
       )}
     </EditPanel>
@@ -309,6 +318,7 @@ export function AddDocumentForm({
   edits: Edits;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [kind, setKind] = useState<BinderDocumentKind>(entry.kind === 'pending' ? 'RECEPISSE' : 'AMM');
@@ -323,7 +333,7 @@ export function AddDocumentForm({
   };
   return (
     <EditPanel
-      title={`AJOUTER UNE PIÈCE — ${entry.label.toUpperCase()}`}
+      title={t('binders.forms.addTitle', { label: entry.label.toUpperCase() })}
       onSave={save}
       onCancel={onDone}
       busy={edits.addDocument.isPending}
@@ -343,35 +353,33 @@ export function AddDocumentForm({
         />
         <Button size="small" variant="outlined" onClick={() => input.current?.click()} sx={{ maxWidth: 260 }}>
           <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {file ? file.name : 'Choisir le scan (PDF, JPEG, PNG)'}
+            {file ? file.name : t('binders.forms.chooseScan')}
           </Box>
         </Button>
         <TextField
           select
           size="small"
-          label="Type"
+          label={t('binders.forms.type')}
           value={kind}
           onChange={(e) => setKind(e.target.value as BinderDocumentKind)}
           sx={{ minWidth: 170 }}
         >
           {DOCUMENT_KINDS.map((option) => (
             <MenuItem key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </MenuItem>
           ))}
         </TextField>
         <DateInput
           size="small"
           fullWidth={false}
-          label="Date du document"
+          label={t('binders.forms.documentDate')}
           value={date}
           onChange={(value) => setDate(value ?? '')}
         />
       </Stack>
       <Typography sx={{ fontSize: 12, color: missing ? '#c62828' : MUTED, mt: 0.75 }}>
-        {missing
-          ? 'Choisissez le scan et indiquez sa date.'
-          : 'Rangée telle quelle sur cette période, à la date saisie (pas de lecture automatique).'}
+        {missing ? t('binders.forms.missingScan') : t('binders.forms.filedAsIs')}
       </Typography>
     </EditPanel>
   );

@@ -1,4 +1,5 @@
 import { Stack, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { formatDate, todayIso } from '@/lib/dates';
 
 /**
@@ -16,6 +17,7 @@ export function FilingDates({
   direction?: 'row' | 'column';
   today?: string;
 }) {
+  const { t } = useTranslation();
   if (!ideal && !agency) return null;
   return (
     <Stack
@@ -25,12 +27,12 @@ export function FilingDates({
       data-testid="filing-dates"
     >
       <Typography variant="body2">
-        Dépôt idéal : <strong>{formatDate(ideal)}</strong>
-        {ideal && today > ideal ? ' (dépassé)' : ''}
+        {t('common.filingDates.ideal')} <strong>{formatDate(ideal)}</strong>
+        {ideal && today > ideal ? ` (${t('common.filingDates.passedIdeal')})` : ''}
       </Typography>
       <Typography variant="body2" color={agency && today > agency ? 'error' : undefined}>
-        Limite agence : <strong>{formatDate(agency)}</strong>
-        {agency && today > agency ? ' (dépassée)' : ''}
+        {t('common.filingDates.agency')} <strong>{formatDate(agency)}</strong>
+        {agency && today > agency ? ` (${t('common.filingDates.passedAgency')})` : ''}
       </Typography>
     </Stack>
   );

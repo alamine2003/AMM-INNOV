@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, Link as MuiLink, Typography } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { extractErrorMessage } from '@/api/client';
 import { binderKeys, useImportPageScan } from '@/api/hooks/useBinders';
@@ -46,6 +47,7 @@ export function usePageScanImport(binderKey: string, ammId: string) {
 type ScanImport = ReturnType<typeof usePageScanImport>;
 
 export function ScanImportButton({ scanImport, hasScan }: { scanImport: ScanImport; hasScan: boolean }) {
+  const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
@@ -58,7 +60,7 @@ export function ScanImportButton({ scanImport, hasScan }: { scanImport: ScanImpo
         disabled={scanImport.busy}
         sx={{ mt: 1 }}
       >
-        {hasScan ? 'Ajouter un scan' : 'Importer le scan'}
+        {hasScan ? t('binders.scan.add') : t('binders.scan.import')}
       </Button>
       <input
         ref={input}
@@ -66,7 +68,7 @@ export function ScanImportButton({ scanImport, hasScan }: { scanImport: ScanImpo
         hidden
         multiple
         accept={SCAN_ACCEPT}
-        aria-label="Scan de la décision"
+        aria-label={t('binders.scan.inputLabel')}
         onChange={(e) => {
           scanImport.start(Array.from(e.target.files ?? []));
           e.target.value = '';
@@ -77,6 +79,7 @@ export function ScanImportButton({ scanImport, hasScan }: { scanImport: ScanImpo
 }
 
 export function ScanImportStatus({ scanImport }: { scanImport: ScanImport }) {
+  const { t } = useTranslation();
   const { upload, batch, batchId } = scanImport;
   if (upload.isError) {
     return (
@@ -86,15 +89,11 @@ export function ScanImportStatus({ scanImport }: { scanImport: ScanImport }) {
     );
   }
   if (!batchId) return null;
-  const link = (
-    <MuiLink component={Link} to={`/dossier-imports/${batchId}`}>
-      voir le dossier importé
-    </MuiLink>
-  );
+  const link = <MuiLink component={Link} to={`/dossier-imports/${batchId}`} />;
   if (!batch || batch.status === 'PENDING' || batch.status === 'RUNNING') {
     return (
       <Alert severity="info" icon={<CircularProgress size={18} />} sx={{ mt: 1.5 }}>
-        Lecture du scan : n° d'AMM et dates relus, puis rangement sur cette page…
+        {t('binders.scan.reading')}
       </Alert>
     );
   }
@@ -102,7 +101,9 @@ export function ScanImportStatus({ scanImport }: { scanImport: ScanImport }) {
     const lines = hasSummary(batch.summary) ? batch.summary.lines.slice(0, 4) : [];
     return (
       <Alert severity="success" sx={{ mt: 1.5 }}>
-        <Typography variant="subtitle2">Scan rangé sur cette page ({link}).</Typography>
+        <Typography variant="subtitle2">
+          <Trans i18nKey="binders.scan.stored" components={{ link }} />
+        </Typography>
         {lines.map((line) => (
           <Box key={line} component="div" sx={{ fontSize: 13 }}>
             {line}
@@ -113,10 +114,15 @@ export function ScanImportStatus({ scanImport }: { scanImport: ScanImport }) {
   }
   return (
     <Alert severity="warning" sx={{ mt: 1.5 }}>
-      {batch.status === 'FAILED'
-        ? `Le scan n'a pas pu être lu : ${batch.error || 'erreur inconnue'}`
-        : 'Le scan attend une vérification'}{' '}
-      ({link}).
+      {batch.status === 'FAILED' ? (
+        <Trans
+          i18nKey="binders.scan.failed"
+          values={{ error: batch.error || t('binders.scan.unknownError') }}
+          components={{ link }}
+        />
+      ) : (
+        <Trans i18nKey="binders.scan.needsReview" components={{ link }} />
+      )}
     </Alert>
   );
 }

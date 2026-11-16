@@ -16,6 +16,7 @@ import {
   TextField,
 } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, Section, useFail } from './sectionParts';
 
 /** Étape 2 : les échantillons. */
@@ -24,6 +25,7 @@ import { type Actions, Section, useFail } from './sectionParts';
 
 export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const editable = dossier.can.manage && !dossier.sent_at;
   const empty = { batch_number: '', manufactured_on: '', expires_on: '', quantity: '' };
   const [form, setForm] = useState(empty);
@@ -32,11 +34,9 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
   return (
     <Section
       index={2}
-      title="Échantillons"
+      title={t('deposits.samples.title')}
       subtitle={
-        dossier.samples_required
-          ? 'Récupérés sur place : n° de lot, date de fabrication, date de péremption.'
-          : 'Pas d’échantillons pour ce dépôt.'
+        dossier.samples_required ? t('deposits.samples.subtitleRequired') : t('deposits.samples.none')
       }
       state={ok || dossier.sent_at ? 'done' : 'active'}
       testId="section-samples"
@@ -45,10 +45,10 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
         <Table size="small" sx={{ mb: 1 }}>
           <TableHead>
             <TableRow>
-              <TableCell>N° de lot</TableCell>
-              <TableCell>Fabrication</TableCell>
-              <TableCell>Péremption</TableCell>
-              <TableCell>Quantité</TableCell>
+              <TableCell>{t('deposits.samples.batch')}</TableCell>
+              <TableCell>{t('deposits.samples.manufacture')}</TableCell>
+              <TableCell>{t('deposits.samples.expiry')}</TableCell>
+              <TableCell>{t('deposits.samples.quantity')}</TableCell>
               {editable && <TableCell />}
             </TableRow>
           </TableHead>
@@ -63,7 +63,7 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
                   <TableCell align="right">
                     <IconButton
                       size="small"
-                      aria-label={`Retirer le lot ${sample.batch_number}`}
+                      aria-label={t('deposits.samples.removeBatch', { batch: sample.batch_number })}
                       onClick={() => actions.removeSample.mutate(sample.id, { onError: fail })}
                     >
                       <DeleteOutlineIcon fontSize="small" />
@@ -79,28 +79,28 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
         <Stack direction={{ xs: 'column', md: 'row' }} gap={1} alignItems={{ md: 'center' }}>
           <TextField
             size="small"
-            label="N° de lot"
+            label={t('deposits.samples.batch')}
             value={form.batch_number}
             onChange={(e) => setForm({ ...form, batch_number: e.target.value })}
           />
           <DateInput
             size="small"
             fullWidth={false}
-            label="Date de fabrication"
+            label={t('deposits.samples.manufactureDate')}
             value={form.manufactured_on}
             onChange={(value) => setForm({ ...form, manufactured_on: value ?? '' })}
           />
           <DateInput
             size="small"
             fullWidth={false}
-            label="Date de péremption"
+            label={t('deposits.samples.expiryDate')}
             value={form.expires_on}
             onChange={(value) => setForm({ ...form, expires_on: value ?? '' })}
           />
           <TextField
             size="small"
             type="number"
-            label="Quantité"
+            label={t('deposits.samples.quantity')}
             value={form.quantity}
             onChange={(e) => setForm({ ...form, quantity: e.target.value })}
             sx={{ width: 110 }}
@@ -120,7 +120,7 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
               )
             }
           >
-            Noter le lot
+            {t('deposits.samples.record')}
           </Button>
         </Stack>
       )}
@@ -134,7 +134,7 @@ export function SamplesSection({ dossier, actions }: { dossier: DepositDetail; a
               onChange={(e) => actions.samplesRequired.mutate(!e.target.checked, { onError: fail })}
             />
           }
-          label="Pas d’échantillons pour ce dépôt"
+          label={t('deposits.samples.noneSwitch')}
         />
       )}
     </Section>

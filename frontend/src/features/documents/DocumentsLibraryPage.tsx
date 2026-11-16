@@ -95,7 +95,7 @@ export default function DocumentsLibraryPage() {
         subtitle={t('documents.librarySubtitle')}
         actions={
           <Button component={Link} to="/dossier-imports" variant="outlined">
-            Importer un dossier AMM
+            {t('documentsPages.library.importDossier')}
           </Button>
         }
       />

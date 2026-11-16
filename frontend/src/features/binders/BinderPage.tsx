@@ -21,6 +21,7 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useSnackbar } from 'notistack';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
@@ -132,6 +133,7 @@ export default function BinderPage() {
 }
 
 function OpenBinder({ binder }: { binder: BinderDetail }) {
+  const { t } = useTranslation();
   const canDownload = useCan('binder.download');
   const canEdit = useCan('binder.edit');
   const [filter, setFilter] = useState<LeafFilter>('all');
@@ -304,7 +306,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       );
     }
     const page: Page | undefined = pages.get(leaf.ammId);
-    if (!page) return <LeafBack label="Page retirée du classeur" />;
+    if (!page) return <LeafBack label={t('binders.page.removed')} />;
     return (
       <BinderSheet
         key={page.amm_id}
@@ -331,8 +333,8 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
     const leaf = leaves[at];
     if (!leaf) return '';
     if (leaf.kind === 'page') return pages.get(leaf.ammId)?.product_name ?? '';
-    if (leaf.kind === 'divider') return `Intercalaire ${sectionOf(leaf.code).label}`;
-    return leaf.kind === 'title' ? 'Page de garde' : 'Bilan';
+    if (leaf.kind === 'divider') return t('binders.page.dividerLabel', { label: sectionOf(leaf.code).label });
+    return leaf.kind === 'title' ? t('binders.page.titlePage') : t('binders.page.summary');
   };
 
   // Sous la feuille qui tourne : la nouvelle page (en avant) ou l'ancienne (en arrière).
@@ -359,7 +361,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
       }}
     >
       <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1, flexShrink: 0, minWidth: 0 }}>
-        <IconButton component={Link} to="/classeurs" aria-label="Retour à l'étagère">
+        <IconButton component={Link} to="/classeurs" aria-label={t('binders.page.backToShelf')}>
           <ArrowBackIcon />
         </IconButton>
         <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
@@ -372,16 +374,16 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
               value={progress}
               color="success"
               sx={{ width: 160, height: 6, borderRadius: 3 }}
-              aria-label="Avancement du classeur"
+              aria-label={t('binders.page.progressLabel')}
             />
             <Typography variant="body2" color="text.secondary">
-              {binder.checked} / {total} vérifiées · {binder.conformes} conformes
+              {t('binders.page.stats', { checked: binder.checked, total, conformes: binder.conformes })}
             </Typography>
             {binder.stale > 0 && (
               <Chip
                 size="small"
                 color="warning"
-                label={`${binder.stale} à revérifier`}
+                label={t('binders.page.staleChip', { count: binder.stale })}
                 onClick={() => setFilter('unchecked')}
               />
             )}
@@ -390,20 +392,20 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         <TextField
           select
           size="small"
-          label="Afficher"
+          label={t('binders.page.show')}
           value={filter}
           onChange={(e) => setFilter(e.target.value as LeafFilter)}
           sx={{ minWidth: 190 }}
         >
           {(Object.keys(FILTER_LABELS) as LeafFilter[]).map((key) => (
             <MenuItem key={key} value={key}>
-              {FILTER_LABELS[key]}
+              {t(FILTER_LABELS[key])}
             </MenuItem>
           ))}
         </TextField>
-        <Tooltip title={animation ? 'Animation des pages : activée' : 'Animation des pages : désactivée'}>
+        <Tooltip title={animation ? t('binders.page.animationOn') : t('binders.page.animationOff')}>
           <IconButton
-            aria-label="Animation"
+            aria-label={t('binders.page.animation')}
             aria-pressed={animation}
             color={animation ? 'primary' : 'default'}
             onClick={() => {
@@ -414,9 +416,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             <AutoStoriesIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip title={sound ? 'Son des pages : activé' : 'Son des pages : désactivé'}>
+        <Tooltip title={sound ? t('binders.page.soundOn') : t('binders.page.soundOff')}>
           <IconButton
-            aria-label="Son"
+            aria-label={t('binders.page.sound')}
             aria-pressed={sound}
             color={sound ? 'primary' : 'default'}
             onClick={() => {
@@ -430,7 +432,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         </Tooltip>
         {canEdit && (
           <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
-            Ajouter une page
+            {t('binders.page.addPage')}
           </Button>
         )}
         {canDownload && (
@@ -448,11 +450,11 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           if (result.binder_key === binder.key) {
             // Le classeur est relu : on l'ouvre sur la nouvelle page, à sa place alphabétique.
             setPending(target);
-            enqueueSnackbar('Page ajoutée : importez son scan directement depuis la page.', {
+            enqueueSnackbar(t('binders.page.added'), {
               variant: 'success',
             });
           } else {
-            enqueueSnackbar(`Page rangée dans le classeur ${result.binder.title} (ordre alphabétique).`, {
+            enqueueSnackbar(t('binders.page.filed', { title: result.binder.title }), {
               variant: 'info',
             });
             navigate(`/classeurs/${result.binder_key}`);
@@ -595,10 +597,10 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             </Box>
             {/* Coin corné : tourner la page d'un clic. */}
             {index < last && !flip && (
-              <Tooltip title="Page suivante">
+              <Tooltip title={t('binders.page.next')}>
                 <Box
                   role="button"
-                  aria-label="Page suivante (coin)"
+                  aria-label={t('binders.page.nextCorner')}
                   onClick={() => go(index + 1)}
                   sx={{
                     position: 'absolute',
@@ -667,12 +669,16 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             return (
               <Tooltip
                 key={section.code}
-                title={`${section.label} — ${section.checked} / ${section.total}`}
+                title={t('binders.page.tabTooltip', {
+                  label: section.label,
+                  checked: section.checked,
+                  total: section.total,
+                })}
                 placement="left"
               >
                 <Box
                   role="button"
-                  aria-label={`Aller à l'intercalaire ${section.label}`}
+                  aria-label={t('binders.page.goToDivider', { label: section.label })}
                   onClick={() => go(target, false)}
                   sx={{
                     width: active ? { xs: 32, sm: 42 } : { xs: 26, sm: 34 },
@@ -701,7 +707,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           })}
           <Box
             role="button"
-            aria-label="Aller au bilan"
+            aria-label={t('binders.page.goToSummary')}
             onClick={() => go(last, false)}
             sx={{
               width: { xs: 26, sm: 34 },
@@ -716,7 +722,7 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             }}
           >
             <Box component="span" sx={{ writingMode: 'vertical-rl', fontWeight: 800, fontSize: 11 }}>
-              BILAN
+              {t('binders.page.summaryTab')}
             </Box>
           </Box>
         </Stack>
@@ -728,7 +734,11 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         gap={2}
         sx={{ maxWidth: 1240, width: '100%', mx: 'auto', mt: 1, px: 1, flexShrink: 0 }}
       >
-        <IconButton onClick={() => go(index - 1)} disabled={index === 0} aria-label="Page précédente">
+        <IconButton
+          onClick={() => go(index - 1)}
+          disabled={index === 0}
+          aria-label={t('binders.page.previous')}
+        >
           <NavigateBeforeIcon />
         </IconButton>
         <Slider
@@ -739,13 +749,17 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
           onChange={(_, value) => go(value as number, false)}
           valueLabelDisplay="auto"
           valueLabelFormat={(value) => leafLabel(value)}
-          aria-label="Feuilleter le classeur"
+          aria-label={t('binders.page.browse')}
           sx={{ flex: 1 }}
         />
         <Typography variant="body2" color="text.secondary" sx={{ minWidth: 90, textAlign: 'right' }}>
           {index + 1} / {leaves.length}
         </Typography>
-        <IconButton onClick={() => go(index + 1)} disabled={index === last} aria-label="Page suivante">
+        <IconButton
+          onClick={() => go(index + 1)}
+          disabled={index === last}
+          aria-label={t('binders.page.next')}
+        >
           <NavigateNextIcon />
         </IconButton>
       </Stack>

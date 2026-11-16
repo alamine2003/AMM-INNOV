@@ -12,11 +12,12 @@ import {
 } from '@mui/material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { extractErrorMessage } from '@/api/client';
 import { useUploadDossier } from '@/api/hooks/useDossierImports';
 import { PageHeader } from '@/components/PageHeader';
 import { formatBytes } from '@/lib/download';
-import { CappedList, plural } from './CappedList';
+import { CappedList } from './CappedList';
 import { DossierHistory } from './DossierHistory';
 import { DossierImportReport } from './DossierImportReport';
 import {
@@ -46,6 +47,7 @@ function byReason(failed: Run['failed']) {
 }
 
 export default function DossierImportsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const picker = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FolderFile[]>([]);
@@ -75,7 +77,11 @@ export default function DossierImportsPage() {
     // Dossier pays : chaque produit est un import distinct, les limites s'appliquent par produit.
     setErrors(
       split.length
-        ? split.flatMap((group) => validateFolder(group.files).map((error) => `${group.name} : ${error}`))
+        ? split.flatMap((group) =>
+            validateFolder(group.files).map((error) =>
+              t('dossierImports.page.groupError', { group: group.name, error }),
+            ),
+          )
         : validateFolder(next),
     );
     setProgress(0);
@@ -114,10 +120,7 @@ export default function DossierImportsPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="Import de dossiers AMM"
-        subtitle="Déposez un dossier : chaque scan est rangé sur la bonne AMM. Seul ce qui demande votre intervention vous est montré."
-      />
+      <PageHeader title={t('dossierImports.page.title')} subtitle={t('dossierImports.page.subtitle')} />
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent sx={{ '&:last-child': { pb: 2 } }}>
           <Stack spacing={1.5}>
@@ -157,21 +160,21 @@ export default function DossierImportsPage() {
               <CreateNewFolderIcon color="primary" sx={{ fontSize: 32 }} />
               <Box sx={{ flex: '1 1 240px', minWidth: 0 }}>
                 <Typography variant="subtitle1" component="p">
-                  Glissez un dossier produit, pays ou gamme ici
+                  {t('dossierImports.page.dropTitle')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  PDF, JPEG, PNG · 25 Mo par fichier · 200 fichiers et 250 Mo par produit
+                  {t('dossierImports.page.limits')}
                 </Typography>
               </Box>
               <Button variant="outlined" disabled={busy} onClick={() => picker.current?.click()}>
-                Choisir un dossier
+                {t('dossierImports.page.chooseFolder')}
               </Button>
               <input
                 ref={picker}
                 type="file"
                 multiple
                 {...{ webkitdirectory: '', directory: '' }}
-                aria-label="Dossier AMM"
+                aria-label={t('dossierImports.page.inputAria')}
                 style={{ display: 'none' }}
                 onChange={(event) => {
                   if (event.target.files) select(filesFromPicker(event.target.files));
@@ -179,7 +182,7 @@ export default function DossierImportsPage() {
                 }}
               />
             </Box>
-            {reading && <LinearProgress aria-label="Lecture du dossier" />}
+            {reading && <LinearProgress aria-label={t('dossierImports.page.readingAria')} />}
 
             {files.length > 0 && !running && (
               <Box>
@@ -188,12 +191,13 @@ export default function DossierImportsPage() {
                     {folder}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" data-testid="selection-summary">
-                    {plural(files.length, 'fichier', 'fichiers')}
-                    {groups.length > 0 && ` · ${plural(groups.length, 'produit', 'produits')}`} ·{' '}
-                    {formatBytes(size)}
+                    {t('dossierImports.counts.files', { count: files.length })}
+                    {groups.length > 0 &&
+                      ` · ${t('dossierImports.counts.products', { count: groups.length })}`}{' '}
+                    · {formatBytes(size)}
                   </Typography>
                   <Button size="small" onClick={() => setShowFiles(!showFiles)}>
-                    {showFiles ? 'Masquer les fichiers' : 'Voir les fichiers'}
+                    {showFiles ? t('dossierImports.page.hideFiles') : t('dossierImports.page.showFiles')}
                   </Button>
                   <Box sx={{ flexGrow: 1 }} />
                   <Button
@@ -208,13 +212,15 @@ export default function DossierImportsPage() {
                           )
                     }
                   >
-                    {groups.length ? `Analyser les ${groups.length} produits` : 'Analyser le dossier'}
+                    {groups.length
+                      ? t('dossierImports.page.analyzeProducts', { count: groups.length })
+                      : t('dossierImports.page.analyzeDossier')}
                   </Button>
                 </Stack>
                 <Collapse in={showFiles} unmountOnExit>
                   <Box
                     component="ul"
-                    aria-label="Fichiers sélectionnés"
+                    aria-label={t('dossierImports.page.selectedFilesAria')}
                     sx={{ maxHeight: 180, overflow: 'auto', my: 1, pl: 3 }}
                   >
                     {files.map(({ path }, index) => (
@@ -236,7 +242,7 @@ export default function DossierImportsPage() {
             {errors.length > 0 && (
               <Alert severity="error">
                 <Typography variant="subtitle2">
-                  {plural(errors.length, 'point à corriger', 'points à corriger')} avant l’envoi
+                  {t('dossierImports.page.issues', { count: errors.length })}
                 </Typography>
                 <CappedList
                   items={errors}
@@ -252,12 +258,11 @@ export default function DossierImportsPage() {
                 sx={{ py: 0 }}
                 action={
                   <Button size="small" color="inherit" onClick={() => setShowIgnored(!showIgnored)}>
-                    {showIgnored ? 'Masquer' : 'Voir'}
+                    {showIgnored ? t('dossierImports.page.asideHide') : t('dossierImports.page.asideShow')}
                   </Button>
                 }
               >
-                {plural(ignored.length, 'fichier mis de côté', 'fichiers mis de côté')} (format non lu ou plus
-                de 25 Mo) ; le reste est envoyé.
+                {t('dossierImports.page.aside', { count: ignored.length })}
                 <Collapse in={showIgnored} unmountOnExit>
                   <CappedList items={ignored} limit={10} itemKey={(name) => name} render={(name) => name} />
                 </Collapse>
@@ -267,7 +272,7 @@ export default function DossierImportsPage() {
             {upload.isPending && !run && (
               <Box>
                 <LinearProgress variant="determinate" value={progress} />
-                <Typography variant="caption">Envoi des documents : {progress} %</Typography>
+                <Typography variant="caption">{t('dossierImports.page.uploading', { progress })}</Typography>
               </Box>
             )}
             {upload.isError && !run && <Alert severity="error">{extractErrorMessage(upload.error)}</Alert>}
@@ -290,17 +295,18 @@ export default function DossierImportsPage() {
 
 /** Une barre pendant l'envoi ; à la fin, une ligne de bilan et les échecs regroupés par motif. */
 function RunStatus({ run, running, onRetry }: { run: Run; running: boolean; onRetry: () => void }) {
+  const { t } = useTranslation();
   if (running) {
     return (
       <Box>
         <LinearProgress
           variant="determinate"
           value={Math.round((run.done / run.total) * 100)}
-          aria-label="Envoi des produits"
+          aria-label={t('dossierImports.page.sendingAria')}
         />
         <Typography variant="caption" color="text.secondary">
-          Envoi des produits : {run.done} / {run.total}
-          {run.failed.length > 0 && ` · ${run.failed.length} en échec`}
+          {t('dossierImports.page.sending', { done: run.done, total: run.total })}
+          {run.failed.length > 0 && t('dossierImports.page.sendingFailed', { count: run.failed.length })}
         </Typography>
       </Box>
     );
@@ -309,7 +315,7 @@ function RunStatus({ run, running, onRetry }: { run: Run; running: boolean; onRe
     <Stack spacing={1}>
       {run.created > 0 && (
         <Alert severity="success" sx={{ py: 0 }}>
-          {plural(run.created, 'produit envoyé', 'produits envoyés')} : le classement se poursuit tout seul.
+          {t('dossierImports.page.sent', { count: run.created })}
         </Alert>
       )}
       {run.failed.length > 0 && (
@@ -317,12 +323,12 @@ function RunStatus({ run, running, onRetry }: { run: Run; running: boolean; onRe
           severity="warning"
           action={
             <Button size="small" color="inherit" onClick={onRetry}>
-              Réessayer
+              {t('app.retry')}
             </Button>
           }
         >
           <Typography variant="subtitle2">
-            {plural(run.failed.length, 'produit non envoyé', 'produits non envoyés')}
+            {t('dossierImports.page.notSent', { count: run.failed.length })}
           </Typography>
           {byReason(run.failed).map(({ reason, names }) => (
             <Typography key={reason} variant="body2" title={names.join('\n')}>

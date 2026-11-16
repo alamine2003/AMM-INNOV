@@ -64,21 +64,24 @@ api.interceptors.response.use(
   },
 );
 
-export function extractErrorMessage(error: unknown, fallback = 'Une erreur est survenue'): string {
+export function extractErrorMessage(error: unknown, fallback = i18n.t('app.error')): string {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     // Messages DRF par défaut en anglais (« No X matches the given query. », « Not found. ») :
     // on parle français à l'utilisateur, et un 404 sur un objet hors périmètre reste un 404.
-    if (status === 404) return 'Élément introuvable ou hors de votre périmètre.';
+    if (status === 404) return i18n.t('apiMessages.notFound');
     // Fichier absent du stockage (lots déposés avant le stockage permanent) : pas une panne.
     if (status === 410) return i18n.t('errors.fileLost');
-    if (status !== undefined && status >= 500) return `Erreur serveur (${status}) — réessayez plus tard.`;
-    if (!error.response && error.request) return 'Serveur injoignable — vérifiez votre connexion.';
+    if (status !== undefined && status >= 500) return i18n.t('apiMessages.server', { status });
+    if (!error.response && error.request) return i18n.t('apiMessages.unreachable');
     const data = error.response?.data as Record<string, unknown> | string | undefined;
     // Réponse non JSON (page HTML 404/502 du proxy) : ne pas afficher « 0 : < ».
     if (typeof data === 'string') {
       return error.response?.status
-        ? `Erreur ${error.response.status} — ${error.response.statusText || fallback}`
+        ? i18n.t('apiMessages.http', {
+            status: error.response.status,
+            text: error.response.statusText || fallback,
+          })
         : fallback;
     }
     if (data) {

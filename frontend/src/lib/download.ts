@@ -1,3 +1,5 @@
+import i18n from '@/lib/i18n';
+
 export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -11,9 +13,9 @@ export function saveBlob(blob: Blob, filename: string) {
 
 export function formatBytes(bytes: number | null | undefined): string {
   if (!bytes && bytes !== 0) return '—';
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  if (bytes < 1024) return i18n.t('common.bytes.b', { value: bytes });
+  if (bytes < 1024 * 1024) return i18n.t('common.bytes.kb', { value: (bytes / 1024).toFixed(0) });
+  return i18n.t('common.bytes.mb', { value: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 export async function sha256Hex(file: File): Promise<string | null> {

@@ -236,7 +236,7 @@ export default function AlertRulesAdminPage() {
   // Supprimer : immédiat, à la corbeille, « Annuler » juste après (pas de question).
   const removeNow = (item: AlertRule) =>
     remove.mutate(item.id, {
-      onSuccess: (trashEntry) => notice(`Règle ${item.code} mise à la corbeille.`, trashEntry),
+      onSuccess: (trashEntry) => notice(t('adminPages.rules.trashed', { code: item.code }), trashEntry),
       onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
     });
   const columns: GridColDef<AlertRule>[] = [

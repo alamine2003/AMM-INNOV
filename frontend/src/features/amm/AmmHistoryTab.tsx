@@ -40,21 +40,28 @@ export function AmmHistoryTab({ ammId }: { ammId: string }) {
               variant="outlined"
             />
             {entry.source === 'DOSSIER_IMPORT' && (
-              <Chip size="small" label="Dossier réglementaire importé" color="info" variant="outlined" />
+              <Chip
+                size="small"
+                label={t('ammPages.history.dossierImported')}
+                color="info"
+                variant="outlined"
+              />
             )}
           </Typography>
           {entry.source === 'DOSSIER_IMPORT' && (
             <Box sx={{ my: 1 }}>
               <Typography variant="body2">
                 {entry.reason}
-                {entry.confidence !== undefined ? ` · Confiance : ${entry.confidence} %` : ''}
+                {entry.confidence !== undefined
+                  ? ` · ${t('ammPages.history.confidence', { value: entry.confidence })}`
+                  : ''}
               </Typography>
               {entry.batch_id && (
                 <MuiLink
                   component={Link}
                   to={`/dossier-imports/${entry.batch_id}${entry.proof_file_id ? `?file=${encodeURIComponent(entry.proof_file_id)}` : ''}`}
                 >
-                  Examiner l’import et le document de preuve
+                  {t('ammPages.history.reviewImport')}
                 </MuiLink>
               )}
             </Box>

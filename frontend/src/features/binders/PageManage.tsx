@@ -13,6 +13,7 @@ import { extractErrorMessage } from '@/api/client';
 import { usePageEdits } from '@/api/hooks/useBinders';
 import { useRestore } from '@/api/hooks/useTrash';
 import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
 import type { BinderDetail, BinderPage } from '@/api/types';
 
 /** Titre de la page : le nom de la présentation, changé partout dans AMM GH. */
@@ -27,6 +28,7 @@ export function RenamePageDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const edits = usePageEdits(binder.key, page.amm_id);
   const [name, setName] = useState(page.product_name);
   const save = () =>
@@ -38,21 +40,19 @@ export function RenamePageDialog({
     });
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="rename-page-dialog">
-      <DialogTitle>Modifier le titre de la page</DialogTitle>
+      <DialogTitle>{t('binders.rename.title')}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           fullWidth
-          label="Nom de la présentation"
+          label={t('binders.rename.label')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           sx={{ mt: 1 }}
           slotProps={{ htmlInput: { 'data-testid': 'rename-page-input' } }}
         />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-          Le nouveau titre s'applique partout dans AMM GH : fiche AMM, classeurs, tableaux de bord, et tous
-          les pays qui suivent cette présentation. L'ancien nom reste reconnu par les imports et la
-          synchronisation.
+          {t('binders.rename.help')}
         </Typography>
         {edits.rename.isError && (
           <Alert severity="error" sx={{ mt: 1.5 }}>
@@ -61,13 +61,13 @@ export function RenamePageDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={onClose}>{t('app.cancel')}</Button>
         <Button
           variant="contained"
           onClick={save}
           disabled={!name.trim() || name.trim() === page.product_name || edits.rename.isPending}
         >
-          Renommer
+          {t('binders.rename.submit')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -80,13 +80,14 @@ export function RenamePageDialog({
  * aussi la restaurer plus tard depuis la Corbeille.
  */
 export function useDeletePageNow(binder: BinderDetail, page: BinderPage) {
+  const { t } = useTranslation();
   const edits = usePageEdits(binder.key, page.amm_id);
   const restore = useRestore();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const run = () =>
     edits.remove.mutate(undefined, {
       onSuccess: ({ trashEntry }) => {
-        const key = enqueueSnackbar(`Page « ${page.product_name} » mise à la corbeille.`, {
+        const key = enqueueSnackbar(t('binders.rename.trashed', { name: page.product_name }), {
           variant: 'info',
           autoHideDuration: 10000,
           action: trashEntry ? (
@@ -97,12 +98,12 @@ export function useDeletePageNow(binder: BinderDetail, page: BinderPage) {
               onClick={() => {
                 closeSnackbar(key);
                 restore.mutate(trashEntry, {
-                  onSuccess: () => enqueueSnackbar('Page restaurée.', { variant: 'success' }),
+                  onSuccess: () => enqueueSnackbar(t('binders.rename.restored'), { variant: 'success' }),
                   onError: (error) => enqueueSnackbar(extractErrorMessage(error), { variant: 'error' }),
                 });
               }}
             >
-              Annuler
+              {t('app.cancel')}
             </Button>
           ) : undefined,
         });

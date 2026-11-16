@@ -19,6 +19,7 @@ import {
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useGhplSync, useGhplSyncFiles, useMergeGhplCopies, useRunGhplSync } from '@/api/hooks/useGhplSync';
@@ -34,29 +35,28 @@ const STATUS_COLOR: Record<string, 'success' | 'warning' | 'error' | 'default' |
   NOT_CONFIGURED: 'default',
 };
 
-const COUNTERS: { key: string; label: [string, string] }[] = [
-  { key: 'pieces', label: ['pièce suivie', 'pièces suivies'] },
-  { key: 'presentations_changed', label: ['présentation mise à jour', 'présentations mises à jour'] },
-  { key: 'downloaded', label: ['scan ajouté', 'scans ajoutés'] },
-  { key: 'adopted', label: ['déjà dans AMM GH', 'déjà dans AMM GH'] },
-  { key: 'moved', label: ['reclassé', 'reclassés'] },
-  { key: 'skipped', label: ['laissé de côté', 'laissés de côté'] },
-  { key: 'pending', label: ['en attente', 'en attente'] },
-  { key: 'copies_merged', label: ['fiche en double fusionnée', 'fiches en double fusionnées'] },
+// Les libellés (au singulier et au pluriel) sont dans `excelImports.sync.counters.<clé>` et
+// `excelImports.sync.files.<état>`, résolus au rendu pour suivre la langue.
+const COUNTERS = [
+  'pieces',
+  'presentations_changed',
+  'downloaded',
+  'adopted',
+  'moved',
+  'skipped',
+  'pending',
+  'copies_merged',
 ];
-
-const plural = (n: number, [one, many]: [string, string]) => `${n} ${n > 1 ? many : one}`;
 
 const FILE_STATES: {
   state: string;
-  label: [string, string];
   color: 'success' | 'info' | 'warning' | 'error' | 'default';
 }[] = [
-  { state: 'SYNCED', label: ['rangé', 'rangés'], color: 'success' },
-  { state: 'PENDING', label: ['à télécharger', 'à télécharger'], color: 'info' },
-  { state: 'SKIPPED', label: ['laissé de côté', 'laissés de côté'], color: 'warning' },
-  { state: 'REMOVED', label: ['retiré du classement', 'retirés du classement'], color: 'default' },
-  { state: 'ERROR', label: ['en erreur', 'en erreur'], color: 'error' },
+  { state: 'SYNCED', color: 'success' },
+  { state: 'PENDING', color: 'info' },
+  { state: 'SKIPPED', color: 'warning' },
+  { state: 'REMOVED', color: 'default' },
+  { state: 'ERROR', color: 'error' },
 ];
 
 function count(run: GhplSyncRun | null, key: string): number {
@@ -65,10 +65,11 @@ function count(run: GhplSyncRun | null, key: string): number {
 }
 
 function FilesList({ state }: { state: string }) {
+  const { t } = useTranslation();
   const files = useGhplSyncFiles(state);
   if (files.isLoading) return <CircularProgress size={18} />;
   const rows = files.data?.results ?? [];
-  if (!rows.length) return <Typography variant="body2">Aucun fichier.</Typography>;
+  if (!rows.length) return <Typography variant="body2">{t('excelImports.sync.noFiles')}</Typography>;
   return (
     <Table size="small" data-testid={`ghpl-files-${state}`}>
       <TableBody>
@@ -89,7 +90,7 @@ function FilesList({ state }: { state: string }) {
       </TableBody>
       {(files.data?.count ?? 0) > rows.length && (
         <caption style={{ captionSide: 'bottom', fontSize: 12 }}>
-          {rows.length} affichés sur {files.data?.count}
+          {t('excelImports.sync.shownOf', { shown: rows.length, total: files.data?.count })}
         </caption>
       )}
     </Table>
@@ -101,20 +102,27 @@ function FilesList({ state }: { state: string }) {
  * fusionnent dans la fiche du pays, sur demande ; les autres sont à vérifier.
  */
 function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
+  const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const merge = useMergeGhplCopies();
   const [confirming, setConfirming] = useState(false);
   const mergeable = copies.filter((c) => c.mergeable);
+  const mergeableLabel = t('excelImports.sync.copies', { count: mergeable.length });
   const send = (pairs: GhplSyncCopy[]) =>
     merge.mutate(
       pairs.map(({ copy, keep }) => ({ copy, keep })),
       {
         onSuccess: (result) => {
           setConfirming(false);
+          const merged = t('excelImports.sync.merged', { count: result.merged });
           enqueueSnackbar(
             result.refused.length
-              ? `${plural(result.merged, ['fiche fusionnée', 'fiches fusionnées'])}, ${result.refused.length} refusée(s) : ${result.refused[0].reason}`
-              : plural(result.merged, ['fiche fusionnée', 'fiches fusionnées']),
+              ? t('excelImports.sync.mergedWithRefused', {
+                  merged,
+                  refusedCount: result.refused.length,
+                  reason: result.refused[0].reason,
+                })
+              : merged,
             { variant: result.refused.length ? 'warning' : 'success' },
           );
         },
@@ -125,13 +133,13 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
     <Box sx={{ mt: 2 }} data-testid="ghpl-copies">
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5, flexWrap: 'wrap' }}>
         <Typography variant="subtitle2" sx={{ flex: 1 }}>
-          Fiches en double ({copies.length})
+          {t('excelImports.sync.duplicatesTitle', { count: copies.length })}
         </Typography>
         {mergeable.length > 0 &&
           (confirming ? (
             <>
               <Button size="small" onClick={() => setConfirming(false)} disabled={merge.isPending}>
-                Annuler
+                {t('app.cancel')}
               </Button>
               <Button
                 size="small"
@@ -141,7 +149,7 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
                 disabled={merge.isPending}
                 data-testid="ghpl-copies-confirm"
               >
-                Confirmer : fusionner {plural(mergeable.length, ['copie', 'copies'])}
+                {t('excelImports.sync.confirmMerge', { copies: mergeableLabel })}
               </Button>
             </>
           ) : (
@@ -151,13 +159,12 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
               onClick={() => setConfirming(true)}
               data-testid="ghpl-copies-merge"
             >
-              Fusionner {plural(mergeable.length, ['copie', 'copies'])}
+              {t('excelImports.sync.mergeCopies', { copies: mergeableLabel })}
             </Button>
           ))}
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: 12.5 }}>
-        La même présentation suivie sous deux libellés dans un pays (celui du pays et celui d'un autre pays).
-        Une simple copie n'a ni document ni rien de plus que la fiche du pays : la fusion ne perd rien.
+        {t('excelImports.sync.duplicatesHelp')}
       </Typography>
       <Box sx={{ maxHeight: 360, overflowY: 'auto' }}>
         <Table size="small" stickyHeader>
@@ -176,14 +183,14 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
                   {!entry.mergeable && (
                     <Typography component="span" sx={{ fontSize: 12, color: 'warning.main' }}>
                       {' '}
-                      — à vérifier : {entry.reason}
+                      {t('excelImports.sync.toCheck', { reason: entry.reason })}
                     </Typography>
                   )}
                 </TableCell>
                 <TableCell sx={{ width: 96, textAlign: 'right' }}>
                   {entry.mergeable && (
                     <Button size="small" onClick={() => send([entry])} disabled={merge.isPending}>
-                      Fusionner
+                      {t('excelImports.sync.merge')}
                     </Button>
                   )}
                 </TableCell>
@@ -201,6 +208,7 @@ function DuplicateRecords({ copies }: { copies: GhplSyncCopy[] }) {
  * ce qu'il a fait, ce qui demande une action, et « Synchroniser maintenant ».
  */
 export function GhplSyncCard() {
+  const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const sync = useGhplSync();
   const run = useRunGhplSync();
@@ -214,7 +222,7 @@ export function GhplSyncCard() {
   const copies = (report?.summary?.copies as GhplSyncCopy[] | undefined) ?? [];
   const launch = () =>
     run.mutate(undefined, {
-      onSuccess: () => enqueueSnackbar('Synchronisation lancée', { variant: 'info' }),
+      onSuccess: () => enqueueSnackbar(t('excelImports.sync.started'), { variant: 'info' }),
       onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
     });
 
@@ -229,11 +237,10 @@ export function GhplSyncCard() {
           <CloudDoneIcon color="primary" />
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
-              Synchronisation avec AMM GHPL
+              {t('excelImports.sync.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Chaque heure, AMM GH relit le registre du classement « {data.folder} » sur Nextcloud : nouvelles
-              AMM, renouvellements, scans ajoutés ou reclassés.
+              {t('excelImports.sync.description', { folder: data.folder })}
             </Typography>
           </Box>
           {last && (
@@ -251,15 +258,13 @@ export function GhplSyncCard() {
             disabled={data.running || run.isPending || !data.configured}
             data-testid="ghpl-sync-run"
           >
-            Synchroniser maintenant
+            {t('excelImports.sync.runNow')}
           </Button>
         </Stack>
 
         {!data.configured && (
           <Alert severity="info" sx={{ mb: 1.5 }}>
-            Synchronisation inactive : Nextcloud n'est pas encore relié. Dans Nextcloud, créez un mot de passe
-            d'application (Paramètres personnels &gt; Sécurité), puis collez-le dans Render (variable
-            NEXTCLOUD_APP_PASSWORD du service amm-innov-api).
+            {t('excelImports.sync.inactive')}
           </Alert>
         )}
         {last?.status === 'FAILED' && (
@@ -270,33 +275,40 @@ export function GhplSyncCard() {
 
         {last && (
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Dernier passage : {formatDateTime(last.started_at)}
+            {t('excelImports.sync.lastRun', { date: formatDateTime(last.started_at) })}
             {data.last_success?.registry_modified &&
-              ` · registre du classement modifié le ${formatDateTime(data.last_success.registry_modified)}`}
+              t('excelImports.sync.registryModified', {
+                date: formatDateTime(data.last_success.registry_modified),
+              })}
           </Typography>
         )}
 
         {report && (
           <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
-            {COUNTERS.filter(({ key }) => count(report, key) > 0).map(({ key, label }) => (
-              <Chip key={key} size="small" variant="outlined" label={plural(count(report, key), label)} />
+            {COUNTERS.filter((key) => count(report, key) > 0).map((key) => (
+              <Chip
+                key={key}
+                size="small"
+                variant="outlined"
+                label={t(`excelImports.sync.counters.${key}`, { count: count(report, key) })}
+              />
             ))}
             {report.scans_batch && (
               <Button size="small" component={Link} to={`/admin/imports/${report.scans_batch}`}>
-                Détail de l'import
+                {t('excelImports.sync.importDetail')}
               </Button>
             )}
           </Stack>
         )}
 
         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-          {FILE_STATES.filter(({ state }) => (data.files[state] ?? 0) > 0).map(({ state, label, color }) => (
+          {FILE_STATES.filter(({ state }) => (data.files[state] ?? 0) > 0).map(({ state, color }) => (
             <Chip
               key={state}
               size="small"
               color={color}
               variant={open === state ? 'filled' : 'outlined'}
-              label={plural(data.files[state] ?? 0, label)}
+              label={t(`excelImports.sync.files.${state}`, { count: data.files[state] ?? 0 })}
               onClick={() => setOpen(open === state ? null : state)}
               data-testid={`ghpl-files-chip-${state}`}
             />
@@ -311,7 +323,9 @@ export function GhplSyncCard() {
         {issues.length > 0 && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
-              À regarder ({String(report?.summary?.issues_total ?? issues.length)})
+              {t('excelImports.sync.toLookAt', {
+                total: String(report?.summary?.issues_total ?? issues.length),
+              })}
             </Typography>
             {issues.map((issue) => (
               <Typography key={issue.path} variant="body2" sx={{ fontSize: 12.5 }}>

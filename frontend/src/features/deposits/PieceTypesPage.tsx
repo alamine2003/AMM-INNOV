@@ -30,6 +30,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useCountries } from '@/api/hooks/useCatalog';
 import { useDeletePieceType, usePieceTypes, useSavePieceType } from '@/api/hooks/useDeposits';
 import type { PieceType } from '@/api/types';
@@ -44,34 +45,35 @@ type Draft = Partial<PieceType> & { label: string };
 function PieceDialog({ draft, onClose }: { draft: Draft | null; onClose: () => void }) {
   const save = useSavePieceType();
   const fail = useFail();
+  const { t } = useTranslation();
   const [value, setValue] = useState<Draft | null>(draft);
   if (!draft || !value) return null;
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         {value.id
-          ? 'Modifier la pièce'
+          ? t('deposits.pieceTypes.editTitle')
           : value.country
-            ? `Pièce propre au pays (${value.country})`
-            : 'Pièce de base'}
+            ? t('deposits.pieceTypes.countryTitle', { country: value.country })
+            : t('deposits.pieceTypes.baseTitle')}
       </DialogTitle>
       <DialogContent>
         <Stack gap={2} sx={{ mt: 1 }}>
           <TextField
             autoFocus
-            label="Pièce"
+            label={t('deposits.pieceTypes.piece')}
             value={value.label}
             onChange={(e) => setValue({ ...value, label: e.target.value })}
           />
           <TextField
-            label="Précision (facultatif)"
+            label={t('deposits.pieceTypes.details')}
             value={value.help_text ?? ''}
             onChange={(e) => setValue({ ...value, help_text: e.target.value })}
           />
           <Stack direction="row" gap={2} alignItems="center">
             <TextField
               type="number"
-              label="Ordre"
+              label={t('deposits.pieceTypes.order')}
               value={value.order ?? 100}
               onChange={(e) => setValue({ ...value, order: Number(e.target.value) })}
               sx={{ width: 120 }}
@@ -83,13 +85,13 @@ function PieceDialog({ draft, onClose }: { draft: Draft | null; onClose: () => v
                   onChange={(e) => setValue({ ...value, required: e.target.checked })}
                 />
               }
-              label="Obligatoire pour envoyer le dossier"
+              label={t('deposits.pieceTypes.requiredToSend')}
             />
           </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={onClose}>{t('app.cancel')}</Button>
         <Button
           variant="contained"
           disabled={!value.label.trim() || save.isPending}
@@ -107,7 +109,7 @@ function PieceDialog({ draft, onClose }: { draft: Draft | null; onClose: () => v
             )
           }
         >
-          Enregistrer
+          {t('app.save')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -121,6 +123,7 @@ export default function PieceTypesPage() {
   const remove = useDeletePieceType();
   const fail = useFail();
   const notice = useDeletedNotice();
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [country, setCountry] = useState('SN');
 
@@ -144,15 +147,19 @@ export default function PieceTypesPage() {
 
   const actions = (piece: PieceType) => (
     <>
-      <Tooltip title="Modifier">
-        <IconButton size="small" aria-label={`Modifier ${piece.label}`} onClick={() => setDraft(piece)}>
+      <Tooltip title={t('app.edit')}>
+        <IconButton
+          size="small"
+          aria-label={t('deposits.pieceTypes.editLabel', { label: piece.label })}
+          onClick={() => setDraft(piece)}
+        >
           <EditOutlinedIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Retirer (les dossiers déjà montés la gardent)">
+      <Tooltip title={t('deposits.pieceTypes.removeTooltip')}>
         <IconButton
           size="small"
-          aria-label={`Retirer ${piece.label}`}
+          aria-label={t('deposits.pieceTypes.removeLabel', { label: piece.label })}
           disabled={remove.isPending}
           onClick={() =>
             remove.mutate(piece.id, {
@@ -160,8 +167,8 @@ export default function PieceTypesPage() {
               onSuccess: (trashEntry) =>
                 notice(
                   trashEntry
-                    ? `Pièce « ${piece.label} » mise à la corbeille.`
-                    : `Pièce « ${piece.label} » retirée : les dossiers déjà montés la gardent.`,
+                    ? t('deposits.pieceTypes.trashed', { label: piece.label })
+                    : t('deposits.pieceTypes.removed', { label: piece.label }),
                   trashEntry,
                 ),
               onError: fail,
@@ -177,31 +184,28 @@ export default function PieceTypesPage() {
   return (
     <Box>
       <Button component={Link} to="/depots" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 1 }}>
-        Dépôts AMM
+        {t('nav.deposits')}
       </Button>
-      <PageHeader
-        title="Pièces demandées"
-        subtitle="Liste de base du dossier de renouvellement, puis ajustements par pays. Un dossier ne part au pays que lorsque ses pièces obligatoires sont jointes."
-      />
+      <PageHeader title={t('deposits.pieceTypes.title')} subtitle={t('deposits.pieceTypes.subtitle')} />
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardHeader
-          title="Liste de base (tous les pays)"
+          title={t('deposits.pieceTypes.baseList')}
           titleTypographyProps={{ variant: 'h6' }}
           action={
             <Button
               startIcon={<AddIcon />}
               onClick={() => setDraft({ label: '', required: true, order: 100 })}
             >
-              Ajouter une pièce
+              {t('deposits.pieceTypes.addPiece')}
             </Button>
           }
         />
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Pièce</TableCell>
-              <TableCell>Obligatoire</TableCell>
-              <TableCell>Pays qui ne la demandent pas</TableCell>
+              <TableCell>{t('deposits.pieceTypes.colPiece')}</TableCell>
+              <TableCell>{t('deposits.pieceTypes.colRequired')}</TableCell>
+              <TableCell>{t('deposits.pieceTypes.colExcluded')}</TableCell>
               <TableCell />
             </TableRow>
           </TableHead>
@@ -216,7 +220,7 @@ export default function PieceTypesPage() {
                     {piece.help_text}
                   </Typography>
                 </TableCell>
-                <TableCell>{piece.required ? 'Oui' : 'Facultative'}</TableCell>
+                <TableCell>{piece.required ? t('app.yes') : t('deposits.optionalCap')}</TableCell>
                 <TableCell>
                   <Stack direction="row" gap={0.5} flexWrap="wrap">
                     {piece.excluded_countries.map((iso2) => (
@@ -234,14 +238,14 @@ export default function PieceTypesPage() {
       </Card>
       <Card variant="outlined">
         <CardHeader
-          title="Ajustements par pays"
-          subheader="Décochez une pièce de base que ce pays ne demande pas ; ajoutez les pièces propres au pays."
+          title={t('deposits.pieceTypes.adjustTitle')}
+          subheader={t('deposits.pieceTypes.adjustSubheader')}
           titleTypographyProps={{ variant: 'h6' }}
           action={
             <TextField
               select
               size="small"
-              label="Pays"
+              label={t('deposits.pieceTypes.country')}
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               sx={{ minWidth: 200 }}
@@ -258,7 +262,7 @@ export default function PieceTypesPage() {
           <Stack direction="row" gap={1} alignItems="center" sx={{ mb: 1 }}>
             <Flag iso2={country} width={26} />
             <Typography variant="subtitle1" fontWeight={700}>
-              Dossier de renouvellement — {countryName}
+              {t('deposits.pieceTypes.renewalDossier', { country: countryName })}
             </Typography>
           </Stack>
           <Stack>
@@ -273,7 +277,7 @@ export default function PieceTypesPage() {
                   label={
                     <Typography variant="body2" color={asked ? undefined : 'text.disabled'}>
                       {piece.label}
-                      {!piece.required && ' (facultative)'}
+                      {!piece.required && ` ${t('deposits.optional')}`}
                     </Typography>
                   }
                 />
@@ -284,7 +288,7 @@ export default function PieceTypesPage() {
                 <Chip size="small" color="primary" label={country} />
                 <Typography variant="body2" sx={{ flexGrow: 1 }}>
                   {piece.label}
-                  {!piece.required && ' (facultative)'}
+                  {!piece.required && ` ${t('deposits.optional')}`}
                   {piece.help_text && (
                     <Typography component="span" variant="caption" color="text.secondary">
                       {' '}
@@ -301,7 +305,7 @@ export default function PieceTypesPage() {
             startIcon={<AddIcon />}
             onClick={() => setDraft({ label: '', required: true, order: 200, country })}
           >
-            Pièce propre à {countryName}
+            {t('deposits.pieceTypes.ownPiece', { country: countryName })}
           </Button>
         </CardContent>
       </Card>

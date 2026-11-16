@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Box, Button } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Liste courte par défaut : les `limit` premiers éléments, puis « Voir tout (N) » à la demande.
@@ -16,6 +17,7 @@ export function CappedList<T>({
   itemKey: (item: T, index: number) => string;
   limit?: number;
 }) {
+  const { t } = useTranslation();
   const [all, setAll] = useState(false);
   const shown = all ? items : items.slice(0, limit);
   return (
@@ -27,14 +29,11 @@ export function CappedList<T>({
       </Box>
       {items.length > limit && (
         <Button size="small" sx={{ mt: 0.5, px: 0.5 }} onClick={() => setAll(!all)}>
-          {all ? 'Réduire' : `Voir tout (${items.length})`}
+          {all
+            ? t('dossierImports.cappedList.collapse')
+            : t('dossierImports.cappedList.showAll', { count: items.length })}
         </Button>
       )}
     </>
   );
-}
-
-/** « 1 fiche créée », « 3 fiches créées ». */
-export function plural(count: number, one: string, many: string) {
-  return `${count} ${count > 1 ? many : one}`;
 }

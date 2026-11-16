@@ -24,6 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddDocumentForm, CancelRenewalForm, DocumentForm, PeriodForm } from './ChronologyForms';
 import {
   type Editing,
@@ -57,6 +58,7 @@ export function ChronologyDialog({
   /** Durée de validité du pays (années) : la fin d'une période corrigée en découle. */
   years?: number;
 }) {
+  const { t } = useTranslation();
   const [viewed, setViewed] = useState<BinderChronologyDocument | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const edits = useChronologyEdits(binderKey, page.amm_id);
@@ -83,8 +85,10 @@ export function ChronologyDialog({
       <DialogTitle sx={{ pb: 0.5 }}>
         {page.product_name}
         <Typography variant="body2" sx={{ color: MUTED }}>
-          Chronologie : de la décision la plus récente à l'AMM d'origine ·{' '}
-          {issues ? `${issues} manque${issues > 1 ? 's' : ''} à régler` : 'rien ne manque'}
+          {t('binders.chronology.subtitle')} ·{' '}
+          {issues
+            ? t('binders.chronology.issuesToFix', { count: issues })
+            : t('binders.chronology.nothingMissing')}
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
@@ -133,7 +137,9 @@ export function ChronologyDialog({
                   <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                     <Typography sx={{ fontWeight: 700, color }}>{entry.label}</Typography>
                     {entry.number && (
-                      <Typography sx={{ fontSize: 13, color: INK }}>n° {entry.number}</Typography>
+                      <Typography sx={{ fontSize: 13, color: INK }}>
+                        {t('binders.chronology.number', { number: entry.number })}
+                      </Typography>
                     )}
                     <Typography sx={{ fontSize: 13, color: MUTED }}>{period(entry)}</Typography>
                     {entry.kind === 'closed' && entry.workflow_label && (
@@ -144,30 +150,30 @@ export function ChronologyDialog({
                     )}
                     {canEdit && here !== null && (
                       <Box sx={{ ml: 'auto !important', display: 'flex' }}>
-                        <Tooltip title="Corriger le n° et les dates">
+                        <Tooltip title={t('binders.chronology.fixNumberDates')}>
                           <IconButton
                             size="small"
-                            aria-label={`Corriger ${entry.label}`}
+                            aria-label={t('binders.chronology.fixEntry', { label: entry.label })}
                             onClick={() => toggle({ type: 'period', period: here })}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Ajouter une pièce sur cette période">
+                        <Tooltip title={t('binders.chronology.addDocOnPeriod')}>
                           <IconButton
                             size="small"
-                            aria-label={`Ajouter une pièce — ${entry.label}`}
+                            aria-label={t('binders.chronology.addDocEntry', { label: entry.label })}
                             onClick={() => toggle({ type: 'add', period: here })}
                           >
                             <AddIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         {canRemove && entry.renewal_id && (
-                          <Tooltip title="Supprimer ce passage (il n'existe pas) : les scans restent">
+                          <Tooltip title={t('binders.chronology.deletePassageHint')}>
                             <IconButton
                               size="small"
                               color="error"
-                              aria-label={`Supprimer ${entry.label}`}
+                              aria-label={t('binders.chronology.deleteEntry', { label: entry.label })}
                               onClick={() => toggle({ type: 'cancel', period: entry.renewal_id! })}
                             >
                               <DeleteOutlineIcon fontSize="small" />
@@ -184,14 +190,16 @@ export function ChronologyDialog({
                           key={doc.document_id}
                           icon={<DescriptionIcon />}
                           color="primary"
-                          label={`Décision du ${formatDate(doc.document_date)}${
-                            doc.page_count ? ` · ${doc.page_count} p.` : ''
+                          label={`${t('binders.chronology.decisionDated', { date: formatDate(doc.document_date) })}${
+                            doc.page_count ? ` · ${t('binders.sheet.pagesShort', { n: doc.page_count })}` : ''
                           }`}
                           onClick={() => setViewed(doc)}
                           deleteIcon={
-                            <Tooltip title="Corriger la date, le type ou la période">
+                            <Tooltip title={t('binders.chronology.fixDocHint')}>
                               <EditIcon
-                                aria-label={`Corriger la décision du ${formatDate(doc.document_date)}`}
+                                aria-label={t('binders.chronology.fixDecision', {
+                                  date: formatDate(doc.document_date),
+                                })}
                               />
                             </Tooltip>
                           }
@@ -202,12 +210,18 @@ export function ChronologyDialog({
                         <Chip
                           key={doc.document_id}
                           variant="outlined"
-                          label={`${doc.kind_label} du ${formatDate(doc.document_date)}`}
+                          label={t('binders.chronology.docDated', {
+                            kind: doc.kind_label,
+                            date: formatDate(doc.document_date),
+                          })}
                           onClick={() => setViewed(doc)}
                           deleteIcon={
-                            <Tooltip title="Corriger la date, le type ou la période">
+                            <Tooltip title={t('binders.chronology.fixDocHint')}>
                               <EditIcon
-                                aria-label={`Corriger ${doc.kind_label} du ${formatDate(doc.document_date)}`}
+                                aria-label={t('binders.chronology.fixDoc', {
+                                  kind: doc.kind_label,
+                                  date: formatDate(doc.document_date),
+                                })}
                               />
                             </Tooltip>
                           }
@@ -242,8 +256,8 @@ export function ChronologyDialog({
                       }
                     >
                       {entry.ignored
-                        ? 'Ne plus ignorer ce trou'
-                        : "Ignorer : il n'y a pas eu de renouvellement sur cette période"}
+                        ? t('binders.chronology.unignoreGap')
+                        : t('binders.chronology.ignoreGap')}
                     </Button>
                   )}
                   {openHere?.type === 'period' && (
@@ -273,8 +287,7 @@ export function ChronologyDialog({
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'space-between' }}>
         <Typography variant="caption" sx={{ color: MUTED, pl: 1 }}>
-          ✎ corrige une période ou une pièce · + ajoute une pièce à la date saisie · un scan importé est lu
-          (n° et dates) puis rangé automatiquement.
+          {t('binders.chronology.legend')}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           {canEdit && (
@@ -282,7 +295,7 @@ export function ChronologyDialog({
               <ScanImportButton scanImport={scanImport} hasScan={page.decision_count > 0} />
             </Box>
           )}
-          <Button onClick={close}>Fermer</Button>
+          <Button onClick={close}>{t('app.close')}</Button>
         </Stack>
       </DialogActions>
       <PdfViewerDialog

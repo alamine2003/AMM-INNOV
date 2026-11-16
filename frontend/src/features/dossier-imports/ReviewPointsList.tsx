@@ -1,15 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { extractErrorMessage } from '@/api/client';
 import { fetchReviewPointFile, useResolveReviewPoint } from '@/api/hooks/useDossierImports';
 import type { DossierReviewPoint } from '@/api/types';
 import { formatDate } from '@/lib/dates';
 import { ScanViewer, type ScanToView } from './DossierFileViewer';
-
-const closedLabels: Record<string, string> = {
-  APPLIED: 'Valeur du scan appliquée',
-  IGNORED: 'Ignoré',
-};
 
 /**
  * « Points à vérifier plus tard » : écarts entre un scan et la fiche (la fiche a été gardée) et
@@ -25,16 +21,21 @@ export function ReviewPointsList({
   /** Fiche AMM : rappelle de quel dossier vient chaque point. */
   showBatch?: boolean;
 }) {
+  const { t } = useTranslation();
   const resolve = useResolveReviewPoint();
   const [viewing, setViewing] = useState<ScanToView | null>(null);
   const open = points.filter((point) => point.status === 'OPEN');
   if (!points.length) return null;
   return (
-    <Paper variant="outlined" sx={{ p: 3 }} component="section" aria-label="Points à vérifier plus tard">
-      <Typography variant="h6">Points à vérifier plus tard ({open.length})</Typography>
+    <Paper
+      variant="outlined"
+      sx={{ p: 3 }}
+      component="section"
+      aria-label={t('dossierImports.reviewPoints.ariaLabel')}
+    >
+      <Typography variant="h6">{t('dossierImports.reviewPoints.title', { count: open.length })}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Rien n’est bloqué : la valeur de la fiche a été gardée et les scans sont rangés. Vérifiez sur le scan
-        quand vous le pouvez.
+        {t('dossierImports.reviewPoints.intro')}
       </Typography>
       {resolve.isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -51,7 +52,10 @@ export function ReviewPointsList({
             <Typography variant="body2">{point.message}</Typography>
             {showBatch && (
               <Typography variant="caption" color="text.secondary" display="block">
-                Dossier « {point.batch_name} » · {formatDate(point.created_at)}
+                {t('dossierImports.reviewPoints.batch', {
+                  name: point.batch_name,
+                  date: formatDate(point.created_at),
+                })}
               </Typography>
             )}
             <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 0.5 }}>
@@ -61,13 +65,13 @@ export function ReviewPointsList({
                   onClick={() =>
                     setViewing({
                       id: point.id,
-                      name: point.proof_name ?? 'Scan',
+                      name: point.proof_name ?? t('dossierImports.reviewPoints.scanFallback'),
                       contentType: point.proof_content_type ?? 'application/pdf',
                       load: () => fetchReviewPointFile(point.id),
                     })
                   }
                 >
-                  Voir le scan
+                  {t('dossierImports.viewScan')}
                 </Button>
               )}
               {point.status === 'OPEN' && editable ? (
@@ -79,7 +83,7 @@ export function ReviewPointsList({
                       disabled={resolve.isPending}
                       onClick={() => resolve.mutate({ id: point.id, action: 'apply' })}
                     >
-                      Appliquer la valeur du scan
+                      {t('dossierImports.reviewPoints.apply')}
                     </Button>
                   )}
                   <Button
@@ -87,7 +91,7 @@ export function ReviewPointsList({
                     disabled={resolve.isPending}
                     onClick={() => resolve.mutate({ id: point.id, action: 'ignore' })}
                   >
-                    Ignorer
+                    {t('dossierImports.reviewPoints.ignore')}
                   </Button>
                 </>
               ) : (
@@ -95,7 +99,7 @@ export function ReviewPointsList({
                   <Chip
                     size="small"
                     variant="outlined"
-                    label={`${closedLabels[point.status]}${point.resolved_by_email ? ` · ${point.resolved_by_email}` : ''}`}
+                    label={`${t(`dossierImports.reviewPoints.closed.${point.status}`)}${point.resolved_by_email ? ` · ${point.resolved_by_email}` : ''}`}
                   />
                 )
               )}

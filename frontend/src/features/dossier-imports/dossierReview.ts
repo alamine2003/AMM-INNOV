@@ -4,41 +4,22 @@
  */
 import type { DossierImportBatch, DossierImportPreview, DossierImportTimelineStep } from '@/api/types';
 import { formatDate } from '@/lib/dates';
+import i18n from '@/lib/i18n';
 
-export const fieldLabels: Record<string, string> = {
-  original_number: 'N° d’AMM',
-  original_start_date: 'Date de délivrance',
-  original_end_date: 'Date d’échéance',
-  holder: 'Titulaire',
-  number: 'N° de renouvellement',
-  start_date: 'Date de début',
-  end_date: 'Date de fin',
-  decision_date: 'Date de décision',
-  workflow_status: 'État du renouvellement',
-};
+/** Libellé d'un champ de la fiche (la clé technique si le champ est inconnu). */
+export const fieldLabel = (field: string): string =>
+  i18n.t(`dossierImports.fields.${field}`, { defaultValue: field });
 
-const workflowLabels: Record<string, string> = {
-  PLANIFIE: 'Planifié',
-  EN_PREPARATION: 'En préparation',
-  DEPOSE: 'Déposé',
-  EN_INSTRUCTION: 'En instruction',
-  OBTENU: 'Obtenu',
-  REJETE: 'Rejeté',
-  ABANDONNE: 'Abandonné',
-};
-
-export const documentKindLabels: Record<string, string> = {
-  AMM: 'Décision',
-  RECEPISSE: 'Récépissé de dépôt',
-  COURRIER: 'Courrier de l’autorité',
-  AUTRE: 'Autre document',
-};
+/** Type d'une pièce du dossier (le code si le type est inconnu). */
+export const documentKindLabel = (kind: string): string =>
+  i18n.t(`dossierImports.documentKinds.${kind}`, { defaultValue: kind });
 
 /** Valeur lisible d'un champ (dates au format français, états traduits). */
 export function showValue(field: string, value: unknown): string {
-  if (value === null || value === undefined || value === '') return 'vide';
+  if (value === null || value === undefined || value === '') return i18n.t('dossierImports.values.empty');
   if (field.endsWith('date')) return formatDate(String(value));
-  if (field === 'workflow_status') return workflowLabels[String(value)] ?? String(value);
+  if (field === 'workflow_status')
+    return i18n.t(`workflow.${String(value)}`, { defaultValue: String(value) });
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
@@ -52,14 +33,16 @@ export function renewalTitle(
   key = '',
 ): string {
   const date = renewal?.start_date || renewal?.decision_date || isoInKey(key);
-  if (date) return `Renouvellement du ${formatDate(date)}`;
+  if (date) return i18n.t('dossierImports.renewalTitle.onDate', { date: formatDate(date) });
   const year = /(?:^|\D)((?:19|20)\d{2})(?:\D|$)/.exec(key)?.[1];
-  return year ? `Renouvellement de ${year}` : 'Renouvellement (date non lue)';
+  return year
+    ? i18n.t('dossierImports.renewalTitle.ofYear', { year })
+    : i18n.t('dossierImports.renewalTitle.unknown');
 }
 
 export function periodTitle(period: string, preview: DossierImportPreview): string {
-  if (period === 'original') return 'AMM d’origine';
-  if (period === 'unplaced') return 'Période non déterminée';
+  if (period === 'original') return i18n.t('dossierImports.period.original');
+  if (period === 'unplaced') return i18n.t('dossierImports.period.unplaced');
   return renewalTitle(preview.renewals.find((renewal) => renewal.key === period) ?? null, period);
 }
 
@@ -99,7 +82,7 @@ export function buildTimeline(preview: DossierImportPreview): {
   const origin: TimelineStep = {
     id: 'original',
     kind: 'original',
-    title: 'AMM d’origine',
+    title: i18n.t('dossierImports.period.original'),
     number: originProjected?.number || original.original_number || '',
     start: originProjected?.start_date ?? original.original_start_date ?? null,
     end: originProjected?.end_date ?? original.original_end_date ?? null,
@@ -153,15 +136,15 @@ export function batchState(batch: DossierImportBatch): { label: string; tone: Ba
   switch (batch.status) {
     case 'PENDING':
     case 'RUNNING':
-      return { label: 'Analyse en cours', tone: 'info' };
+      return { label: i18n.t('dossierImports.state.running'), tone: 'info' };
     case 'FAILED':
-      return { label: 'Échec', tone: 'error' };
+      return { label: i18n.t('dossierImports.state.failed'), tone: 'error' };
     case 'APPLIED':
-      return { label: 'Rangé', tone: 'success' };
+      return { label: i18n.t('dossierImports.state.filed'), tone: 'success' };
     case 'QUESTION':
-      return { label: 'Question', tone: 'warning' };
+      return { label: i18n.t('dossierImports.state.question'), tone: 'warning' };
     default:
-      return { label: 'À ranger', tone: 'default' };
+      return { label: i18n.t('dossierImports.state.toFile'), tone: 'default' };
   }
 }
 
@@ -170,21 +153,16 @@ export function stateSentence(batch: DossierImportBatch): string {
   switch (batch.status) {
     case 'PENDING':
     case 'RUNNING':
-      return 'Analyse en cours…';
+      return i18n.t('dossierImports.sentence.running');
     case 'FAILED':
-      return 'Échec de l’analyse';
+      return i18n.t('dossierImports.sentence.failed');
     case 'APPLIED':
-      return batch.auto_applied ? 'Rangé automatiquement' : 'Rangé';
+      return i18n.t(
+        batch.auto_applied ? 'dossierImports.sentence.filedAuto' : 'dossierImports.sentence.filed',
+      );
     case 'QUESTION':
-      return 'Question : c’est quelle AMM ?';
+      return i18n.t('dossierImports.sentence.question');
     default:
-      return 'Prêt à ranger';
+      return i18n.t('dossierImports.sentence.ready');
   }
 }
-
-export const ammStatusLabels: Record<string, string> = {
-  VALIDE: 'Valide',
-  A_RENOUVELER: 'À renouveler',
-  EXPIRE: 'Expirée',
-  INDETERMINE: 'Échéance inconnue',
-};

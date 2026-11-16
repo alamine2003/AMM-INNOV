@@ -4,6 +4,7 @@ import { formatDate, todayIso } from '@/lib/dates';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, FileButton, SCAN_ACCEPT, Section, useFail } from './sectionParts';
 
 /** Étape 6 : la décision. */
@@ -12,6 +13,7 @@ import { type Actions, FileButton, SCAN_ACCEPT, Section, useFail } from './secti
 
 export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [result, setResult] = useState<'OBTENU' | 'REJETE'>('OBTENU');
   const [form, setForm] = useState({ number: '', start_date: '', decision_date: todayIso(), note: '' });
   const [file, setFile] = useState<File | null>(null);
@@ -20,15 +22,18 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
   return (
     <Section
       index={6}
-      title="Décision"
+      title={t('deposits.decision.title')}
       subtitle={
         dossier.stage === 'OBTENU'
-          ? `Renouvellement obtenu : n° ${dossier.renewal.number} (décision du ${formatDate(dossier.renewal.decision_date)})`
+          ? t('deposits.decision.granted', {
+              number: dossier.renewal.number,
+              date: formatDate(dossier.renewal.decision_date),
+            })
           : dossier.stage === 'REJETE'
-            ? `Renouvellement rejeté le ${formatDate(dossier.renewal.decision_date)}`
+            ? t('deposits.decision.rejected', { date: formatDate(dossier.renewal.decision_date) })
             : dossier.stage === 'ABANDONNE'
-              ? 'Renouvellement abandonné.'
-              : 'La décision de l’agence clôt le dossier ; la fiche AMM est recalculée.'
+              ? t('deposits.decision.withdrawn')
+              : t('deposits.decision.pending')
       }
       state={decided ? 'done' : dossier.can.decide ? 'active' : 'todo'}
       testId="section-decision"
@@ -42,10 +47,10 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
             onChange={(_e, value) => value && setResult(value)}
           >
             <ToggleButton value="OBTENU" color="success">
-              Obtenu
+              {t('deposits.decision.optGranted')}
             </ToggleButton>
             <ToggleButton value="REJETE" color="error">
-              Rejeté
+              {t('deposits.decision.optRejected')}
             </ToggleButton>
           </ToggleButtonGroup>
           <Stack direction={{ xs: 'column', md: 'row' }} gap={1}>
@@ -53,14 +58,14 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
               <>
                 <TextField
                   size="small"
-                  label="N° du renouvellement"
+                  label={t('deposits.decision.renewalNumber')}
                   value={form.number}
                   onChange={(e) => setForm({ ...form, number: e.target.value })}
                 />
                 <DateInput
                   size="small"
                   fullWidth={false}
-                  label="Date de début"
+                  label={t('deposits.decision.startDate')}
                   value={form.start_date}
                   onChange={(value) => setForm({ ...form, start_date: value ?? '' })}
                 />
@@ -69,12 +74,12 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
             <DateInput
               size="small"
               fullWidth={false}
-              label="Date de la décision"
+              label={t('deposits.decision.decisionDate')}
               value={form.decision_date}
               onChange={(value) => setForm({ ...form, decision_date: value ?? '' })}
             />
             <FileButton
-              label={file ? file.name : 'Scan de la décision'}
+              label={file ? file.name : t('deposits.decision.scan')}
               accept={SCAN_ACCEPT}
               icon={<AttachFileIcon />}
               onFile={setFile}
@@ -84,7 +89,7 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
           {result === 'REJETE' && (
             <TextField
               size="small"
-              label="Motif"
+              label={t('deposits.decision.reason')}
               multiline
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
@@ -110,7 +115,7 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
                 )
               }
             >
-              {result === 'OBTENU' ? 'Enregistrer le renouvellement obtenu' : 'Enregistrer le rejet'}
+              {result === 'OBTENU' ? t('deposits.decision.saveGranted') : t('deposits.decision.saveRejected')}
             </Button>
           </Box>
         </Stack>

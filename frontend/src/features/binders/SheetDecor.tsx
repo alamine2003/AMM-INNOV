@@ -1,6 +1,7 @@
 import type { BinderPage } from '@/api/types';
 import { formatDate } from '@/lib/dates';
 import { Box, Link as MuiLink, Typography } from '@mui/material';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { MUTED } from './paper';
 
@@ -48,27 +49,31 @@ export function FoldedCorner() {
 
 /** D'où viennent les valeurs de la page : ligne du Dashboard AMM Afrique et dossier importé. */
 export function PageTrace({ page }: { page: BinderPage }) {
+  const { t } = useTranslation();
   const { excel, dossier } = page.trace;
   if (!excel && !dossier) return null;
   return (
     <Typography sx={{ fontSize: 11.5, color: MUTED, mt: 1 }} data-testid="page-trace">
       {excel && (
         <>
-          Dashboard AMM Afrique : feuille {excel.sheet}, ligne {excel.row} (
-          <MuiLink component={Link} to={`/imports/${excel.batch_id}`}>
-            import du {formatDate(excel.date)}
-          </MuiLink>
-          )
+          <Trans
+            i18nKey="binders.trace.excel"
+            values={{ sheet: excel.sheet, row: excel.row, date: formatDate(excel.date) }}
+            components={{ link: <MuiLink component={Link} to={`/imports/${excel.batch_id}`} /> }}
+          />
         </>
       )}
       {excel && dossier && ' · '}
       {dossier && (
         <>
-          Dossier importé le{' '}
-          <MuiLink component={Link} to={`/dossier-imports/${dossier.batch_id}`}>
-            {formatDate(dossier.date)}
-          </MuiLink>
-          {dossier.auto_applied ? ' (rangé automatiquement)' : ''}
+          <Trans
+            i18nKey="binders.trace.dossier"
+            values={{ date: formatDate(dossier.date) }}
+            components={{
+              link: <MuiLink component={Link} to={`/dossier-imports/${dossier.batch_id}`} />,
+            }}
+          />
+          {dossier.auto_applied ? ` ${t('binders.trace.autoFiled')}` : ''}
         </>
       )}
     </Typography>

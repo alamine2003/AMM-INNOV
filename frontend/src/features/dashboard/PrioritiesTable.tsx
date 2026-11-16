@@ -48,8 +48,10 @@ export function PrioritiesTable({ amms, showCountry = false }: { amms: Amm[]; sh
               </TableCell>
               <TableCell>{formatDate(a.effective_end_date)}</TableCell>
               <TableCell>{formatRemaining(a.effective_end_date)}</TableCell>
-              <TableCell>{filingDateText(a.ideal_filing_date, 'dépassé')}</TableCell>
-              <TableCell>{filingDateText(a.agency_filing_deadline, 'dépassée')}</TableCell>
+              <TableCell>{filingDateText(a.ideal_filing_date, t('ammPages.filing.passedMasc'))}</TableCell>
+              <TableCell>
+                {filingDateText(a.agency_filing_deadline, t('ammPages.filing.passedFem'))}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

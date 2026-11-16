@@ -1,5 +1,6 @@
 import { Button } from '@mui/material';
 import { useSnackbar } from 'notistack';
+import { useTranslation } from 'react-i18next';
 import { extractErrorMessage } from '@/api/client';
 import { useRestore } from '@/api/hooks/useTrash';
 import { useCan } from '@/features/auth/authStore';
@@ -10,6 +11,7 @@ import { useCan } from '@/features/auth/authStore';
  * ne montre jamais d'erreur : le serveur répond que c'est déjà fait.
  */
 export function useDeletedNotice() {
+  const { t } = useTranslation();
   const restore = useRestore();
   const canRestore = useCan('trash.restore');
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
@@ -26,12 +28,12 @@ export function useDeletedNotice() {
             onClick={() => {
               closeSnackbar(key);
               restore.mutate(trashEntry, {
-                onSuccess: () => enqueueSnackbar('Restauré.', { variant: 'success' }),
+                onSuccess: () => enqueueSnackbar(t('common.restored'), { variant: 'success' }),
                 onError: (error) => enqueueSnackbar(extractErrorMessage(error), { variant: 'error' }),
               });
             }}
           >
-            Annuler
+            {t('app.cancel')}
           </Button>
         ) : undefined,
     });

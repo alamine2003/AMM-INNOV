@@ -7,6 +7,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import SendIcon from '@mui/icons-material/Send';
 import { Button, Stack } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, FileButton, SCAN_ACCEPT, Section, useFail } from './sectionParts';
 
 /** Étape 4 : le dépôt à l'agence. */
@@ -15,11 +16,12 @@ import { type Actions, FileButton, SCAN_ACCEPT, Section, useFail } from './secti
 
 export function DepositSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [date, setDate] = useState(todayIso());
   const [file, setFile] = useState<File | null>(null);
   const deposited =
     !!dossier.renewal.filing_date && ['DEPOSE', 'COMMISSION', 'OBTENU', 'REJETE'].includes(dossier.stage);
-  const authority = dossier.amm.authority || 'l’agence de régulation';
+  const authority = dossier.amm.authority || t('deposits.defaultAuthority');
   const openAttestation = () => {
     if (!dossier.attestation) return;
     const { id, filename } = dossier.attestation;
@@ -30,18 +32,18 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
   return (
     <Section
       index={4}
-      title="Dépôt à l’agence"
+      title={t('deposits.submit.title')}
       subtitle={
         deposited
-          ? `Déposé à ${authority} le ${formatDate(dossier.renewal.filing_date)}`
-          : `Le pays dépose le dossier à ${authority}, puis envoie l’attestation de dépôt au siège.`
+          ? t('deposits.submit.done', { authority, date: formatDate(dossier.renewal.filing_date) })
+          : t('deposits.submit.pending', { authority })
       }
       state={deposited ? 'done' : dossier.sent_at ? 'active' : 'todo'}
       testId="section-deposit"
     >
       {deposited && dossier.attestation && (
         <Button size="small" startIcon={<AttachFileIcon />} onClick={openAttestation}>
-          Attestation de dépôt du {formatDate(dossier.attestation.document_date)}
+          {t('deposits.submit.receiptOf', { date: formatDate(dossier.attestation.document_date) })}
         </Button>
       )}
       {!deposited && dossier.can.deposit && (
@@ -49,13 +51,13 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
           <DateInput
             size="small"
             fullWidth={false}
-            label="Date de dépôt"
+            label={t('deposits.submit.date')}
             value={date}
             onChange={(value) => setDate(value ?? '')}
             maxDate={new Date()}
           />
           <FileButton
-            label={file ? file.name : 'Attestation de dépôt (PDF, photo)'}
+            label={file ? file.name : t('deposits.submit.receiptFile')}
             accept={SCAN_ACCEPT}
             icon={<AttachFileIcon />}
             onFile={setFile}
@@ -72,7 +74,7 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
               )
             }
           >
-            Envoyer l’attestation au siège
+            {t('deposits.submit.sendReceipt')}
           </Button>
         </Stack>
       )}

@@ -18,6 +18,7 @@ import { extractErrorMessage } from '@/api/client';
 import { useAudit, useAuditFilters, type AuditQuery } from '@/api/hooks/useAudit';
 import { useCountries } from '@/api/hooks/useCatalog';
 import type { AuditAction, AuditEvent } from '@/api/types';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/PageHeader';
 import { formatDate, formatDateTime } from '@/lib/dates';
 
@@ -34,6 +35,7 @@ const shown = (value: string | null) =>
   value === null ? '—' : /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDate(value) : value;
 
 function Detail({ event }: { event: AuditEvent }) {
+  const { t } = useTranslation();
   if (event.changes.length > 0) {
     return (
       <Stack gap={0.25}>
@@ -46,7 +48,7 @@ function Detail({ event }: { event: AuditEvent }) {
                 : {shown(change.old)} → {shown(change.new)}
               </>
             ) : (
-              ' modifié'
+              ` ${t('adminPages.audit.changed')}`
             )}
           </Typography>
         ))}
@@ -56,7 +58,7 @@ function Detail({ event }: { event: AuditEvent }) {
   const parts = [
     event.reason,
     event.action === 'deleted' && event.rows > 1
-      ? `avec ${event.rows - 1} élément${event.rows > 2 ? 's' : ''} lié${event.rows > 2 ? 's' : ''}`
+      ? t('adminPages.audit.linked', { count: event.rows - 1 })
       : '',
   ].filter(Boolean);
   return (
@@ -72,6 +74,7 @@ function Detail({ event }: { event: AuditEvent }) {
  * Rien n'est saisi pour l'audit : il relit l'historique et la corbeille.
  */
 export default function AuditPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState<AuditQuery>({});
   const [page, setPage] = useState(1);
   const audit = useAudit(query, page);
@@ -93,7 +96,7 @@ export default function AuditPage() {
       sx={{ minWidth: 170 }}
       inputProps={{ 'data-testid': `audit-filter-${name}` }}
     >
-      <MenuItem value="">Tous</MenuItem>
+      <MenuItem value="">{t('app.all')}</MenuItem>
       {options.map((option) => (
         <MenuItem key={option.value} value={option.value}>
           {option.label}
@@ -104,30 +107,27 @@ export default function AuditPage() {
 
   return (
     <>
-      <PageHeader
-        title="Audit et traçabilité"
-        subtitle="Qui a fait quoi, quand : créations, modifications, connexions, suppressions et restaurations."
-      />
+      <PageHeader title={t('adminPages.audit.title')} subtitle={t('adminPages.audit.subtitle')} />
       <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1.5} sx={{ mb: 2 }}>
         {select(
-          'Personne',
+          t('adminPages.audit.filters.person'),
           'user',
           (filters.data?.people ?? []).map((person) => ({
             value: person.id,
-            label: person.active ? person.name : `${person.name} (désactivé)`,
+            label: person.active ? person.name : t('adminPages.audit.deactivated', { name: person.name }),
           })),
         )}
-        {select('Action', 'action', filters.data?.actions ?? [])}
-        {select('Type', 'model', filters.data?.types ?? [])}
+        {select(t('adminPages.audit.filters.action'), 'action', filters.data?.actions ?? [])}
+        {select(t('adminPages.audit.filters.type'), 'model', filters.data?.types ?? [])}
         {select(
-          'Pays',
+          t('amm.columns.country'),
           'country',
           (countries.data ?? []).map((country) => ({ value: country.iso2, label: country.name })),
         )}
         <TextField
           size="small"
           type="date"
-          label="Du"
+          label={t('adminPages.audit.filters.from')}
           value={query.since ?? ''}
           onChange={(event) => update({ since: event.target.value })}
           InputLabelProps={{ shrink: true }}
@@ -135,7 +135,7 @@ export default function AuditPage() {
         <TextField
           size="small"
           type="date"
-          label="Au"
+          label={t('adminPages.audit.filters.to')}
           value={query.until ?? ''}
           onChange={(event) => update({ until: event.target.value })}
           InputLabelProps={{ shrink: true }}
@@ -145,12 +145,12 @@ export default function AuditPage() {
             size="small"
             onClick={() => update({ user: '', model: '', action: '', country: '', since: '', until: '' })}
           >
-            Effacer les filtres
+            {t('adminPages.audit.filters.clear')}
           </Button>
         )}
         {audit.data && (
           <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-            {audit.data.count} événement{audit.data.count > 1 ? 's' : ''}
+            {t('adminPages.audit.eventCount', { count: audit.data.count })}
           </Typography>
         )}
       </Stack>
@@ -159,13 +159,13 @@ export default function AuditPage() {
         <Table size="small" data-testid="audit-table">
           <TableHead>
             <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Par</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Élément</TableCell>
-              <TableCell>Pays</TableCell>
-              <TableCell>Détail</TableCell>
+              <TableCell>{t('app.date')}</TableCell>
+              <TableCell>{t('adminPages.audit.columns.by')}</TableCell>
+              <TableCell>{t('adminPages.audit.columns.action')}</TableCell>
+              <TableCell>{t('adminPages.audit.columns.type')}</TableCell>
+              <TableCell>{t('adminPages.audit.columns.item')}</TableCell>
+              <TableCell>{t('amm.columns.country')}</TableCell>
+              <TableCell>{t('adminPages.audit.columns.detail')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -173,7 +173,7 @@ export default function AuditPage() {
               <TableRow>
                 <TableCell colSpan={7}>
                   <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                    Aucun événement pour ces filtres.
+                    {t('adminPages.audit.empty')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -181,7 +181,7 @@ export default function AuditPage() {
             {rows.map((event) => (
               <TableRow key={event.id} hover sx={{ verticalAlign: 'top' }}>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(event.at)}</TableCell>
-                <TableCell>{event.user ?? 'Système'}</TableCell>
+                <TableCell>{event.user ?? t('adminPages.audit.system')}</TableCell>
                 <TableCell>
                   <Chip
                     size="small"
@@ -204,13 +204,13 @@ export default function AuditPage() {
       {audit.data && audit.data.pages > 1 && (
         <Stack direction="row" justifyContent="flex-end" alignItems="center" gap={1} sx={{ mt: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            Page {audit.data.page} / {audit.data.pages}
+            {t('adminPages.audit.page', { page: audit.data.page, pages: audit.data.pages })}
           </Typography>
           <Button size="small" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Précédent
+            {t('common.pagination.previous')}
           </Button>
           <Button size="small" disabled={page >= audit.data.pages} onClick={() => setPage(page + 1)}>
-            Suivant
+            {t('common.pagination.next')}
           </Button>
         </Stack>
       )}

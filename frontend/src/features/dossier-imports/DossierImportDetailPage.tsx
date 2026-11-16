@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link, useParams, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { extractErrorMessage } from '@/api/client';
 import { useAmms } from '@/api/hooks/useAmms';
 import {
@@ -53,14 +54,15 @@ import { FilingDates } from '@/components/FilingDates';
 import { DossierChip, StatusChip } from '@/components/chips';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDate, formatDateTime } from '@/lib/dates';
+import i18n from '@/lib/i18n';
 import { DossierFileViewer } from './DossierFileViewer';
 import { DossierImportSummaryCard } from './DossierImportSummaryCard';
 import { ReviewPointsList } from './ReviewPointsList';
 import {
   batchState,
   buildTimeline,
-  documentKindLabels,
-  fieldLabels,
+  documentKindLabel,
+  fieldLabel,
   humanize,
   periodTitle,
   showValue,
@@ -72,13 +74,14 @@ const fileName = (path: string) => path.split('/').at(-1) ?? path;
 const scanName = (doc: { path: string; pages?: [number, number] | null }) =>
   fileName(doc.path) +
   (doc.pages
-    ? ` (p. ${doc.pages[0] === doc.pages[1] ? doc.pages[0] : `${doc.pages[0]}-${doc.pages[1]}`})`
+    ? ` ${i18n.t('dossierImports.detail.pages', { pages: doc.pages[0] === doc.pages[1] ? doc.pages[0] : `${doc.pages[0]}-${doc.pages[1]}` })}`
     : '');
 const period = (start: string | null, end: string | null) =>
-  `${formatDate(start, 'date non lue')} → ${formatDate(end, 'date non lue')}`;
+  `${formatDate(start, i18n.t('dossierImports.detail.dateNotRead'))} → ${formatDate(end, i18n.t('dossierImports.detail.dateNotRead'))}`;
 
 /** La seule question que pose l'import : à quelle AMM ranger ces documents ? */
 function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
+  const { t } = useTranslation();
   const preview = batch.preview!;
   const question = preview.question;
   const user = useAuthStore((s) => s.user);
@@ -96,9 +99,14 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
   const results = amms.data?.results ?? [];
   const options = chosen && !results.some((amm) => amm.id === chosen.id) ? [chosen, ...results] : results;
   return (
-    <Paper variant="outlined" sx={{ p: 3 }} component="section" aria-label="Question">
+    <Paper
+      variant="outlined"
+      sx={{ p: 3 }}
+      component="section"
+      aria-label={t('dossierImports.detail.questionAria')}
+    >
       <Typography variant="h6" gutterBottom>
-        À quelle AMM ranger ces documents ?
+        {t('dossierImports.detail.questionTitle')}
       </Typography>
       {question && question.reasons.length > 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -114,7 +122,7 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
           filterOptions={(items) => items}
           isOptionEqualToValue={(a, b) => a.id === b.id}
           getOptionLabel={(amm) =>
-            `${amm.product_name} · ${amm.country_name}${amm.original_number ? ` · N° ${amm.original_number}` : ''}`
+            `${t('dossierImports.detail.optionLabel', { product: amm.product_name, country: amm.country_name })}${amm.original_number ? t('dossierImports.detail.optionNumber', { number: amm.original_number }) : ''}`
           }
           onChange={(_, value) => setChosen(value)}
           inputValue={input}
@@ -122,15 +130,15 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
             setInput(value);
             if (reason === 'input') setSearch(value);
           }}
-          noOptionsText="Aucune AMM trouvée dans votre périmètre"
+          noOptionsText={t('dossierImports.detail.noOptions')}
           renderInput={(params) => (
             <TextField
               {...params}
-              label="AMM (recherche par produit)"
+              label={t('dossierImports.detail.searchLabel')}
               helperText={
                 preview.amm.country_iso2
-                  ? `AMM du pays du dossier (${preview.amm.country_iso2}) dans votre périmètre`
-                  : 'AMM de votre périmètre'
+                  ? t('dossierImports.detail.helperCountry', { country: preview.amm.country_iso2 })
+                  : t('dossierImports.detail.helperScope')
               }
             />
           )}
@@ -141,7 +149,7 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
           disabled={!chosen || choose.isPending}
           onClick={() => chosen && choose.mutate(chosen.id)}
         >
-          Ranger les documents ici
+          {t('dossierImports.detail.fileHere')}
         </Button>
       </Stack>
       {choose.isError && (
@@ -152,11 +160,13 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
       {isGlobal && question?.can_create && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            L’AMM n’existe pas encore dans l’application ? Le siège peut la créer à partir de la décision
-            d’origine du dossier.
+            {t('dossierImports.detail.createIntro')}
           </Typography>
           <Button size="small" sx={{ mt: 1 }} onClick={() => setCreating(true)} disabled={confirm.isPending}>
-            Créer l’AMM « {preview.amm.product_name} » ({preview.amm.country_iso2}) depuis ce dossier
+            {t('dossierImports.detail.createButton', {
+              product: preview.amm.product_name,
+              country: preview.amm.country_iso2,
+            })}
           </Button>
           {confirm.isError && (
             <Alert severity="error" sx={{ mt: 1 }}>
@@ -165,8 +175,11 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
           )}
           <ConfirmDialog
             open={creating}
-            title="Créer cette AMM ?"
-            text={`Une nouvelle AMM « ${preview.amm.product_name} » (${preview.amm.country_iso2}) sera créée avec les informations lues sur la décision d’origine, puis les documents y seront rangés.`}
+            title={t('dossierImports.detail.createTitle')}
+            text={t('dossierImports.detail.createText', {
+              product: preview.amm.product_name,
+              country: preview.amm.country_iso2,
+            })}
             confirmColor="primary"
             loading={confirm.isPending}
             onClose={() => setCreating(false)}
@@ -183,6 +196,7 @@ function AmmQuestion({ batch }: { batch: DossierImportBatch }) {
 
 /** Statut, échéance et complétude de l'AMM après rangement (ou prévus avant). */
 function Result({ batch }: { batch: DossierImportBatch }) {
+  const { t } = useTranslation();
   const summary = hasSummary(batch.summary) ? batch.summary : null;
   const projection = batch.preview?.projection;
   const state = summary
@@ -203,26 +217,34 @@ function Result({ batch }: { batch: DossierImportBatch }) {
   if (!state) return null;
   const applied = batch.status === 'APPLIED';
   return (
-    <Paper variant="outlined" sx={{ p: 3 }} component="section" aria-label="Résultat">
+    <Paper
+      variant="outlined"
+      sx={{ p: 3 }}
+      component="section"
+      aria-label={t('dossierImports.detail.resultAria')}
+    >
       <Typography variant="h6" gutterBottom>
-        {applied ? 'Résultat' : 'Résultat une fois rangé'}
+        {applied ? t('dossierImports.detail.resultTitle') : t('dossierImports.detail.resultTitlePlanned')}
       </Typography>
       <Stack spacing={1}>
         <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-          <Typography>Statut :</Typography>
+          <Typography>{t('dossierImports.detail.statusLabel')}</Typography>
           <StatusChip value={state.status as AmmStatus} />
           <DossierChip value={state.dossier as DossierState} />
         </Stack>
         <Typography>
-          Échéance : <strong>{formatDate(state.end, 'non déterminée')}</strong>
+          {t('dossierImports.detail.expiryLabel')}{' '}
+          <strong>{formatDate(state.end, t('dossierImports.detail.expiryUnknown'))}</strong>
         </Typography>
         {projection && !applied && state.end && (
           <FilingDates ideal={projection.ideal_filing_date} agency={projection.agency_filing_deadline} />
         )}
         <Typography>
           {state.dossier === 'COMPLET'
-            ? 'Dossier complet : la décision en vigueur a son scan.'
-            : `Dossier incomplet : il manque le ${state.missing ?? 'scan de la décision en vigueur'}.`}
+            ? t('dossierImports.detail.dossierComplete')
+            : t('dossierImports.detail.dossierIncomplete', {
+                scan: state.missing ?? t('dossierImports.detail.missingDefault'),
+              })}
         </Typography>
       </Stack>
     </Paper>
@@ -230,6 +252,7 @@ function Result({ batch }: { batch: DossierImportBatch }) {
 }
 
 function BatchContent({ batch }: { batch: DossierImportBatch }) {
+  const { t } = useTranslation();
   const preview = batch.preview;
   const [search] = useSearchParams();
   const [viewing, setViewing] = useState<DossierImportFile | null>(
@@ -261,7 +284,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
           <Typography variant="body1" sx={{ mt: 1 }}>
             {ammId ? (
               <MuiLink component={Link} to={`/amms/${ammId}`}>
-                {preview.amm.product_name || 'AMM'}
+                {preview.amm.product_name || t('dossierImports.detail.ma')}
               </MuiLink>
             ) : (
               preview.amm.product_name
@@ -271,8 +294,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
         )}
         {applied && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Chaque scan est rangé à sa période ; aucune valeur déjà enregistrée n’a été remplacée. Le siège et
-            le réglementaire du pays ont été notifiés.
+            {t('dossierImports.detail.appliedNote')}
           </Typography>
         )}
         {batch.status === 'READY' && (
@@ -285,7 +307,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                 disabled={analyze.isPending}
                 onClick={() => analyze.mutate({})}
               >
-                Relire et ranger
+                {t('dossierImports.detail.rereadAndFile')}
               </Button>
             ) : (
               <Button
@@ -294,20 +316,22 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                 disabled={confirm.isPending || !batch.preview_token}
                 onClick={() => confirm.mutate({ preview_token: batch.preview_token })}
               >
-                {confirm.isPending ? 'Rangement…' : 'Ranger les documents'}
+                {confirm.isPending
+                  ? t('dossierImports.detail.filing')
+                  : t('dossierImports.detail.fileDocuments')}
               </Button>
             )}
             <Typography variant="body2" color="text.secondary">
               {legacy
-                ? 'Ce dossier a été lu avant le rangement automatique.'
-                : batch.status_reason || 'L’AMM est identifiée ; le rangement automatique n’a pas eu lieu.'}
+                ? t('dossierImports.detail.legacyNote')
+                : batch.status_reason || t('dossierImports.detail.identifiedNoFiling')}
             </Typography>
           </Stack>
         )}
         {confirm.isError && !question && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {axiosStatus(confirm.error) === 409
-              ? 'Les informations ont changé depuis la lecture : relancez l’analyse.'
+              ? t('dossierImports.detail.conflict')
               : extractErrorMessage(confirm.error)}
           </Alert>
         )}
@@ -318,11 +342,11 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
           severity="error"
           action={
             <Button color="inherit" disabled={analyze.isPending} onClick={() => analyze.mutate({})}>
-              Relancer l’analyse
+              {t('dossierImports.detail.rerun')}
             </Button>
           }
         >
-          {batch.error || 'L’analyse a échoué. Relancez-la pour réutiliser les documents déjà envoyés.'}
+          {batch.error || t('dossierImports.detail.failedFallback')}
         </Alert>
       )}
 
@@ -331,10 +355,15 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
       {preview && !question && (
         <Box>
           <Typography variant="h6" gutterBottom>
-            Origine et renouvellements
+            {t('dossierImports.detail.timelineTitle')}
           </Typography>
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Stepper orientation="vertical" nonLinear activeStep={-1} aria-label="Chronologie de l’AMM">
+            <Stepper
+              orientation="vertical"
+              nonLinear
+              activeStep={-1}
+              aria-label={t('dossierImports.detail.timelineAria')}
+            >
               {steps.map((step, index) => (
                 <Step key={step.id} active expanded completed={false} data-testid={`step-${index + 1}`}>
                   <StepLabel icon={index + 1}>
@@ -348,21 +377,34 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                           size="small"
                           color="primary"
                           variant="outlined"
-                          label={applied ? 'Ajouté par ce dossier' : 'Sera ajouté'}
+                          label={
+                            applied
+                              ? t('dossierImports.detail.addedByThis')
+                              : t('dossierImports.detail.willBeAdded')
+                          }
                         />
                       )}
                       {step.inForce && (
-                        <Chip size="small" color="success" variant="outlined" label="En vigueur" />
+                        <Chip
+                          size="small"
+                          color="success"
+                          variant="outlined"
+                          label={t('dossierImports.detail.inForce')}
+                        />
                       )}
                     </Stack>
                   </StepLabel>
                   <StepContent>
                     <Stack spacing={1}>
-                      {step.number && <Typography variant="body2">N° {step.number}</Typography>}
+                      {step.number && (
+                        <Typography variant="body2">
+                          {t('dossierImports.detail.numberLine', { number: step.number })}
+                        </Typography>
+                      )}
                       {step.scans.map((doc) => (
                         <Stack key={doc.file_id} direction="row" alignItems="center" gap={1} flexWrap="wrap">
                           <Button size="small" variant="outlined" onClick={() => view(doc.file_id)}>
-                            Voir le scan
+                            {t('dossierImports.viewScan')}
                           </Button>
                           <Typography
                             variant="caption"
@@ -370,15 +412,15 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                             sx={{ overflowWrap: 'anywhere' }}
                           >
                             {scanName(doc)}
-                            {doc.duplicate_id ? ' · déjà dans la fiche' : ''}
+                            {doc.duplicate_id ? ` · ${t('dossierImports.detail.alreadyInRecord')}` : ''}
                           </Typography>
                         </Stack>
                       ))}
                       {!step.scans.length && (
                         <Typography variant="caption" color="text.secondary">
                           {step.inDossier
-                            ? 'Aucun scan de la décision dans ce dossier.'
-                            : 'Déjà enregistré dans la fiche ; aucun document de ce dossier ne le concerne.'}
+                            ? t('dossierImports.detail.noDecisionScan')
+                            : t('dossierImports.detail.alreadyRecorded')}
                         </Typography>
                       )}
                     </Stack>
@@ -396,10 +438,17 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
         <ReviewPointsList points={batch.review_points} editable={editable} />
       )}
       {batch.status === 'READY' && planned.length > 0 && (
-        <Paper variant="outlined" sx={{ p: 3 }} component="section" aria-label="Points à vérifier plus tard">
-          <Typography variant="h6">Points à vérifier plus tard ({planned.length})</Typography>
+        <Paper
+          variant="outlined"
+          sx={{ p: 3 }}
+          component="section"
+          aria-label={t('dossierImports.reviewPoints.ariaLabel')}
+        >
+          <Typography variant="h6">
+            {t('dossierImports.reviewPoints.title', { count: planned.length })}
+          </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Ils seront notés sur la fiche AMM au rangement ; la valeur de la fiche est gardée.
+            {t('dossierImports.detail.plannedNote')}
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2 }}>
             {planned.map((point, index) => (
@@ -414,21 +463,23 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
       {preview && !question && otherDocuments.length > 0 && (
         <Accordion variant="outlined" disableGutters>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Autres documents ({otherDocuments.length})</Typography>
+            <Typography>
+              {t('dossierImports.detail.otherDocuments', { count: otherDocuments.length })}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={1}>
               {otherDocuments.map((doc) => (
                 <Stack key={doc.file_id} direction="row" alignItems="center" gap={1} flexWrap="wrap">
                   <Button size="small" onClick={() => view(doc.file_id)}>
-                    Voir le scan
+                    {t('dossierImports.viewScan')}
                   </Button>
                   <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
                     {scanName(doc)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {documentKindLabels[doc.kind] ?? doc.kind} · {periodTitle(doc.period, preview)}
-                    {doc.duplicate_id ? ' · déjà dans la fiche' : ''}
+                    {documentKindLabel(doc.kind)} · {periodTitle(doc.period, preview)}
+                    {doc.duplicate_id ? ` · ${t('dossierImports.detail.alreadyInRecord')}` : ''}
                   </Typography>
                 </Stack>
               ))}
@@ -439,27 +490,26 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
 
       <Accordion variant="outlined" disableGutters>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Détails de la lecture</Typography>
+          <Typography>{t('dossierImports.detail.readingDetails')}</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Stack spacing={2}>
             {preview && (
               <Typography variant="body2" color="text.secondary">
-                Fiabilité de la lecture : {preview.confidence} % (information seulement : elle ne bloque
-                rien).
+                {t('dossierImports.detail.confidence', { confidence: preview.confidence })}
               </Typography>
             )}
             {preview?.ignored && preview.ignored.length > 0 && (
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Documents communs du dossier pays laissés de côté (ils ne concernent pas ce produit) :
+                  {t('dossierImports.detail.ignoredDocs')}
                 </Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2 }}>
                   {preview.ignored.map((item) => (
                     <li key={item.file_id}>
                       <Typography variant="caption">{fileName(item.path)}</Typography>
                       <Button size="small" onClick={() => view(item.file_id)}>
-                        Voir le scan
+                        {t('dossierImports.viewScan')}
                       </Button>
                     </li>
                   ))}
@@ -478,23 +528,25 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
             {hasSummary(batch.summary) && <DossierImportSummaryCard summary={batch.summary} />}
             {batch.audit.length > 0 && (
               <TableContainer>
-                <Table size="small" aria-label="Traçabilité des modifications">
+                <Table size="small" aria-label={t('dossierImports.detail.auditAria')}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Information</TableCell>
-                      <TableCell>Avant</TableCell>
-                      <TableCell>Après</TableCell>
-                      <TableCell>Par</TableCell>
-                      <TableCell>Preuve</TableCell>
+                      <TableCell>{t('dossierImports.columns.information')}</TableCell>
+                      <TableCell>{t('dossierImports.columns.before')}</TableCell>
+                      <TableCell>{t('dossierImports.columns.after')}</TableCell>
+                      <TableCell>{t('dossierImports.columns.by')}</TableCell>
+                      <TableCell>{t('dossierImports.columns.proof')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {batch.audit.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell>
-                          {fieldLabels[entry.field] ?? entry.field}
+                          {fieldLabel(entry.field)}
                           <Typography variant="caption" display="block">
-                            {entry.target === 'amm' ? 'AMM d’origine' : 'Renouvellement'}
+                            {entry.target === 'amm'
+                              ? t('dossierImports.period.original')
+                              : t('dossierImports.detail.renewal')}
                           </Typography>
                         </TableCell>
                         <TableCell sx={{ overflowWrap: 'anywhere' }}>
@@ -511,7 +563,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
                         </TableCell>
                         <TableCell>
                           <Button size="small" onClick={() => view(entry.proof_file_id)}>
-                            Voir le scan
+                            {t('dossierImports.viewScan')}
                           </Button>
                           <Typography variant="caption" display="block">
                             {entry.reason}
@@ -526,7 +578,7 @@ function BatchContent({ batch }: { batch: DossierImportBatch }) {
             {!applied && batch.status !== 'FAILED' && (
               <Box>
                 <Button variant="outlined" disabled={analyze.isPending} onClick={() => analyze.mutate({})}>
-                  Relancer l’analyse
+                  {t('dossierImports.detail.rerun')}
                 </Button>
               </Box>
             )}
@@ -544,6 +596,7 @@ function axiosStatus(error: unknown): number | undefined {
 }
 
 export default function DossierImportDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const query = useDossierImport(id);
   if (query.isPending) return <LoadingBlock />;
@@ -555,13 +608,13 @@ export default function DossierImportDetailPage() {
     <Box>
       <PageHeader
         title={batch.root_name}
-        subtitle={`Import du ${formatDateTime(batch.created_at)}`}
+        subtitle={t('dossierImports.detail.subtitle', { date: formatDateTime(batch.created_at) })}
         actions={
           <>
             <Chip label={state.label} color={state.tone} />
             {batch.status === 'APPLIED' && <BinderLink ammId={batch.amm_id} />}
             <Button component={Link} to="/dossier-imports">
-              Tous les imports de dossiers
+              {t('dossierImports.detail.allImports')}
             </Button>
           </>
         }
@@ -569,9 +622,8 @@ export default function DossierImportDetailPage() {
       {running ? (
         <Stack spacing={2}>
           <Alert severity="info">
-            <AlertTitle>Analyse en cours…</AlertTitle>
-            Lecture des scans et recherche de l’AMM. Dès que l’AMM est identifiée, les documents sont rangés
-            automatiquement. Cette page se met à jour toute seule.
+            <AlertTitle>{t('dossierImports.sentence.running')}</AlertTitle>
+            {t('dossierImports.detail.runningBody')}
           </Alert>
           <LinearProgress />
         </Stack>

@@ -87,11 +87,11 @@ function RenewalCard({
             </Typography>
           )}
           {editable && (
-            <Tooltip title="Corriger le n° ou les dates">
+            <Tooltip title={t('renewalsPages.tab.editTooltip')}>
               <IconButton
                 size="small"
                 onClick={() => onEdit(renewal)}
-                aria-label={`Corriger le renouvellement ${renewal.sequence}`}
+                aria-label={t('renewalsPages.tab.editAria', { n: renewal.sequence })}
                 data-testid={`renewal-edit-${renewal.sequence}`}
               >
                 <EditIcon fontSize="small" />

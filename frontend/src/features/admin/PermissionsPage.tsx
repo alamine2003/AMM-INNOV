@@ -17,6 +17,7 @@ import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { usePermissions, useSavePermissions } from '@/api/hooks/usePermissions';
 import type { PermissionGrant, PermissionMatrix } from '@/api/types';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/PageHeader';
 
 type Draft = Record<string, boolean>;
@@ -39,6 +40,7 @@ function groups(matrix: PermissionMatrix) {
  * ne se règle pas ici.
  */
 export default function PermissionsPage() {
+  const { t } = useTranslation();
   const permissions = usePermissions();
   const save = useSavePermissions();
   const { enqueueSnackbar } = useSnackbar();
@@ -76,9 +78,7 @@ export default function PermissionsPage() {
     save.mutate(changes, {
       onSuccess: () => {
         setDraft({});
-        enqueueSnackbar('Permissions enregistrées. Elles s’appliquent dès la prochaine action de chacun.', {
-          variant: 'success',
-        });
+        enqueueSnackbar(t('adminPages.permissions.saved'), { variant: 'success' });
       },
       onError: (error) => enqueueSnackbar(extractErrorMessage(error), { variant: 'error' }),
     });
@@ -86,19 +86,19 @@ export default function PermissionsPage() {
   return (
     <>
       <PageHeader
-        title="Permissions"
-        subtitle="Cochez ce que chaque rôle peut faire. Le CEO garde toujours tous les droits ; chaque changement est tracé dans l’audit."
+        title={t('nav.permissions')}
+        subtitle={t('adminPages.permissions.subtitle')}
         actions={
           <Stack direction="row" gap={1}>
             <Button size="small" onClick={restoreDefaults} disabled={!matrix || save.isPending}>
-              Réglages par défaut
+              {t('adminPages.permissions.defaults')}
             </Button>
             <Button
               size="small"
               onClick={() => setDraft({})}
               disabled={changes.length === 0 || save.isPending}
             >
-              Annuler
+              {t('app.cancel')}
             </Button>
             <Button
               variant="contained"
@@ -107,7 +107,8 @@ export default function PermissionsPage() {
               disabled={changes.length === 0 || save.isPending}
               data-testid="save-permissions"
             >
-              Enregistrer{changes.length > 0 ? ` (${changes.length})` : ''}
+              {t('app.save')}
+              {changes.length > 0 ? ` (${changes.length})` : ''}
             </Button>
           </Stack>
         }
@@ -118,7 +119,7 @@ export default function PermissionsPage() {
           <Table size="small" data-testid="permissions-table">
             <TableHead>
               <TableRow>
-                <TableCell>Action</TableCell>
+                <TableCell>{t('adminPages.permissions.action')}</TableCell>
                 {matrix.roles.map((role) => (
                   <TableCell key={role.value} align="center" sx={{ whiteSpace: 'nowrap' }}>
                     {role.label}
@@ -140,8 +141,7 @@ export default function PermissionsPage() {
                         {item.label}
                         {item.locked && (
                           <Typography component="span" variant="caption" color="text.secondary">
-                            {' '}
-                            · réservé au CEO
+                            {` · ${t('adminPages.permissions.ceoOnly')}`}
                           </Typography>
                         )}
                       </TableCell>
@@ -173,7 +173,11 @@ export default function PermissionsPage() {
                           <TableCell key={role.value} align="center">
                             {fixed ? (
                               <Tooltip
-                                title={role.editable ? 'Ne se règle pas' : 'Le CEO garde tous les droits'}
+                                title={
+                                  role.editable
+                                    ? t('adminPages.permissions.fixed')
+                                    : t('adminPages.permissions.ceoKeepsAll')
+                                }
                               >
                                 <span>{box}</span>
                               </Tooltip>

@@ -125,13 +125,13 @@ export default function AmmListPage() {
             {p.row.product_name}
           </MuiLink>
           {!!p.row.open_review_points && (
-            <Tooltip title="Points à vérifier plus tard (import de dossiers)">
+            <Tooltip title={t('ammPages.list.reviewPointsTooltip')}>
               <Chip
                 size="small"
                 color="warning"
                 variant="outlined"
                 label={p.row.open_review_points}
-                aria-label={`${p.row.open_review_points} point(s) à vérifier`}
+                aria-label={t('ammPages.list.reviewPointsAria', { count: p.row.open_review_points })}
                 sx={{ ml: 1 }}
                 data-testid="review-points-badge"
               />
@@ -179,13 +179,13 @@ export default function AmmListPage() {
       field: 'ideal_filing_date',
       headerName: t('amm.columns.idealFiling'),
       width: 150,
-      valueFormatter: (value: string | null) => filingDateText(value, 'dépassé'),
+      valueFormatter: (value: string | null) => filingDateText(value, t('ammPages.filing.passedMasc')),
     },
     {
       field: 'agency_filing_deadline',
       headerName: t('amm.columns.agencyDeadline'),
       width: 150,
-      valueFormatter: (value: string | null) => filingDateText(value, 'dépassée'),
+      valueFormatter: (value: string | null) => filingDateText(value, t('ammPages.filing.passedFem')),
     },
     {
       // Complétude : déduite du scan de la décision actuelle, jamais saisie (règles 5 et 6).

@@ -97,7 +97,7 @@ export default function RangesAdminPage() {
   // Supprimer : immédiat, à la corbeille, « Annuler » juste après (pas de question).
   const removeNow = (item: ProductRange) =>
     remove.mutate(item.id, {
-      onSuccess: (trashEntry) => notice(`Gamme « ${item.label} » mise à la corbeille.`, trashEntry),
+      onSuccess: (trashEntry) => notice(t('adminPages.ranges.trashed', { label: item.label }), trashEntry),
       onError: (e) => enqueueSnackbar(extractErrorMessage(e), { variant: 'error' }),
     });
   const columns: GridColDef<ProductRange>[] = [

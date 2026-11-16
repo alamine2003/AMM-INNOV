@@ -59,7 +59,7 @@ export function EditDocumentDialog({
       { documentId: document.id, ...payload },
       {
         onSuccess: () => {
-          enqueueSnackbar('Classement du scan corrigé', { variant: 'success' });
+          enqueueSnackbar(t('documentsPages.edit.saved'), { variant: 'success' });
           onClose();
         },
       },
@@ -68,34 +68,39 @@ export function EditDocumentDialog({
   const sorted = [...renewals].sort((a, b) => b.sequence - a.sequence);
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="edit-document-dialog">
-      <DialogTitle>Corriger le classement du scan</DialogTitle>
+      <DialogTitle>{t('documentsPages.edit.title')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Le fichier ne change pas. L'état du dossier, la fiche et les classeurs sont mis à jour.
+          {t('documentsPages.edit.hint')}
         </Typography>
         <Stack spacing={2}>
           <TextField
             select
-            label="Période"
+            label={t('documentsPages.edit.period')}
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             data-testid="edit-document-period"
           >
             {sorted.map((r) => (
               <MenuItem key={r.id} value={r.id}>
-                Renouvellement {r.sequence}
-                {r.number ? ` — n° ${r.number}` : ''}
-                {r.start_date ? ` — début ${formatDate(r.start_date)}` : ''}
+                {t('documentsPages.edit.renewalOption', { n: r.sequence })}
+                {r.number ? ` — ${t('documentsPages.edit.numberSuffix', { number: r.number })}` : ''}
+                {r.start_date
+                  ? ` — ${t('documentsPages.edit.startSuffix', { date: formatDate(r.start_date) })}`
+                  : ''}
               </MenuItem>
             ))}
             <MenuItem value={ORIGIN}>
-              AMM d'origine{amm.original_number ? ` — n° ${amm.original_number}` : ''}
+              {t('renewals.original')}
+              {amm.original_number
+                ? ` — ${t('documentsPages.edit.numberSuffix', { number: amm.original_number })}`
+                : ''}
               {amm.original_start_date ? ` — ${formatDate(amm.original_start_date)}` : ''}
             </MenuItem>
           </TextField>
           <TextField
             select
-            label="Type"
+            label={t('documents.filters.kind')}
             value={kind}
             onChange={(e) => setKind(e.target.value as DocumentKind)}
           >
@@ -105,8 +110,12 @@ export function EditDocumentDialog({
               </MenuItem>
             ))}
           </TextField>
-          <DateInput label="Date du document" value={date} onChange={(value) => value && setDate(value)} />
-          <TextField label="Titre" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <DateInput label={t('documents.date')} value={date} onChange={(value) => value && setDate(value)} />
+          <TextField
+            label={t('documents.columns.title')}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
         </Stack>
         {update.isError && (
           <Alert severity="error" sx={{ mt: 2 }}>
@@ -115,14 +124,14 @@ export function EditDocumentDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={onClose}>{t('app.cancel')}</Button>
         <Button
           variant="contained"
           onClick={submit}
           disabled={!dirty || update.isPending}
           data-testid="edit-document-save"
         >
-          Enregistrer
+          {t('app.save')}
         </Button>
       </DialogActions>
     </Dialog>

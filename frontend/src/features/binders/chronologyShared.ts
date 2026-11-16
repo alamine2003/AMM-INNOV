@@ -7,6 +7,7 @@ import type {
   BinderPage,
 } from '@/api/types';
 import { formatDate } from '@/lib/dates';
+import i18n from '@/lib/i18n';
 import { type usePageScanImport } from './PageScanImport';
 
 /** Chronologie d'une page : couleurs, types d'édition et petits calculs partagés. */
@@ -22,11 +23,12 @@ export const KIND_COLORS: Record<BinderChronologyEntry['kind'], string> = {
   gap: '#c62828',
 };
 
-export const DOCUMENT_KINDS: { value: BinderDocumentKind; label: string }[] = [
-  { value: 'AMM', label: 'Décision (AMM)' },
-  { value: 'RECEPISSE', label: 'Récépissé de dépôt' },
-  { value: 'COURRIER', label: "Courrier de l'autorité" },
-  { value: 'AUTRE', label: 'Autre' },
+/** `labelKey` : clé de traduction du libellé (résolue au rendu, pour suivre la langue). */
+export const DOCUMENT_KINDS: { value: BinderDocumentKind; labelKey: string }[] = [
+  { value: 'AMM', labelKey: 'binders.chronology.kindDecision' },
+  { value: 'RECEPISSE', labelKey: 'documentKind.RECEPISSE' },
+  { value: 'COURRIER', labelKey: 'documentKind.COURRIER' },
+  { value: 'AUTRE', labelKey: 'documentKind.AUTRE' },
 ];
 
 /** Ce qui est ouvert en édition dans la chronologie : une seule chose à la fois. */
@@ -44,12 +46,15 @@ export function chronologyIssues(page: Pick<BinderPage, 'chronology'>): number {
 
 export function period(entry: BinderChronologyEntry): string {
   if (entry.kind === 'pending') {
-    return entry.filing_date ? `déposé le ${formatDate(entry.filing_date)}` : 'dépôt non daté';
+    return entry.filing_date
+      ? i18n.t('binders.chronology.filedOn', { date: formatDate(entry.filing_date) })
+      : i18n.t('binders.chronology.undatedFiling');
   }
-  if (!entry.start_date && !entry.end_date) return 'dates inconnues';
-  return `du ${entry.start_date ? formatDate(entry.start_date) : '?'} au ${
-    entry.end_date ? formatDate(entry.end_date) : '?'
-  }`;
+  if (!entry.start_date && !entry.end_date) return i18n.t('binders.chronology.datesUnknown');
+  return i18n.t('binders.chronology.fromTo', {
+    start: entry.start_date ? formatDate(entry.start_date) : '?',
+    end: entry.end_date ? formatDate(entry.end_date) : '?',
+  });
 }
 
 export const periodOf = (entry: BinderChronologyEntry): ChronologyPeriod => entry.renewal_id ?? 'origin';

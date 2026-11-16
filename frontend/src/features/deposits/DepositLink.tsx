@@ -1,6 +1,7 @@
 import { Button, Tooltip } from '@mui/material';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import { Link, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useOpenDeposit } from '@/api/hooks/useDeposits';
 import { useRenewals } from '@/api/hooks/useRenewals';
 import type { AmmStatus } from '@/api/types';
@@ -18,6 +19,7 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
   const open = useOpenDeposit();
   const navigate = useNavigate();
   const fail = useFail();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const hq = isHqOrAdmin(user);
   if (!renewals.data) return null;
@@ -33,7 +35,7 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
         size="small"
         startIcon={<AssignmentTurnedInIcon />}
       >
-        Dossier de dépôt · renouvellement n°{followed.sequence}
+        {t('deposits.link.followed', { n: followed.sequence })}
       </Button>
     );
   }
@@ -42,7 +44,7 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
   );
   if (!hq || pending || (status !== 'A_RENOUVELER' && status !== 'EXPIRE')) return null;
   return (
-    <Tooltip title="Ouvrir le dossier de dépôt du prochain renouvellement (rubrique Dépôts AMM)">
+    <Tooltip title={t('deposits.link.tooltip')}>
       <Button
         variant="contained"
         size="small"
@@ -50,7 +52,7 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
         disabled={open.isPending}
         onClick={() => open.mutate(ammId, { onSuccess: (d) => navigate(`/depots/${d.id}`), onError: fail })}
       >
-        Monter le dossier de dépôt
+        {t('deposits.link.build')}
       </Button>
     </Tooltip>
   );

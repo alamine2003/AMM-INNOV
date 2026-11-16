@@ -143,18 +143,19 @@ export function ValidityLine({
   /** Fin calculée par l'application (et non saisie). */
   auto?: boolean;
 }) {
+  const { t } = useTranslation();
   const span = formatSpan(start, end);
   if (!start) {
     return (
       <Typography variant="caption" color="text.secondary" data-testid="validity-line">
-        Choisissez la date de début : la fin se calcule sur {years} ans.
+        {t('common.validity.pickStart', { count: years })}
       </Typography>
     );
   }
   if (!end || !span) {
     return (
       <Typography variant="caption" color="error" data-testid="validity-line">
-        La date de fin doit suivre la date de début.
+        {t('common.validity.endAfterStart')}
       </Typography>
     );
   }
@@ -169,9 +170,9 @@ export function ValidityLine({
     >
       {off ? <WarningAmberIcon sx={{ fontSize: 16 }} /> : <EventAvailableIcon sx={{ fontSize: 16 }} />}
       <Typography variant="caption" sx={{ fontWeight: 600 }}>
-        Validité : {span}, jusqu'au {formatDate(end)}
-        {auto ? ' (calculée)' : ''}
-        {off ? ` — la durée du pays est de ${years} ans` : ''}
+        {t('common.validity.summary', { span, date: formatDate(end) })}
+        {auto ? ` (${t('common.validity.calculated')})` : ''}
+        {off ? ` — ${t('common.validity.countryDuration', { count: years })}` : ''}
       </Typography>
     </Stack>
   );

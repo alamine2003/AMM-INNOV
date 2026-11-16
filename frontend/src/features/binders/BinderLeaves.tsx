@@ -1,5 +1,6 @@
 import { FitToPage } from './FitToPage';
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -39,13 +40,14 @@ export function TitleLeaf({
   onResume: () => void;
   resumeLabel: string | null;
 }) {
+  const { t } = useTranslation();
   const progress = binder.total ? Math.round((binder.checked / binder.total) * 100) : 0;
   return (
     <Box sx={{ ...paperSx, bgcolor: '#f4efe3' }}>
       <Holes />
       <FitToPage sx={{ pl: 7, pr: 4, py: 3 }}>
         <Typography sx={{ fontSize: 12, fontWeight: 800, color: MUTED, letterSpacing: 1 }}>
-          AMM GH · CLASSEUR DES AMM
+          {t('binders.leaves.cover')}
         </Typography>
         <Stack direction="row" alignItems="center" gap={1.5} sx={{ mt: 1 }}>
           <Flag iso2={binder.country_iso2} width={48} />
@@ -62,15 +64,15 @@ export function TitleLeaf({
           ))}
         </Stack>
         <Stack direction="row" gap={1} flexWrap="wrap">
-          <Tile value={binder.total} label="pages" />
-          <Tile value={binder.checked} label="vérifiées" />
-          <Tile value={binder.conformes} label="dossiers conformes" />
-          <Tile value={binder.non_conformes} label="non conformes" />
-          <Tile value={binder.absent} label="absentes" />
-          <Tile value={binder.to_scan} label="à scanner" />
-          <Tile value={binder.to_print} label="à imprimer" />
-          {binder.stale > 0 && <Tile value={binder.stale} label="à revérifier" />}
-          <Tile value={binder.extras} label="en trop" />
+          <Tile value={binder.total} label={t('binders.leaves.pages')} />
+          <Tile value={binder.checked} label={t('binders.leaves.checked')} />
+          <Tile value={binder.conformes} label={t('binders.leaves.conform')} />
+          <Tile value={binder.non_conformes} label={t('binders.leaves.nonConform')} />
+          <Tile value={binder.absent} label={t('binders.leaves.absent')} />
+          <Tile value={binder.to_scan} label={t('binders.leaves.toScan')} />
+          <Tile value={binder.to_print} label={t('binders.leaves.toPrint')} />
+          {binder.stale > 0 && <Tile value={binder.stale} label={t('binders.leaves.toRecheck')} />}
+          <Tile value={binder.extras} label={t('binders.leaves.extra')} />
         </Stack>
         <Box sx={{ mt: 2 }}>
           <LinearProgress
@@ -80,21 +82,22 @@ export function TitleLeaf({
             sx={{ height: 8, borderRadius: 4 }}
           />
           <Typography sx={{ fontSize: 12, color: MUTED, mt: 0.5 }}>
-            {progress} % vérifié
+            {t('binders.leaves.progressChecked', { progress })}
             {binder.last_checked_at
-              ? ` · dernière vérification le ${formatDateTime(binder.last_checked_at)} par ${binder.last_checked_by ?? '—'}`
+              ? ` · ${t('binders.leaves.lastCheck', {
+                  date: formatDateTime(binder.last_checked_at),
+                  by: binder.last_checked_by ?? '—',
+                })}`
               : ''}
           </Typography>
         </Box>
         {resumeLabel && (
           <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={onResume} sx={{ mt: 2.5 }}>
-            Reprendre : {resumeLabel}
+            {t('binders.leaves.resume', { label: resumeLabel })}
           </Button>
         )}
         <Typography sx={{ fontSize: 12, color: MUTED, mt: 2.5, lineHeight: 1.7 }}>
-          Feuilletez le classeur papier en même temps : chaque page correspond à un dossier, dans le même
-          ordre. <b>←</b> <b>→</b> ou glisser pour tourner les pages · <b>C</b> papier conforme · <b>E</b>{' '}
-          corriger · <b>A</b> absent. Les onglets de couleur mènent directement à une gamme.
+          <Trans i18nKey="binders.leaves.howTo" components={{ b: <b /> }} />
         </Typography>
       </FitToPage>
     </Box>
@@ -103,6 +106,7 @@ export function TitleLeaf({
 
 /** Intercalaire de gamme : carton de couleur avec l'avancement de la gamme. */
 export function DividerLeaf({ section, pages }: { section: BinderSectionSummary; pages: BinderPage[] }) {
+  const { t } = useTranslation();
   const progress = section.total ? (section.checked / section.total) * 100 : 0;
   return (
     <Box
@@ -124,8 +128,12 @@ export function DividerLeaf({ section, pages }: { section: BinderSectionSummary;
           {section.label.toUpperCase()}
         </Typography>
         <Typography sx={{ fontSize: 18, color: INK, mt: 1 }}>
-          {section.label} — {section.checked} / {section.total} vérifiées · {section.conformes} conforme
-          {section.conformes > 1 ? 's' : ''}
+          {t('binders.leaves.dividerStats', {
+            label: section.label,
+            checked: section.checked,
+            total: section.total,
+            count: section.conformes,
+          })}
         </Typography>
         <Box sx={{ width: 260, maxWidth: '80%', mt: 2 }}>
           <LinearProgress
@@ -141,17 +149,20 @@ export function DividerLeaf({ section, pages }: { section: BinderSectionSummary;
         </Box>
         {pages.length > 0 && (
           <Typography sx={{ fontSize: 13, color: MUTED, mt: 2 }}>
-            de {pages[0].product_name} à {pages[pages.length - 1].product_name}
+            {t('binders.leaves.fromTo', {
+              from: pages[0].product_name,
+              to: pages[pages.length - 1].product_name,
+            })}
           </Typography>
         )}
         {!!section.stale && (
           <Typography sx={{ fontSize: 13, color: '#e65100', fontWeight: 700, mt: 1 }}>
-            {section.stale} page(s) modifiée(s) depuis leur vérification : à revérifier
+            {t('binders.leaves.staleNote', { n: section.stale })}
           </Typography>
         )}
         {section.absent + section.to_scan > 0 && (
           <Typography sx={{ fontSize: 13, color: INK, mt: 1 }}>
-            {section.absent} absente(s) · {section.to_scan} à scanner
+            {t('binders.leaves.absentToScan', { absent: section.absent, toScan: section.to_scan })}
           </Typography>
         )}
       </Stack>
@@ -172,6 +183,7 @@ export function EndLeaf({
   /** Ouvre l'ajout de page (prérempli depuis une page en trop). */
   onAddPage: (prefill?: { product_name: string; extra_id: string }) => void;
 }) {
+  const { t } = useTranslation();
   const { add, remove } = useExtraPages(binder.key);
   const canEdit = useCan('binder.edit');
   const [name, setName] = useState('');
@@ -182,10 +194,10 @@ export function EndLeaf({
   const toPrint = pages.filter((p) => p.to_print);
   const data = pages.filter((p) => p.conformity.criteria.some((c) => c.key === 'data' && c.ok === false));
   const groups = [
-    { title: 'Dossiers à retrouver (papier absent)', items: absent },
-    { title: 'Décisions à scanner', items: toScan },
-    { title: 'AMM à imprimer et à ranger dans le classeur', items: toPrint },
-    { title: 'Date ou n° à revoir (manquant, ou fiche modifiée depuis la vérification)', items: data },
+    { title: t('binders.leaves.groupAbsent'), items: absent },
+    { title: t('binders.leaves.groupToScan'), items: toScan },
+    { title: t('binders.leaves.groupToPrint'), items: toPrint },
+    { title: t('binders.leaves.groupData'), items: data },
   ];
   return (
     <Box sx={paperSx}>
@@ -193,14 +205,21 @@ export function EndLeaf({
       <FitToPage sx={{ pl: 7, pr: 4, py: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
           <Typography component="h2" sx={{ fontSize: 24, fontWeight: 900 }}>
-            Bilan du classeur
+            {t('binders.leaves.endTitle')}
           </Typography>
           {downloadButton}
         </Stack>
         <Typography sx={{ fontSize: 13, color: MUTED, mb: 2 }}>
-          {binder.checked} / {binder.total} pages vérifiées · {binder.conformes} dossiers conformes ·{' '}
-          {binder.non_conformes} non conformes · {binder.corrected} corrigées · {binder.absent} absentes ·{' '}
-          {binder.to_scan} à scanner · {binder.to_print} à imprimer
+          {t('binders.leaves.endStats', {
+            checked: binder.checked,
+            total: binder.total,
+            conformes: binder.conformes,
+            nonConformes: binder.non_conformes,
+            corrected: binder.corrected,
+            absent: binder.absent,
+            toScan: binder.to_scan,
+            toPrint: binder.to_print,
+          })}
         </Typography>
         {groups.map((group) => (
           <Box key={group.title} sx={{ mb: 2 }}>
@@ -208,7 +227,7 @@ export function EndLeaf({
               {group.title} ({group.items.length})
             </Typography>
             {group.items.length === 0 ? (
-              <Typography sx={{ fontSize: 13, color: MUTED }}>Aucun.</Typography>
+              <Typography sx={{ fontSize: 13, color: MUTED }}>{t('binders.leaves.none')}</Typography>
             ) : (
               group.items.map((p) => (
                 <Button
@@ -217,22 +236,19 @@ export function EndLeaf({
                   onClick={() => onOpenPage(p.amm_id)}
                   sx={{ display: 'block', textAlign: 'left', color: INK, fontWeight: 500, py: 0 }}
                 >
-                  p. {p.page} · {p.product_name}
+                  {t('binders.leaves.pageRef', { page: p.page, name: p.product_name })}
                 </Button>
               ))
             )}
           </Box>
         ))}
         <Typography sx={{ fontWeight: 800, fontSize: 14 }}>
-          Pages en trop ({binder.extra_pages.length})
+          {t('binders.leaves.extraPages', { n: binder.extra_pages.length })}
         </Typography>
-        <Typography sx={{ fontSize: 12, color: MUTED, mb: 1 }}>
-          Un dossier est dans le classeur papier mais pas dans AMM GH : notez-le ici, ou créez directement sa
-          page avec « Ajouter une page ».
-        </Typography>
+        <Typography sx={{ fontSize: 12, color: MUTED, mb: 1 }}>{t('binders.leaves.extraHelp')}</Typography>
         {canEdit && (
           <Button size="small" variant="contained" onClick={() => onAddPage()} sx={{ mb: 1 }}>
-            Ajouter une page
+            {t('binders.page.addPage')}
           </Button>
         )}
         {binder.extra_pages.map((extra) => (
@@ -249,15 +265,15 @@ export function EndLeaf({
                 size="small"
                 onClick={() => onAddPage({ product_name: extra.product_name, extra_id: extra.id })}
               >
-                Créer la page
+                {t('binders.leaves.createPage')}
               </Button>
             )}
             {canEdit && (
-              <Tooltip title="Retirer">
+              <Tooltip title={t('binders.leaves.remove')}>
                 <IconButton
                   size="small"
                   onClick={() => remove.mutate(extra.id)}
-                  aria-label={`Retirer ${extra.product_name}`}
+                  aria-label={t('binders.leaves.removeNamed', { name: extra.product_name })}
                 >
                   <DeleteOutlineIcon fontSize="small" />
                 </IconButton>
@@ -287,20 +303,20 @@ export function EndLeaf({
           >
             <TextField
               size="small"
-              label="Produit lu sur le dossier"
+              label={t('binders.leaves.productRead')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               sx={{ bgcolor: '#fff', flex: 2 }}
             />
             <TextField
               size="small"
-              label="Note"
+              label={t('binders.leaves.note')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               sx={{ bgcolor: '#fff', flex: 1 }}
             />
             <Button type="submit" variant="outlined" disabled={add.isPending || !name.trim()}>
-              Signaler
+              {t('binders.leaves.report')}
             </Button>
           </Stack>
         )}

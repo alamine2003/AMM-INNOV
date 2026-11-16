@@ -90,14 +90,14 @@ export default function ImportDetailPage() {
             <>
               <LinearProgress variant="determinate" value={(100 * b.progress.done) / b.progress.total} />
               <Typography variant="caption" color="text.secondary">
-                {b.progress.done} / {b.progress.total} lignes traitées
+                {t('excelImports.rowsProcessed', { done: b.progress.done, total: b.progress.total })}
               </Typography>
             </>
           ) : (
             <>
               <LinearProgress />
               <Typography variant="caption" color="text.secondary">
-                {b.status === 'PENDING' ? 'En attente de traitement…' : 'Lecture du classeur…'}
+                {b.status === 'PENDING' ? t('excelImports.waiting') : t('excelImports.reading')}
               </Typography>
             </>
           )}
