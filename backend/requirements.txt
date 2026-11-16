@@ -174,9 +174,9 @@ prometheus-client==0.26.0
     # via django-prometheus
 prompt-toolkit==3.0.53
     # via click-repl
-psycopg==3.3.8
+psycopg==3.3.9
     # via -r requirements.in
-psycopg-binary==3.3.8
+psycopg-binary==3.3.9
     # via psycopg
 psycopg-pool==3.3.3
     # via psycopg
@@ -186,7 +186,7 @@ pyjwt==2.15.1
     # via djangorestframework-simplejwt
 pyopenssl==26.4.0
     # via twisted
-pypdf==7.0.0
+pypdf==7.0.1
     # via -r requirements.in
 python-crontab==3.4.0
     # via django-celery-beat
@@ -217,7 +217,7 @@ rpds-py==2026.9.1
     #   referencing
 s3transfer==0.19.3
     # via boto3
-sentry-sdk==2.74.0
+sentry-sdk==2.75.0
     # via -r requirements.in
 service-identity==26.1.0
     # via twisted
