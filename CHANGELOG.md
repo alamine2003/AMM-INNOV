@@ -5,6 +5,24 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.3] — 2026-11-16
+
+### Corrigé
+- **Classeur numérique : fiches qui tremblent, texte minuscule ou coupé selon la taille de la
+  fenêtre** (les utilisateurs zoomaient ou dézoomaient pour « arranger » l'affichage).
+  - La réduction d'une fiche trop haute se calculait sur une seule mesure : réduire la fiche
+    l'élargit, donc change sa hauteur, donc change la réduction. Sur beaucoup de fenêtres (dont
+    1366 × 768, la plus courante sur portable), la fiche passait sans fin d'une taille à l'autre.
+    L'échelle est maintenant cherchée d'un coup, par essais successifs, et ne bouge plus.
+    Avant, 11 des tailles de fenêtre essayées oscillaient ; après, sur 40 tailles mesurées,
+    aucune n'oscille et aucun contenu n'est coupé.
+  - Sur une fenêtre basse, le classeur garde une hauteur lisible et c'est la page qui défile,
+    au lieu de rapetisser les fiches jusqu'à 55 %. Une fiche n'est plus réduite au-delà de
+    70 % ; si elle ne tient toujours pas, elle défile : rien n'est coupé.
+  - Les onglets des gammes s'adaptent à la hauteur du classeur et ne dépassent plus sous la
+    couverture ; sur une fenêtre étroite, les commandes passent ensemble sous le titre au lieu
+    de l'écraser.
+
 ## [1.3.2] — 2026-11-16
 
 ### Corrigé
