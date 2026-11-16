@@ -21,17 +21,31 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { DOSSIER_PAGE_SIZE, useDossierCounts, useDossierImports } from '@/api/hooks/useDossierImports';
 import { hasSummary, type DossierGroup, type DossierImportBatch } from '@/api/types';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { formatDateTime } from '@/lib/dates';
 import { batchState } from './dossierReview';
 
+// Clés de traduction : le libellé est résolu au rendu pour suivre la langue.
 const TABS: { value: DossierGroup; label: string; empty: string }[] = [
-  { value: 'a_traiter', label: 'À traiter', empty: 'Rien à traiter : tout est rangé ou en cours.' },
-  { value: 'en_cours', label: 'En cours', empty: 'Aucune analyse en cours.' },
-  { value: 'ranges', label: 'Rangés', empty: 'Aucun dossier rangé.' },
-  { value: 'tous', label: 'Tous', empty: 'Aucun dossier importé.' },
+  {
+    value: 'a_traiter',
+    label: 'dossierImports.history.tabs.toProcess.label',
+    empty: 'dossierImports.history.tabs.toProcess.empty',
+  },
+  {
+    value: 'en_cours',
+    label: 'dossierImports.history.tabs.inProgress.label',
+    empty: 'dossierImports.history.tabs.inProgress.empty',
+  },
+  {
+    value: 'ranges',
+    label: 'dossierImports.history.tabs.filed.label',
+    empty: 'dossierImports.history.tabs.filed.empty',
+  },
+  { value: 'tous', label: 'app.all', empty: 'dossierImports.history.tabs.all.empty' },
 ];
 
 // Sur téléphone, la colonne AMM est masquée : le nom du dossier suffit et évite le défilement latéral.
@@ -54,6 +68,7 @@ function useDebounced(value: string, delay = 300) {
  * chose attend l'utilisateur, sinon « Tous ». 10 lignes par page et une recherche sur le nom.
  */
 export function DossierHistory() {
+  const { t } = useTranslation();
   const counts = useDossierCounts();
   const [chosen, setChosen] = useState<DossierGroup | null>(null);
   const [page, setPage] = useState(1);
@@ -80,7 +95,7 @@ export function DossierHistory() {
           }}
           variant="scrollable"
           allowScrollButtonsMobile
-          aria-label="Historique des dossiers importés"
+          aria-label={t('dossierImports.history.ariaLabel')}
         >
           {TABS.map(({ value, label }) => (
             <Tab
@@ -89,7 +104,7 @@ export function DossierHistory() {
               sx={{ minHeight: 44, textTransform: 'none' }}
               label={
                 <Stack direction="row" alignItems="center" gap={0.75}>
-                  {label}
+                  {t(label)}
                   {counts.data && (
                     <Chip
                       size="small"
@@ -105,7 +120,7 @@ export function DossierHistory() {
         </Tabs>
         <TextField
           size="small"
-          placeholder="Rechercher un dossier"
+          placeholder={t('dossierImports.history.searchPlaceholder')}
           value={text}
           onChange={(event) => {
             setText(event.target.value);
@@ -113,7 +128,7 @@ export function DossierHistory() {
           }}
           sx={{ mb: 1, minWidth: { sm: 220 } }}
           slotProps={{
-            htmlInput: { 'aria-label': 'Rechercher un dossier' },
+            htmlInput: { 'aria-label': t('dossierImports.history.searchPlaceholder') },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -129,22 +144,22 @@ export function DossierHistory() {
       ) : batches.isError ? (
         <ErrorBlock error={batches.error} onRetry={() => batches.refetch()} />
       ) : !batches.data.results.length ? (
-        <EmptyBlock text={search ? `Aucun dossier ne contient « ${search} ».` : tab.empty} />
+        <EmptyBlock text={search ? t('dossierImports.history.noMatch', { search }) : t(tab.empty)} />
       ) : (
         <>
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Dossier</TableCell>
-                  <TableCell sx={WIDE}>AMM</TableCell>
-                  <TableCell>Résultat</TableCell>
+                  <TableCell>{t('dossierImports.columns.dossier')}</TableCell>
+                  <TableCell sx={WIDE}>{t('dossierImports.columns.ma')}</TableCell>
+                  <TableCell>{t('dossierImports.columns.result')}</TableCell>
                   <TableCell align="right">
                     <Box component="span" sx={WIDE_TEXT}>
-                      Points à vérifier
+                      {t('dossierImports.columns.pointsToCheck')}
                     </Box>
                     <Box component="span" sx={NARROW}>
-                      Points
+                      {t('dossierImports.columns.points')}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -159,7 +174,7 @@ export function DossierHistory() {
           {batches.data.count > DOSSIER_PAGE_SIZE && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
-                {batches.data.count} dossiers
+                {t('dossierImports.history.total', { count: batches.data.count })}
               </Typography>
               <Pagination
                 size="small"
@@ -176,6 +191,7 @@ export function DossierHistory() {
 }
 
 function HistoryRow({ batch }: { batch: DossierImportBatch }) {
+  const { t } = useTranslation();
   const state = batchState(batch);
   const ammId = hasSummary(batch.summary) ? batch.summary.amm_id : batch.amm_id;
   const ammLabel = hasSummary(batch.summary)
@@ -200,7 +216,7 @@ function HistoryRow({ batch }: { batch: DossierImportBatch }) {
           </MuiLink>
         ) : batch.status === 'QUESTION' ? (
           <Typography variant="body2" color="text.secondary">
-            À préciser
+            {t('dossierImports.history.toSpecify')}
           </Typography>
         ) : (
           ammLabel
@@ -229,7 +245,7 @@ function HistoryRow({ batch }: { batch: DossierImportBatch }) {
             color="warning"
             variant="outlined"
             label={batch.open_points_count}
-            aria-label={`${batch.open_points_count} point(s) à vérifier`}
+            aria-label={t('dossierImports.history.pointsAria', { count: batch.open_points_count })}
           />
         ) : (
           '—'

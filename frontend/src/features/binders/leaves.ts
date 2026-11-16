@@ -9,12 +9,13 @@ export type Leaf =
 
 export type LeafFilter = 'all' | 'unchecked' | 'issues' | 'non_conformes' | 'to_print';
 
+/** Clés de traduction des libellés de filtre (résolues au rendu). */
 export const FILTER_LABELS: Record<LeafFilter, string> = {
-  all: 'Toutes les pages',
-  unchecked: 'À vérifier ou revérifier',
-  issues: 'Écarts et manques',
-  non_conformes: 'Dossiers non conformes',
-  to_print: 'AMM à imprimer',
+  all: 'binders.filters.all',
+  unchecked: 'binders.filters.unchecked',
+  issues: 'binders.filters.issues',
+  non_conformes: 'binders.filters.nonConformes',
+  to_print: 'binders.filters.toPrint',
 };
 
 /**

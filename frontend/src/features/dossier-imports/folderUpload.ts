@@ -1,3 +1,5 @@
+import i18n from '@/lib/i18n';
+
 /** Ordered paths remain paired with their multipart files, including nested folders. */
 export interface FolderFile {
   file: File;
@@ -19,18 +21,19 @@ export function filesFromPicker(files: FileList | File[]): FolderFile[] {
 }
 
 export function validateFolder(files: FolderFile[]): string[] {
-  if (!files.length) return ['Le dossier ne contient aucun fichier.'];
+  if (!files.length) return [i18n.t('dossierImports.folder.empty')];
   const errors: string[] = [];
-  if (files.length > FOLDER_LIMITS.files) errors.push('Le dossier est limité à 200 fichiers.');
+  if (files.length > FOLDER_LIMITS.files) errors.push(i18n.t('dossierImports.folder.tooManyFiles'));
   if (files.reduce((total, { file }) => total + file.size, 0) > FOLDER_LIMITS.totalBytes)
-    errors.push('La taille totale du dossier dépasse 250 Mo.');
+    errors.push(i18n.t('dossierImports.folder.tooBig'));
   const paths = new Set<string>();
   const roots = new Set<string>();
   for (const { file, path } of files) {
     if (!/\.(pdf|jpe?g|png)$/i.test(file.name))
-      errors.push(`${path} : format non pris en charge (PDF, JPEG ou PNG).`);
-    if (!file.size) errors.push(`${path} : le fichier est vide.`);
-    if (file.size > FOLDER_LIMITS.fileBytes) errors.push(`${path} : le fichier dépasse 25 Mo.`);
+      errors.push(i18n.t('dossierImports.folder.unsupportedFormat', { path }));
+    if (!file.size) errors.push(i18n.t('dossierImports.folder.emptyFile', { path }));
+    if (file.size > FOLDER_LIMITS.fileBytes)
+      errors.push(i18n.t('dossierImports.folder.fileTooBig', { path }));
     if (
       path.length > 500 ||
       // eslint-disable-next-line no-control-regex -- caractères de contrôle interdits dans un chemin
@@ -38,14 +41,14 @@ export function validateFolder(files: FolderFile[]): string[] {
       path.startsWith('/') ||
       path.split('/').some((part) => !part || part === '.' || part === '..')
     )
-      errors.push(`${path} : chemin de fichier invalide.`);
-    if (paths.has(path)) errors.push(`${path} : chemin présent plusieurs fois.`);
+      errors.push(i18n.t('dossierImports.folder.invalidPath', { path }));
+    if (paths.has(path)) errors.push(i18n.t('dossierImports.folder.duplicatePath', { path }));
     paths.add(path);
     roots.add(path.split('/')[0]);
   }
   if (roots.size !== 1 || files.some(({ path }) => !path.includes('/')))
-    errors.push('Sélectionnez un dossier unique contenant tous les documents et sous-dossiers.');
-  if ([...roots].some((root) => root.length > 255)) errors.push('Le nom du dossier dépasse 255 caractères.');
+    errors.push(i18n.t('dossierImports.folder.singleFolder'));
+  if ([...roots].some((root) => root.length > 255)) errors.push(i18n.t('dossierImports.folder.nameTooLong'));
   return errors;
 }
 
@@ -89,16 +92,16 @@ export async function fileDigest(file: File): Promise<string | null> {
 /** readEntries is paginated by browsers; read until the final empty batch. */
 export async function filesFromDrop(items: DataTransferItemList): Promise<FolderFile[]> {
   if (!items.length || typeof items[0].webkitGetAsEntry !== 'function')
-    throw new Error('Ce navigateur ne permet pas de déposer un dossier. Utilisez « Choisir un dossier ».');
+    throw new Error(i18n.t('dossierImports.folder.dropUnsupported'));
   const entries = Array.from(items, (item) => item.webkitGetAsEntry()).filter(
     (entry): entry is FileSystemEntry => !!entry,
   );
   if (entries.length !== 1 || !entries[0].isDirectory)
-    throw new Error('Déposez un dossier unique, ou utilisez « Choisir un dossier ».');
+    throw new Error(i18n.t('dossierImports.folder.dropSingle'));
   const files: FolderFile[] = [];
   async function visit(entry: FileSystemEntry, parent = ''): Promise<void> {
     const path = `${parent}${entry.name}`;
-    if (path.length > 500) throw new Error('Un chemin du dossier dépasse 500 caractères.');
+    if (path.length > 500) throw new Error(i18n.t('dossierImports.folder.pathTooLong'));
     if (entry.isFile) {
       if (['.DS_Store', 'Thumbs.db'].includes(entry.name)) return;
       const file = await new Promise<File>((resolve, reject) =>
@@ -106,7 +109,7 @@ export async function filesFromDrop(items: DataTransferItemList): Promise<Folder
       );
       files.push({ file, path });
       if (files.length > FOLDER_LIMITS.dropFiles)
-        throw new Error(`Le dossier dépasse ${FOLDER_LIMITS.dropFiles} fichiers : déposez-le pays par pays.`);
+        throw new Error(i18n.t('dossierImports.folder.dropTooMany', { max: FOLDER_LIMITS.dropFiles }));
     } else if (entry.isDirectory) {
       const reader = (entry as FileSystemDirectoryEntry).createReader();
       let children: FileSystemEntry[];
@@ -160,10 +163,13 @@ export function setAside(files: FolderFile[]): { kept: FolderFile[]; ignored: st
   const ignored: string[] = [];
   for (const entry of files) {
     if (entry.path.split('/').slice(1, -1).some(isCopyFolder))
-      ignored.push(`${entry.path} (copie du classement, non importée)`);
-    else if (!/\.(pdf|jpe?g|png)$/i.test(entry.file.name)) ignored.push(`${entry.path} (format non lu)`);
-    else if (!entry.file.size) ignored.push(`${entry.path} (fichier vide)`);
-    else if (entry.file.size > FOLDER_LIMITS.fileBytes) ignored.push(`${entry.path} (plus de 25 Mo)`);
+      ignored.push(i18n.t('dossierImports.folder.aside.copy', { path: entry.path }));
+    else if (!/\.(pdf|jpe?g|png)$/i.test(entry.file.name))
+      ignored.push(i18n.t('dossierImports.folder.aside.format', { path: entry.path }));
+    else if (!entry.file.size)
+      ignored.push(i18n.t('dossierImports.folder.aside.empty', { path: entry.path }));
+    else if (entry.file.size > FOLDER_LIMITS.fileBytes)
+      ignored.push(i18n.t('dossierImports.folder.aside.big', { path: entry.path }));
     else kept.push(entry);
   }
   return { kept, ignored };

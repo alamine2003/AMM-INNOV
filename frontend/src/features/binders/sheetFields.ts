@@ -3,14 +3,15 @@ import { formatDate } from '@/lib/dates';
 
 /** Champs d'une page du classeur (blocs AMM d'origine et dernier renouvellement). */
 
+/** `label` / `title` : clés de traduction (résolues au rendu, pour suivre la langue). */
 export const FIELDS: { field: BinderField; label: string }[] = [
-  { field: 'number', label: "N° d'AMM" },
-  { field: 'start_date', label: 'Date de début' },
-  { field: 'end_date', label: 'Date de fin' },
+  { field: 'number', label: 'binders.fields.number' },
+  { field: 'start_date', label: 'binders.fields.startDate' },
+  { field: 'end_date', label: 'binders.fields.endDate' },
 ];
 export const SLOTS: { slot: BinderSlot; title: string }[] = [
-  { slot: 'original', title: "AMM d'origine" },
-  { slot: 'renewal', title: 'Dernier renouvellement' },
+  { slot: 'original', title: 'binders.slots.original' },
+  { slot: 'renewal', title: 'binders.slots.renewal' },
 ];
 
 export type Values = Record<string, string>;

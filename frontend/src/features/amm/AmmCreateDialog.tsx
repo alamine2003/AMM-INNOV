@@ -167,7 +167,7 @@ export function AmmCreateDialog({
               control={control}
               name="original_end_date"
               label={t('amm.fields.originalEnd')}
-              helperText={`Calculée : début + ${years} ans (modifiable)`}
+              helperText={t('ammPages.create.endHelp', { years })}
             />
             {start && <ValidityLine start={start} end={end} years={years} />}
             <TextField label={t('amm.fields.notes')} multiline minRows={2} {...register('notes')} />

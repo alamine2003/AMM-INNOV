@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Autocomplete,
@@ -21,9 +22,9 @@ import type { BinderAddPageResult, BinderDetail } from '@/api/types';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
 const RANGES = [
-  { code: 'GENERALE', label: 'Générale' },
-  { code: 'CARDIO', label: 'Cardio' },
-  { code: 'BIEN_ETRE', label: 'Bien-être' },
+  { code: 'GENERALE', labelKey: 'binders.addPage.rangeGeneral' },
+  { code: 'CARDIO', labelKey: 'binders.addPage.rangeCardio' },
+  { code: 'BIEN_ETRE', labelKey: 'binders.addPage.rangeWellness' },
 ];
 
 /** Ajoute la page d'un produit oublié : l'AMM est créée dans le pays du classeur. */
@@ -66,6 +67,7 @@ function AddPageForm({
   prefill?: { product_name: string; extra_id: string } | null;
   onAdded: (result: BinderAddPageResult) => void;
 }) {
+  const { t } = useTranslation();
   // Au siège, la gamme est celle du classeur ; ailleurs, on la choisit.
   const fixedRange = binder.key.includes('-');
   const [name, setName] = useState(prefill?.product_name ?? '');
@@ -91,12 +93,10 @@ function AddPageForm({
 
   return (
     <>
-      <DialogTitle>Ajouter une page au classeur</DialogTitle>
+      <DialogTitle>{t('binders.addPage.title')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Un dossier est dans le classeur papier mais pas dans AMM GH : sa page est créée à sa place
-          alphabétique, avec l'AMM du produit pour {binder.country_name}. Le scan pourra être importé ensuite,
-          directement depuis la page.
+          {t('binders.addPage.intro', { country: binder.country_name })}
         </Typography>
         <Stack spacing={2}>
           <Autocomplete
@@ -109,29 +109,34 @@ function AddPageForm({
                 {...params}
                 autoFocus
                 required
-                label="Produit (tel qu'écrit sur le dossier)"
-                helperText="Choisissez un produit du catalogue s'il existe déjà, sinon il sera créé."
+                label={t('binders.addPage.productLabel')}
+                helperText={t('binders.addPage.productHelper')}
               />
             )}
           />
           {!fixedRange && (
-            <TextField select label="Gamme" value={rangeCode} onChange={(e) => setRangeCode(e.target.value)}>
+            <TextField
+              select
+              label={t('binders.addPage.range')}
+              value={rangeCode}
+              onChange={(e) => setRangeCode(e.target.value)}
+            >
               {RANGES.map((range) => (
                 <MenuItem key={range.code} value={range.code}>
-                  {range.label}
+                  {t(range.labelKey)}
                 </MenuItem>
               ))}
             </TextField>
           )}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
-              label="N° d'AMM d'origine"
+              label={t('binders.addPage.originalNumber')}
               value={number}
               onChange={(e) => setNumber(e.target.value)}
               sx={{ flex: 1 }}
             />
             <DateInput
-              label="Date de début"
+              label={t('binders.fields.startDate')}
               value={start}
               onChange={(value) => setStart(value ?? '')}
               sx={{ flex: 1 }}
@@ -142,9 +147,9 @@ function AddPageForm({
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+        <Button onClick={onClose}>{t('app.cancel')}</Button>
         <Button variant="contained" onClick={submit} disabled={!name.trim() || add.isPending}>
-          Ajouter la page
+          {t('binders.addPage.submit')}
         </Button>
       </DialogActions>
     </>

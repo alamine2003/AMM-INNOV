@@ -9,6 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Document, Page } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -26,6 +27,7 @@ export interface ScanToView {
 }
 
 function ViewerContent({ file }: { file: ScanToView }) {
+  const { t } = useTranslation();
   const [loaded, setLoaded] = useState<{ blob: Blob; url: string } | null>(null);
   const [error, setError] = useState<unknown>();
   const [page, setPage] = useState(1);
@@ -68,7 +70,7 @@ function ViewerContent({ file }: { file: ScanToView }) {
               <>
                 <Stack direction="row" justifyContent="center" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                   <Button disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>
-                    Page précédente
+                    {t('dossierImports.viewer.previousPage')}
                   </Button>
                   <Typography>
                     {page} / {pageCount || '…'}
@@ -77,7 +79,7 @@ function ViewerContent({ file }: { file: ScanToView }) {
                     disabled={!pageCount || page >= pageCount}
                     onClick={() => setPage((value) => value + 1)}
                   >
-                    Page suivante
+                    {t('dossierImports.viewer.nextPage')}
                   </Button>
                 </Stack>
                 <Document
@@ -98,7 +100,7 @@ function ViewerContent({ file }: { file: ScanToView }) {
           disabled={!loaded}
           onClick={() => loaded && saveBlob(loaded.blob, file.name.split('/').at(-1) || 'document')}
         >
-          Télécharger le document
+          {t('dossierImports.viewer.download')}
         </Button>
       </DialogActions>
     </>
@@ -106,13 +108,14 @@ function ViewerContent({ file }: { file: ScanToView }) {
 }
 
 export function ScanViewer({ scan, onClose }: { scan: ScanToView | null; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={!!scan} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography component="span" sx={{ flex: 1, overflowWrap: 'anywhere' }}>
           {scan?.name}
         </Typography>
-        <Button onClick={onClose}>Fermer</Button>
+        <Button onClick={onClose}>{t('app.close')}</Button>
       </DialogTitle>
       {scan && <ViewerContent key={scan.id} file={scan} />}
     </Dialog>

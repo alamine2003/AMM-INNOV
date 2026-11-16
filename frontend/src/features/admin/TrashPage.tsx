@@ -18,14 +18,11 @@ import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useRestore, useTrash, type TrashState } from '@/api/hooks/useTrash';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/PageHeader';
 import { formatDateTime } from '@/lib/dates';
 
-const STATES: { value: TrashState; label: string }[] = [
-  { value: 'deleted', label: 'À la corbeille' },
-  { value: 'restored', label: 'Restaurés' },
-  { value: 'all', label: 'Tout' },
-];
+const STATES: TrashState[] = ['deleted', 'restored', 'all'];
 
 /**
  * Corbeille (CEO et siège). Rien n'est jamais effacé : ce qui est supprimé dans l'application
@@ -33,6 +30,7 @@ const STATES: { value: TrashState; label: string }[] = [
  * jamais vidée : une entrée restaurée reste, marquée restaurée.
  */
 export default function TrashPage() {
+  const { t } = useTranslation();
   const [state, setState] = useState<TrashState>('deleted');
   const [page, setPage] = useState(1);
   const trash = useTrash(state, page);
@@ -43,10 +41,7 @@ export default function TrashPage() {
 
   return (
     <>
-      <PageHeader
-        title="Corbeille"
-        subtitle="Tout ce qui a été supprimé dans AMM GH. Rien n'est effacé : restaurez un élément pour le remettre tel quel."
-      />
+      <PageHeader title={t('nav.trash')} subtitle={t('adminPages.trash.subtitle')} />
       <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
         <ToggleButtonGroup
           size="small"
@@ -60,14 +55,14 @@ export default function TrashPage() {
           }}
         >
           {STATES.map((option) => (
-            <ToggleButton key={option.value} value={option.value}>
-              {option.label}
+            <ToggleButton key={option} value={option}>
+              {t(`adminPages.trash.states.${option}`)}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
         {trash.data && (
           <Typography variant="body2" color="text.secondary">
-            {trash.data.count} élément{trash.data.count > 1 ? 's' : ''}
+            {t('adminPages.trash.count', { count: trash.data.count })}
           </Typography>
         )}
       </Stack>
@@ -76,13 +71,13 @@ export default function TrashPage() {
         <Table size="small" data-testid="trash-table">
           <TableHead>
             <TableRow>
-              <TableCell>Supprimé le</TableCell>
-              <TableCell>Par</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Élément</TableCell>
-              <TableCell>Pays</TableCell>
-              <TableCell>Motif</TableCell>
-              <TableCell align="right">État</TableCell>
+              <TableCell>{t('adminPages.trash.columns.deletedOn')}</TableCell>
+              <TableCell>{t('adminPages.trash.columns.by')}</TableCell>
+              <TableCell>{t('adminPages.trash.columns.type')}</TableCell>
+              <TableCell>{t('adminPages.trash.columns.item')}</TableCell>
+              <TableCell>{t('amm.columns.country')}</TableCell>
+              <TableCell>{t('adminPages.trash.columns.reason')}</TableCell>
+              <TableCell align="right">{t('adminPages.trash.columns.state')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -90,7 +85,7 @@ export default function TrashPage() {
               <TableRow>
                 <TableCell colSpan={7}>
                   <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                    La corbeille est vide.
+                    {t('adminPages.trash.empty')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -104,9 +99,7 @@ export default function TrashPage() {
                   {entry.label}
                   {entry.rows > 1 && (
                     <Typography component="span" variant="caption" color="text.secondary">
-                      {' '}
-                      · avec {entry.rows - 1} élément{entry.rows > 2 ? 's' : ''} lié
-                      {entry.rows > 2 ? 's' : ''}
+                      {` · ${t('adminPages.trash.linked', { count: entry.rows - 1 })}`}
                     </Typography>
                   )}
                 </TableCell>
@@ -118,7 +111,10 @@ export default function TrashPage() {
                       size="small"
                       color="success"
                       variant="outlined"
-                      label={`Restauré le ${formatDateTime(entry.restored_at)} · ${entry.restored_by ?? ''}`}
+                      label={t('adminPages.trash.restoredOn', {
+                        date: formatDateTime(entry.restored_at),
+                        user: entry.restored_by ?? '',
+                      })}
                     />
                   ) : (
                     <Button
@@ -129,13 +125,15 @@ export default function TrashPage() {
                       onClick={() =>
                         restore.mutate(entry.id, {
                           onSuccess: () =>
-                            enqueueSnackbar(`« ${entry.label} » restauré.`, { variant: 'success' }),
+                            enqueueSnackbar(t('adminPages.trash.restoredToast', { label: entry.label }), {
+                              variant: 'success',
+                            }),
                           onError: (error) =>
                             enqueueSnackbar(extractErrorMessage(error), { variant: 'error' }),
                         })
                       }
                     >
-                      Restaurer
+                      {t('adminPages.trash.restore')}
                     </Button>
                   )}
                 </TableCell>
@@ -147,10 +145,10 @@ export default function TrashPage() {
       {pages > 1 && (
         <Stack direction="row" justifyContent="flex-end" gap={1} sx={{ mt: 1 }}>
           <Button size="small" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Précédent
+            {t('common.pagination.previous')}
           </Button>
           <Button size="small" disabled={!trash.data?.next} onClick={() => setPage(page + 1)}>
-            Suivant
+            {t('common.pagination.next')}
           </Button>
         </Stack>
       )}

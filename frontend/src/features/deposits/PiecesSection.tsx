@@ -3,6 +3,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { Box, Chip, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, FileButton, PIECE_ACCEPT, PieceChip, Section, useFail } from './sectionParts';
 
 /** Étape 1 : les pièces du dossier. */
@@ -11,6 +12,7 @@ import { type Actions, FileButton, PIECE_ACCEPT, PieceChip, Section, useFail } f
 
 export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const editable = dossier.can.manage;
   const removable = editable && !dossier.sent_at;
   const [otherLabel, setOtherLabel] = useState('');
@@ -18,10 +20,11 @@ export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; ac
   return (
     <Section
       index={1}
-      title="Montage du dossier"
-      subtitle={`${dossier.pieces_done}/${dossier.pieces_required} pièces obligatoires${
-        dossier.sent_at ? ' · dossier envoyé : un ajout part au pays en complément' : ''
-      }`}
+      title={t('deposits.pieces.title')}
+      subtitle={`${t('deposits.pieces.subtitle', {
+        done: dossier.pieces_done,
+        required: dossier.pieces_required,
+      })}${dossier.sent_at ? t('deposits.pieces.sentSuffix') : ''}`}
       state={done || dossier.sent_at ? 'done' : 'active'}
       testId="section-pieces"
     >
@@ -47,7 +50,7 @@ export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; ac
                   {!type.required && (
                     <Typography component="span" variant="caption" color="text.secondary">
                       {' '}
-                      (facultative)
+                      {t('deposits.optional')}
                     </Typography>
                   )}
                   {type.country && <Chip size="small" label={type.country} sx={{ ml: 1, height: 18 }} />}
@@ -73,7 +76,7 @@ export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; ac
             </Stack>
             {editable && (
               <FileButton
-                label={files.length ? 'Ajouter' : 'Joindre'}
+                label={files.length ? t('deposits.pieces.add') : t('deposits.pieces.attach')}
                 accept={PIECE_ACCEPT}
                 disabled={actions.addPiece.isPending}
                 onFile={(file) => actions.addPiece.mutate({ file, piece_type: type.id }, { onError: fail })}
@@ -85,7 +88,7 @@ export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; ac
       {(dossier.other_pieces.length > 0 || editable) && (
         <Box sx={{ mt: 1.5 }}>
           <Typography variant="body2" fontWeight={600} gutterBottom>
-            Autres pièces
+            {t('deposits.pieces.others')}
           </Typography>
           <Stack direction="row" gap={0.75} flexWrap="wrap" sx={{ mb: 1 }}>
             {dossier.other_pieces.map((piece) => (
@@ -106,13 +109,13 @@ export function PiecesSection({ dossier, actions }: { dossier: DepositDetail; ac
             <Stack direction="row" gap={1} alignItems="center">
               <TextField
                 size="small"
-                label="Nom de la pièce"
-                placeholder="Procuration, bon de commande…"
+                label={t('deposits.pieces.name')}
+                placeholder={t('deposits.pieces.namePlaceholder')}
                 value={otherLabel}
                 onChange={(e) => setOtherLabel(e.target.value)}
               />
               <FileButton
-                label="Joindre"
+                label={t('deposits.pieces.attach')}
                 accept={PIECE_ACCEPT}
                 disabled={!otherLabel.trim() || actions.addPiece.isPending}
                 onFile={(file) =>

@@ -79,20 +79,20 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
   return (
     <form onSubmit={handleSubmit(submit)} noValidate data-testid="amm-detail-form">
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {info('Titulaire / laboratoire', amm.holder || '—')}
+        {info(t('ammPages.detail.holder'), amm.holder || '—')}
         {info(t('amm.fields.status'), <StatusChip value={amm.status} />)}
         {info(t('amm.fields.urgency'), t(`urgency.${amm.urgency}`))}
         {info(t('amm.fields.effectiveEnd'), formatDate(amm.effective_end_date))}
         {info(
           t('amm.fields.idealFiling'),
           <span title={t('amm.fields.idealFilingHelp')} data-testid="ideal-filing">
-            {filingDateText(amm.ideal_filing_date, 'dépassé')}
+            {filingDateText(amm.ideal_filing_date, t('ammPages.filing.passedMasc'))}
           </span>,
         )}
         {info(
           t('amm.fields.agencyDeadline'),
           <span title={t('amm.fields.agencyDeadlineHelp')} data-testid="agency-deadline">
-            {filingDateText(amm.agency_filing_deadline, 'dépassée')}
+            {filingDateText(amm.agency_filing_deadline, t('ammPages.filing.passedFem'))}
           </span>,
         )}
         {info(t('amm.fields.hasScan'), amm.has_current_scan ? t('app.yes') : t('app.no'))}
@@ -144,7 +144,9 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
             label={t('amm.fields.originalEnd')}
             disabled={!editable}
             helperText={
-              end && end !== addValidity(start, years) ? t('amm.fields.endManual') : `Début + ${years} ans`
+              end && end !== addValidity(start, years)
+                ? t('amm.fields.endManual')
+                : t('ammPages.startPlusYears', { years })
             }
           />
         </Grid>

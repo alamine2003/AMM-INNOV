@@ -1,5 +1,6 @@
 import { Box, type SxProps, type Theme } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import type { BinderResult } from '@/api/types';
 
 export const INK = '#1d2433';
@@ -45,10 +46,11 @@ export function Holes({ side = 'left' }: { side?: 'left' | 'right' }) {
   );
 }
 
+/** `label` : clé de traduction du texte du tampon (résolue au rendu). */
 export const STAMPS: Record<BinderResult, { label: string; color: string }> = {
-  CONFORME: { label: 'VÉRIFIÉ', color: '#2e7d32' },
-  CORRIGE: { label: 'CORRIGÉ', color: '#e65100' },
-  ABSENT: { label: 'ABSENT', color: '#c62828' },
+  CONFORME: { label: 'binders.stamps.checked', color: '#2e7d32' },
+  CORRIGE: { label: 'binders.stamps.fixed', color: '#e65100' },
+  ABSENT: { label: 'binders.stamps.missing', color: '#c62828' },
 };
 
 const stampIn = keyframes`
@@ -68,6 +70,7 @@ export function Stamp({
   caption: string;
   animate?: boolean;
 }) {
+  const { t } = useTranslation();
   const { label, color } = STAMPS[result];
   return (
     <Box
@@ -91,7 +94,7 @@ export function Stamp({
       }}
     >
       <Box component="span" sx={{ fontWeight: 900, fontSize: 24, letterSpacing: 2, lineHeight: 1.2 }}>
-        {label}
+        {t(label)}
       </Box>
       <Box component="span" sx={{ fontWeight: 700, fontSize: 10 }}>
         {caption}

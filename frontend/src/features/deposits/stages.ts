@@ -13,38 +13,14 @@ export const STAGE_COLORS: Record<DepositStage, string> = {
 
 export const CLOSED_STAGES: DepositStage[] = ['OBTENU', 'REJETE', 'ABANDONNE'];
 
-/** La procédure du siège, telle qu'elle est suivie dans l'application. */
+/** La procédure du siège : clés de texte (`deposits.procedure.<key>`) et qui agit (`deposits.who.<who>`). */
 export const PROCEDURE = [
-  {
-    title: 'Montage du dossier',
-    who: 'Siège',
-    text: 'Lettre de demande de renouvellement, certificat de PGHT (prix grossiste hors taxe), formulaires, RCP, certificats d’analyse, pièces réglementaires du pays.',
-  },
-  {
-    title: 'Échantillons',
-    who: 'Siège',
-    text: 'Récupérer les échantillons sur place et noter n° de lot, date de fabrication et date de péremption.',
-  },
-  {
-    title: 'Envoi au pays',
-    who: 'Siège',
-    text: 'Le dossier part au pays : il est prévenu et télécharge le dossier complet depuis l’application.',
-  },
-  {
-    title: 'Dépôt à l’agence',
-    who: 'Pays',
-    text: 'Le pays dépose le dossier à l’agence de régulation et envoie l’attestation de dépôt au siège.',
-  },
-  {
-    title: 'Commission',
-    who: 'Pays',
-    text: 'Le dépôt passe en commission ; chaque commission et chaque notification de l’agence est notée.',
-  },
-  {
-    title: 'Décision',
-    who: 'Pays ou siège',
-    text: 'Renouvellement obtenu (n° et date de début) ou rejeté : le dossier est clos et l’AMM recalculée.',
-  },
+  { key: 'assemble', who: 'hq' },
+  { key: 'samples', who: 'hq' },
+  { key: 'send', who: 'hq' },
+  { key: 'submit', who: 'country' },
+  { key: 'commission', who: 'country' },
+  { key: 'decision', who: 'either' },
 ] as const;
 
 export const STAGE_STEP: Record<DepositStage, number> = {

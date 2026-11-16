@@ -11,6 +11,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { Avatar, Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /** Briques communes aux étapes d'un dossier de dépôt : cadre d'étape, envoi de fichier, pièce. */
 
@@ -123,6 +124,7 @@ export function PieceChip({
   onDelete?: () => void;
 }) {
   const fail = useFail();
+  const { t } = useTranslation();
   return (
     <Chip
       size="small"
@@ -136,7 +138,11 @@ export function PieceChip({
           .catch(fail)
       }
       onDelete={onDelete}
-      deleteIcon={onDelete ? <DeleteOutlineIcon aria-label={`Retirer ${piece.filename}`} /> : undefined}
+      deleteIcon={
+        onDelete ? (
+          <DeleteOutlineIcon aria-label={t('deposits.pieces.remove', { name: piece.filename })} />
+        ) : undefined
+      }
       sx={{ maxWidth: '100%' }}
     />
   );

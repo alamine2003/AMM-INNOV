@@ -155,11 +155,11 @@ export function DocumentTimeline({
                         </Tooltip>
                       )}
                       {canEdit && onEdit && (
-                        <Tooltip title="Corriger le classement (période, type, date)">
+                        <Tooltip title={t('documentsPages.timeline.editTooltip')}>
                           <IconButton
                             size="small"
                             onClick={() => onEdit(d)}
-                            aria-label="Corriger le classement"
+                            aria-label={t('documentsPages.timeline.editAria')}
                             data-testid={`doc-edit-${d.id}`}
                           >
                             <EditIcon fontSize="small" />

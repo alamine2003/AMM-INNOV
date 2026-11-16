@@ -5,6 +5,37 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.1] — 2026-11-16
+
+AMM GH en anglais, première étape (décision du 16/11/2026 : anglais pour tous les utilisateurs,
+serveur compris, livré en plusieurs versions). Cette version traduit toute l'interface.
+
+### Ajouté
+- **Bouton FR / EN** dans la barre du haut (dans le menu du compte sur téléphone) et sur la
+  page de connexion. La langue est gardée sur le compte (`language`, français par défaut) :
+  l'utilisateur la retrouve sur tout appareil. Choisie sur la page de connexion, elle rejoint
+  le compte dès la connexion.
+- **Toute l'interface existe en anglais** : 1 335 textes dans chaque fichier de langue
+  (`locales/fr.json`, `locales/en.json`). Aux 465 textes déjà sortis des écrans s'ajoutent
+  870 textes qui étaient écrits en dur : classeurs, import de dossiers, imports Excel et
+  synchronisation GHPL, dépôts, plan d'action, fiche et frise d'une AMM, documents, audit,
+  permissions, corbeille, journal des erreurs. Suivent aussi la langue : les messages de
+  validation des formulaires, les textes des tableaux et de la pagination, le calendrier, les
+  durées (« 3 ans et 2 mois », “3 years and 2 months”), l'attribut `lang` de la page. Les dates
+  restent écrites JJ/MM/AAAA.
+- API : `PATCH /api/v1/me` (la langue, et rien d'autre) ; `language` dans `/me`, la réponse de
+  connexion et les comptes. L'interface envoie sa langue au serveur (`Accept-Language`).
+- Un test garantit que les deux fichiers de langue ont les mêmes clés et les mêmes variables.
+
+### Modifié
+- Accords au singulier corrigés au passage en français : « 1 classeur » (au lieu de
+  « 1 classeurs »), « 1 an », « Chronologie de la décision de… ».
+
+### Reste en français pour l'instant
+- Les textes que fabrique le serveur : libellés et conseils du plan d'action, questions et
+  constats d'import, états de synchronisation, notifications, messages d'erreur du serveur,
+  classeurs PDF, exports Excel. Les noms de pays aussi. Versions suivantes.
+
 ## [1.3.0] — 2026-11-15
 
 Palier : AMM GH prête à quitter Render pour le Serveur 01 Stellarix, l'interface restant sur

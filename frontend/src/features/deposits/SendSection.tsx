@@ -6,6 +6,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import SendIcon from '@mui/icons-material/Send';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, Section, useFail } from './sectionParts';
 
 /** Étape 3 : l'envoi au pays. */
@@ -14,6 +15,7 @@ import { type Actions, Section, useFail } from './sectionParts';
 
 export function SendSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [note, setNote] = useState('');
   const [downloading, setDownloading] = useState(false);
   const download = () => {
@@ -26,18 +28,20 @@ export function SendSection({ dossier, actions }: { dossier: DepositDetail; acti
   };
   const zipButton = (label: string, variant: 'contained' | 'outlined' = 'contained') => (
     <Button variant={variant} startIcon={<DownloadIcon />} onClick={download} disabled={downloading}>
-      {downloading ? 'Préparation du dossier…' : label}
+      {downloading ? t('deposits.send.preparing') : label}
     </Button>
   );
   const countryDownloads = dossier.downloads;
   return (
     <Section
       index={3}
-      title="Envoi au pays"
+      title={t('deposits.send.title')}
       subtitle={
         dossier.sent_at
-          ? `Envoyé le ${formatDateTime(dossier.sent_at)}${dossier.sent_by ? ` par ${dossier.sent_by}` : ''}`
-          : 'Le pays est prévenu et télécharge le dossier complet (pièces rangées et bordereau).'
+          ? dossier.sent_by
+            ? t('deposits.send.sentBy', { date: formatDateTime(dossier.sent_at), user: dossier.sent_by })
+            : t('deposits.send.sent', { date: formatDateTime(dossier.sent_at) })
+          : t('deposits.send.pending')
       }
       state={dossier.sent_at ? 'done' : dossier.can.manage ? 'active' : 'todo'}
       testId="section-send"
@@ -46,14 +50,14 @@ export function SendSection({ dossier, actions }: { dossier: DepositDetail; acti
         <Stack gap={1.5}>
           {dossier.missing.length > 0 ? (
             <Alert severity="warning">
-              <strong>Avant l’envoi :</strong> {dossier.missing.join(' ; ')}.
+              <strong>{t('deposits.send.beforeSend')}</strong> {dossier.missing.join(' ; ')}.
             </Alert>
           ) : (
-            <Alert severity="success">Dossier complet : prêt à partir au pays.</Alert>
+            <Alert severity="success">{t('deposits.send.complete')}</Alert>
           )}
           <TextField
-            label="Message au pays (facultatif)"
-            placeholder="Échantillons expédiés par DHL, n° de suivi…"
+            label={t('deposits.send.noteLabel')}
+            placeholder={t('deposits.send.notePlaceholder')}
             multiline
             minRows={2}
             value={note}
@@ -66,9 +70,9 @@ export function SendSection({ dossier, actions }: { dossier: DepositDetail; acti
               disabled={dossier.missing.length > 0 || actions.send.isPending}
               onClick={() => actions.send.mutate(note, { onSuccess: () => setNote(''), onError: fail })}
             >
-              Envoyer au pays
+              {t('deposits.send.sendButton')}
             </Button>
-            {zipButton('Aperçu du dossier (ZIP)', 'outlined')}
+            {zipButton(t('deposits.send.preview'), 'outlined')}
           </Stack>
         </Stack>
       )}
@@ -76,14 +80,18 @@ export function SendSection({ dossier, actions }: { dossier: DepositDetail; acti
         <Stack gap={1}>
           {dossier.send_note && (
             <Alert severity="info" icon={false}>
-              <strong>Message du siège :</strong> {dossier.send_note}
+              <strong>{t('deposits.send.hqMessage')}</strong> {dossier.send_note}
             </Alert>
           )}
-          <Box>{zipButton('Télécharger le dossier (ZIP)')}</Box>
+          <Box>{zipButton(t('deposits.send.download'))}</Box>
           <Typography variant="body2" color="text.secondary" data-testid="downloads">
             {countryDownloads.length
-              ? `Téléchargé ${countryDownloads.length} fois — dernier : ${countryDownloads[0].user ?? '?'} le ${formatDateTime(countryDownloads[0].at)}`
-              : 'Pas encore téléchargé.'}
+              ? t('deposits.send.downloaded', {
+                  n: countryDownloads.length,
+                  user: countryDownloads[0].user ?? '?',
+                  date: formatDateTime(countryDownloads[0].at),
+                })
+              : t('deposits.send.notDownloaded')}
           </Typography>
         </Stack>
       )}

@@ -1,5 +1,6 @@
 import { Box, LinearProgress, Stack, Tooltip, Typography } from '@mui/material';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useCurrentUser } from '@/api/hooks/useAuth';
 import { isHqOrAdmin, useCan } from '@/features/auth/authStore';
@@ -14,6 +15,7 @@ import { NAVY } from './paper';
 
 /** Dos d'un classeur à levier : étiquette, jauge d'avancement, trou de préhension. */
 function Spine({ binder }: { binder: BinderSummary }) {
+  const { t } = useTranslation();
   const single = binder.sections.length === 1;
   const color = single ? binder.sections[0].color : NAVY;
   const done = binder.total > 0 && binder.checked === binder.total;
@@ -24,7 +26,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
     <Box
       component={Link}
       to={`/classeurs/${binder.key}`}
-      aria-label={`Ouvrir le classeur ${binder.country_name} — ${binder.title}`}
+      aria-label={t('binders.shelf.openBinder', { country: binder.country_name, title: binder.title })}
       data-testid={`spine-${binder.key}`}
       sx={{
         position: 'relative',
@@ -51,7 +53,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
     >
       {out && (
         <Box
-          aria-label={`Ouvert par ${binder.readers.join(', ')}`}
+          aria-label={t('binders.shelf.openedBy', { names: binder.readers.join(', ') })}
           sx={{
             position: 'absolute',
             top: -54,
@@ -133,7 +135,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
       <LinearProgress
         variant="determinate"
         value={progress}
-        aria-label="Avancement"
+        aria-label={t('binders.shelf.progress')}
         sx={{
           position: 'absolute',
           left: 12,
@@ -176,6 +178,7 @@ function Spine({ binder }: { binder: BinderSummary }) {
 }
 
 export default function BindersShelfPage() {
+  const { t } = useTranslation();
   const shelf = useBinders();
   const user = useCurrentUser();
   const isHq = isHqOrAdmin(user);
@@ -194,12 +197,15 @@ export default function BindersShelfPage() {
   return (
     <Box>
       <PageHeader
-        title="Classeurs d'archivage"
+        title={t('binders.shelf.title')}
         subtitle={
           shelf.data
-            ? `${binders.length} classeurs · ${totals.checked} / ${totals.pages} pages vérifiées · ${totals.conformes} dossiers conformes${
-                isHq ? '' : ' · vos pays uniquement'
-              }`
+            ? `${t('binders.shelf.subtitle', {
+                count: binders.length,
+                checked: totals.checked,
+                pages: totals.pages,
+                conformes: totals.conformes,
+              })}${isHq ? '' : ` · ${t('binders.shelf.ownCountries')}`}`
             : undefined
         }
       />
@@ -208,7 +214,7 @@ export default function BindersShelfPage() {
       ) : shelf.isError ? (
         <ErrorBlock error={shelf.error} onRetry={() => shelf.refetch()} />
       ) : binders.length === 0 ? (
-        <Typography color="text.secondary">Aucun classeur : aucune AMM dans votre périmètre.</Typography>
+        <Typography color="text.secondary">{t('binders.shelf.empty')}</Typography>
       ) : (
         <Box
           sx={{
@@ -234,18 +240,26 @@ export default function BindersShelfPage() {
                     <br />
                     {binder.readers.length > 0 && (
                       <>
-                        Ouvert par {binder.readers.join(', ')}
+                        {t('binders.shelf.openedBy', { names: binder.readers.join(', ') })}
                         <br />
                       </>
                     )}
-                    {binder.checked} / {binder.total} vérifiées · {binder.conformes} conformes ·{' '}
-                    {binder.non_conformes} non conformes · {binder.absent} absentes · {binder.to_scan} à
-                    scanner · {binder.to_print} à imprimer
+                    {t('binders.shelf.tooltipStats', {
+                      checked: binder.checked,
+                      total: binder.total,
+                      conformes: binder.conformes,
+                      nonConformes: binder.non_conformes,
+                      absent: binder.absent,
+                      toScan: binder.to_scan,
+                      toPrint: binder.to_print,
+                    })}
                     {binder.last_checked_at && (
                       <>
                         <br />
-                        Dernière vérification le {formatDate(binder.last_checked_at)} (
-                        {binder.last_checked_by})
+                        {t('binders.shelf.lastCheck', {
+                          date: formatDate(binder.last_checked_at),
+                          by: binder.last_checked_by,
+                        })}
                       </>
                     )}
                   </>

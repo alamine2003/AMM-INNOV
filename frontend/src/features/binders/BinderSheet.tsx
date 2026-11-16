@@ -22,6 +22,7 @@ import FolderOffIcon from '@mui/icons-material/FolderOff';
 import UndoIcon from '@mui/icons-material/Undo';
 import { Alert, Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ChronologyDialog } from './ChronologyDialog';
 import { chronologyIssues } from './chronologyShared';
@@ -54,6 +55,7 @@ export function BinderSheet({
    */
   facing?: HTMLElement | null;
 }) {
+  const { t } = useTranslation();
   const years = useValidityYears(binder.country_iso2);
   const check = useCheckPage(binder.key);
   const uncheck = useUncheckPage(binder.key);
@@ -118,7 +120,7 @@ export function BinderSheet({
         return { slot, field, value: values[key] || null };
       });
     if (!corrections.length && !note.trim()) {
-      setError('Aucune valeur modifiée : utilisez « Papier conforme » si la page est juste.');
+      setError(t('binders.sheet.noChange'));
       return;
     }
     send('CORRIGE', corrections);
@@ -141,11 +143,12 @@ export function BinderSheet({
         sx={{ color: MUTED, fontSize: 11, fontWeight: 700 }}
       >
         <span>
-          {binder.country_name.toUpperCase()} · CLASSEUR {binder.title.toUpperCase()}
+          {t('binders.sheet.header', {
+            country: binder.country_name.toUpperCase(),
+            title: binder.title.toUpperCase(),
+          })}
         </span>
-        <span>
-          PAGE {page.page} / {total}
-        </span>
+        <span>{t('binders.sheet.pageOf', { page: page.page, total })}</span>
       </Stack>
       <Typography
         component="h2"
@@ -156,7 +159,7 @@ export function BinderSheet({
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.75, mb: 1.5, flexWrap: 'wrap' }}>
         <Pill color={section.color}>{section.label}</Pill>
         <Typography sx={{ fontSize: 12, color: MUTED }}>
-          page {page.section_page} / {section.total} de la gamme
+          {t('binders.sheet.rangePage', { page: page.section_page, total: section.total })}
         </Typography>
         {(canRename || canDelete) && (
           <Stack direction="row" spacing={0.5} sx={{ ml: 'auto !important' }}>
@@ -168,7 +171,7 @@ export function BinderSheet({
                 sx={{ color: MUTED, fontSize: 12 }}
                 data-testid="rename-page"
               >
-                Titre
+                {t('binders.sheet.titleButton')}
               </Button>
             )}
             {canDelete && (
@@ -181,7 +184,7 @@ export function BinderSheet({
                 sx={{ fontSize: 12 }}
                 data-testid="delete-page"
               >
-                Supprimer la page
+                {t('binders.sheet.deletePage')}
               </Button>
             )}
           </Stack>
@@ -196,7 +199,7 @@ export function BinderSheet({
               key={slot}
               page={page}
               slot={slot}
-              title={title}
+              title={t(title)}
               editing={editing}
               years={years}
               values={values}
@@ -217,7 +220,7 @@ export function BinderSheet({
             sx={{ alignSelf: 'center' }}
             data-testid="add-renewal-slot"
           >
-            Le papier porte un renouvellement
+            {t('binders.sheet.paperHasRenewal')}
           </Button>
         )}
       </Stack>
@@ -229,18 +232,20 @@ export function BinderSheet({
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: 11, fontWeight: 800, color: MUTED, letterSpacing: 0.6, mb: 1 }}>
-            SITUATION
+            {t('binders.sheet.situation')}
           </Typography>
           <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
             <Pill color={STATUS_COLORS[page.status] ?? MUTED}>{page.status_label}</Pill>
             <Typography sx={{ fontSize: 13 }}>
-              {page.dossier_state === 'COMPLET' ? 'Dossier complet' : 'Dossier incomplet'}
+              {page.dossier_state === 'COMPLET'
+                ? t('binders.sheet.dossierComplete')
+                : t('binders.sheet.dossierIncomplete')}
             </Typography>
-            {page.to_scan && <Pill color="#c62828">À SCANNER</Pill>}
-            {page.to_print && <Pill color="#1565c0">À IMPRIMER</Pill>}
+            {page.to_scan && <Pill color="#c62828">{t('binders.sheet.toScanPill')}</Pill>}
+            {page.to_print && <Pill color="#1565c0">{t('binders.sheet.toPrintPill')}</Pill>}
             {page.pending_renewal && (
               <Box
-                aria-label="Renouvellement déposé"
+                aria-label={t('binders.sheet.renewalSubmitted')}
                 sx={{
                   display: 'inline-flex',
                   flexDirection: 'column',
@@ -255,11 +260,13 @@ export function BinderSheet({
                 }}
               >
                 <Box component="span" sx={{ fontWeight: 900, fontSize: 15, letterSpacing: 1 }}>
-                  {page.pending_renewal.workflow_status === 'DEPOSE' ? 'DÉPOSÉ' : 'EN INSTRUCTION'}
+                  {page.pending_renewal.workflow_status === 'DEPOSE'
+                    ? t('binders.sheet.submittedStamp')
+                    : t('binders.sheet.underReviewStamp')}
                 </Box>
                 {page.pending_renewal.filing_date && (
                   <Box component="span" sx={{ fontSize: 10, fontWeight: 700 }}>
-                    le {formatDate(page.pending_renewal.filing_date)}
+                    {t('binders.sheet.onDate', { date: formatDate(page.pending_renewal.filing_date) })}
                   </Box>
                 )}
               </Box>
@@ -274,21 +281,17 @@ export function BinderSheet({
             }}
           >
             {!scan
-              ? 'Aucun scan dans AMM GH'
+              ? t('binders.sheet.noScan')
               : currentScan
-                ? `Décision scannée du ${formatDate(scan.document_date)}${scan.page_count ? ` · ${scan.page_count} p.` : ''}`
-                : `Décision en vigueur non scannée (dernier scan : décision du ${formatDate(scan.document_date)})`}
+                ? `${t('binders.sheet.scannedOn', { date: formatDate(scan.document_date) })}${scan.page_count ? ` · ${t('binders.sheet.pagesShort', { n: scan.page_count })}` : ''}`
+                : t('binders.sheet.notScanned', { date: formatDate(scan.document_date) })}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
             {canEdit && <ScanImportButton scanImport={scanImport} hasScan={currentScan} />}
             {canEdit && scan && (
               <Tooltip
                 describeChild
-                title={
-                  page.to_print
-                    ? 'La feuille est imprimée et rangée dans le classeur'
-                    : 'Le scan existe mais sa feuille manque dans le classeur papier (compté dans le bilan)'
-                }
+                title={page.to_print ? t('binders.sheet.printedHint') : t('binders.sheet.toPrintHint')}
               >
                 <Button
                   size="small"
@@ -298,7 +301,7 @@ export function BinderSheet({
                   onClick={() => markPrint.mutate({ amm: page.amm_id, toPrint: !page.to_print })}
                   data-testid="mark-print"
                 >
-                  {page.to_print ? 'Imprimée et rangée' : 'À imprimer'}
+                  {page.to_print ? t('binders.sheet.printedFiled') : t('binders.sheet.toPrint')}
                 </Button>
               </Tooltip>
             )}
@@ -309,8 +312,8 @@ export function BinderSheet({
               sx={{ mt: 1 }}
               data-testid="open-chronology"
             >
-              Chronologie
-              {missing ? ` · ${missing} manque${missing > 1 ? 's' : ''}` : ''}
+              {t('binders.chronology.title')}
+              {missing ? ` · ${t('binders.sheet.missing', { count: missing })}` : ''}
             </Button>
           </Stack>
         </Box>
@@ -318,11 +321,17 @@ export function BinderSheet({
           <ScanThumbnail
             documentId={scan.document_id}
             documentDate={scan.document_date}
-            title={`${page.product_name} — décision du ${formatDate(scan.document_date)}`}
+            title={t('binders.sheet.scanTitle', {
+              name: page.product_name,
+              date: formatDate(scan.document_date),
+            })}
             width={96}
             stack={Math.max(page.decision_count - 1, 0)}
             onOpen={() => setChronologyOpen(true)}
-            label={`Chronologie des ${page.decision_count} décisions de ${page.product_name}`}
+            label={t('binders.sheet.chronologyLabel', {
+              count: page.decision_count,
+              name: page.product_name,
+            })}
           />
         )}
         <ChronologyDialog
@@ -346,13 +355,23 @@ export function BinderSheet({
       {stale && !editing && (
         <Alert severity="warning" sx={{ mt: 1.5, bgcolor: '#fff3e0' }} data-testid="page-stale">
           <Typography variant="subtitle2">
-            À revérifier : la fiche a changé depuis le constat ({page.changed_by}).
+            {t('binders.sheet.staleTitle', { by: page.changed_by })}
           </Typography>
           {page.changed_since_check.map((change) => (
             <Box key={`${change.slot}.${change.field}`} sx={{ fontSize: 13 }}>
-              {FIELDS.find((f) => f.field === change.field)?.label} (
-              {change.slot === 'original' ? 'origine' : 'renouvellement'}) : vérifié{' '}
-              <b>{show(change.field, change.checked)}</b>, maintenant <b>{show(change.field, change.now)}</b>
+              <Trans
+                i18nKey="binders.sheet.staleChange"
+                components={{ b: <b /> }}
+                values={{
+                  field: t(FIELDS.find((f) => f.field === change.field)?.label ?? ''),
+                  slot:
+                    change.slot === 'original'
+                      ? t('binders.sheet.slotOrigin')
+                      : t('binders.sheet.slotRenewal'),
+                  checked: show(change.field, change.checked),
+                  now: show(change.field, change.now),
+                }}
+              />
             </Box>
           ))}
         </Alert>
@@ -361,8 +380,7 @@ export function BinderSheet({
 
       {page.discrepancies.length > 0 && !editing && (
         <Alert severity="warning" sx={{ mt: 1.5, py: 0.25, bgcolor: '#fff8e1' }}>
-          Écart entre la fiche et le scan : vérifiez sur le papier, puis « Papier conforme » si la fiche est
-          juste ou « Corriger ».
+          {t('binders.sheet.discrepancy')}
         </Alert>
       )}
 
@@ -370,7 +388,7 @@ export function BinderSheet({
         <TextField
           size="small"
           fullWidth
-          label="Note (facultatif)"
+          label={t('binders.sheet.noteOptional')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           sx={{ mt: 1.5, bgcolor: '#fff' }}
@@ -386,18 +404,15 @@ export function BinderSheet({
         {!canEdit ? null : editing ? (
           <Stack direction="row" gap={1}>
             <Button variant="contained" color="warning" onClick={submitCorrection} disabled={busy}>
-              Valider la correction
+              {t('binders.sheet.validate')}
             </Button>
             <Button onClick={cancelEditing} disabled={busy}>
-              Annuler
+              {t('app.cancel')}
             </Button>
           </Stack>
         ) : (
           <Stack direction="row" gap={1} flexWrap="wrap">
-            <Tooltip
-              describeChild
-              title="Le dossier papier est dans le classeur, la date et le n° d'AMM sont justes (touche C)"
-            >
+            <Tooltip describeChild title={t('binders.sheet.conformHint')}>
               <Button
                 variant="contained"
                 color="success"
@@ -406,10 +421,10 @@ export function BinderSheet({
                 disabled={busy}
                 data-action="conforme"
               >
-                Papier conforme
+                {t('binders.sheet.paperConform')}
               </Button>
             </Tooltip>
-            <Tooltip describeChild title="Saisir la valeur lue sur le papier (touche E)">
+            <Tooltip describeChild title={t('binders.sheet.fixHint')}>
               <Button
                 variant="outlined"
                 color="warning"
@@ -418,10 +433,10 @@ export function BinderSheet({
                 disabled={busy}
                 data-action="corriger"
               >
-                Corriger
+                {t('binders.sheet.fix')}
               </Button>
             </Tooltip>
-            <Tooltip describeChild title="Pas de dossier papier à cet endroit (touche A)">
+            <Tooltip describeChild title={t('binders.sheet.absentHint')}>
               <Button
                 variant="outlined"
                 color="error"
@@ -430,7 +445,7 @@ export function BinderSheet({
                 disabled={busy}
                 data-action="absent"
               >
-                Absent du classeur
+                {t('binders.sheet.absentFromBinder')}
               </Button>
             </Tooltip>
           </Stack>
@@ -439,7 +454,7 @@ export function BinderSheet({
           <Stack direction="row" justifyContent="space-between" alignItems="flex-end" gap={2}>
             {stamp.note ? (
               <Box
-                aria-label="Note de l'archiviste"
+                aria-label={t('binders.sheet.archivistNote')}
                 sx={{
                   position: 'relative',
                   flexShrink: 0,
@@ -487,7 +502,7 @@ export function BinderSheet({
                   disabled={busy}
                   sx={{ color: MUTED }}
                 >
-                  Annuler le constat
+                  {t('binders.sheet.cancelFinding')}
                 </Button>
               )}
             </Stack>
@@ -496,11 +511,19 @@ export function BinderSheet({
       </Stack>
       {stamp && stamp.corrections.length > 0 && !editing && (
         <Box sx={{ fontSize: 12, color: MUTED }}>
-          <b>Corrigé sur le papier</b> ({formatDateTime(stamp.checked_at)}) :{' '}
+          <Trans
+            i18nKey="binders.sheet.correctedOnPaper"
+            components={{ b: <b /> }}
+            values={{ date: formatDateTime(stamp.checked_at) }}
+          />{' '}
           {stamp.corrections
-            .map(
-              (c) =>
-                `${FIELDS.find((f) => f.field === c.field)?.label} (${c.slot === 'original' ? 'origine' : 'renouvellement'}) ${show(c.field, c.old)} → ${show(c.field, c.new)}`,
+            .map((c) =>
+              t('binders.sheet.correctionItem', {
+                field: t(FIELDS.find((f) => f.field === c.field)?.label ?? ''),
+                slot: c.slot === 'original' ? t('binders.sheet.slotOrigin') : t('binders.sheet.slotRenewal'),
+                old: show(c.field, c.old),
+                new: show(c.field, c.new),
+              }),
             )
             .join(' · ')}
         </Box>
@@ -548,7 +571,7 @@ export function BinderSheet({
           }}
         >
           <Typography sx={{ fontWeight: 800, color: '#204093', fontSize: 18 }}>
-            Déposez le scan de la décision : il sera lu et rangé sur {page.product_name}
+            {t('binders.sheet.drop', { name: page.product_name })}
           </Typography>
         </Box>
       )}

@@ -1,4 +1,5 @@
 import { Box } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Drapeaux dessinés (SVG 3:2) des pays suivis : les émojis-drapeaux ne s'affichent pas sous
@@ -98,6 +99,7 @@ const FLAGS: Record<string, React.ReactNode> = {
 };
 
 export function Flag({ iso2, width = 30 }: { iso2: string; width?: number }) {
+  const { t } = useTranslation();
   const flag = FLAGS[iso2];
   if (!flag) return null;
   return (
@@ -105,7 +107,7 @@ export function Flag({ iso2, width = 30 }: { iso2: string; width?: number }) {
       component="svg"
       viewBox="0 0 30 20"
       role="img"
-      aria-label={`Drapeau ${iso2}`}
+      aria-label={t('binders.flag', { iso2 })}
       sx={{
         width,
         height: (width * 2) / 3,

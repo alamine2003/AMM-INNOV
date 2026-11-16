@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
 import { useValidityYears } from '@/api/hooks/useCatalog';
@@ -60,6 +61,7 @@ export function EditRenewalDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const update = useUpdateRenewal(amm.id);
   const years = useValidityYears(amm.country_iso2);
@@ -76,7 +78,7 @@ export function EditRenewalDialog({
 
   const submit = (values: Values) => {
     if (values.start_date && values.end_date && !values.end_auto && values.end_date < values.start_date) {
-      enqueueSnackbar('La date de fin précède la date de début.', { variant: 'error' });
+      enqueueSnackbar(t('renewalsPages.edit.endBeforeStart'), { variant: 'error' });
       return;
     }
     update.mutate(
@@ -94,7 +96,7 @@ export function EditRenewalDialog({
       },
       {
         onSuccess: () => {
-          enqueueSnackbar(`Renouvellement ${renewal.sequence} corrigé`, { variant: 'success' });
+          enqueueSnackbar(t('renewalsPages.edit.saved', { n: renewal.sequence }), { variant: 'success' });
           onClose();
         },
       },
@@ -104,20 +106,20 @@ export function EditRenewalDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="edit-renewal-dialog">
       <form onSubmit={handleSubmit(submit)} noValidate>
-        <DialogTitle>Corriger le renouvellement {renewal.sequence}</DialogTitle>
+        <DialogTitle>{t('renewalsPages.edit.title', { n: renewal.sequence })}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            L'échéance et le statut de l'AMM sont recalculés ; l'ancienne valeur reste dans l'historique.
+            {t('renewalsPages.edit.hint')}
           </Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12 }}>
-              <TextField label="N° d'AMM" fullWidth {...register('number')} />
+              <TextField label={t('renewalsPages.edit.number')} fullWidth {...register('number')} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <DateField control={control} name="filing_date" label="Date de dépôt" />
+              <DateField control={control} name="filing_date" label={t('renewals.filingDate')} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <DateField control={control} name="decision_date" label="Date de décision" />
+              <DateField control={control} name="decision_date" label={t('renewals.decisionDate')} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <Controller
@@ -125,7 +127,7 @@ export function EditRenewalDialog({
                 name="start_date"
                 render={({ field }) => (
                   <DateInput
-                    label="Date de début"
+                    label={t('renewals.startDate')}
                     value={field.value}
                     onBlur={field.onBlur}
                     onChange={(value) => {
@@ -140,18 +142,18 @@ export function EditRenewalDialog({
             <Grid size={{ xs: 12, sm: 6 }}>
               {endAuto ? (
                 <DateInput
-                  label="Date de fin"
+                  label={t('renewals.endDate')}
                   value={computedEnd}
                   onChange={() => undefined}
                   disabled
-                  helperText={`Début + ${years} ans`}
+                  helperText={t('ammPages.startPlusYears', { years })}
                 />
               ) : (
                 <DateField
                   control={control}
                   name="end_date"
-                  label="Date de fin"
-                  helperText="Saisie à la main"
+                  label={t('renewals.endDate')}
+                  helperText={t('renewalsPages.edit.manualEnd')}
                 />
               )}
             </Grid>
@@ -174,13 +176,13 @@ export function EditRenewalDialog({
                         }}
                       />
                     }
-                    label={`Date de fin calculée automatiquement (${years} ans, durée de validité du pays)`}
+                    label={t('renewalsPages.edit.autoEnd', { years })}
                   />
                 )}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <TextField label="Notes" fullWidth multiline minRows={2} {...register('notes')} />
+              <TextField label={t('renewals.notes')} fullWidth multiline minRows={2} {...register('notes')} />
             </Grid>
           </Grid>
           {update.isError && (
@@ -190,14 +192,14 @@ export function EditRenewalDialog({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Annuler</Button>
+          <Button onClick={onClose}>{t('app.cancel')}</Button>
           <Button
             type="submit"
             variant="contained"
             disabled={!formState.isDirty || update.isPending}
             data-testid="edit-renewal-save"
           >
-            Enregistrer
+            {t('app.save')}
           </Button>
         </DialogActions>
       </form>

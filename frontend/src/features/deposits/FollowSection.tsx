@@ -6,21 +6,19 @@ import { saveBlob } from '@/lib/download';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Actions, FileButton, PIECE_ACCEPT, Section, useFail } from './sectionParts';
 
 /** Étape 5 : commission et notifications. */
 
 // --- 5. Commission et notifications --------------------------------------------------------
 
-export const EVENT_KINDS: { value: DepositEventKind; label: string }[] = [
-  { value: 'COMMISSION', label: 'Passage en commission' },
-  { value: 'NOTIFICATION', label: 'Notification de l’agence' },
-  { value: 'COMPLEMENT', label: 'Demande de complément' },
-  { value: 'AUTRE', label: 'Autre' },
-];
+/** Types de suivi : le libellé est la clé `deposits.follow.kinds.<valeur>`. */
+export const EVENT_KINDS: DepositEventKind[] = ['COMMISSION', 'NOTIFICATION', 'COMPLEMENT', 'AUTRE'];
 
 export function FollowSection({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [kind, setKind] = useState<DepositEventKind>('COMMISSION');
   const [date, setDate] = useState(todayIso());
   const [note, setNote] = useState('');
@@ -29,11 +27,11 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
   return (
     <Section
       index={5}
-      title="Commission et notifications"
+      title={t('deposits.follow.title')}
       subtitle={
         dossier.events.length
-          ? `${dossier.events.length} suivi(s) noté(s) à l’agence`
-          : 'Chaque passage en commission, notification ou demande de complément de l’agence.'
+          ? t('deposits.follow.count', { n: dossier.events.length })
+          : t('deposits.follow.empty')
       }
       state={decided || dossier.stage === 'COMMISSION' ? 'done' : dossier.can.follow ? 'active' : 'todo'}
       testId="section-follow"
@@ -57,7 +55,7 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
                   </Typography>
                 )}
                 <Typography variant="caption" color="text.secondary">
-                  Noté par {event.created_by ?? '?'}
+                  {t('deposits.follow.recordedBy', { user: event.created_by ?? '?' })}
                 </Typography>
               </Box>
               {event.has_file && (
@@ -84,27 +82,27 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
             <TextField
               select
               size="small"
-              label="Type"
+              label={t('deposits.follow.type')}
               value={kind}
               onChange={(e) => setKind(e.target.value as DepositEventKind)}
               sx={{ minWidth: 220 }}
             >
               {EVENT_KINDS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+                <MenuItem key={option} value={option}>
+                  {t(`deposits.follow.kinds.${option}`)}
                 </MenuItem>
               ))}
             </TextField>
             <DateInput
               size="small"
               fullWidth={false}
-              label="Date"
+              label={t('app.date')}
               value={date}
               onChange={(value) => setDate(value ?? '')}
               maxDate={new Date()}
             />
             <FileButton
-              label={file ? file.name : 'Pièce (facultatif)'}
+              label={file ? file.name : t('deposits.follow.fileOptional')}
               accept={PIECE_ACCEPT}
               icon={<AttachFileIcon />}
               onFile={setFile}
@@ -113,8 +111,8 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
           </Stack>
           <TextField
             size="small"
-            label="Détail"
-            placeholder="Avis de la commission, pièces demandées…"
+            label={t('deposits.follow.detail')}
+            placeholder={t('deposits.follow.detailPlaceholder')}
             multiline
             minRows={2}
             value={note}
@@ -137,7 +135,7 @@ export function FollowSection({ dossier, actions }: { dossier: DepositDetail; ac
                 )
               }
             >
-              Noter ce suivi
+              {t('deposits.follow.record')}
             </Button>
           </Box>
         </Stack>

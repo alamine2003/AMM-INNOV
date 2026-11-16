@@ -71,7 +71,7 @@ export default function ImportsPage() {
         title={t('admin.imports.title')}
         actions={
           <Button component={Link} to="/dossier-imports" variant="outlined">
-            Importer un dossier AMM
+            {t('excelImports.importDossier')}
           </Button>
         }
       />
@@ -117,7 +117,7 @@ export default function ImportsPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>{t('app.date')}</TableCell>
-                  <TableCell>Fichier</TableCell>
+                  <TableCell>{t('excelImports.fileColumn')}</TableCell>
                   <TableCell>{t('admin.imports.status')}</TableCell>
                   <TableCell>{t('admin.imports.created')}</TableCell>
                   <TableCell>{t('admin.imports.updated')}</TableCell>
@@ -157,7 +157,7 @@ export default function ImportsPage() {
                             size="small"
                             color="primary"
                             variant="outlined"
-                            label="Synchro AMM GHPL"
+                            label={t('excelImports.syncChip')}
                             sx={{ ml: 0.5 }}
                           />
                         )}

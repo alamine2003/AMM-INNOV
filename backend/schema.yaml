@@ -4015,6 +4015,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+    patch:
+      operationId: v1_me_partial_update
+      description: L'utilisateur change la langue de son interface (bouton FR / EN).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMeUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMeUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMeUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
   /api/v1/notifications/:
     get:
       operationId: v1_notifications_list
@@ -9085,6 +9110,14 @@ components:
         * `paper` - paper
         * `scan` - scan
         * `data` - data
+    LanguageEnum:
+      enum:
+      - fr
+      - en
+      type: string
+      description: |-
+        * `fr` - Français
+        * `en` - English
     LastRenewal:
       type: object
       description: Shape of `last_renewal` in the AMM list (documentation of the OpenAPI
@@ -9178,6 +9211,10 @@ components:
         is_active:
           type: boolean
           title: Actif
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Langue
         date_joined:
           type: string
           format: date-time
@@ -9914,6 +9951,16 @@ components:
         title:
           type: string
           maxLength: 255
+    PatchedMeUpdateRequest:
+      type: object
+      description: |-
+        Ce que l'utilisateur règle lui-même sur son compte : sa langue, et rien d'autre (ni son
+        rôle, ni ses pays).
+      properties:
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Langue
     PatchedPageRenameInputRequest:
       type: object
       properties:
@@ -10081,6 +10128,10 @@ components:
         is_active:
           type: boolean
           title: Actif
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Langue
         password:
           type: string
           writeOnly: true
@@ -11031,6 +11082,10 @@ components:
         is_active:
           type: boolean
           title: Actif
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Langue
         date_joined:
           type: string
           format: date-time
@@ -11077,6 +11132,10 @@ components:
         is_active:
           type: boolean
           title: Actif
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Langue
         password:
           type: string
           writeOnly: true

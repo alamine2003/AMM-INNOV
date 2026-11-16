@@ -36,7 +36,10 @@
     "confirmDelete": "Confirmer la suppression ?",
     "unknown": "Inconnu",
     "days": "jours",
-    "months": "mois"
+    "months": "mois",
+    "language": "Langue",
+    "languageFr": "Français",
+    "languageEn": "English"
   },
   "nav": {
     "collapse": "Réduire le menu",
@@ -550,5 +553,1117 @@
   },
   "errors": {
     "fileLost": "Fichier perdu (stocké avant la mise en place du stockage permanent) : réimportez ce dossier."
+  },
+  "binders": {
+    "chronology": {
+      "kindDecision": "Décision (AMM)",
+      "filedOn": "déposé le {{date}}",
+      "undatedFiling": "dépôt non daté",
+      "datesUnknown": "dates inconnues",
+      "fromTo": "du {{start}} au {{end}}",
+      "title": "Chronologie",
+      "subtitle": "Chronologie : de la décision la plus récente à l'AMM d'origine",
+      "issuesToFix_one": "{{count}} manque à régler",
+      "issuesToFix_other": "{{count}} manques à régler",
+      "nothingMissing": "rien ne manque",
+      "number": "n° {{number}}",
+      "fixNumberDates": "Corriger le n° et les dates",
+      "fixEntry": "Corriger {{label}}",
+      "addDocOnPeriod": "Ajouter une pièce sur cette période",
+      "addDocEntry": "Ajouter une pièce — {{label}}",
+      "deletePassageHint": "Supprimer ce passage (il n'existe pas) : les scans restent",
+      "deleteEntry": "Supprimer {{label}}",
+      "decisionDated": "Décision du {{date}}",
+      "fixDocHint": "Corriger la date, le type ou la période",
+      "fixDecision": "Corriger la décision du {{date}}",
+      "docDated": "{{kind}} du {{date}}",
+      "fixDoc": "Corriger {{kind}} du {{date}}",
+      "unignoreGap": "Ne plus ignorer ce trou",
+      "ignoreGap": "Ignorer : il n'y a pas eu de renouvellement sur cette période",
+      "legend": "✎ corrige une période ou une pièce · + ajoute une pièce à la date saisie · un scan importé est lu (n° et dates) puis rangé automatiquement."
+    },
+    "filters": {
+      "all": "Toutes les pages",
+      "unchecked": "À vérifier ou revérifier",
+      "issues": "Écarts et manques",
+      "nonConformes": "Dossiers non conformes",
+      "toPrint": "AMM à imprimer"
+    },
+    "fields": {
+      "number": "N° d'AMM",
+      "startDate": "Date de début",
+      "endDate": "Date de fin"
+    },
+    "slots": {
+      "original": "AMM d'origine",
+      "renewal": "Dernier renouvellement"
+    },
+    "addPage": {
+      "rangeGeneral": "Générale",
+      "rangeCardio": "Cardio",
+      "rangeWellness": "Bien-être",
+      "title": "Ajouter une page au classeur",
+      "intro": "Un dossier est dans le classeur papier mais pas dans AMM GH : sa page est créée à sa place alphabétique, avec l'AMM du produit pour {{country}}. Le scan pourra être importé ensuite, directement depuis la page.",
+      "productLabel": "Produit (tel qu'écrit sur le dossier)",
+      "productHelper": "Choisissez un produit du catalogue s'il existe déjà, sinon il sera créé.",
+      "range": "Gamme",
+      "originalNumber": "N° d'AMM d'origine",
+      "submit": "Ajouter la page"
+    },
+    "link": {
+      "label": "Classeur {{country}} — {{title}} · page {{page}}/{{total}}",
+      "failing": "{{label}} : {{list}}",
+      "open": "{{label}} — ouvrir le classeur sur la page de cette AMM",
+      "recheck": "À revérifier",
+      "conform": "conforme",
+      "nonConform": "non conforme",
+      "toCheck": "à vérifier"
+    },
+    "dashboard": {
+      "conform": "dossiers conformes",
+      "nonConform": "non conformes",
+      "absent": "dossiers absents",
+      "toScan": "décisions à scanner",
+      "toPrint": "AMM à imprimer",
+      "extras": "pages en trop",
+      "title": "Classeurs papier",
+      "progress": "{{checked}} / {{total}} pages vérifiées sur le papier",
+      "openNow": "ouverts en ce moment : {{list}}",
+      "progressLabel": "Avancement des classeurs",
+      "openBinders": "Ouvrir les classeurs"
+    },
+    "conformity": {
+      "title": "VÉRIFICATION DU DOSSIER",
+      "right": "juste",
+      "toFix": "à régler",
+      "toCheck": "à vérifier",
+      "result": "Résultat : {{label}}"
+    },
+    "download": {
+      "waiting": "En attente de préparation…",
+      "preparing": "Préparation : {{done}} / {{total}} AMM, décisions jointes au fur et à mesure.",
+      "progressLabel": "Avancement de la préparation",
+      "canClose": "Vous pouvez fermer cette fenêtre : une notification vous prévient quand le classeur est prêt.",
+      "failed": "La préparation a échoué.",
+      "ready": "Prêt le {{date}} · {{pages}} pages · {{size}}",
+      "summary_one": "{{count}} décision officielle jointe après leur fiche · {{withoutScan}} AMM sans scan (marquées sur la fiche)",
+      "summary_other": "{{count}} décisions officielles jointes après leur fiche · {{withoutScan}} AMM sans scan (marquées sur la fiche)",
+      "unavailable": "{{n}} scan(s) illisible(s), remplacé(s) par une page d'avertissement",
+      "officialTitle": "{{label}} — avec les décisions officielles",
+      "officialIntro": "Chaque fiche est suivie des scans de la décision d'origine et de ses renouvellements, dans l'ordre du classeur papier. Le fichier peut peser plusieurs dizaines de Mo : il est préparé par le serveur.",
+      "none": "Aucune préparation pour ce classeur.",
+      "previous": "Version précédente disponible (prête le {{date}}).",
+      "prepareToday": "Préparer avec les données du jour",
+      "prepare": "Préparer le classeur",
+      "downloading": "Téléchargement…",
+      "tooltip": "Télécharger le classeur",
+      "ariaLabel": "Télécharger le classeur {{label}}",
+      "sheetsOnly": "Fiches du classeur",
+      "sheetsOnlyHint": "Immédiat · une page par AMM, tampons et bilan",
+      "withDecisions": "Avec les décisions officielles",
+      "withDecisionsHint": "Chaque fiche suivie de ses scans · préparé en arrière-plan"
+    },
+    "shelf": {
+      "openBinder": "Ouvrir le classeur {{country}} — {{title}}",
+      "openedBy": "Ouvert par {{names}}",
+      "progress": "Avancement",
+      "title": "Classeurs d'archivage",
+      "subtitle_one": "{{count}} classeur · {{checked}} / {{pages}} pages vérifiées · {{conformes}} dossiers conformes",
+      "subtitle_other": "{{count}} classeurs · {{checked}} / {{pages}} pages vérifiées · {{conformes}} dossiers conformes",
+      "ownCountries": "vos pays uniquement",
+      "empty": "Aucun classeur : aucune AMM dans votre périmètre.",
+      "tooltipStats": "{{checked}} / {{total}} vérifiées · {{conformes}} conformes · {{nonConformes}} non conformes · {{absent}} absentes · {{toScan}} à scanner · {{toPrint}} à imprimer",
+      "lastCheck": "Dernière vérification le {{date}} ({{by}})"
+    },
+    "rename": {
+      "title": "Modifier le titre de la page",
+      "label": "Nom de la présentation",
+      "help": "Le nouveau titre s'applique partout dans AMM GH : fiche AMM, classeurs, tableaux de bord, et tous les pays qui suivent cette présentation. L'ancien nom reste reconnu par les imports et la synchronisation.",
+      "submit": "Renommer",
+      "trashed": "Page « {{name}} » mise à la corbeille.",
+      "restored": "Page restaurée."
+    },
+    "scan": {
+      "add": "Ajouter un scan",
+      "import": "Importer le scan",
+      "inputLabel": "Scan de la décision",
+      "reading": "Lecture du scan : n° d'AMM et dates relus, puis rangement sur cette page…",
+      "stored": "Scan rangé sur cette page (<link>voir le dossier importé</link>).",
+      "failed": "Le scan n'a pas pu être lu : {{error}} (<link>voir le dossier importé</link>).",
+      "unknownError": "erreur inconnue",
+      "needsReview": "Le scan attend une vérification (<link>voir le dossier importé</link>)."
+    },
+    "page": {
+      "removed": "Page retirée du classeur",
+      "dividerLabel": "Intercalaire {{label}}",
+      "titlePage": "Page de garde",
+      "summary": "Bilan",
+      "backToShelf": "Retour à l'étagère",
+      "progressLabel": "Avancement du classeur",
+      "stats": "{{checked}} / {{total}} vérifiées · {{conformes}} conformes",
+      "staleChip": "{{count}} à revérifier",
+      "show": "Afficher",
+      "animationOn": "Animation des pages : activée",
+      "animationOff": "Animation des pages : désactivée",
+      "animation": "Animation",
+      "soundOn": "Son des pages : activé",
+      "soundOff": "Son des pages : désactivé",
+      "sound": "Son",
+      "addPage": "Ajouter une page",
+      "added": "Page ajoutée : importez son scan directement depuis la page.",
+      "filed": "Page rangée dans le classeur {{title}} (ordre alphabétique).",
+      "next": "Page suivante",
+      "nextCorner": "Page suivante (coin)",
+      "tabTooltip": "{{label}} — {{checked}} / {{total}}",
+      "goToDivider": "Aller à l'intercalaire {{label}}",
+      "goToSummary": "Aller au bilan",
+      "summaryTab": "BILAN",
+      "previous": "Page précédente",
+      "browse": "Feuilleter le classeur"
+    },
+    "leaves": {
+      "cover": "AMM GH · CLASSEUR DES AMM",
+      "pages": "pages",
+      "checked": "vérifiées",
+      "conform": "dossiers conformes",
+      "nonConform": "non conformes",
+      "absent": "absentes",
+      "toScan": "à scanner",
+      "toPrint": "à imprimer",
+      "toRecheck": "à revérifier",
+      "extra": "en trop",
+      "progressChecked": "{{progress}} % vérifié",
+      "lastCheck": "dernière vérification le {{date}} par {{by}}",
+      "resume": "Reprendre : {{label}}",
+      "howTo": "Feuilletez le classeur papier en même temps : chaque page correspond à un dossier, dans le même ordre. <b>←</b> <b>→</b> ou glisser pour tourner les pages · <b>C</b> papier conforme · <b>E</b> corriger · <b>A</b> absent. Les onglets de couleur mènent directement à une gamme.",
+      "dividerStats_one": "{{label}} — {{checked}} / {{total}} vérifiées · {{count}} conforme",
+      "dividerStats_other": "{{label}} — {{checked}} / {{total}} vérifiées · {{count}} conformes",
+      "fromTo": "de {{from}} à {{to}}",
+      "staleNote": "{{n}} page(s) modifiée(s) depuis leur vérification : à revérifier",
+      "absentToScan": "{{absent}} absente(s) · {{toScan}} à scanner",
+      "groupAbsent": "Dossiers à retrouver (papier absent)",
+      "groupToScan": "Décisions à scanner",
+      "groupToPrint": "AMM à imprimer et à ranger dans le classeur",
+      "groupData": "Date ou n° à revoir (manquant, ou fiche modifiée depuis la vérification)",
+      "endTitle": "Bilan du classeur",
+      "endStats": "{{checked}} / {{total}} pages vérifiées · {{conformes}} dossiers conformes · {{nonConformes}} non conformes · {{corrected}} corrigées · {{absent}} absentes · {{toScan}} à scanner · {{toPrint}} à imprimer",
+      "none": "Aucun.",
+      "pageRef": "p. {{page}} · {{name}}",
+      "extraPages": "Pages en trop ({{n}})",
+      "extraHelp": "Un dossier est dans le classeur papier mais pas dans AMM GH : notez-le ici, ou créez directement sa page avec « Ajouter une page ».",
+      "createPage": "Créer la page",
+      "remove": "Retirer",
+      "removeNamed": "Retirer {{name}}",
+      "productRead": "Produit lu sur le dossier",
+      "note": "Note",
+      "report": "Signaler"
+    },
+    "sheet": {
+      "noChange": "Aucune valeur modifiée : utilisez « Papier conforme » si la page est juste.",
+      "header": "{{country}} · CLASSEUR {{title}}",
+      "pageOf": "PAGE {{page}} / {{total}}",
+      "rangePage": "page {{page}} / {{total}} de la gamme",
+      "titleButton": "Titre",
+      "deletePage": "Supprimer la page",
+      "paperHasRenewal": "Le papier porte un renouvellement",
+      "situation": "SITUATION",
+      "dossierComplete": "Dossier complet",
+      "dossierIncomplete": "Dossier incomplet",
+      "toScanPill": "À SCANNER",
+      "toPrintPill": "À IMPRIMER",
+      "renewalSubmitted": "Renouvellement déposé",
+      "submittedStamp": "DÉPOSÉ",
+      "underReviewStamp": "EN INSTRUCTION",
+      "onDate": "le {{date}}",
+      "noScan": "Aucun scan dans AMM GH",
+      "scannedOn": "Décision scannée du {{date}}",
+      "pagesShort": "{{n}} p.",
+      "notScanned": "Décision en vigueur non scannée (dernier scan : décision du {{date}})",
+      "printedHint": "La feuille est imprimée et rangée dans le classeur",
+      "toPrintHint": "Le scan existe mais sa feuille manque dans le classeur papier (compté dans le bilan)",
+      "printedFiled": "Imprimée et rangée",
+      "toPrint": "À imprimer",
+      "missing_one": "{{count}} manque",
+      "missing_other": "{{count}} manques",
+      "scanTitle": "{{name}} — décision du {{date}}",
+      "chronologyLabel_one": "Chronologie de la décision de {{name}}",
+      "chronologyLabel_other": "Chronologie des {{count}} décisions de {{name}}",
+      "staleTitle": "À revérifier : la fiche a changé depuis le constat ({{by}}).",
+      "slotOrigin": "origine",
+      "slotRenewal": "renouvellement",
+      "staleChange": "{{field}} ({{slot}}) : vérifié <b>{{checked}}</b>, maintenant <b>{{now}}</b>",
+      "discrepancy": "Écart entre la fiche et le scan : vérifiez sur le papier, puis « Papier conforme » si la fiche est juste ou « Corriger ».",
+      "noteOptional": "Note (facultatif)",
+      "validate": "Valider la correction",
+      "conformHint": "Le dossier papier est dans le classeur, la date et le n° d'AMM sont justes (touche C)",
+      "paperConform": "Papier conforme",
+      "fixHint": "Saisir la valeur lue sur le papier (touche E)",
+      "fix": "Corriger",
+      "absentHint": "Pas de dossier papier à cet endroit (touche A)",
+      "absentFromBinder": "Absent du classeur",
+      "archivistNote": "Note de l'archiviste",
+      "cancelFinding": "Annuler le constat",
+      "correctedOnPaper": "<b>Corrigé sur le papier</b> ({{date}}) :",
+      "correctionItem": "{{field}} ({{slot}}) {{old}} → {{new}}",
+      "drop": "Déposez le scan de la décision : il sera lu et rangé sur {{name}}"
+    },
+    "forms": {
+      "fixTitle": "CORRIGER {{label}}",
+      "deleteTitle": "SUPPRIMER {{label}}",
+      "deletePassage": "Supprimer le passage",
+      "deleteHelp": "Pour un passage qui n'existe pas : renouvellement saisi à tort ou en double, dépôt jamais fait. Les scans ne sont pas supprimés. L'échéance, le statut et la numérotation des renouvellements sont recalculés.",
+      "moveTo_one": "{{count}} pièce à ranger sur",
+      "moveTo_other": "{{count}} pièces à ranger sur",
+      "fixDocTitle": "CORRIGER LA PIÈCE « {{kind}} DU {{date}} »",
+      "confirmRemove": "Confirmer le retrait",
+      "removeDoc": "Retirer la pièce",
+      "removeNote": "La pièce quitte la page ; elle reste dans l'historique des documents archivés.",
+      "addTitle": "AJOUTER UNE PIÈCE — {{label}}",
+      "chooseScan": "Choisir le scan (PDF, JPEG, PNG)",
+      "missingScan": "Choisissez le scan et indiquez sa date.",
+      "filedAsIs": "Rangée telle quelle sur cette période, à la date saisie (pas de lecture automatique).",
+      "documentDate": "Date du document",
+      "type": "Type",
+      "period": "Période"
+    },
+    "stamps": {
+      "checked": "VÉRIFIÉ",
+      "fixed": "CORRIGÉ",
+      "missing": "ABSENT"
+    },
+    "flag": "Drapeau {{iso2}}",
+    "thumbnail": {
+      "open": "Ouvrir le scan du {{date}}",
+      "unavailable": "Scan indisponible",
+      "printFailed": "Impression impossible ici : le scan s'est ouvert dans un onglet",
+      "print": "Imprimer le scan",
+      "printDated": "Imprimer le scan du {{date}}"
+    },
+    "trace": {
+      "excel": "Dashboard AMM Afrique : feuille {{sheet}}, ligne {{row}} (<link>import du {{date}}</link>)",
+      "dossier": "Dossier importé le <link>{{date}}</link>",
+      "autoFiled": "(rangé automatiquement)"
+    },
+    "card": {
+      "editHint": "Modifier le n° et les dates sur la carte",
+      "noRenewal": "Aucun renouvellement enregistré",
+      "useScanHint": "Reprendre la valeur lue sur le scan",
+      "scanValue": "Scan : {{value}}",
+      "scanSays": "le scan indique {{value}}"
+    }
+  },
+  "deposits": {
+    "optional": "(facultative)",
+    "optionalCap": "Facultative",
+    "renewalNo": "renouvellement n°{{n}}",
+    "ammNo": " · AMM {{number}}",
+    "overdue": "dépassée",
+    "defaultAuthority": "l’agence de régulation",
+    "defaultAgency": "l’agence",
+    "unknownAuthor": "?",
+    "who": {
+      "hq": "Siège",
+      "country": "Pays",
+      "either": "Pays ou siège"
+    },
+    "procedure": {
+      "assemble": {
+        "title": "Montage du dossier",
+        "text": "Lettre de demande de renouvellement, certificat de PGHT (prix grossiste hors taxe), formulaires, RCP, certificats d’analyse, pièces réglementaires du pays."
+      },
+      "samples": {
+        "title": "Échantillons",
+        "text": "Récupérer les échantillons sur place et noter n° de lot, date de fabrication et date de péremption."
+      },
+      "send": {
+        "title": "Envoi au pays",
+        "text": "Le dossier part au pays : il est prévenu et télécharge le dossier complet depuis l’application."
+      },
+      "submit": {
+        "title": "Dépôt à l’agence",
+        "text": "Le pays dépose le dossier à l’agence de régulation et envoie l’attestation de dépôt au siège."
+      },
+      "commission": {
+        "title": "Commission",
+        "text": "Le dépôt passe en commission ; chaque commission et chaque notification de l’agence est notée."
+      },
+      "decision": {
+        "title": "Décision",
+        "text": "Renouvellement obtenu (n° et date de début) ou rejeté : le dossier est clos et l’AMM recalculée."
+      }
+    },
+    "list": {
+      "subtitle": "Renouvellements : montage au siège, envoi au pays, dépôt à l’agence, commission et décision.",
+      "procedureButton": "Procédure",
+      "piecesButton": "Pièces demandées",
+      "procedureTitle": "Procédure de dépôt d’un renouvellement",
+      "procedureSubheader": "Chaque étape est suivie dans l’application ; le siège et le pays sont prévenus à chaque passage de relais.",
+      "kpis": {
+        "assembly": {
+          "label": "En montage",
+          "hint": "Au siège"
+        },
+        "toSubmit": {
+          "label": "À déposer",
+          "hint": "Envoyés aux pays"
+        },
+        "submitted": {
+          "label": "Déposés",
+          "hint": "Attestation reçue"
+        },
+        "commission": {
+          "label": "En commission",
+          "hint": "À l’agence"
+        },
+        "granted": {
+          "label": "Obtenus",
+          "hint": "Renouvellements"
+        }
+      },
+      "progressPieces": "{{done}}/{{required}} pièces",
+      "progressSamples": " · échantillons",
+      "submittedOn": "Déposé le {{date}}",
+      "sentOn": "Envoyé le {{date}}",
+      "messagesCount": "{{n}} message(s)",
+      "suggestionsTitle": "À préparer : {{n}} AMM à renouveler dans l’année",
+      "suggestionsSubheader": "Sans dossier de dépôt en cours, de la plus urgente à la moins urgente.",
+      "buildDossier": "Monter le dossier",
+      "showLess": "Réduire",
+      "showAll": "Voir les {{n}}",
+      "toSubmitAlert_one": "Un dossier du siège est à déposer : téléchargez-le, déposez-le à l’agence puis envoyez l’attestation de dépôt.",
+      "toSubmitAlert_other": "{{count}} dossiers du siège sont à déposer : téléchargez-le, déposez-le à l’agence puis envoyez l’attestation de dépôt.",
+      "tabOpen": "En cours ({{n}})",
+      "tabClosed": "Clos ({{n}})",
+      "country": "Pays",
+      "allCountries": "Tous les pays",
+      "emptyOpenHq": "Aucun dossier en cours : montez-en un depuis « À préparer ».",
+      "emptyOpenCountry": "Aucun dossier en cours pour vos pays.",
+      "emptyClosed": "Aucun dossier clos.",
+      "columns": {
+        "product": "Produit",
+        "expiry": "Échéance",
+        "agencyLimit": "Limite agence",
+        "stage": "Étape",
+        "progress": "Avancement",
+        "ammExpiry": "Échéance AMM",
+        "lastActivity": "Dernière activité"
+      }
+    },
+    "detail": {
+      "maExpiryLabel": "Échéance de l’AMM : ",
+      "submittedOnLabel": "Déposé le ",
+      "maRecord": "fiche AMM",
+      "todoLabel": "À faire :",
+      "todoText": "télécharger le dossier, le déposer à {{authority}} avec les échantillons, puis envoyer l’attestation de dépôt au siège (étape 4).",
+      "messagesTitle": "Échanges siège ↔ pays",
+      "messagesSubheader": "Chaque message prévient l’autre côté.",
+      "noMessage": "Pas encore de message.",
+      "yourMessage": "Votre message",
+      "sendMessage": "Envoyer le message",
+      "log": "Journal",
+      "abandonButton": "Abandonner ce renouvellement",
+      "abandonTitle": "Abandonner ce renouvellement ?",
+      "abandonText": "Le dossier est clos et le pays est prévenu. L’AMM expirera à son échéance.",
+      "abandonReason": "Pourquoi ?",
+      "abandonConfirm": "Abandonner"
+    },
+    "link": {
+      "followed": "Dossier de dépôt · renouvellement n°{{n}}",
+      "tooltip": "Ouvrir le dossier de dépôt du prochain renouvellement (rubrique Dépôts AMM)",
+      "build": "Monter le dossier de dépôt"
+    },
+    "pieces": {
+      "title": "Montage du dossier",
+      "subtitle": "{{done}}/{{required}} pièces obligatoires",
+      "sentSuffix": " · dossier envoyé : un ajout part au pays en complément",
+      "add": "Ajouter",
+      "attach": "Joindre",
+      "others": "Autres pièces",
+      "name": "Nom de la pièce",
+      "namePlaceholder": "Procuration, bon de commande…",
+      "remove": "Retirer {{name}}"
+    },
+    "samples": {
+      "title": "Échantillons",
+      "subtitleRequired": "Récupérés sur place : n° de lot, date de fabrication, date de péremption.",
+      "none": "Pas d’échantillons pour ce dépôt.",
+      "noneSwitch": "Pas d’échantillons pour ce dépôt",
+      "batch": "N° de lot",
+      "manufacture": "Fabrication",
+      "expiry": "Péremption",
+      "quantity": "Quantité",
+      "manufactureDate": "Date de fabrication",
+      "expiryDate": "Date de péremption",
+      "removeBatch": "Retirer le lot {{batch}}",
+      "record": "Noter le lot"
+    },
+    "send": {
+      "title": "Envoi au pays",
+      "sentBy": "Envoyé le {{date}} par {{user}}",
+      "sent": "Envoyé le {{date}}",
+      "pending": "Le pays est prévenu et télécharge le dossier complet (pièces rangées et bordereau).",
+      "preparing": "Préparation du dossier…",
+      "beforeSend": "Avant l’envoi :",
+      "complete": "Dossier complet : prêt à partir au pays.",
+      "noteLabel": "Message au pays (facultatif)",
+      "notePlaceholder": "Échantillons expédiés par DHL, n° de suivi…",
+      "sendButton": "Envoyer au pays",
+      "preview": "Aperçu du dossier (ZIP)",
+      "hqMessage": "Message du siège :",
+      "download": "Télécharger le dossier (ZIP)",
+      "downloaded": "Téléchargé {{n}} fois — dernier : {{user}} le {{date}}",
+      "notDownloaded": "Pas encore téléchargé."
+    },
+    "submit": {
+      "title": "Dépôt à l’agence",
+      "done": "Déposé à {{authority}} le {{date}}",
+      "pending": "Le pays dépose le dossier à {{authority}}, puis envoie l’attestation de dépôt au siège.",
+      "receiptOf": "Attestation de dépôt du {{date}}",
+      "date": "Date de dépôt",
+      "receiptFile": "Attestation de dépôt (PDF, photo)",
+      "sendReceipt": "Envoyer l’attestation au siège"
+    },
+    "follow": {
+      "title": "Commission et notifications",
+      "kinds": {
+        "COMMISSION": "Passage en commission",
+        "NOTIFICATION": "Notification de l’agence",
+        "COMPLEMENT": "Demande de complément",
+        "AUTRE": "Autre"
+      },
+      "count": "{{n}} suivi(s) noté(s) à l’agence",
+      "empty": "Chaque passage en commission, notification ou demande de complément de l’agence.",
+      "recordedBy": "Noté par {{user}}",
+      "type": "Type",
+      "fileOptional": "Pièce (facultatif)",
+      "detail": "Détail",
+      "detailPlaceholder": "Avis de la commission, pièces demandées…",
+      "record": "Noter ce suivi"
+    },
+    "decision": {
+      "title": "Décision",
+      "granted": "Renouvellement obtenu : n° {{number}} (décision du {{date}})",
+      "rejected": "Renouvellement rejeté le {{date}}",
+      "withdrawn": "Renouvellement abandonné.",
+      "pending": "La décision de l’agence clôt le dossier ; la fiche AMM est recalculée.",
+      "optGranted": "Obtenu",
+      "optRejected": "Rejeté",
+      "renewalNumber": "N° du renouvellement",
+      "startDate": "Date de début",
+      "decisionDate": "Date de la décision",
+      "scan": "Scan de la décision",
+      "reason": "Motif",
+      "saveGranted": "Enregistrer le renouvellement obtenu",
+      "saveRejected": "Enregistrer le rejet"
+    },
+    "pieceTypes": {
+      "editTitle": "Modifier la pièce",
+      "countryTitle": "Pièce propre au pays ({{country}})",
+      "baseTitle": "Pièce de base",
+      "piece": "Pièce",
+      "details": "Précision (facultatif)",
+      "order": "Ordre",
+      "requiredToSend": "Obligatoire pour envoyer le dossier",
+      "editLabel": "Modifier {{label}}",
+      "removeTooltip": "Retirer (les dossiers déjà montés la gardent)",
+      "removeLabel": "Retirer {{label}}",
+      "trashed": "Pièce « {{label}} » mise à la corbeille.",
+      "removed": "Pièce « {{label}} » retirée : les dossiers déjà montés la gardent.",
+      "title": "Pièces demandées",
+      "subtitle": "Liste de base du dossier de renouvellement, puis ajustements par pays. Un dossier ne part au pays que lorsque ses pièces obligatoires sont jointes.",
+      "baseList": "Liste de base (tous les pays)",
+      "addPiece": "Ajouter une pièce",
+      "colPiece": "Pièce",
+      "colRequired": "Obligatoire",
+      "colExcluded": "Pays qui ne la demandent pas",
+      "adjustTitle": "Ajustements par pays",
+      "adjustSubheader": "Décochez une pièce de base que ce pays ne demande pas ; ajoutez les pièces propres au pays.",
+      "country": "Pays",
+      "renewalDossier": "Dossier de renouvellement — {{country}}",
+      "ownPiece": "Pièce propre à {{country}}"
+    }
+  },
+  "dossierImports": {
+    "viewScan": "Voir le scan",
+    "viewer": {
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "download": "Télécharger le document"
+    },
+    "cappedList": {
+      "collapse": "Réduire",
+      "showAll": "Voir tout ({{count}})"
+    },
+    "counts": {
+      "files_one": "{{count}} fichier",
+      "files_other": "{{count}} fichiers",
+      "products_one": "{{count}} produit",
+      "products_other": "{{count}} produits"
+    },
+    "values": {
+      "empty": "vide"
+    },
+    "columns": {
+      "dossier": "Dossier",
+      "ma": "AMM",
+      "result": "Résultat",
+      "pointsToCheck": "Points à vérifier",
+      "points": "Points",
+      "field": "Champ",
+      "before": "Avant",
+      "after": "Après",
+      "information": "Information",
+      "by": "Par",
+      "proof": "Preuve"
+    },
+    "history": {
+      "tabs": {
+        "toProcess": {
+          "label": "À traiter",
+          "empty": "Rien à traiter : tout est rangé ou en cours."
+        },
+        "inProgress": {
+          "label": "En cours",
+          "empty": "Aucune analyse en cours."
+        },
+        "filed": {
+          "label": "Rangés",
+          "empty": "Aucun dossier rangé."
+        },
+        "all": {
+          "empty": "Aucun dossier importé."
+        }
+      },
+      "ariaLabel": "Historique des dossiers importés",
+      "searchPlaceholder": "Rechercher un dossier",
+      "noMatch": "Aucun dossier ne contient « {{search}} ».",
+      "total": "{{count}} dossiers",
+      "toSpecify": "À préciser",
+      "pointsAria": "{{count}} point(s) à vérifier"
+    },
+    "state": {
+      "running": "Analyse en cours",
+      "failed": "Échec",
+      "filed": "Rangé",
+      "question": "Question",
+      "toFile": "À ranger"
+    },
+    "sentence": {
+      "running": "Analyse en cours…",
+      "failed": "Échec de l’analyse",
+      "filedAuto": "Rangé automatiquement",
+      "filed": "Rangé",
+      "question": "Question : c’est quelle AMM ?",
+      "ready": "Prêt à ranger"
+    },
+    "fields": {
+      "original_number": "N° d’AMM",
+      "original_start_date": "Date de délivrance",
+      "original_end_date": "Date d’échéance",
+      "holder": "Titulaire",
+      "number": "N° de renouvellement",
+      "start_date": "Date de début",
+      "end_date": "Date de fin",
+      "decision_date": "Date de décision",
+      "workflow_status": "État du renouvellement"
+    },
+    "documentKinds": {
+      "AMM": "Décision",
+      "RECEPISSE": "Récépissé de dépôt",
+      "COURRIER": "Courrier de l’autorité",
+      "AUTRE": "Autre document"
+    },
+    "renewalTitle": {
+      "onDate": "Renouvellement du {{date}}",
+      "ofYear": "Renouvellement de {{year}}",
+      "unknown": "Renouvellement (date non lue)"
+    },
+    "period": {
+      "original": "AMM d’origine",
+      "unplaced": "Période non déterminée"
+    },
+    "dossierStates": {
+      "COMPLET": "Complet",
+      "INCOMPLET": "Incomplet"
+    },
+    "summary": {
+      "title": "Ce que l’import a changé",
+      "created": "AMM créée à partir du dossier.",
+      "expiry": "Échéance",
+      "renewalsAdded": "Renouvellements ajoutés",
+      "renewalLine": "N° {{number}} : {{start}} → {{end}}",
+      "fieldsChanged": "Champs modifiés",
+      "fieldLine": "{{label}} : {{old}} → {{new}}",
+      "documents": "{{count}} document(s) rattaché(s) à la fiche AMM.",
+      "stillIncomplete": "Dossier toujours incomplet : il manque le {{scan}}."
+    },
+    "reviewPoints": {
+      "title": "Points à vérifier plus tard ({{count}})",
+      "ariaLabel": "Points à vérifier plus tard",
+      "intro": "Rien n’est bloqué : la valeur de la fiche a été gardée et les scans sont rangés. Vérifiez sur le scan quand vous le pouvez.",
+      "batch": "Dossier « {{name}} » · {{date}}",
+      "scanFallback": "Scan",
+      "apply": "Appliquer la valeur du scan",
+      "ignore": "Ignorer",
+      "closed": {
+        "APPLIED": "Valeur du scan appliquée",
+        "IGNORED": "Ignoré"
+      }
+    },
+    "page": {
+      "title": "Import de dossiers AMM",
+      "subtitle": "Déposez un dossier : chaque scan est rangé sur la bonne AMM. Seul ce qui demande votre intervention vous est montré.",
+      "dropTitle": "Glissez un dossier produit, pays ou gamme ici",
+      "limits": "PDF, JPEG, PNG · 25 Mo par fichier · 200 fichiers et 250 Mo par produit",
+      "chooseFolder": "Choisir un dossier",
+      "inputAria": "Dossier AMM",
+      "readingAria": "Lecture du dossier",
+      "showFiles": "Voir les fichiers",
+      "hideFiles": "Masquer les fichiers",
+      "analyzeProducts": "Analyser les {{count}} produits",
+      "analyzeDossier": "Analyser le dossier",
+      "selectedFilesAria": "Fichiers sélectionnés",
+      "issues_one": "{{count}} point à corriger avant l’envoi",
+      "issues_other": "{{count}} points à corriger avant l’envoi",
+      "groupError": "{{group}} : {{error}}",
+      "aside_one": "{{count}} fichier mis de côté (format non lu ou plus de 25 Mo) ; le reste est envoyé.",
+      "aside_other": "{{count}} fichiers mis de côté (format non lu ou plus de 25 Mo) ; le reste est envoyé.",
+      "asideHide": "Masquer",
+      "asideShow": "Voir",
+      "uploading": "Envoi des documents : {{progress}} %",
+      "sendingAria": "Envoi des produits",
+      "sending": "Envoi des produits : {{done}} / {{total}}",
+      "sendingFailed": " · {{count}} en échec",
+      "sent_one": "{{count}} produit envoyé : le classement se poursuit tout seul.",
+      "sent_other": "{{count}} produits envoyés : le classement se poursuit tout seul.",
+      "notSent_one": "{{count}} produit non envoyé",
+      "notSent_other": "{{count}} produits non envoyés"
+    },
+    "folder": {
+      "empty": "Le dossier ne contient aucun fichier.",
+      "tooManyFiles": "Le dossier est limité à 200 fichiers.",
+      "tooBig": "La taille totale du dossier dépasse 250 Mo.",
+      "unsupportedFormat": "{{path}} : format non pris en charge (PDF, JPEG ou PNG).",
+      "emptyFile": "{{path}} : le fichier est vide.",
+      "fileTooBig": "{{path}} : le fichier dépasse 25 Mo.",
+      "invalidPath": "{{path}} : chemin de fichier invalide.",
+      "duplicatePath": "{{path}} : chemin présent plusieurs fois.",
+      "singleFolder": "Sélectionnez un dossier unique contenant tous les documents et sous-dossiers.",
+      "nameTooLong": "Le nom du dossier dépasse 255 caractères.",
+      "dropUnsupported": "Ce navigateur ne permet pas de déposer un dossier. Utilisez « Choisir un dossier ».",
+      "dropSingle": "Déposez un dossier unique, ou utilisez « Choisir un dossier ».",
+      "pathTooLong": "Un chemin du dossier dépasse 500 caractères.",
+      "dropTooMany": "Le dossier dépasse {{max}} fichiers : déposez-le pays par pays.",
+      "aside": {
+        "copy": "{{path}} (copie du classement, non importée)",
+        "format": "{{path}} (format non lu)",
+        "empty": "{{path}} (fichier vide)",
+        "big": "{{path}} (plus de 25 Mo)"
+      }
+    },
+    "report": {
+      "periods": {
+        "d1": "24 h",
+        "d7": "7 jours",
+        "d30": "30 jours"
+      },
+      "kinds": {
+        "question": "AMM non identifiée",
+        "failed": "Analyse échouée",
+        "ready": "Non rangé",
+        "incomplete": "Fiche à compléter"
+      },
+      "title": "Classement automatique",
+      "periodAria": "Période du récapitulatif",
+      "empty": "Aucun dossier importé sur cette période.",
+      "counts": {
+        "filed_one": "{{count}} dossier rangé",
+        "filed_other": "{{count}} dossiers rangés",
+        "created_one": "{{count}} fiche créée",
+        "created_other": "{{count}} fiches créées",
+        "corrections_one": "{{count}} valeur corrigée",
+        "corrections_other": "{{count}} valeurs corrigées",
+        "decisions_one": "{{count}} décision automatique",
+        "decisions_other": "{{count}} décisions automatiques",
+        "documents_one": "{{count}} document rangé",
+        "documents_other": "{{count}} documents rangés",
+        "renewals_one": "{{count}} renouvellement ajouté",
+        "renewals_other": "{{count}} renouvellements ajoutés",
+        "completed_one": "{{count}} champ complété",
+        "completed_other": "{{count}} champs complétés",
+        "inProgress_one": "{{count}} dossier en analyse…",
+        "inProgress_other": "{{count}} dossiers en analyse…"
+      },
+      "progressAria": "Avancement du classement",
+      "doneAria": "Ce qui a été fait",
+      "allFiled": "Rien à traiter : tout a été rangé automatiquement.",
+      "attentionTitle": "À traiter par vous ({{count}})",
+      "kindPrefix": "{{kind}} : ",
+      "decisionSeparator": " : ",
+      "numberLine": "n° {{number}}",
+      "numberToComplete": "n° à compléter",
+      "correctionsAria": "Valeurs corrigées d’après les décisions officielles"
+    },
+    "detail": {
+      "pages": "(p. {{pages}})",
+      "dateNotRead": "date non lue",
+      "ma": "AMM",
+      "questionAria": "Question",
+      "questionTitle": "À quelle AMM ranger ces documents ?",
+      "optionLabel": "{{product}} · {{country}}",
+      "optionNumber": " · N° {{number}}",
+      "noOptions": "Aucune AMM trouvée dans votre périmètre",
+      "searchLabel": "AMM (recherche par produit)",
+      "helperCountry": "AMM du pays du dossier ({{country}}) dans votre périmètre",
+      "helperScope": "AMM de votre périmètre",
+      "fileHere": "Ranger les documents ici",
+      "createIntro": "L’AMM n’existe pas encore dans l’application ? Le siège peut la créer à partir de la décision d’origine du dossier.",
+      "createButton": "Créer l’AMM « {{product}} » ({{country}}) depuis ce dossier",
+      "createTitle": "Créer cette AMM ?",
+      "createText": "Une nouvelle AMM « {{product}} » ({{country}}) sera créée avec les informations lues sur la décision d’origine, puis les documents y seront rangés.",
+      "resultAria": "Résultat",
+      "resultTitle": "Résultat",
+      "resultTitlePlanned": "Résultat une fois rangé",
+      "statusLabel": "Statut :",
+      "expiryLabel": "Échéance :",
+      "expiryUnknown": "non déterminée",
+      "dossierComplete": "Dossier complet : la décision en vigueur a son scan.",
+      "dossierIncomplete": "Dossier incomplet : il manque le {{scan}}.",
+      "missingDefault": "scan de la décision en vigueur",
+      "appliedNote": "Chaque scan est rangé à sa période ; aucune valeur déjà enregistrée n’a été remplacée. Le siège et le réglementaire du pays ont été notifiés.",
+      "rereadAndFile": "Relire et ranger",
+      "filing": "Rangement…",
+      "fileDocuments": "Ranger les documents",
+      "legacyNote": "Ce dossier a été lu avant le rangement automatique.",
+      "identifiedNoFiling": "L’AMM est identifiée ; le rangement automatique n’a pas eu lieu.",
+      "conflict": "Les informations ont changé depuis la lecture : relancez l’analyse.",
+      "rerun": "Relancer l’analyse",
+      "failedFallback": "L’analyse a échoué. Relancez-la pour réutiliser les documents déjà envoyés.",
+      "timelineTitle": "Origine et renouvellements",
+      "timelineAria": "Chronologie de l’AMM",
+      "addedByThis": "Ajouté par ce dossier",
+      "willBeAdded": "Sera ajouté",
+      "inForce": "En vigueur",
+      "numberLine": "N° {{number}}",
+      "alreadyInRecord": "déjà dans la fiche",
+      "noDecisionScan": "Aucun scan de la décision dans ce dossier.",
+      "alreadyRecorded": "Déjà enregistré dans la fiche ; aucun document de ce dossier ne le concerne.",
+      "plannedNote": "Ils seront notés sur la fiche AMM au rangement ; la valeur de la fiche est gardée.",
+      "otherDocuments": "Autres documents ({{count}})",
+      "readingDetails": "Détails de la lecture",
+      "confidence": "Fiabilité de la lecture : {{confidence}} % (information seulement : elle ne bloque rien).",
+      "ignoredDocs": "Documents communs du dossier pays laissés de côté (ils ne concernent pas ce produit) :",
+      "auditAria": "Traçabilité des modifications",
+      "renewal": "Renouvellement",
+      "subtitle": "Import du {{date}}",
+      "allImports": "Tous les imports de dossiers",
+      "runningBody": "Lecture des scans et recherche de l’AMM. Dès que l’AMM est identifiée, les documents sont rangés automatiquement. Cette page se met à jour toute seule."
+    }
+  },
+  "excelImports": {
+    "importDossier": "Importer un dossier AMM",
+    "fileColumn": "Fichier",
+    "syncChip": "Synchro AMM GHPL",
+    "rowsProcessed": "{{done}} / {{total}} lignes traitées",
+    "waiting": "En attente de traitement…",
+    "reading": "Lecture du classeur…",
+    "sync": {
+      "counters": {
+        "pieces_one": "{{count}} pièce suivie",
+        "pieces_other": "{{count}} pièces suivies",
+        "presentations_changed_one": "{{count}} présentation mise à jour",
+        "presentations_changed_other": "{{count}} présentations mises à jour",
+        "downloaded_one": "{{count}} scan ajouté",
+        "downloaded_other": "{{count}} scans ajoutés",
+        "adopted_one": "{{count}} déjà dans AMM GH",
+        "adopted_other": "{{count}} déjà dans AMM GH",
+        "moved_one": "{{count}} reclassé",
+        "moved_other": "{{count}} reclassés",
+        "skipped_one": "{{count}} laissé de côté",
+        "skipped_other": "{{count}} laissés de côté",
+        "pending_one": "{{count}} en attente",
+        "pending_other": "{{count}} en attente",
+        "copies_merged_one": "{{count}} fiche en double fusionnée",
+        "copies_merged_other": "{{count}} fiches en double fusionnées"
+      },
+      "files": {
+        "SYNCED_one": "{{count}} rangé",
+        "SYNCED_other": "{{count}} rangés",
+        "PENDING_one": "{{count}} à télécharger",
+        "PENDING_other": "{{count}} à télécharger",
+        "SKIPPED_one": "{{count}} laissé de côté",
+        "SKIPPED_other": "{{count}} laissés de côté",
+        "REMOVED_one": "{{count}} retiré du classement",
+        "REMOVED_other": "{{count}} retirés du classement",
+        "ERROR_one": "{{count}} en erreur",
+        "ERROR_other": "{{count}} en erreur"
+      },
+      "noFiles": "Aucun fichier.",
+      "shownOf": "{{shown}} affichés sur {{total}}",
+      "copies_one": "{{count}} copie",
+      "copies_other": "{{count}} copies",
+      "merged_one": "{{count}} fiche fusionnée",
+      "merged_other": "{{count}} fiches fusionnées",
+      "mergedWithRefused": "{{merged}}, {{refusedCount}} refusée(s) : {{reason}}",
+      "duplicatesTitle": "Fiches en double ({{count}})",
+      "confirmMerge": "Confirmer : fusionner {{copies}}",
+      "mergeCopies": "Fusionner {{copies}}",
+      "duplicatesHelp": "La même présentation suivie sous deux libellés dans un pays (celui du pays et celui d'un autre pays). Une simple copie n'a ni document ni rien de plus que la fiche du pays : la fusion ne perd rien.",
+      "toCheck": "— à vérifier : {{reason}}",
+      "merge": "Fusionner",
+      "started": "Synchronisation lancée",
+      "title": "Synchronisation avec AMM GHPL",
+      "description": "Chaque heure, AMM GH relit le registre du classement « {{folder}} » sur Nextcloud : nouvelles AMM, renouvellements, scans ajoutés ou reclassés.",
+      "runNow": "Synchroniser maintenant",
+      "inactive": "Synchronisation inactive : Nextcloud n'est pas encore relié. Dans Nextcloud, créez un mot de passe d'application (Paramètres personnels > Sécurité), puis collez-le dans Render (variable NEXTCLOUD_APP_PASSWORD du service amm-innov-api).",
+      "lastRun": "Dernier passage : {{date}}",
+      "registryModified": " · registre du classement modifié le {{date}}",
+      "importDetail": "Détail de l'import",
+      "toLookAt": "À regarder ({{total}})"
+    }
+  },
+  "ammPages": {
+    "startPlusYears": "Début + {{years}} ans",
+    "filing": {
+      "passedMasc": "dépassé",
+      "passedFem": "dépassée"
+    },
+    "gaps": {
+      "no_original": "Origine non identifiée",
+      "missing_renewal": "Sans renouvellement",
+      "to_file": "Renouvellement à déposer",
+      "original_scan": "Décision d'origine sans scan",
+      "renewal_scan": "Renouvellement sans scan"
+    },
+    "filters": {
+      "gap": "Manque"
+    },
+    "create": {
+      "endHelp": "Calculée : début + {{years}} ans (modifiable)"
+    },
+    "detail": {
+      "holder": "Titulaire / laboratoire"
+    },
+    "history": {
+      "dossierImported": "Dossier réglementaire importé",
+      "confidence": "Confiance : {{value}} %",
+      "reviewImport": "Examiner l’import et le document de preuve"
+    },
+    "list": {
+      "reviewPointsTooltip": "Points à vérifier plus tard (import de dossiers)",
+      "reviewPointsAria": "{{count}} point(s) à vérifier"
+    },
+    "timeline": {
+      "origin": "Origine",
+      "renewal": "Renouvellement {{n}}",
+      "loading": "Chargement de la frise",
+      "heading": "Origine → renouvellements obtenus",
+      "ariaLabel": "Frise de l’AMM",
+      "currentDocument": "Document actuel",
+      "number": "N° {{number}}",
+      "scanAttached": "Scan de la décision rattaché : dossier complet.",
+      "scanMissing": "Scan de la décision manquant : dossier incomplet.",
+      "pendingNotice": "Renouvellement {{state}} : il ne compte qu’une fois obtenu.",
+      "pending": {
+        "PLANIFIE": "planifié",
+        "EN_PREPARATION": "en préparation",
+        "DEPOSE": "déposé",
+        "EN_INSTRUCTION": "en instruction"
+      }
+    }
+  },
+  "renewalsPages": {
+    "edit": {
+      "title": "Corriger le renouvellement {{n}}",
+      "hint": "L'échéance et le statut de l'AMM sont recalculés ; l'ancienne valeur reste dans l'historique.",
+      "number": "N° d'AMM",
+      "manualEnd": "Saisie à la main",
+      "autoEnd": "Date de fin calculée automatiquement ({{years}} ans, durée de validité du pays)",
+      "endBeforeStart": "La date de fin précède la date de début.",
+      "saved": "Renouvellement {{n}} corrigé"
+    },
+    "tab": {
+      "editTooltip": "Corriger le n° ou les dates",
+      "editAria": "Corriger le renouvellement {{n}}"
+    }
+  },
+  "documentsPages": {
+    "timeline": {
+      "editTooltip": "Corriger le classement (période, type, date)",
+      "editAria": "Corriger le classement"
+    },
+    "library": {
+      "importDossier": "Importer un dossier AMM"
+    },
+    "edit": {
+      "title": "Corriger le classement du scan",
+      "hint": "Le fichier ne change pas. L'état du dossier, la fiche et les classeurs sont mis à jour.",
+      "period": "Période",
+      "renewalOption": "Renouvellement {{n}}",
+      "numberSuffix": "n° {{number}}",
+      "startSuffix": "début {{date}}",
+      "saved": "Classement du scan corrigé"
+    }
+  },
+  "actionPlan": {
+    "subtitle": "Les AMM à compléter, les plus urgentes d'abord : un clic mène à l'endroit où agir.",
+    "cardSummary": "{{count}} AMM à compléter, les plus urgentes d'abord.",
+    "act": "Agir",
+    "number": "N° {{number}}",
+    "expiry": "échéance {{date}}",
+    "allCountries": "Tous les pays",
+    "nothingToDo": "Rien à faire ici.",
+    "seeAll": "Voir les {{count}} dans la liste des AMM",
+    "summaryTotal": "{{count}} AMM à compléter",
+    "allComplete": "Toutes les fiches sont complètes.",
+    "chip": "{{label}} : {{count}}"
+  },
+  "adminPages": {
+    "ranges": {
+      "trashed": "Gamme « {{label}} » mise à la corbeille."
+    },
+    "rules": {
+      "trashed": "Règle {{code}} mise à la corbeille."
+    },
+    "audit": {
+      "title": "Audit et traçabilité",
+      "subtitle": "Qui a fait quoi, quand : créations, modifications, connexions, suppressions et restaurations.",
+      "filters": {
+        "person": "Personne",
+        "action": "Action",
+        "type": "Type",
+        "from": "Du",
+        "to": "Au",
+        "clear": "Effacer les filtres"
+      },
+      "deactivated": "{{name}} (désactivé)",
+      "eventCount_one": "{{count}} événement",
+      "eventCount_other": "{{count}} événements",
+      "columns": {
+        "by": "Par",
+        "action": "Action",
+        "type": "Type",
+        "item": "Élément",
+        "detail": "Détail"
+      },
+      "empty": "Aucun événement pour ces filtres.",
+      "system": "Système",
+      "changed": "modifié",
+      "linked_one": "avec {{count}} élément lié",
+      "linked_other": "avec {{count}} éléments liés",
+      "page": "Page {{page}} / {{pages}}"
+    },
+    "errors": {
+      "title": "Journal des erreurs",
+      "subtitle": "Ce qui a planté en production : serveur, tâches de fond et interface. Une erreur résolue qui revient est rouverte.",
+      "states": {
+        "open": "À traiter",
+        "resolved": "Résolues",
+        "all": "Tout"
+      },
+      "count_one": "{{count}} erreur",
+      "count_other": "{{count}} erreurs",
+      "columns": {
+        "lastSeen": "Dernière fois",
+        "source": "Origine",
+        "error": "Erreur",
+        "where": "Où",
+        "times": "Fois",
+        "state": "État"
+      },
+      "emptyOpen": "Aucune erreur à traiter.",
+      "empty": "Aucune erreur.",
+      "hideDetail": "Masquer le détail",
+      "showDetail": "Voir le détail",
+      "resolvedOn": "Résolue le {{date}}",
+      "resolvedToast": "Erreur marquée résolue.",
+      "resolve": "Résolue",
+      "firstSeen": "Première fois le {{date}} · version {{version}}",
+      "lastUser": "dernier utilisateur : {{user}}",
+      "noDetail": "Pas de détail."
+    },
+    "permissions": {
+      "subtitle": "Cochez ce que chaque rôle peut faire. Le CEO garde toujours tous les droits ; chaque changement est tracé dans l’audit.",
+      "defaults": "Réglages par défaut",
+      "action": "Action",
+      "ceoOnly": "réservé au CEO",
+      "saved": "Permissions enregistrées. Elles s’appliquent dès la prochaine action de chacun.",
+      "fixed": "Ne se règle pas",
+      "ceoKeepsAll": "Le CEO garde tous les droits"
+    },
+    "trash": {
+      "subtitle": "Tout ce qui a été supprimé dans AMM GH. Rien n'est effacé : restaurez un élément pour le remettre tel quel.",
+      "states": {
+        "deleted": "À la corbeille",
+        "restored": "Restaurés",
+        "all": "Tout"
+      },
+      "count_one": "{{count}} élément",
+      "count_other": "{{count}} éléments",
+      "columns": {
+        "deletedOn": "Supprimé le",
+        "by": "Par",
+        "type": "Type",
+        "item": "Élément",
+        "reason": "Motif",
+        "state": "État"
+      },
+      "empty": "La corbeille est vide.",
+      "linked_one": "avec {{count}} élément lié",
+      "linked_other": "avec {{count}} éléments liés",
+      "restoredOn": "Restauré le {{date}} · {{user}}",
+      "restoredToast": "« {{label}} » restauré.",
+      "restore": "Restaurer"
+    }
+  },
+  "common": {
+    "routeError": {
+      "reloading": "Une nouvelle version d'AMM GH est en ligne : chargement…",
+      "reloadNow": "Recharger maintenant",
+      "title": "Cette page n'a pas pu s'afficher.",
+      "body": "Rechargez la page. Si l'erreur revient, signalez-la avec l'heure et la page ouverte.",
+      "reload": "Recharger",
+      "home": "Accueil"
+    },
+    "filingDates": {
+      "ideal": "Dépôt idéal :",
+      "agency": "Limite agence :",
+      "passedIdeal": "dépassé",
+      "passedAgency": "dépassée"
+    },
+    "validity": {
+      "pickStart_one": "Choisissez la date de début : la fin se calcule sur {{count}} an.",
+      "pickStart_other": "Choisissez la date de début : la fin se calcule sur {{count}} ans.",
+      "endAfterStart": "La date de fin doit suivre la date de début.",
+      "summary": "Validité : {{span}}, jusqu'au {{date}}",
+      "calculated": "calculée",
+      "countryDuration_one": "la durée du pays est de {{count}} an",
+      "countryDuration_other": "la durée du pays est de {{count}} ans"
+    },
+    "restored": "Restauré.",
+    "bytes": {
+      "b": "{{value}} o",
+      "kb": "{{value}} Ko",
+      "mb": "{{value}} Mo"
+    },
+    "untitledDocument": "Document",
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant"
+    }
+  },
+  "apiMessages": {
+    "notFound": "Élément introuvable ou hors de votre périmètre.",
+    "server": "Erreur serveur ({{status}}) — réessayez plus tard.",
+    "unreachable": "Serveur injoignable — vérifiez votre connexion.",
+    "http": "Erreur {{status}} — {{text}}"
+  },
+  "time": {
+    "year_one": "{{count}} an",
+    "year_other": "{{count}} ans",
+    "month_one": "{{count}} mois",
+    "month_other": "{{count}} mois",
+    "daysShort": "{{count}} j",
+    "span": "{{years}} et {{months}}"
   }
 }

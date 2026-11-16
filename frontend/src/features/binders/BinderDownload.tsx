@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Box,
@@ -30,42 +31,45 @@ import { formatDateTime } from '@/lib/dates';
 import { formatBytes, saveBlob } from '@/lib/download';
 
 function ExportStatus({ item }: { item: BinderExport }) {
+  const { t } = useTranslation();
   if (item.status === 'PENDING' || item.status === 'RUNNING') {
     const progress = item.progress_total ? (item.progress_done / item.progress_total) * 100 : 0;
     return (
       <Box>
         <Typography variant="body2" sx={{ mb: 1 }}>
           {item.status === 'PENDING'
-            ? 'En attente de préparation…'
-            : `Préparation : ${item.progress_done} / ${item.progress_total || '?'} AMM, décisions jointes au fur et à mesure.`}
+            ? t('binders.download.waiting')
+            : t('binders.download.preparing', {
+                done: item.progress_done,
+                total: item.progress_total || '?',
+              })}
         </Typography>
         <LinearProgress
           variant={item.progress_total ? 'determinate' : 'indeterminate'}
           value={progress}
-          aria-label="Avancement de la préparation"
+          aria-label={t('binders.download.progressLabel')}
         />
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          Vous pouvez fermer cette fenêtre : une notification vous prévient quand le classeur est prêt.
+          {t('binders.download.canClose')}
         </Typography>
       </Box>
     );
   }
   if (item.status === 'FAILED') {
-    return <Alert severity="error">{item.error || 'La préparation a échoué.'}</Alert>;
+    return <Alert severity="error">{item.error || t('binders.download.failed')}</Alert>;
   }
   return (
     <Alert severity="success" icon={false}>
       <Typography variant="subtitle2">
-        Prêt le {formatDateTime(item.finished_at)} · {item.page_count} pages · {formatBytes(item.size_bytes)}
+        {t('binders.download.ready', {
+          date: formatDateTime(item.finished_at),
+          pages: item.page_count,
+          size: formatBytes(item.size_bytes),
+        })}
       </Typography>
       <Typography variant="body2">
-        {item.decisions} décision{item.decisions > 1 ? 's' : ''} officielle{item.decisions > 1 ? 's' : ''}{' '}
-        jointe
-        {item.decisions > 1 ? 's' : ''} après leur fiche · {item.without_scan} AMM sans scan (marquées sur la
-        fiche)
-        {item.unavailable > 0
-          ? ` · ${item.unavailable} scan(s) illisible(s), remplacé(s) par une page d'avertissement`
-          : ''}
+        {t('binders.download.summary', { count: item.decisions, withoutScan: item.without_scan })}
+        {item.unavailable > 0 ? ` · ${t('binders.download.unavailable', { n: item.unavailable })}` : ''}
       </Typography>
     </Alert>
   );
@@ -83,6 +87,7 @@ function OfficialExportDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const exports = useBinderExports(binderKey, open);
   const start = useStartBinderExport(binderKey);
@@ -105,24 +110,23 @@ function OfficialExportDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{label} — avec les décisions officielles</DialogTitle>
+      <DialogTitle>{t('binders.download.officialTitle', { label })}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Chaque fiche est suivie des scans de la décision d'origine et de ses renouvellements, dans l'ordre
-          du classeur papier. Le fichier peut peser plusieurs dizaines de Mo : il est préparé par le serveur.
+          {t('binders.download.officialIntro')}
         </Typography>
         {exports.isPending ? (
           <LinearProgress />
         ) : exports.isError ? (
           <Alert severity="error">{extractErrorMessage(exports.error)}</Alert>
         ) : !latest ? (
-          <Typography variant="body2">Aucune préparation pour ce classeur.</Typography>
+          <Typography variant="body2">{t('binders.download.none')}</Typography>
         ) : (
           <Stack spacing={1.5}>
             <ExportStatus item={latest} />
             {ready && ready.id !== latest.id && (
               <Typography variant="caption" color="text.secondary">
-                Version précédente disponible (prête le {formatDateTime(ready.finished_at)}).
+                {t('binders.download.previous', { date: formatDateTime(ready.finished_at) })}
               </Typography>
             )}
           </Stack>
@@ -134,9 +138,9 @@ function OfficialExportDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Fermer</Button>
+        <Button onClick={onClose}>{t('app.close')}</Button>
         <Button onClick={() => start.mutate()} disabled={busy || start.isPending || exports.isPending}>
-          {latest ? 'Préparer avec les données du jour' : 'Préparer le classeur'}
+          {latest ? t('binders.download.prepareToday') : t('binders.download.prepare')}
         </Button>
         {ready && (
           <Button
@@ -145,7 +149,7 @@ function OfficialExportDialog({
             onClick={() => void download(ready)}
             disabled={downloading}
           >
-            {downloading ? 'Téléchargement…' : 'Télécharger'}
+            {downloading ? t('binders.download.downloading') : t('app.download')}
           </Button>
         )}
       </DialogActions>
@@ -166,6 +170,7 @@ export function BinderDownload({
   label: string;
   variant?: 'button' | 'icon';
 }) {
+  const { t } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [official, setOfficial] = useState(false);
@@ -186,13 +191,13 @@ export function BinderDownload({
   return (
     <>
       {variant === 'icon' ? (
-        <Tooltip title="Télécharger le classeur">
+        <Tooltip title={t('binders.download.tooltip')}>
           <span>
             <IconButton
               size="small"
               onClick={(e) => setAnchor(e.currentTarget)}
               disabled={downloading}
-              aria-label={`Télécharger le classeur ${label}`}
+              aria-label={t('binders.download.ariaLabel', { label })}
               sx={{ display: 'flex', mx: 'auto', mt: 0.5 }}
             >
               <DownloadIcon fontSize="small" />
@@ -206,14 +211,14 @@ export function BinderDownload({
           onClick={(e) => setAnchor(e.currentTarget)}
           disabled={downloading}
         >
-          Télécharger
+          {t('app.download')}
         </Button>
       )}
       <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
         <MenuItem onClick={() => void fiches()}>
           <ListItemText
-            primary="Fiches du classeur"
-            secondary="Immédiat · une page par AMM, tampons et bilan"
+            primary={t('binders.download.sheetsOnly')}
+            secondary={t('binders.download.sheetsOnlyHint')}
           />
         </MenuItem>
         <MenuItem
@@ -223,8 +228,8 @@ export function BinderDownload({
           }}
         >
           <ListItemText
-            primary="Avec les décisions officielles"
-            secondary="Chaque fiche suivie de ses scans · préparé en arrière-plan"
+            primary={t('binders.download.withDecisions')}
+            secondary={t('binders.download.withDecisionsHint')}
           />
         </MenuItem>
       </Menu>

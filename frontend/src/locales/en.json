@@ -1,0 +1,1669 @@
+{
+  "app": {
+    "name": "AMM GH",
+    "tagline": "Marketing authorization tracking in Africa",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filters": "Filters",
+    "reset": "Reset",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "noData": "No data",
+    "notFound": "Page not found",
+    "forbidden": "Access denied: your role does not allow you to open this page.",
+    "backHome": "Back to home",
+    "total": "TOTAL",
+    "saved": "Changes saved",
+    "download": "Download",
+    "open": "Open",
+    "details": "Details",
+    "date": "Date",
+    "user": "User",
+    "required": "Required field",
+    "invalidDate": "Invalid date (DD/MM/YYYY)",
+    "confirmDelete": "Confirm deletion?",
+    "unknown": "Unknown",
+    "days": "days",
+    "months": "months",
+    "language": "Language",
+    "languageFr": "Français",
+    "languageEn": "English"
+  },
+  "nav": {
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "dashboard": "Africa dashboard",
+    "actionPlan": "Action plan",
+    "amms": "MAs",
+    "alerts": "Alerts",
+    "documents": "Documents",
+    "products": "Products",
+    "countries": "Countries",
+    "admin": "Administration",
+    "users": "Users",
+    "ranges": "Product ranges",
+    "alertRules": "Alert rules",
+    "imports": "Excel imports",
+    "trash": "Trash",
+    "audit": "Audit",
+    "permissions": "Permissions",
+    "errors": "Errors",
+    "dossierImports": "MA dossier import",
+    "binders": "Binders",
+    "logout": "Sign out",
+    "profile": "My profile",
+    "grafana": "Grafana",
+    "openMenu": "Open menu",
+    "deposits": "MA submissions"
+  },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Access the marketing authorization tracking platform",
+    "tagline": "Marketing authorization tracking application",
+    "headline1": "Every MA up to date,",
+    "headline2": "in every country.",
+    "intro": "Regulatory tracking for the Generic Healthcare subsidiaries in Africa, from the MA decision to its renewal.",
+    "feature1Title": "One record per product and per country",
+    "feature1Text": "Number, dates, status and official documents, all in one place.",
+    "feature2Title": "Deadlines seen in advance",
+    "feature2Text": "Alerts before each expiry, so the renewal starts on time.",
+    "feature3Title": "Dossiers filed automatically",
+    "feature3Text": "Uploaded decisions are read and filed under the right MA.",
+    "restricted": "Access restricted to accounts opened by the head office.",
+    "copyright": "© {{year}} AMM GH — Generic Healthcare. All rights reserved.",
+    "email": "Email address",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalidEmail": "Invalid email address",
+    "failed": "Incorrect email or password",
+    "starting": "Connecting to the service",
+    "startingDetail": "Start-up can take up to a minute. Your request will be sent automatically.",
+    "unavailable": "The service is temporarily unavailable. Please try again in a moment.",
+    "sessionExpired": "Your session has expired, please sign in again.",
+    "loggedOut": "You are signed out."
+  },
+  "roles": {
+    "CEO_ADMIN": "CEO / Administrator",
+    "HQ_REGULATORY": "HQ Regulatory",
+    "COUNTRY_REGULATORY": "Country Regulatory"
+  },
+  "realtime": {
+    "connected": "Real time connected",
+    "reconnecting": "Reconnecting…",
+    "polling": "Degraded mode (refresh every 60 s)",
+    "idle": "Real time inactive"
+  },
+  "health": {
+    "checking": "Checking the API…",
+    "online": "API online · {{version}}",
+    "degraded": "API degraded · {{version}}",
+    "unreachable": "API unreachable",
+    "versionUnknown": "unknown version",
+    "short": {
+      "checking": "API…",
+      "online": "Online",
+      "degraded": "Degraded",
+      "unreachable": "Unreachable"
+    },
+    "tooltip": {
+      "version": "Deployed version: {{version}}",
+      "database": "Database: {{state}}",
+      "redis": "Redis: {{state}}",
+      "up": "available",
+      "down": "unavailable",
+      "unreachable": "No usable answer from the API (network down, 5 s timeout exceeded or service stopped)."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "unread": "{{count}} unread",
+    "new": "New notification"
+  },
+  "status": {
+    "VALIDE": "Valid",
+    "A_RENOUVELER": "Due for renewal",
+    "EXPIRE": "Expired",
+    "INDETERMINE": "Expiry unknown"
+  },
+  "urgency": {
+    "OK": "OK",
+    "A_PLANIFIER": "To plan",
+    "DEPOT_URGENT": "Urgent submission",
+    "CRITIQUE": "Critical",
+    "EXPIRE": "Expired"
+  },
+  "dossier": {
+    "COMPLET": "Dossier complete",
+    "INCOMPLET": "Dossier incomplete"
+  },
+  "workflow": {
+    "PLANIFIE": "Planned",
+    "EN_PREPARATION": "In preparation",
+    "DEPOSE": "Submitted",
+    "EN_INSTRUCTION": "Under review",
+    "OBTENU": "Granted",
+    "REJETE": "Rejected",
+    "ABANDONNE": "Withdrawn"
+  },
+  "documentKind": {
+    "AMM": "MA",
+    "RECEPISSE": "Submission receipt",
+    "COURRIER": "Authority letter",
+    "AUTRE": "Other"
+  },
+  "severity": {
+    "INFO": "Info",
+    "WARNING": "Warning",
+    "CRITICAL": "Critical"
+  },
+  "alertStatus": {
+    "OPEN": "Open",
+    "ACKNOWLEDGED": "Acknowledged",
+    "RESOLVED": "Resolved"
+  },
+  "dashboard": {
+    "title": "Africa dashboard",
+    "subtitle": "Consolidated view of MAs by country",
+    "kpi": {
+      "total": "MAs tracked",
+      "valid": "MAs in force",
+      "toRenew": "Due for renewal",
+      "expired": "Expired MAs",
+      "undetermined": "Expiry unknown",
+      "expiring6m": "Expiring < 6 months",
+      "expiring12m": "Expiring < 12 months",
+      "pctComplete": "Complete dossiers"
+    },
+    "table": {
+      "title": "Countries × indicators",
+      "country": "Country",
+      "total": "Total MAs",
+      "valid": "Valid",
+      "toRenew": "Due for renewal",
+      "expired": "Expired",
+      "undetermined": "Expiry unknown",
+      "pctValid": "% in force",
+      "expiring6m": "< 6 months",
+      "expiring12m": "< 12 months",
+      "pctComplete": "% complete dossiers"
+    },
+    "chart": {
+      "title": "Breakdown by status and country"
+    },
+    "priorities": "Top 10 priorities",
+    "prioritiesEmpty": "No priority MA",
+    "countryTitle": "Country dashboard — {{name}}",
+    "byRangeStatus": "Product range × status",
+    "pipeline": "Expiry pipeline over 24 months",
+    "urgencies": "Urgent items",
+    "openCountry": "Open the country dashboard",
+    "viewAmms": "View MAs"
+  },
+  "amm": {
+    "title": "Marketing authorizations",
+    "create": "New MA",
+    "createTitle": "Create an MA",
+    "export": "Export (xlsx)",
+    "exporting": "Exporting…",
+    "filters": {
+      "country": "Country",
+      "range": "Product range",
+      "status": "Status",
+      "urgency": "Urgency",
+      "dossier": "Dossier state",
+      "scan": "Scan",
+      "scanMissing": "Without scan",
+      "scanPresent": "With scan",
+      "expiresBefore": "Expires before",
+      "search": "Product, MA no.…"
+    },
+    "columns": {
+      "country": "Country",
+      "range": "Product range",
+      "product": "Product",
+      "number": "MA no.",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "renewalNumber": "Renewal no.",
+      "renewalStart": "Renewal start",
+      "renewalEnd": "Renewal end",
+      "status": "Status",
+      "urgency": "Urgency",
+      "dossier": "Dossier state",
+      "scan": "Scan",
+      "effectiveEnd": "Effective end",
+      "idealFiling": "Target submission",
+      "agencyDeadline": "Agency deadline",
+      "remaining": "Remaining"
+    },
+    "scanPresent": "Scan of the MA in force available",
+    "scanMissing": "Scan of the MA in force missing",
+    "fields": {
+      "product": "Product",
+      "country": "Country",
+      "originalNumber": "Original MA no.",
+      "originalStart": "Start date (original)",
+      "originalEnd": "End date (original)",
+      "endManual": "End date entered manually",
+      "dossierState": "Dossier state",
+      "notes": "Comment",
+      "status": "Status",
+      "urgency": "Urgency",
+      "effectiveEnd": "Effective end date",
+      "idealFiling": "Target submission",
+      "idealFilingHelp": "End − 6 months: internal submission target",
+      "agencyDeadline": "Agency deadline",
+      "agencyDeadlineHelp": "End − 3 months: the agency's deadline",
+      "updatedAt": "Last modified",
+      "hasScan": "Scan in force",
+      "dossierHelp": "Complete as soon as the scan of the decision in force is attached"
+    },
+    "tabs": {
+      "detail": "Details",
+      "renewals": "Renewals",
+      "documents": "Documents",
+      "alerts": "Alerts",
+      "history": "History"
+    },
+    "updated": "MA updated",
+    "created": "MA created",
+    "updateFailed": "Save failed, value restored",
+    "history": {
+      "empty": "No change recorded",
+      "field": "Field",
+      "old": "Old value",
+      "new": "New value",
+      "types": {
+        "created": "Creation",
+        "updated": "Change",
+        "deleted": "Deletion",
+        "documentary_correction": "Corrected from evidence",
+        "documentary_creation": "Filled in from evidence"
+      }
+    },
+    "notFound": "MA not found",
+    "readOnly": "Read only: this country is outside your scope.",
+    "rowsCount": "{{count}} MAs",
+    "productNoMatch": "No matching product",
+    "productTypeToSearch": "Type a product name",
+    "productAskHq": "No matching product. The catalogue is maintained by the head office: ask them to create the product before saving this MA."
+  },
+  "renewals": {
+    "title": "Renewals",
+    "empty": "No renewal",
+    "add": "Add a renewal",
+    "sequence": "Renewal no. {{n}}",
+    "original": "Original MA",
+    "filingDate": "Submission date",
+    "decisionDate": "Decision date",
+    "number": "MA no.",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "notes": "Notes",
+    "transition": "Change state",
+    "transitionTo": "Move to “{{state}}”",
+    "transitionTitle": "Transition to {{state}}",
+    "transitionDone": "Transition done",
+    "created": "Renewal created",
+    "filingRequired": "The submission date is required to move to “Submitted”",
+    "numberRequired": "The MA number is required to move to “Granted”",
+    "startRequired": "The start date is required to move to “Granted”",
+    "terminal": "Final state, no transition possible",
+    "addDocument": "Add a document to the renewal",
+    "record": "Add a renewal",
+    "recordTitle": "Add a renewal",
+    "recordHelp": "Enter the decision as it was issued: the expiry (start + {{years}} years) and the MA status are recalculated automatically. The scan is then attached from the Documents tab.",
+    "recordDone": "Renewal saved: the MA status has been recalculated",
+    "startHelp": "Effective date shown on the decision",
+    "endOverride": "Leave empty to apply the country's validity period ({{years}} years)",
+    "computedEnd": "New expiry: {{date}}.",
+    "willBecomeValid": "The MA will become “Valid”.",
+    "willStayExpired": "This expiry is already past: the MA will remain “Expired”.",
+    "expiredHint": "This MA has expired. Add the renewal that was granted: the status, the expiry and the submission deadline are recalculated automatically.",
+    "plan": "Plan a submission",
+    "openCompletes": "A renewal is already in progress: adding its decision will complete it, without creating a second one.",
+    "cancel": "Cancel this renewal",
+    "cancelHelp": "Go back: the MA returns to its previous state",
+    "cancelTitle": "Cancel renewal no. {{n}}",
+    "cancelConfirm": "Renewal no. {{number}}, from {{start}} to {{end}}. It will be deleted and will remain visible in the MA history.",
+    "cancelConsequence": "The MA is recalculated at once from the previous renewal, or from its original MA: it may become expired again. The scans attached to this decision are archived.",
+    "cancelDone": "Renewal cancelled: the MA status has been recalculated"
+  },
+  "documents": {
+    "title": "Documents",
+    "library": "Document library",
+    "librarySubtitle": "All the scans in your scope, most recent first",
+    "empty": "No document",
+    "upload": "Upload a document",
+    "dropzone": "Drag and drop a PDF here or click to select",
+    "dropzoneHint": "PDF, JPG or PNG — 25 MB maximum",
+    "kind": "Document type",
+    "date": "Document date",
+    "titleField": "Title (optional)",
+    "attachTo": "Attach to",
+    "attachOriginal": "Original MA",
+    "current": "In force",
+    "version": "Version {{n}}",
+    "pages": "{{count}} page(s)",
+    "uploadedBy": "Uploaded by {{email}} on {{date}}",
+    "replace": "Replace with a new version",
+    "replaced": "Replaced",
+    "view": "View",
+    "downloadZip": "Download the dossier (ZIP)",
+    "openNewTab": "Open in a new tab",
+    "print": "Print",
+    "printError": "Printing failed: the scan opens in a tab, print it from there.",
+    "uploaded": "Document uploaded",
+    "deleted": "Document archived",
+    "deleteConfirm": "Archive this document? An administrator will still be able to view it.",
+    "duplicate": "An identical document (same fingerprint) already exists on this MA.",
+    "invalidFile": "File not accepted: PDF, JPG or PNG only, 25 MB maximum.",
+    "uploadProgress": "Uploading… {{pct}}%",
+    "viewer": {
+      "page": "Page {{page}} / {{total}}",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "prev": "Previous page",
+      "next": "Next page",
+      "loading": "Loading the PDF…",
+      "error": "This document cannot be displayed"
+    },
+    "filters": {
+      "country": "Country",
+      "kind": "Type",
+      "year": "Year",
+      "product": "Product"
+    },
+    "columns": {
+      "date": "Date",
+      "kind": "Type",
+      "title": "Title",
+      "product": "Product",
+      "country": "Country",
+      "size": "Size",
+      "uploadedBy": "By"
+    },
+    "selectCountry": "Select a country to display its library"
+  },
+  "alerts": {
+    "title": "Alert centre",
+    "empty": "No alert",
+    "acknowledge": "Acknowledge",
+    "assign": "Assign",
+    "assignTo": "Assign to",
+    "resolve": "Resolve",
+    "resolveTitle": "Resolve the alert",
+    "comment": "Comment",
+    "acknowledged": "Alert acknowledged",
+    "assigned": "Alert assigned",
+    "resolved": "Alert resolved",
+    "mine": "My alerts",
+    "columns": {
+      "rule": "Rule",
+      "severity": "Severity",
+      "amm": "MA",
+      "dueDate": "Due date",
+      "status": "Status",
+      "assignedTo": "Assigned to",
+      "triggeredAt": "Triggered on"
+    },
+    "filters": {
+      "status": "Status",
+      "country": "Country",
+      "severity": "Severity"
+    }
+  },
+  "products": {
+    "title": "Products",
+    "create": "New product",
+    "name": "Name",
+    "range": "Product range",
+    "dci": "INN",
+    "dosage": "Strength",
+    "form": "Dosage form",
+    "presentation": "Pack size",
+    "active": "Active",
+    "aliases": "Aliases (Excel names)",
+    "coverage": "Country coverage",
+    "coverageAbsent": "Absent",
+    "coverageOutOfScope": "Out of scope",
+    "merge": "Merge into…",
+    "mergeTitle": "Merge this product",
+    "mergeHelp": "The MAs and aliases of this product will be attached to the target product.",
+    "mergeTarget": "Target product",
+    "merged": "Products merged",
+    "saved": "Product saved",
+    "documents": "Product documents",
+    "notFound": "Product not found",
+    "duplicates": {
+      "banner": "{{count}} group(s) of probable duplicate products (same name apart from punctuation).",
+      "review": "Review",
+      "title": "Probable duplicates ({{count}})",
+      "help": "Keeping a product merges the others into it: their MAs, renewals, documents and aliases are attached to it, and the former names become aliases. A group in conflict has two products with an MA in the same country: merging keeps only one of the two MAs, so check first.",
+      "mergeAll": "Merge the {{count}} groups without conflict",
+      "mergeAllHelp": "The product kept is the one with the most MAs; groups in conflict remain to be decided row by row.",
+      "mergedAll": "{{groups}} group(s) merged, {{products}} product(s) absorbed.",
+      "merged": "Products merged.",
+      "conflict": "Conflict: MAs in the same country ({{countries}})",
+      "noConflict": "No conflict",
+      "suggested": "suggested",
+      "keep": "Keep this one"
+    }
+  },
+  "admin": {
+    "users": {
+      "title": "Users",
+      "create": "New user",
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "role": "Role",
+      "countries": "Assigned countries",
+      "active": "Active",
+      "password": "Password",
+      "passwordHint": "Leave empty to keep it unchanged",
+      "saved": "User saved",
+      "deleted": "User deleted",
+      "hqHint": "As HQ Regulatory, you can create Country Regulatory users and assign countries to them."
+    },
+    "countries": {
+      "title": "Countries",
+      "create": "New country",
+      "iso2": "ISO code",
+      "name": "Name",
+      "authority": "Regulatory authority",
+      "validity": "Validity (years)",
+      "timezone": "Time zone",
+      "saved": "Country saved"
+    },
+    "ranges": {
+      "title": "Product ranges",
+      "create": "New product range",
+      "code": "Code",
+      "label": "Name",
+      "saved": "Product range saved"
+    },
+    "rules": {
+      "title": "Alert rules",
+      "create": "New rule",
+      "code": "Code",
+      "country": "Country (empty = global)",
+      "global": "Global",
+      "offset": "Offset (days)",
+      "severity": "Severity",
+      "roles": "Recipients",
+      "channels": "Channels",
+      "onlyIfNotFiled": "Only if not submitted",
+      "active": "Active",
+      "saved": "Rule saved",
+      "deleted": "Rule deleted"
+    },
+    "imports": {
+      "title": "Excel imports",
+      "upload": "Import a workbook",
+      "dropzone": "Drag and drop the .xlsx workbook or click",
+      "started": "Import started",
+      "status": "Status",
+      "summary": "Summary",
+      "errors": "Rows in error",
+      "noErrors": "No row in error",
+      "sheet": "Sheet",
+      "row": "Row",
+      "message": "Message",
+      "raw": "Raw data",
+      "history": "Previous imports",
+      "created": "Created",
+      "updated": "Updated",
+      "skipped": "Skipped",
+      "errorCount": "Errors",
+      "warnings": "Discrepancies",
+      "dryRun": "Simulation: produce the report without changing anything",
+      "dryRunChip": "Simulation",
+      "dropzoneHint": "Accepts, in this order: the Africa MA Dashboard, the GHPL register “0_REGISTRE AMM GHPL.xlsx”, then the manifest of filed scans “manifeste_scans_amm_gh.csv”.",
+      "registryChip": "GHPL register",
+      "registryHelp": "GHPL register: records are completed without overwriting anything (missing original number and date), a submitted dossier opens a “submitted” renewal, and pack sizes known only from the scans are created. Warnings report MAs that were not found and filed decisions more recent than the Dashboard.",
+      "registryWarnings": "Warnings",
+      "scansChip": "Filed scans",
+      "scansHelp": "Filed scans: each main document of the filing is matched to its MA and its period. Missing renewals are created, reliable dates from the filing correct the record (unless that would bring the MA expiry forward: warning), and numbers only fill in blanks. The files themselves are then sent by the script “importer_scans_classement.py”.",
+      "rowsTitle": "Rows",
+      "noRows": "No row",
+      "outcome": {
+        "ERROR": "Errors",
+        "WARNING": "Warnings",
+        "CREATED": "Created",
+        "UPDATED": "Updated",
+        "SKIPPED": "Skipped"
+      }
+    }
+  },
+  "errors": {
+    "fileLost": "File lost (stored before permanent storage was set up): import this dossier again."
+  },
+  "binders": {
+    "chronology": {
+      "kindDecision": "Decision (MA)",
+      "filedOn": "submitted on {{date}}",
+      "undatedFiling": "undated submission",
+      "datesUnknown": "dates unknown",
+      "fromTo": "from {{start}} to {{end}}",
+      "title": "Chronology",
+      "subtitle": "Chronology: from the most recent decision to the original MA",
+      "issuesToFix_one": "{{count}} gap to resolve",
+      "issuesToFix_other": "{{count}} gaps to resolve",
+      "nothingMissing": "nothing missing",
+      "number": "no. {{number}}",
+      "fixNumberDates": "Fix the number and dates",
+      "fixEntry": "Fix {{label}}",
+      "addDocOnPeriod": "Add a document to this period",
+      "addDocEntry": "Add a document — {{label}}",
+      "deletePassageHint": "Delete this step (it does not exist): the scans are kept",
+      "deleteEntry": "Delete {{label}}",
+      "decisionDated": "Decision dated {{date}}",
+      "fixDocHint": "Fix the date, type or period",
+      "fixDecision": "Fix the decision dated {{date}}",
+      "docDated": "{{kind}} dated {{date}}",
+      "fixDoc": "Fix {{kind}} dated {{date}}",
+      "unignoreGap": "Stop ignoring this gap",
+      "ignoreGap": "Ignore: there was no renewal in this period",
+      "legend": "✎ fixes a period or a document · + adds a document at the entered date · an imported scan is read (number and dates) then filed automatically."
+    },
+    "filters": {
+      "all": "All pages",
+      "unchecked": "To check or recheck",
+      "issues": "Discrepancies and gaps",
+      "nonConformes": "Non-compliant dossiers",
+      "toPrint": "MAs to print"
+    },
+    "fields": {
+      "number": "MA no.",
+      "startDate": "Start date",
+      "endDate": "End date"
+    },
+    "slots": {
+      "original": "Original MA",
+      "renewal": "Latest renewal"
+    },
+    "addPage": {
+      "rangeGeneral": "General",
+      "rangeCardio": "Cardio",
+      "rangeWellness": "Wellness",
+      "title": "Add a page to the binder",
+      "intro": "A dossier is in the paper binder but not in AMM GH: its page is created in its alphabetical place, with the product's MA for {{country}}. The scan can be imported afterwards, directly from the page.",
+      "productLabel": "Product (as written on the dossier)",
+      "productHelper": "Choose a product from the catalog if it already exists; otherwise it will be created.",
+      "range": "Product range",
+      "originalNumber": "Original MA no.",
+      "submit": "Add the page"
+    },
+    "link": {
+      "label": "{{country}} binder — {{title}} · page {{page}}/{{total}}",
+      "failing": "{{label}}: {{list}}",
+      "open": "{{label}} — open the binder at this MA's page",
+      "recheck": "To recheck",
+      "conform": "compliant",
+      "nonConform": "non-compliant",
+      "toCheck": "to check"
+    },
+    "dashboard": {
+      "conform": "compliant dossiers",
+      "nonConform": "non-compliant",
+      "absent": "missing dossiers",
+      "toScan": "decisions to scan",
+      "toPrint": "MAs to print",
+      "extras": "extra pages",
+      "title": "Paper binders",
+      "progress": "{{checked}} / {{total}} pages checked against the paper",
+      "openNow": "open right now: {{list}}",
+      "progressLabel": "Binder progress",
+      "openBinders": "Open the binders"
+    },
+    "conformity": {
+      "title": "DOSSIER CHECK",
+      "right": "correct",
+      "toFix": "to fix",
+      "toCheck": "to check",
+      "result": "Result: {{label}}"
+    },
+    "download": {
+      "waiting": "Waiting to be prepared…",
+      "preparing": "Preparing: {{done}} / {{total}} MAs, decisions attached as we go.",
+      "progressLabel": "Preparation progress",
+      "canClose": "You can close this window: a notification tells you when the binder is ready.",
+      "failed": "The preparation failed.",
+      "ready": "Ready on {{date}} · {{pages}} pages · {{size}}",
+      "summary_one": "{{count}} official decision attached after its sheet · {{withoutScan}} MA(s) without a scan (marked on the sheet)",
+      "summary_other": "{{count}} official decisions attached after their sheets · {{withoutScan}} MA(s) without a scan (marked on the sheet)",
+      "unavailable": "{{n}} unreadable scan(s), replaced by a warning page",
+      "officialTitle": "{{label}} — with the official decisions",
+      "officialIntro": "Each sheet is followed by the scans of the original decision and its renewals, in the order of the paper binder. The file can weigh several tens of MB: it is prepared by the server.",
+      "none": "No preparation for this binder.",
+      "previous": "Previous version available (ready on {{date}}).",
+      "prepareToday": "Prepare with today's data",
+      "prepare": "Prepare the binder",
+      "downloading": "Downloading…",
+      "tooltip": "Download the binder",
+      "ariaLabel": "Download the {{label}} binder",
+      "sheetsOnly": "Binder sheets",
+      "sheetsOnlyHint": "Immediate · one page per MA, stamps and summary",
+      "withDecisions": "With the official decisions",
+      "withDecisionsHint": "Each sheet followed by its scans · prepared in the background"
+    },
+    "shelf": {
+      "openBinder": "Open the {{country}} binder — {{title}}",
+      "openedBy": "Opened by {{names}}",
+      "progress": "Progress",
+      "title": "Archive binders",
+      "subtitle_one": "{{count}} binder · {{checked}} / {{pages}} pages checked · {{conformes}} compliant dossiers",
+      "subtitle_other": "{{count}} binders · {{checked}} / {{pages}} pages checked · {{conformes}} compliant dossiers",
+      "ownCountries": "your countries only",
+      "empty": "No binders: no MAs in your scope.",
+      "tooltipStats": "{{checked}} / {{total}} checked · {{conformes}} compliant · {{nonConformes}} non-compliant · {{absent}} missing · {{toScan}} to scan · {{toPrint}} to print",
+      "lastCheck": "Last check on {{date}} ({{by}})"
+    },
+    "rename": {
+      "title": "Edit the page title",
+      "label": "Pack size name",
+      "help": "The new title applies everywhere in AMM GH: MA record, binders, dashboards, and every country that follows this pack size. The old name is still recognized by imports and synchronization.",
+      "submit": "Rename",
+      "trashed": "Page “{{name}}” moved to the trash.",
+      "restored": "Page restored."
+    },
+    "scan": {
+      "add": "Add a scan",
+      "import": "Import the scan",
+      "inputLabel": "Decision scan",
+      "reading": "Reading the scan: MA number and dates are read back, then it is filed on this page…",
+      "stored": "Scan filed on this page (<link>see the imported dossier</link>).",
+      "failed": "The scan could not be read: {{error}} (<link>see the imported dossier</link>).",
+      "unknownError": "unknown error",
+      "needsReview": "The scan is waiting for review (<link>see the imported dossier</link>)."
+    },
+    "page": {
+      "removed": "Page removed from the binder",
+      "dividerLabel": "{{label}} divider",
+      "titlePage": "Title page",
+      "summary": "Summary",
+      "backToShelf": "Back to the shelf",
+      "progressLabel": "Binder progress",
+      "stats": "{{checked}} / {{total}} checked · {{conformes}} compliant",
+      "staleChip": "{{count}} to recheck",
+      "show": "Show",
+      "animationOn": "Page animation: on",
+      "animationOff": "Page animation: off",
+      "animation": "Animation",
+      "soundOn": "Page sound: on",
+      "soundOff": "Page sound: off",
+      "sound": "Sound",
+      "addPage": "Add a page",
+      "added": "Page added: import its scan directly from the page.",
+      "filed": "Page filed in the {{title}} binder (alphabetical order).",
+      "next": "Next page",
+      "nextCorner": "Next page (corner)",
+      "tabTooltip": "{{label}} — {{checked}} / {{total}}",
+      "goToDivider": "Go to the {{label}} divider",
+      "goToSummary": "Go to the summary",
+      "summaryTab": "SUMMARY",
+      "previous": "Previous page",
+      "browse": "Browse the binder"
+    },
+    "leaves": {
+      "cover": "AMM GH · MA BINDER",
+      "pages": "pages",
+      "checked": "checked",
+      "conform": "compliant dossiers",
+      "nonConform": "non-compliant",
+      "absent": "missing",
+      "toScan": "to scan",
+      "toPrint": "to print",
+      "toRecheck": "to recheck",
+      "extra": "extra",
+      "progressChecked": "{{progress}}% checked",
+      "lastCheck": "last check on {{date}} by {{by}}",
+      "resume": "Resume: {{label}}",
+      "howTo": "Leaf through the paper binder at the same time: each page matches a dossier, in the same order. <b>←</b> <b>→</b> or swipe to turn the pages · <b>C</b> paper compliant · <b>E</b> fix · <b>A</b> missing. The colored tabs lead straight to a product range.",
+      "dividerStats_one": "{{label}} — {{checked}} / {{total}} checked · {{count}} compliant",
+      "dividerStats_other": "{{label}} — {{checked}} / {{total}} checked · {{count}} compliant",
+      "fromTo": "from {{from}} to {{to}}",
+      "staleNote": "{{n}} page(s) changed since their check: to recheck",
+      "absentToScan": "{{absent}} missing · {{toScan}} to scan",
+      "groupAbsent": "Dossiers to find (paper missing)",
+      "groupToScan": "Decisions to scan",
+      "groupToPrint": "MAs to print and file in the binder",
+      "groupData": "Date or number to review (missing, or record changed since the check)",
+      "endTitle": "Binder summary",
+      "endStats": "{{checked}} / {{total}} pages checked · {{conformes}} compliant dossiers · {{nonConformes}} non-compliant · {{corrected}} fixed · {{absent}} missing · {{toScan}} to scan · {{toPrint}} to print",
+      "none": "None.",
+      "pageRef": "p. {{page}} · {{name}}",
+      "extraPages": "Extra pages ({{n}})",
+      "extraHelp": "A dossier is in the paper binder but not in AMM GH: note it here, or create its page directly with “Add a page”.",
+      "createPage": "Create the page",
+      "remove": "Remove",
+      "removeNamed": "Remove {{name}}",
+      "productRead": "Product read on the dossier",
+      "note": "Note",
+      "report": "Report"
+    },
+    "sheet": {
+      "noChange": "No value changed: use “Paper compliant” if the page is correct.",
+      "header": "{{country}} · {{title}} BINDER",
+      "pageOf": "PAGE {{page}} / {{total}}",
+      "rangePage": "page {{page}} / {{total}} of the range",
+      "titleButton": "Title",
+      "deletePage": "Delete the page",
+      "paperHasRenewal": "The paper shows a renewal",
+      "situation": "STATUS",
+      "dossierComplete": "Complete dossier",
+      "dossierIncomplete": "Incomplete dossier",
+      "toScanPill": "TO SCAN",
+      "toPrintPill": "TO PRINT",
+      "renewalSubmitted": "Renewal submitted",
+      "submittedStamp": "SUBMITTED",
+      "underReviewStamp": "UNDER REVIEW",
+      "onDate": "on {{date}}",
+      "noScan": "No scan in AMM GH",
+      "scannedOn": "Decision scanned, dated {{date}}",
+      "pagesShort": "{{n}} p.",
+      "notScanned": "Decision in force not scanned (last scan: decision dated {{date}})",
+      "printedHint": "The sheet is printed and filed in the binder",
+      "toPrintHint": "The scan exists but its sheet is missing from the paper binder (counted in the summary)",
+      "printedFiled": "Printed and filed",
+      "toPrint": "To print",
+      "missing_one": "{{count}} gap",
+      "missing_other": "{{count}} gaps",
+      "scanTitle": "{{name}} — decision dated {{date}}",
+      "chronologyLabel_one": "Chronology of the decision for {{name}}",
+      "chronologyLabel_other": "Chronology of the {{count}} decisions for {{name}}",
+      "staleTitle": "To recheck: the sheet has changed since the finding ({{by}}).",
+      "slotOrigin": "original",
+      "slotRenewal": "renewal",
+      "staleChange": "{{field}} ({{slot}}): checked <b>{{checked}}</b>, now <b>{{now}}</b>",
+      "discrepancy": "Discrepancy between the sheet and the scan: check the paper, then “Paper compliant” if the sheet is correct or “Fix”.",
+      "noteOptional": "Note (optional)",
+      "validate": "Confirm the fix",
+      "conformHint": "The paper dossier is in the binder, and the date and MA number are correct (key C)",
+      "paperConform": "Paper compliant",
+      "fixHint": "Enter the value read on the paper (key E)",
+      "fix": "Fix",
+      "absentHint": "No paper dossier at this spot (key A)",
+      "absentFromBinder": "Missing from the binder",
+      "archivistNote": "Archivist's note",
+      "cancelFinding": "Cancel the finding",
+      "correctedOnPaper": "<b>Fixed on the paper</b> ({{date}}):",
+      "correctionItem": "{{field}} ({{slot}}) {{old}} → {{new}}",
+      "drop": "Drop the decision scan: it will be read and filed on {{name}}"
+    },
+    "forms": {
+      "fixTitle": "FIX {{label}}",
+      "deleteTitle": "DELETE {{label}}",
+      "deletePassage": "Delete the step",
+      "deleteHelp": "For a step that does not exist: a renewal entered by mistake or twice, a submission never made. The scans are not deleted. The expiry date, the status and the renewal numbering are recalculated.",
+      "moveTo_one": "{{count}} document to file on",
+      "moveTo_other": "{{count}} documents to file on",
+      "fixDocTitle": "FIX DOCUMENT “{{kind}} DATED {{date}}”",
+      "confirmRemove": "Confirm removal",
+      "removeDoc": "Remove the document",
+      "removeNote": "The document leaves the page; it stays in the history of archived documents.",
+      "addTitle": "ADD A DOCUMENT — {{label}}",
+      "chooseScan": "Choose the scan (PDF, JPEG, PNG)",
+      "missingScan": "Choose the scan and enter its date.",
+      "filedAsIs": "Filed as is on this period, at the entered date (no automatic reading).",
+      "documentDate": "Document date",
+      "type": "Type",
+      "period": "Period"
+    },
+    "stamps": {
+      "checked": "CHECKED",
+      "fixed": "FIXED",
+      "missing": "MISSING"
+    },
+    "flag": "Flag {{iso2}}",
+    "thumbnail": {
+      "open": "Open the scan dated {{date}}",
+      "unavailable": "Scan unavailable",
+      "printFailed": "Printing is not possible here: the scan opened in a tab",
+      "print": "Print the scan",
+      "printDated": "Print the scan dated {{date}}"
+    },
+    "trace": {
+      "excel": "Africa MA Dashboard: sheet {{sheet}}, row {{row}} (<link>import of {{date}}</link>)",
+      "dossier": "Dossier imported on <link>{{date}}</link>",
+      "autoFiled": "(filed automatically)"
+    },
+    "card": {
+      "editHint": "Edit the number and dates on the card",
+      "noRenewal": "No renewal recorded",
+      "useScanHint": "Use the value read on the scan",
+      "scanValue": "Scan: {{value}}",
+      "scanSays": "the scan shows {{value}}"
+    }
+  },
+  "deposits": {
+    "optional": "(optional)",
+    "optionalCap": "Optional",
+    "renewalNo": "renewal no. {{n}}",
+    "ammNo": " · MA {{number}}",
+    "overdue": "overdue",
+    "defaultAuthority": "the regulatory agency",
+    "defaultAgency": "the agency",
+    "unknownAuthor": "?",
+    "who": {
+      "hq": "HQ",
+      "country": "Country",
+      "either": "Country or HQ"
+    },
+    "procedure": {
+      "assemble": {
+        "title": "Dossier assembly",
+        "text": "Renewal request letter, PGHT certificate (wholesale price excluding tax), forms, SmPC, certificates of analysis, country regulatory documents."
+      },
+      "samples": {
+        "title": "Samples",
+        "text": "Collect the samples on site and record the batch number, manufacturing date and expiry date."
+      },
+      "send": {
+        "title": "Sending to the country",
+        "text": "The dossier goes to the country: it is notified and downloads the complete dossier from the application."
+      },
+      "submit": {
+        "title": "Submission to the agency",
+        "text": "The country submits the dossier to the regulatory agency and sends the submission receipt to HQ."
+      },
+      "commission": {
+        "title": "Commission",
+        "text": "The submission goes to the commission; each commission and each notification from the agency is recorded."
+      },
+      "decision": {
+        "title": "Decision",
+        "text": "Renewal granted (number and start date) or rejected: the dossier is closed and the MA is recalculated."
+      }
+    },
+    "list": {
+      "subtitle": "Renewals: assembly at HQ, sending to the country, submission to the agency, commission and decision.",
+      "procedureButton": "Procedure",
+      "piecesButton": "Required documents",
+      "procedureTitle": "Renewal submission procedure",
+      "procedureSubheader": "Each step is tracked in the application; HQ and the country are notified at each handover.",
+      "kpis": {
+        "assembly": {
+          "label": "In assembly",
+          "hint": "At HQ"
+        },
+        "toSubmit": {
+          "label": "To submit",
+          "hint": "Sent to countries"
+        },
+        "submitted": {
+          "label": "Submitted",
+          "hint": "Receipt received"
+        },
+        "commission": {
+          "label": "In commission",
+          "hint": "At the agency"
+        },
+        "granted": {
+          "label": "Granted",
+          "hint": "Renewals"
+        }
+      },
+      "progressPieces": "{{done}}/{{required}} documents",
+      "progressSamples": " · samples",
+      "submittedOn": "Submitted on {{date}}",
+      "sentOn": "Sent on {{date}}",
+      "messagesCount": "{{n}} message(s)",
+      "suggestionsTitle": "To prepare: {{n}} MAs to renew within the year",
+      "suggestionsSubheader": "With no submission dossier in progress, from most to least urgent.",
+      "buildDossier": "Assemble the dossier",
+      "showLess": "Show less",
+      "showAll": "Show all {{n}}",
+      "toSubmitAlert_one": "One HQ dossier is ready to submit: download it, submit it to the agency, then send the submission receipt.",
+      "toSubmitAlert_other": "{{count}} HQ dossiers are ready to submit: download them, submit them to the agency, then send the submission receipts.",
+      "tabOpen": "In progress ({{n}})",
+      "tabClosed": "Closed ({{n}})",
+      "country": "Country",
+      "allCountries": "All countries",
+      "emptyOpenHq": "No dossier in progress: assemble one from “To prepare”.",
+      "emptyOpenCountry": "No dossier in progress for your countries.",
+      "emptyClosed": "No closed dossier.",
+      "columns": {
+        "product": "Product",
+        "expiry": "Expiry",
+        "agencyLimit": "Agency deadline",
+        "stage": "Step",
+        "progress": "Progress",
+        "ammExpiry": "MA expiry",
+        "lastActivity": "Last activity"
+      }
+    },
+    "detail": {
+      "maExpiryLabel": "MA expiry date: ",
+      "submittedOnLabel": "Submitted on ",
+      "maRecord": "MA record",
+      "todoLabel": "To do:",
+      "todoText": "download the dossier, submit it to {{authority}} with the samples, then send the submission receipt to HQ (step 4).",
+      "messagesTitle": "HQ ↔ country exchanges",
+      "messagesSubheader": "Each message notifies the other side.",
+      "noMessage": "No messages yet.",
+      "yourMessage": "Your message",
+      "sendMessage": "Send the message",
+      "log": "Log",
+      "abandonButton": "Withdraw this renewal",
+      "abandonTitle": "Withdraw this renewal?",
+      "abandonText": "The dossier is closed and the country is notified. The MA will expire on its expiry date.",
+      "abandonReason": "Why?",
+      "abandonConfirm": "Withdraw"
+    },
+    "link": {
+      "followed": "Submission dossier · renewal no. {{n}}",
+      "tooltip": "Open the submission dossier for the next renewal (MA Submissions section)",
+      "build": "Assemble the submission dossier"
+    },
+    "pieces": {
+      "title": "Dossier assembly",
+      "subtitle": "{{done}}/{{required}} required documents",
+      "sentSuffix": " · dossier sent: an addition goes to the country as a supplement",
+      "add": "Add",
+      "attach": "Attach",
+      "others": "Other documents",
+      "name": "Document name",
+      "namePlaceholder": "Power of attorney, purchase order…",
+      "remove": "Remove {{name}}"
+    },
+    "samples": {
+      "title": "Samples",
+      "subtitleRequired": "Collected on site: batch number, manufacturing date, expiry date.",
+      "none": "No samples for this submission.",
+      "noneSwitch": "No samples for this submission",
+      "batch": "Batch no.",
+      "manufacture": "Manufacturing",
+      "expiry": "Expiry",
+      "quantity": "Quantity",
+      "manufactureDate": "Manufacturing date",
+      "expiryDate": "Expiry date",
+      "removeBatch": "Remove batch {{batch}}",
+      "record": "Record batch"
+    },
+    "send": {
+      "title": "Sending to the country",
+      "sentBy": "Sent on {{date}} by {{user}}",
+      "sent": "Sent on {{date}}",
+      "pending": "The country is notified and downloads the complete dossier (filed documents and transmittal slip).",
+      "preparing": "Preparing the dossier…",
+      "beforeSend": "Before sending:",
+      "complete": "Dossier complete: ready to go to the country.",
+      "noteLabel": "Message to the country (optional)",
+      "notePlaceholder": "Samples shipped by DHL, tracking no.…",
+      "sendButton": "Send to the country",
+      "preview": "Dossier preview (ZIP)",
+      "hqMessage": "Message from HQ:",
+      "download": "Download the dossier (ZIP)",
+      "downloaded": "Downloaded {{n}} times — last: {{user}} on {{date}}",
+      "notDownloaded": "Not downloaded yet."
+    },
+    "submit": {
+      "title": "Submission to the agency",
+      "done": "Submitted to {{authority}} on {{date}}",
+      "pending": "The country submits the dossier to {{authority}}, then sends the submission receipt to HQ.",
+      "receiptOf": "Submission receipt of {{date}}",
+      "date": "Submission date",
+      "receiptFile": "Submission receipt (PDF, photo)",
+      "sendReceipt": "Send the receipt to HQ"
+    },
+    "follow": {
+      "title": "Commission and notifications",
+      "kinds": {
+        "COMMISSION": "Commission review",
+        "NOTIFICATION": "Agency notification",
+        "COMPLEMENT": "Request for additional information",
+        "AUTRE": "Other"
+      },
+      "count": "{{n}} follow-up(s) recorded at the agency",
+      "empty": "Each commission review, notification or request for additional information from the agency.",
+      "recordedBy": "Recorded by {{user}}",
+      "type": "Type",
+      "fileOptional": "Document (optional)",
+      "detail": "Details",
+      "detailPlaceholder": "Commission opinion, documents requested…",
+      "record": "Record this follow-up"
+    },
+    "decision": {
+      "title": "Decision",
+      "granted": "Renewal granted: no. {{number}} (decision of {{date}})",
+      "rejected": "Renewal rejected on {{date}}",
+      "withdrawn": "Renewal withdrawn.",
+      "pending": "The agency decision closes the dossier; the MA record is recalculated.",
+      "optGranted": "Granted",
+      "optRejected": "Rejected",
+      "renewalNumber": "Renewal number",
+      "startDate": "Start date",
+      "decisionDate": "Decision date",
+      "scan": "Decision scan",
+      "reason": "Reason",
+      "saveGranted": "Save the granted renewal",
+      "saveRejected": "Save the rejection"
+    },
+    "pieceTypes": {
+      "editTitle": "Edit document",
+      "countryTitle": "Country-specific document ({{country}})",
+      "baseTitle": "Base document",
+      "piece": "Document",
+      "details": "Details (optional)",
+      "order": "Order",
+      "requiredToSend": "Required to send the dossier",
+      "editLabel": "Edit {{label}}",
+      "removeTooltip": "Remove (dossiers already assembled keep it)",
+      "removeLabel": "Remove {{label}}",
+      "trashed": "Document “{{label}}” moved to the trash.",
+      "removed": "Document “{{label}}” removed: dossiers already assembled keep it.",
+      "title": "Required documents",
+      "subtitle": "Base list for the renewal dossier, then adjustments by country. A dossier goes to the country only when its required documents are attached.",
+      "baseList": "Base list (all countries)",
+      "addPiece": "Add a document",
+      "colPiece": "Document",
+      "colRequired": "Required",
+      "colExcluded": "Countries that do not require it",
+      "adjustTitle": "Adjustments by country",
+      "adjustSubheader": "Uncheck a base document that this country does not require; add the country-specific documents.",
+      "country": "Country",
+      "renewalDossier": "Renewal dossier — {{country}}",
+      "ownPiece": "Document specific to {{country}}"
+    }
+  },
+  "dossierImports": {
+    "viewScan": "View scan",
+    "viewer": {
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "download": "Download the document"
+    },
+    "cappedList": {
+      "collapse": "Collapse",
+      "showAll": "Show all ({{count}})"
+    },
+    "counts": {
+      "files_one": "{{count}} file",
+      "files_other": "{{count}} files",
+      "products_one": "{{count}} product",
+      "products_other": "{{count}} products"
+    },
+    "values": {
+      "empty": "empty"
+    },
+    "columns": {
+      "dossier": "Dossier",
+      "ma": "MA",
+      "result": "Result",
+      "pointsToCheck": "Points to check",
+      "points": "Points",
+      "field": "Field",
+      "before": "Before",
+      "after": "After",
+      "information": "Information",
+      "by": "By",
+      "proof": "Proof"
+    },
+    "history": {
+      "tabs": {
+        "toProcess": {
+          "label": "To process",
+          "empty": "Nothing to process: everything is filed or in progress."
+        },
+        "inProgress": {
+          "label": "In progress",
+          "empty": "No analysis in progress."
+        },
+        "filed": {
+          "label": "Filed",
+          "empty": "No filed dossier."
+        },
+        "all": {
+          "empty": "No imported dossier."
+        }
+      },
+      "ariaLabel": "History of imported dossiers",
+      "searchPlaceholder": "Search for a dossier",
+      "noMatch": "No dossier contains “{{search}}”.",
+      "total": "{{count}} dossiers",
+      "toSpecify": "To be specified",
+      "pointsAria": "{{count}} point(s) to check"
+    },
+    "state": {
+      "running": "Analysis in progress",
+      "failed": "Failed",
+      "filed": "Filed",
+      "question": "Question",
+      "toFile": "To file"
+    },
+    "sentence": {
+      "running": "Analysis in progress…",
+      "failed": "Analysis failed",
+      "filedAuto": "Filed automatically",
+      "filed": "Filed",
+      "question": "Question: which MA is this?",
+      "ready": "Ready to file"
+    },
+    "fields": {
+      "original_number": "MA number",
+      "original_start_date": "Issue date",
+      "original_end_date": "Expiry date",
+      "holder": "Holder",
+      "number": "Renewal number",
+      "start_date": "Start date",
+      "end_date": "End date",
+      "decision_date": "Decision date",
+      "workflow_status": "Renewal status"
+    },
+    "documentKinds": {
+      "AMM": "Decision",
+      "RECEPISSE": "Submission receipt",
+      "COURRIER": "Authority letter",
+      "AUTRE": "Other document"
+    },
+    "renewalTitle": {
+      "onDate": "Renewal of {{date}}",
+      "ofYear": "Renewal of {{year}}",
+      "unknown": "Renewal (date not read)"
+    },
+    "period": {
+      "original": "Original MA",
+      "unplaced": "Period not determined"
+    },
+    "dossierStates": {
+      "COMPLET": "Complete",
+      "INCOMPLET": "Incomplete"
+    },
+    "summary": {
+      "title": "What the import changed",
+      "created": "MA created from the dossier.",
+      "expiry": "Expiry",
+      "renewalsAdded": "Renewals added",
+      "renewalLine": "No. {{number}}: {{start}} → {{end}}",
+      "fieldsChanged": "Fields changed",
+      "fieldLine": "{{label}}: {{old}} → {{new}}",
+      "documents": "{{count}} document(s) attached to the MA record.",
+      "stillIncomplete": "Dossier still incomplete: the {{scan}} is missing."
+    },
+    "reviewPoints": {
+      "title": "Points to check later ({{count}})",
+      "ariaLabel": "Points to check later",
+      "intro": "Nothing is blocked: the value in the record was kept and the scans are filed. Check the scan when you can.",
+      "batch": "Dossier “{{name}}” · {{date}}",
+      "scanFallback": "Scan",
+      "apply": "Apply the scan value",
+      "ignore": "Ignore",
+      "closed": {
+        "APPLIED": "Scan value applied",
+        "IGNORED": "Ignored"
+      }
+    },
+    "page": {
+      "title": "MA dossier import",
+      "subtitle": "Drop a dossier: each scan is filed under the right MA. Only what needs your action is shown to you.",
+      "dropTitle": "Drag a product, country or product range dossier here",
+      "limits": "PDF, JPEG, PNG · 25 MB per file · 200 files and 250 MB per product",
+      "chooseFolder": "Choose a folder",
+      "inputAria": "MA dossier",
+      "readingAria": "Reading the dossier",
+      "showFiles": "Show files",
+      "hideFiles": "Hide files",
+      "analyzeProducts": "Analyze the {{count}} products",
+      "analyzeDossier": "Analyze the dossier",
+      "selectedFilesAria": "Selected files",
+      "issues_one": "{{count}} issue to fix before sending",
+      "issues_other": "{{count}} issues to fix before sending",
+      "groupError": "{{group}}: {{error}}",
+      "aside_one": "{{count}} file set aside (unsupported format or over 25 MB); the rest is sent.",
+      "aside_other": "{{count}} files set aside (unsupported format or over 25 MB); the rest is sent.",
+      "asideHide": "Hide",
+      "asideShow": "Show",
+      "uploading": "Uploading documents: {{progress}}%",
+      "sendingAria": "Sending products",
+      "sending": "Sending products: {{done}} / {{total}}",
+      "sendingFailed": " · {{count}} failed",
+      "sent_one": "{{count}} product sent: filing continues on its own.",
+      "sent_other": "{{count}} products sent: filing continues on its own.",
+      "notSent_one": "{{count}} product not sent",
+      "notSent_other": "{{count}} products not sent"
+    },
+    "folder": {
+      "empty": "The folder contains no files.",
+      "tooManyFiles": "The folder is limited to 200 files.",
+      "tooBig": "The total folder size exceeds 250 MB.",
+      "unsupportedFormat": "{{path}}: unsupported format (PDF, JPEG or PNG).",
+      "emptyFile": "{{path}}: the file is empty.",
+      "fileTooBig": "{{path}}: the file exceeds 25 MB.",
+      "invalidPath": "{{path}}: invalid file path.",
+      "duplicatePath": "{{path}}: path appears more than once.",
+      "singleFolder": "Select a single folder containing all the documents and subfolders.",
+      "nameTooLong": "The folder name exceeds 255 characters.",
+      "dropUnsupported": "This browser does not allow dropping a folder. Use “Choose a folder”.",
+      "dropSingle": "Drop a single folder, or use “Choose a folder”.",
+      "pathTooLong": "A path in the folder exceeds 500 characters.",
+      "dropTooMany": "The folder exceeds {{max}} files: drop it one country at a time.",
+      "aside": {
+        "copy": "{{path}} (copy of the filing, not imported)",
+        "format": "{{path}} (format not read)",
+        "empty": "{{path}} (empty file)",
+        "big": "{{path}} (over 25 MB)"
+      }
+    },
+    "report": {
+      "periods": {
+        "d1": "24 h",
+        "d7": "7 days",
+        "d30": "30 days"
+      },
+      "kinds": {
+        "question": "MA not identified",
+        "failed": "Analysis failed",
+        "ready": "Not filed",
+        "incomplete": "Record to complete"
+      },
+      "title": "Automatic filing",
+      "periodAria": "Summary period",
+      "empty": "No dossier imported in this period.",
+      "counts": {
+        "filed_one": "{{count}} dossier filed",
+        "filed_other": "{{count}} dossiers filed",
+        "created_one": "{{count}} record created",
+        "created_other": "{{count}} records created",
+        "corrections_one": "{{count}} value corrected",
+        "corrections_other": "{{count}} values corrected",
+        "decisions_one": "{{count}} automatic decision",
+        "decisions_other": "{{count}} automatic decisions",
+        "documents_one": "{{count}} document filed",
+        "documents_other": "{{count}} documents filed",
+        "renewals_one": "{{count}} renewal added",
+        "renewals_other": "{{count}} renewals added",
+        "completed_one": "{{count}} field completed",
+        "completed_other": "{{count}} fields completed",
+        "inProgress_one": "{{count}} dossier being analyzed…",
+        "inProgress_other": "{{count}} dossiers being analyzed…"
+      },
+      "progressAria": "Filing progress",
+      "doneAria": "What has been done",
+      "allFiled": "Nothing to process: everything was filed automatically.",
+      "attentionTitle": "For you to process ({{count}})",
+      "kindPrefix": "{{kind}}: ",
+      "decisionSeparator": ": ",
+      "numberLine": "No. {{number}}",
+      "numberToComplete": "number to complete",
+      "correctionsAria": "Values corrected from the official decisions"
+    },
+    "detail": {
+      "pages": "(p. {{pages}})",
+      "dateNotRead": "date not read",
+      "ma": "MA",
+      "questionAria": "Question",
+      "questionTitle": "Which MA should these documents be filed under?",
+      "optionLabel": "{{product}} · {{country}}",
+      "optionNumber": " · No. {{number}}",
+      "noOptions": "No MA found in your scope",
+      "searchLabel": "MA (search by product)",
+      "helperCountry": "MAs for the dossier’s country ({{country}}) in your scope",
+      "helperScope": "MAs in your scope",
+      "fileHere": "File the documents here",
+      "createIntro": "Does the MA not exist in the application yet? The head office can create it from the dossier’s original decision.",
+      "createButton": "Create the MA “{{product}}” ({{country}}) from this dossier",
+      "createTitle": "Create this MA?",
+      "createText": "A new MA “{{product}}” ({{country}}) will be created with the information read from the original decision, then the documents will be filed under it.",
+      "resultAria": "Result",
+      "resultTitle": "Result",
+      "resultTitlePlanned": "Result once filed",
+      "statusLabel": "Status:",
+      "expiryLabel": "Expiry:",
+      "expiryUnknown": "not determined",
+      "dossierComplete": "Dossier complete: the decision in force has its scan.",
+      "dossierIncomplete": "Dossier incomplete: the {{scan}} is missing.",
+      "missingDefault": "scan of the decision in force",
+      "appliedNote": "Each scan is filed under its period; no value already recorded was replaced. The head office and Country Regulatory were notified.",
+      "rereadAndFile": "Reread and file",
+      "filing": "Filing…",
+      "fileDocuments": "File the documents",
+      "legacyNote": "This dossier was read before automatic filing.",
+      "identifiedNoFiling": "The MA is identified; automatic filing did not take place.",
+      "conflict": "The information has changed since the reading: rerun the analysis.",
+      "rerun": "Rerun the analysis",
+      "failedFallback": "The analysis failed. Rerun it to reuse the documents already uploaded.",
+      "timelineTitle": "Original and renewals",
+      "timelineAria": "MA timeline",
+      "addedByThis": "Added by this dossier",
+      "willBeAdded": "Will be added",
+      "inForce": "In force",
+      "numberLine": "No. {{number}}",
+      "alreadyInRecord": "already in the record",
+      "noDecisionScan": "No scan of the decision in this dossier.",
+      "alreadyRecorded": "Already saved in the record; no document in this dossier relates to it.",
+      "plannedNote": "They will be noted on the MA record when filed; the record value is kept.",
+      "otherDocuments": "Other documents ({{count}})",
+      "readingDetails": "Reading details",
+      "confidence": "Reading reliability: {{confidence}}% (for information only: it blocks nothing).",
+      "ignoredDocs": "Common documents of the country dossier set aside (they do not concern this product):",
+      "auditAria": "Change traceability",
+      "renewal": "Renewal",
+      "subtitle": "Import of {{date}}",
+      "allImports": "All dossier imports",
+      "runningBody": "Reading the scans and looking for the MA. As soon as the MA is identified, the documents are filed automatically. This page updates by itself."
+    }
+  },
+  "excelImports": {
+    "importDossier": "Import an MA dossier",
+    "fileColumn": "File",
+    "syncChip": "AMM GHPL sync",
+    "rowsProcessed": "{{done}} / {{total}} rows processed",
+    "waiting": "Waiting to be processed…",
+    "reading": "Reading the workbook…",
+    "sync": {
+      "counters": {
+        "pieces_one": "{{count}} document tracked",
+        "pieces_other": "{{count}} documents tracked",
+        "presentations_changed_one": "{{count}} pack size updated",
+        "presentations_changed_other": "{{count}} pack sizes updated",
+        "downloaded_one": "{{count}} scan added",
+        "downloaded_other": "{{count}} scans added",
+        "adopted_one": "{{count}} already in AMM GH",
+        "adopted_other": "{{count}} already in AMM GH",
+        "moved_one": "{{count}} refiled",
+        "moved_other": "{{count}} refiled",
+        "skipped_one": "{{count}} set aside",
+        "skipped_other": "{{count}} set aside",
+        "pending_one": "{{count}} pending",
+        "pending_other": "{{count}} pending",
+        "copies_merged_one": "{{count}} duplicate record merged",
+        "copies_merged_other": "{{count}} duplicate records merged"
+      },
+      "files": {
+        "SYNCED_one": "{{count}} filed",
+        "SYNCED_other": "{{count}} filed",
+        "PENDING_one": "{{count}} to download",
+        "PENDING_other": "{{count}} to download",
+        "SKIPPED_one": "{{count}} set aside",
+        "SKIPPED_other": "{{count}} set aside",
+        "REMOVED_one": "{{count}} removed from the filing",
+        "REMOVED_other": "{{count}} removed from the filing",
+        "ERROR_one": "{{count}} in error",
+        "ERROR_other": "{{count}} in error"
+      },
+      "noFiles": "No files.",
+      "shownOf": "{{shown}} shown of {{total}}",
+      "copies_one": "{{count}} copy",
+      "copies_other": "{{count}} copies",
+      "merged_one": "{{count}} record merged",
+      "merged_other": "{{count}} records merged",
+      "mergedWithRefused": "{{merged}}, {{refusedCount}} refused: {{reason}}",
+      "duplicatesTitle": "Duplicate records ({{count}})",
+      "confirmMerge": "Confirm: merge {{copies}}",
+      "mergeCopies": "Merge {{copies}}",
+      "duplicatesHelp": "The same pack size tracked under two labels in one country (the country’s own and another country’s). A simple copy has no document and nothing more than the country record: merging loses nothing.",
+      "toCheck": "— to check: {{reason}}",
+      "merge": "Merge",
+      "started": "Synchronization started",
+      "title": "Synchronization with AMM GHPL",
+      "description": "Every hour, AMM GH rereads the filing register “{{folder}}” on Nextcloud: new MAs, renewals, scans added or refiled.",
+      "runNow": "Synchronize now",
+      "inactive": "Synchronization inactive: Nextcloud is not connected yet. In Nextcloud, create an app password (Personal settings > Security), then paste it into Render (variable NEXTCLOUD_APP_PASSWORD of the amm-innov-api service).",
+      "lastRun": "Last run: {{date}}",
+      "registryModified": " · filing register modified on {{date}}",
+      "importDetail": "Import details",
+      "toLookAt": "To look at ({{total}})"
+    }
+  },
+  "ammPages": {
+    "startPlusYears": "Start + {{years}} years",
+    "filing": {
+      "passedMasc": "overdue",
+      "passedFem": "overdue"
+    },
+    "gaps": {
+      "no_original": "Original not identified",
+      "missing_renewal": "No renewal",
+      "to_file": "Renewal to submit",
+      "original_scan": "Original decision without scan",
+      "renewal_scan": "Renewal without scan"
+    },
+    "filters": {
+      "gap": "Gap"
+    },
+    "create": {
+      "endHelp": "Calculated: start + {{years}} years (editable)"
+    },
+    "detail": {
+      "holder": "Holder / laboratory"
+    },
+    "history": {
+      "dossierImported": "Imported regulatory dossier",
+      "confidence": "Confidence: {{value}}%",
+      "reviewImport": "Review the import and the supporting document"
+    },
+    "list": {
+      "reviewPointsTooltip": "Points to check later (dossier import)",
+      "reviewPointsAria": "{{count}} point(s) to check"
+    },
+    "timeline": {
+      "origin": "Original",
+      "renewal": "Renewal {{n}}",
+      "loading": "Loading timeline",
+      "heading": "Original → granted renewals",
+      "ariaLabel": "MA timeline",
+      "currentDocument": "Current document",
+      "number": "No. {{number}}",
+      "scanAttached": "Decision scan attached: dossier complete.",
+      "scanMissing": "Decision scan missing: dossier incomplete.",
+      "pendingNotice": "Renewal {{state}}: it only counts once granted.",
+      "pending": {
+        "PLANIFIE": "planned",
+        "EN_PREPARATION": "in preparation",
+        "DEPOSE": "submitted",
+        "EN_INSTRUCTION": "under review"
+      }
+    }
+  },
+  "renewalsPages": {
+    "edit": {
+      "title": "Correct renewal {{n}}",
+      "hint": "The MA expiry and status are recalculated; the previous value stays in the history.",
+      "number": "MA number",
+      "manualEnd": "Entered manually",
+      "autoEnd": "End date calculated automatically ({{years}} years, the country's validity period)",
+      "endBeforeStart": "The end date is before the start date.",
+      "saved": "Renewal {{n}} corrected"
+    },
+    "tab": {
+      "editTooltip": "Correct the number or the dates",
+      "editAria": "Correct renewal {{n}}"
+    }
+  },
+  "documentsPages": {
+    "timeline": {
+      "editTooltip": "Correct the filing (period, type, date)",
+      "editAria": "Correct the filing"
+    },
+    "library": {
+      "importDossier": "Import an MA dossier"
+    },
+    "edit": {
+      "title": "Correct the scan filing",
+      "hint": "The file does not change. The dossier status, the record and the binders are updated.",
+      "period": "Period",
+      "renewalOption": "Renewal {{n}}",
+      "numberSuffix": "no. {{number}}",
+      "startSuffix": "start {{date}}",
+      "saved": "Scan filing corrected"
+    }
+  },
+  "actionPlan": {
+    "subtitle": "The MAs to complete, most urgent first: one click takes you to where to act.",
+    "cardSummary": "{{count}} MAs to complete, most urgent first.",
+    "act": "Act",
+    "number": "No. {{number}}",
+    "expiry": "expiry {{date}}",
+    "allCountries": "All countries",
+    "nothingToDo": "Nothing to do here.",
+    "seeAll": "See all {{count}} in the MA list",
+    "summaryTotal": "{{count}} MAs to complete",
+    "allComplete": "All records are complete.",
+    "chip": "{{label}}: {{count}}"
+  },
+  "adminPages": {
+    "ranges": {
+      "trashed": "Product range “{{label}}” moved to the trash."
+    },
+    "rules": {
+      "trashed": "Rule {{code}} moved to the trash."
+    },
+    "audit": {
+      "title": "Audit and traceability",
+      "subtitle": "Who did what, and when: creations, changes, sign-ins, deletions and restorations.",
+      "filters": {
+        "person": "Person",
+        "action": "Action",
+        "type": "Type",
+        "from": "From",
+        "to": "To",
+        "clear": "Clear filters"
+      },
+      "deactivated": "{{name}} (deactivated)",
+      "eventCount_one": "{{count}} event",
+      "eventCount_other": "{{count}} events",
+      "columns": {
+        "by": "By",
+        "action": "Action",
+        "type": "Type",
+        "item": "Item",
+        "detail": "Detail"
+      },
+      "empty": "No events for these filters.",
+      "system": "System",
+      "changed": "changed",
+      "linked_one": "with {{count}} linked item",
+      "linked_other": "with {{count}} linked items",
+      "page": "Page {{page}} / {{pages}}"
+    },
+    "errors": {
+      "title": "Error log",
+      "subtitle": "What failed in production: server, background tasks and interface. A resolved error that comes back is reopened.",
+      "states": {
+        "open": "To handle",
+        "resolved": "Resolved",
+        "all": "All"
+      },
+      "count_one": "{{count}} error",
+      "count_other": "{{count}} errors",
+      "columns": {
+        "lastSeen": "Last seen",
+        "source": "Source",
+        "error": "Error",
+        "where": "Where",
+        "times": "Times",
+        "state": "Status"
+      },
+      "emptyOpen": "No errors to handle.",
+      "empty": "No errors.",
+      "hideDetail": "Hide detail",
+      "showDetail": "Show detail",
+      "resolvedOn": "Resolved on {{date}}",
+      "resolvedToast": "Error marked as resolved.",
+      "resolve": "Resolved",
+      "firstSeen": "First seen on {{date}} · version {{version}}",
+      "lastUser": "last user: {{user}}",
+      "noDetail": "No detail."
+    },
+    "permissions": {
+      "subtitle": "Check what each role can do. The CEO always keeps all rights; every change is recorded in the audit.",
+      "defaults": "Default settings",
+      "action": "Action",
+      "ceoOnly": "CEO only",
+      "saved": "Permissions saved. They apply from each person’s next action.",
+      "fixed": "Cannot be changed",
+      "ceoKeepsAll": "The CEO always keeps all rights"
+    },
+    "trash": {
+      "subtitle": "Everything deleted in AMM GH. Nothing is erased: restore an item to put it back as it was.",
+      "states": {
+        "deleted": "In the trash",
+        "restored": "Restored",
+        "all": "All"
+      },
+      "count_one": "{{count}} item",
+      "count_other": "{{count}} items",
+      "columns": {
+        "deletedOn": "Deleted on",
+        "by": "By",
+        "type": "Type",
+        "item": "Item",
+        "reason": "Reason",
+        "state": "Status"
+      },
+      "empty": "The trash is empty.",
+      "linked_one": "with {{count}} linked item",
+      "linked_other": "with {{count}} linked items",
+      "restoredOn": "Restored on {{date}} · {{user}}",
+      "restoredToast": "“{{label}}” restored.",
+      "restore": "Restore"
+    }
+  },
+  "common": {
+    "routeError": {
+      "reloading": "A new version of AMM GH is online: loading…",
+      "reloadNow": "Reload now",
+      "title": "This page could not be displayed.",
+      "body": "Reload the page. If the error comes back, report it with the time and the page you had open.",
+      "reload": "Reload",
+      "home": "Home"
+    },
+    "filingDates": {
+      "ideal": "Ideal submission:",
+      "agency": "Agency deadline:",
+      "passedIdeal": "passed",
+      "passedAgency": "passed"
+    },
+    "validity": {
+      "pickStart_one": "Choose the start date: the end date is calculated over {{count}} year.",
+      "pickStart_other": "Choose the start date: the end date is calculated over {{count}} years.",
+      "endAfterStart": "The end date must be after the start date.",
+      "summary": "Validity: {{span}}, until {{date}}",
+      "calculated": "calculated",
+      "countryDuration_one": "the country validity period is {{count}} year",
+      "countryDuration_other": "the country validity period is {{count}} years"
+    },
+    "restored": "Restored.",
+    "bytes": {
+      "b": "{{value}} B",
+      "kb": "{{value}} KB",
+      "mb": "{{value}} MB"
+    },
+    "untitledDocument": "Document",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "apiMessages": {
+    "notFound": "Item not found or outside your scope.",
+    "server": "Server error ({{status}}) — please try again later.",
+    "unreachable": "Server unreachable — check your connection.",
+    "http": "Error {{status}} — {{text}}"
+  },
+  "time": {
+    "year_one": "{{count}} year",
+    "year_other": "{{count}} years",
+    "month_one": "{{count}} month",
+    "month_other": "{{count}} months",
+    "daysShort": "{{count}} d",
+    "span": "{{years}} and {{months}}"
+  }
+}

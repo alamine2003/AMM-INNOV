@@ -1,8 +1,10 @@
+import i18n from '@/lib/i18n';
+
 /**
  * Imprime un scan (PDF ou image) sans quitter la page : le fichier est chargé dans un cadre
  * invisible, puis la boîte d'impression du navigateur s'ouvre sur lui seul.
  */
-export function printBlob(blob: Blob, title = 'Document'): Promise<void> {
+export function printBlob(blob: Blob, title = i18n.t('common.untitledDocument')): Promise<void> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob);
     const frame = document.createElement('iframe');

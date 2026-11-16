@@ -7,12 +7,12 @@ import { useAuthStore } from '@/features/auth/authStore';
 import { DateInput } from '@/components/DateInput';
 
 /** Manques du plan d'action, pour cibler la liste (`?gap=`). */
-export const AMM_GAPS: { value: AmmGap; label: string }[] = [
-  { value: 'no_original', label: 'Origine non identifiée' },
-  { value: 'missing_renewal', label: 'Sans renouvellement' },
-  { value: 'to_file', label: 'Renouvellement à déposer' },
-  { value: 'original_scan', label: "Décision d'origine sans scan" },
-  { value: 'renewal_scan', label: 'Renouvellement sans scan' },
+export const AMM_GAPS: { value: AmmGap; labelKey: string }[] = [
+  { value: 'no_original', labelKey: 'ammPages.gaps.no_original' },
+  { value: 'missing_renewal', labelKey: 'ammPages.gaps.missing_renewal' },
+  { value: 'to_file', labelKey: 'ammPages.gaps.to_file' },
+  { value: 'original_scan', labelKey: 'ammPages.gaps.original_scan' },
+  { value: 'renewal_scan', labelKey: 'ammPages.gaps.renewal_scan' },
 ];
 
 export function AmmFilters({ value, onChange }: { value: Filters; onChange: (next: Filters) => void }) {
@@ -101,9 +101,9 @@ export function AmmFilters({ value, onChange }: { value: Filters; onChange: (nex
         'filter-scan',
       )}
       {select(
-        'Manque',
+        t('ammPages.filters.gap'),
         'gap',
-        AMM_GAPS.map((gap) => ({ value: gap.value, label: gap.label })),
+        AMM_GAPS.map((gap) => ({ value: gap.value, label: t(gap.labelKey) })),
         'filter-gap',
       )}
       <DateInput

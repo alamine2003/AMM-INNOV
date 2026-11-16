@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import type React from 'react';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { cleanup, configure } from '@testing-library/react';
-import '@/lib/i18n';
+import i18n from '@/lib/i18n';
 import { server } from '@/mocks/server';
 import { resetDb } from '@/mocks/handlers';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -62,6 +62,8 @@ afterEach(() => {
   useAuthStore.getState().logout();
   localStorage.clear();
   cleanup();
+  // Chaque test repart en français, quelle que soit la langue choisie par le précédent.
+  if (i18n.language !== 'fr') void i18n.changeLanguage('fr');
 });
 afterAll(() => server.close());
 

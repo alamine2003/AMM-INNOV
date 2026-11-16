@@ -23,6 +23,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
 import { Link, useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useDeposit, useDepositActions } from '@/api/hooks/useDeposits';
 import type { DepositDetail } from '@/api/types';
 import { Flag } from '@/features/binders/Flag';
@@ -48,6 +49,7 @@ type Actions = ReturnType<typeof useDepositActions>;
 /** Échanges siège ↔ pays, en bulles : les siens à droite, le siège en bleu, le pays en vert. */
 function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [body, setBody] = useState('');
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -58,15 +60,15 @@ function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actio
   return (
     <Card variant="outlined" sx={{ mb: 2 }}>
       <CardHeader
-        title="Échanges siège ↔ pays"
-        subheader="Chaque message prévient l’autre côté."
+        title={t('deposits.detail.messagesTitle')}
+        subheader={t('deposits.detail.messagesSubheader')}
         titleTypographyProps={{ variant: 'subtitle1', fontWeight: 700 }}
       />
       <CardContent sx={{ pt: 0 }}>
         <Box sx={{ maxHeight: 380, overflowY: 'auto', mb: 1.5, pr: 0.5 }} data-testid="messages">
           {dossier.messages.length === 0 && (
             <Typography variant="body2" color="text.secondary">
-              Pas encore de message.
+              {t('deposits.detail.noMessage')}
             </Typography>
           )}
           {dossier.messages.map((message) => (
@@ -86,7 +88,8 @@ function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actio
                 }}
               >
                 <Typography variant="caption" color="text.secondary" component="div">
-                  <strong>{message.author ?? '?'}</strong> · {message.from_hq ? 'Siège' : 'Pays'} ·{' '}
+                  <strong>{message.author ?? '?'}</strong> ·{' '}
+                  {message.from_hq ? t('deposits.who.hq') : t('deposits.who.country')} ·{' '}
                   {formatDateTime(message.created_at)}
                 </Typography>
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -103,7 +106,7 @@ function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actio
             fullWidth
             multiline
             maxRows={5}
-            label="Votre message"
+            label={t('deposits.detail.yourMessage')}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
@@ -112,7 +115,7 @@ function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actio
           />
           <Button
             variant="contained"
-            aria-label="Envoyer le message"
+            aria-label={t('deposits.detail.sendMessage')}
             disabled={!body.trim() || actions.message.isPending}
             onClick={submit}
             sx={{ minWidth: 0, px: 1.5 }}
@@ -126,9 +129,13 @@ function Messages({ dossier, actions }: { dossier: DepositDetail; actions: Actio
 }
 
 function Journal({ dossier }: { dossier: DepositDetail }) {
+  const { t } = useTranslation();
   return (
     <Card variant="outlined">
-      <CardHeader title="Journal" titleTypographyProps={{ variant: 'subtitle1', fontWeight: 700 }} />
+      <CardHeader
+        title={t('deposits.detail.log')}
+        titleTypographyProps={{ variant: 'subtitle1', fontWeight: 700 }}
+      />
       <CardContent sx={{ pt: 0, maxHeight: 360, overflowY: 'auto' }}>
         <Stack gap={1}>
           {dossier.activities.map((activity) => (
@@ -148,37 +155,38 @@ function Journal({ dossier }: { dossier: DepositDetail }) {
 
 function AbandonButton({ actions }: { actions: Actions }) {
   const fail = useFail();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   return (
     <>
       <Button color="error" size="small" onClick={() => setOpen(true)}>
-        Abandonner ce renouvellement
+        {t('deposits.detail.abandonButton')}
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Abandonner ce renouvellement ?</DialogTitle>
+        <DialogTitle>{t('deposits.detail.abandonTitle')}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Le dossier est clos et le pays est prévenu. L’AMM expirera à son échéance.
+            {t('deposits.detail.abandonText')}
           </Typography>
           <TextField
             autoFocus
             fullWidth
             multiline
-            label="Pourquoi ?"
+            label={t('deposits.detail.abandonReason')}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Annuler</Button>
+          <Button onClick={() => setOpen(false)}>{t('app.cancel')}</Button>
           <Button
             color="error"
             variant="contained"
             disabled={!reason.trim() || actions.abandon.isPending}
             onClick={() => actions.abandon.mutate(reason, { onSuccess: () => setOpen(false), onError: fail })}
           >
-            Abandonner
+            {t('deposits.detail.abandonConfirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -188,6 +196,7 @@ function AbandonButton({ actions }: { actions: Actions }) {
 
 export default function DepositDetailPage() {
   const { id = '' } = useParams();
+  const { t } = useTranslation();
   const query = useDeposit(id);
   const actions = useDepositActions(id);
   if (query.isPending) return <LoadingBlock />;
@@ -200,7 +209,7 @@ export default function DepositDetailPage() {
   return (
     <Box>
       <Button component={Link} to="/depots" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 1 }}>
-        Dépôts AMM
+        {t('nav.deposits')}
       </Button>
       <PageHeader
         title={
@@ -211,10 +220,10 @@ export default function DepositDetailPage() {
         }
         subtitle={
           <>
-            {amm.country_name} · renouvellement n°{dossier.renewal.sequence}
-            {amm.original_number ? ` · AMM ${amm.original_number}` : ''} ·{' '}
+            {amm.country_name} · {t('deposits.renewalNo', { n: dossier.renewal.sequence })}
+            {amm.original_number ? t('deposits.ammNo', { number: amm.original_number }) : ''} ·{' '}
             <MuiLink component={Link} to={`/amms/${amm.id}`}>
-              fiche AMM
+              {t('deposits.detail.maRecord')}
             </MuiLink>
           </>
         }
@@ -224,22 +233,26 @@ export default function DepositDetailPage() {
         <Stack direction={{ xs: 'column', md: 'row' }} gap={{ xs: 1, md: 4 }} alignItems={{ md: 'center' }}>
           <Stack direction="row" gap={1} alignItems="center">
             <Typography variant="body2">
-              Échéance de l’AMM : <strong>{formatDate(amm.effective_end_date)}</strong>
+              {t('deposits.detail.maExpiryLabel')}
+              <strong>{formatDate(amm.effective_end_date)}</strong>
             </Typography>
             <StatusChip value={amm.status} />
           </Stack>
           <FilingDates ideal={amm.ideal_filing_date} agency={amm.agency_filing_deadline} />
           {dossier.renewal.filing_date && (
             <Typography variant="body2">
-              Déposé le <strong>{formatDate(dossier.renewal.filing_date)}</strong>
+              {t('deposits.detail.submittedOnLabel')}
+              <strong>{formatDate(dossier.renewal.filing_date)}</strong>
             </Typography>
           )}
         </Stack>
         <Stepper activeStep={current} alternativeLabel sx={{ mt: 2 }} data-testid="deposit-stepper">
           {PROCEDURE.map((step, index) => (
-            <Step key={step.title} completed={done[index]}>
-              <StepLabel optional={<Typography variant="caption">{step.who}</Typography>}>
-                {step.title}
+            <Step key={step.key} completed={done[index]}>
+              <StepLabel
+                optional={<Typography variant="caption">{t(`deposits.who.${step.who}`)}</Typography>}
+              >
+                {t(`deposits.procedure.${step.key}.title`)}
               </StepLabel>
             </Step>
           ))}
@@ -247,8 +260,8 @@ export default function DepositDetailPage() {
       </Paper>
       {countryTodo && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          <strong>À faire :</strong> télécharger le dossier, le déposer à {amm.authority || 'l’agence'} avec
-          les échantillons, puis envoyer l’attestation de dépôt au siège (étape 4).
+          <strong>{t('deposits.detail.todoLabel')}</strong>{' '}
+          {t('deposits.detail.todoText', { authority: amm.authority || t('deposits.defaultAgency') })}
         </Alert>
       )}
       <Grid container spacing={2}>

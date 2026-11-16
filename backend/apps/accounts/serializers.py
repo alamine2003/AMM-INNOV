@@ -43,6 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "countries",
             "is_active",
+            "language",
             "date_joined",
             "last_login",
             "password",
@@ -99,6 +100,15 @@ class MeSerializer(UserSerializer):
     )
     def get_actions(self, obj) -> list[str]:
         return [action.value for action in Action if can(obj, action)]
+
+class MeUpdateSerializer(serializers.ModelSerializer):
+    """Ce que l'utilisateur règle lui-même sur son compte : sa langue, et rien d'autre (ni son
+    rôle, ni ses pays)."""
+
+    class Meta:
+        model = User
+        fields = ["language"]
+
 
 class LoginSerializer(TokenObtainPairSerializer):
     """Returns access, refresh and the serialized user in the JSON body."""

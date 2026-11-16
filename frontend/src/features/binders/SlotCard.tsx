@@ -3,6 +3,7 @@ import { DateInput, ValidityLine } from '@/components/DateInput';
 import { addValidity } from '@/lib/dates';
 import { Box, Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { useTranslation } from 'react-i18next';
 import { LINE, MUTED } from './paper';
 import { FIELDS, type Values, id, initialValues, show } from './sheetFields';
 
@@ -36,6 +37,7 @@ export function SlotCard({
   onSave?: () => void;
   onCancel?: () => void;
 }) {
+  const { t } = useTranslation();
   const source = slot === 'original' ? page.original : page.renewal;
   const gaps = new Map(page.discrepancies.filter((d) => d.slot === slot).map((d) => [d.field, d]));
   const initial = initialValues(page);
@@ -55,7 +57,7 @@ export function SlotCard({
           {title.toUpperCase()}
         </Typography>
         {canEdit && !editing && onStartEdit && (
-          <Tooltip describeChild title="Modifier le n° et les dates sur la carte">
+          <Tooltip describeChild title={t('binders.card.editHint')}>
             <IconButton size="small" onClick={onStartEdit} disabled={busy} data-testid={`edit-card-${slot}`}>
               <EditIcon fontSize="small" />
             </IconButton>
@@ -64,17 +66,17 @@ export function SlotCard({
         {editing && onSave && onCancel && (
           <Stack direction="row" gap={0.5}>
             <Button size="small" variant="contained" color="warning" onClick={onSave} disabled={busy}>
-              Enregistrer
+              {t('app.save')}
             </Button>
             <Button size="small" onClick={onCancel} disabled={busy}>
-              Annuler
+              {t('app.cancel')}
             </Button>
           </Stack>
         )}
       </Stack>
       {!source && !editing ? (
         <Typography sx={{ fontStyle: 'italic', color: MUTED, fontSize: 14 }}>
-          Aucun renouvellement enregistré
+          {t('binders.card.noRenewal')}
         </Typography>
       ) : (
         FIELDS.map(({ field, label }) => {
@@ -88,7 +90,7 @@ export function SlotCard({
                   {field === 'number' ? (
                     <TextField
                       size="small"
-                      label={label}
+                      label={t(label)}
                       value={values[key]}
                       onChange={(e) => onChange(key, e.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
@@ -100,7 +102,7 @@ export function SlotCard({
                   ) : (
                     <DateInput
                       size="small"
-                      label={label}
+                      label={t(label)}
                       value={values[key]}
                       background={changed ? '#fff3b0' : '#fff'}
                       sx={{ flex: 1 }}
@@ -114,7 +116,7 @@ export function SlotCard({
                     />
                   )}
                   {gap && (
-                    <Tooltip describeChild title="Reprendre la valeur lue sur le scan">
+                    <Tooltip describeChild title={t('binders.card.useScanHint')}>
                       <Button
                         size="small"
                         onClick={() => {
@@ -124,7 +126,7 @@ export function SlotCard({
                             onChange(id(slot, 'end_date'), addValidity(scanValue, years) ?? '');
                         }}
                       >
-                        Scan : {show(field, gap.scan)}
+                        {t('binders.card.scanValue', { value: show(field, gap.scan) })}
                       </Button>
                     </Tooltip>
                   )}
@@ -140,7 +142,7 @@ export function SlotCard({
                   }
                 >
                   <Typography sx={{ fontSize: 12, color: MUTED, width: 96, flexShrink: 0 }}>
-                    {label}
+                    {t(label)}
                   </Typography>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography
@@ -158,7 +160,7 @@ export function SlotCard({
                     </Typography>
                     {gap && (
                       <Typography sx={{ fontSize: 11, color: '#b45309' }}>
-                        le scan indique {show(field, gap.scan)}
+                        {t('binders.card.scanSays', { value: show(field, gap.scan) })}
                       </Typography>
                     )}
                   </Box>

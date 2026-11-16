@@ -19,30 +19,33 @@ import {
   Typography,
 } from '@mui/material';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useDossierReport } from '@/api/hooks/useDossierImports';
 import type { DossierReport, DossierReportItem } from '@/api/types';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
-import { CappedList, plural } from './CappedList';
+import i18n from '@/lib/i18n';
+import { CappedList } from './CappedList';
 
+// Clés de traduction : le libellé est résolu au rendu pour suivre la langue.
 const PERIODS = [
-  { days: 1, label: '24 h' },
-  { days: 7, label: '7 jours' },
-  { days: 30, label: '30 jours' },
+  { days: 1, label: 'dossierImports.report.periods.d1' },
+  { days: 7, label: 'dossierImports.report.periods.d7' },
+  { days: 30, label: 'dossierImports.report.periods.d30' },
 ];
 
 type Kind = DossierReport['attention'][number]['kind'];
 
 const KIND_LABELS: Record<Kind, string> = {
-  question: 'AMM non identifiée',
-  failed: 'Analyse échouée',
-  ready: 'Non rangé',
-  incomplete: 'Fiche à compléter',
+  question: 'dossierImports.report.kinds.question',
+  failed: 'dossierImports.report.kinds.failed',
+  ready: 'dossierImports.report.kinds.ready',
+  incomplete: 'dossierImports.report.kinds.incomplete',
 };
 
 type Detail = 'filed' | 'created' | 'corrections' | 'decisions';
 
 function show(value: unknown): string {
-  if (value === null || value === undefined || value === '') return 'vide';
+  if (value === null || value === undefined || value === '') return i18n.t('dossierImports.values.empty');
   const text = String(value);
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
   return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : text;
@@ -64,6 +67,7 @@ function Who({ item }: { item: DossierReportItem }) {
  * (5 lignes au plus, filtrables), puis une ligne de chiffres dont chaque chiffre ouvre son détail.
  */
 export function DossierImportReport() {
+  const { t } = useTranslation();
   const [days, setDays] = useState(7);
   const report = useDossierReport(days);
   return (
@@ -71,18 +75,18 @@ export function DossierImportReport() {
       <CardContent sx={{ '&:last-child': { pb: 2 } }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
           <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600 }}>
-            Classement automatique
+            {t('dossierImports.report.title')}
           </Typography>
           <ToggleButtonGroup
             size="small"
             exclusive
             value={days}
             onChange={(_, value: number | null) => value && setDays(value)}
-            aria-label="Période du récapitulatif"
+            aria-label={t('dossierImports.report.periodAria')}
           >
             {PERIODS.map((period) => (
               <ToggleButton key={period.days} value={period.days} sx={{ py: 0.25 }}>
-                {period.label}
+                {t(period.label)}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
@@ -100,12 +104,13 @@ export function DossierImportReport() {
 }
 
 function ReportBody({ report }: { report: DossierReport }) {
+  const { t } = useTranslation();
   const { totals } = report;
   const [detail, setDetail] = useState<Detail | null>(null);
   if (!totals.folders) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        Aucun dossier importé sur cette période.
+        {t('dossierImports.report.empty')}
       </Typography>
     );
   }
@@ -113,47 +118,53 @@ function ReportBody({ report }: { report: DossierReport }) {
     {
       key: 'filed',
       count: report.filed.length,
-      label: plural(report.filed.length, 'dossier rangé', 'dossiers rangés'),
+      label: t('dossierImports.report.counts.filed', { count: report.filed.length }),
     },
     {
       key: 'created',
       count: report.created.length,
-      label: plural(report.created.length, 'fiche créée', 'fiches créées'),
+      label: t('dossierImports.report.counts.created', { count: report.created.length }),
     },
     {
       key: 'corrections',
       count: report.corrections.length,
-      label: plural(report.corrections.length, 'valeur corrigée', 'valeurs corrigées'),
+      label: t('dossierImports.report.counts.corrections', { count: report.corrections.length }),
     },
     {
       key: 'decisions',
       count: report.decisions.length,
-      label: plural(report.decisions.length, 'décision automatique', 'décisions automatiques'),
+      label: t('dossierImports.report.counts.decisions', { count: report.decisions.length }),
     },
   ];
   const extra = [
-    totals.documents && plural(totals.documents, 'document rangé', 'documents rangés'),
-    totals.renewals && plural(totals.renewals, 'renouvellement ajouté', 'renouvellements ajoutés'),
-    totals.completed && plural(totals.completed, 'champ complété', 'champs complétés'),
+    totals.documents && t('dossierImports.report.counts.documents', { count: totals.documents }),
+    totals.renewals && t('dossierImports.report.counts.renewals', { count: totals.renewals }),
+    totals.completed && t('dossierImports.report.counts.completed', { count: totals.completed }),
   ].filter(Boolean);
   return (
     <Stack spacing={1.5} sx={{ mt: 1.5 }}>
       {totals.in_progress > 0 && (
         <Box>
           <Typography variant="caption" color="text.secondary">
-            {plural(totals.in_progress, 'dossier en analyse…', 'dossiers en analyse…')}
+            {t('dossierImports.report.counts.inProgress', { count: totals.in_progress })}
           </Typography>
           <LinearProgress
             variant="determinate"
             value={Math.round(((totals.folders - totals.in_progress) / totals.folders) * 100)}
-            aria-label="Avancement du classement"
+            aria-label={t('dossierImports.report.progressAria')}
           />
         </Box>
       )}
 
       <Attention items={report.attention} idle={totals.in_progress === 0} />
 
-      <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" aria-label="Ce qui a été fait">
+      <Stack
+        direction="row"
+        gap={1}
+        flexWrap="wrap"
+        alignItems="center"
+        aria-label={t('dossierImports.report.doneAria')}
+      >
         {counters
           .filter(({ count }) => count > 0)
           .map(({ key, label }) => (
@@ -185,11 +196,12 @@ function ReportBody({ report }: { report: DossierReport }) {
 
 /** Ce qui attend l'utilisateur : 5 lignes au plus, filtrables par motif. */
 function Attention({ items, idle }: { items: DossierReport['attention']; idle: boolean }) {
+  const { t } = useTranslation();
   const [kind, setKind] = useState<Kind | null>(null);
   if (!items.length) {
     return idle ? (
       <Alert severity="success" data-testid="report-attention" sx={{ py: 0 }}>
-        Rien à traiter : tout a été rangé automatiquement.
+        {t('dossierImports.report.allFiled')}
       </Alert>
     ) : null;
   }
@@ -202,14 +214,16 @@ function Attention({ items, idle }: { items: DossierReport['attention']; idle: b
       sx={{ '& .MuiAlert-message': { width: '100%' } }}
     >
       <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" sx={{ mb: 0.5 }}>
-        <Typography variant="subtitle2">À traiter par vous ({items.length})</Typography>
+        <Typography variant="subtitle2">
+          {t('dossierImports.report.attentionTitle', { count: items.length })}
+        </Typography>
         {kinds.length > 1 &&
           kinds.map((value) => (
             <Chip
               key={value}
               size="small"
               clickable
-              label={`${KIND_LABELS[value]} (${items.filter((item) => item.kind === value).length})`}
+              label={`${t(KIND_LABELS[value])} (${items.filter((item) => item.kind === value).length})`}
               color={kind === value ? 'warning' : 'default'}
               variant={kind === value ? 'filled' : 'outlined'}
               onClick={() => setKind(kind === value ? null : value)}
@@ -222,7 +236,10 @@ function Attention({ items, idle }: { items: DossierReport['attention']; idle: b
         itemKey={(item, index) => `${item.batch_id}-${index}`}
         render={(item) => (
           <>
-            <Who item={item} /> — {kinds.length > 1 ? '' : `${KIND_LABELS[item.kind]} : `}
+            <Who item={item} /> —{' '}
+            {kinds.length > 1
+              ? ''
+              : t('dossierImports.report.kindPrefix', { kind: t(KIND_LABELS[item.kind]) })}
             {item.reason}
           </>
         )}
@@ -232,6 +249,7 @@ function Attention({ items, idle }: { items: DossierReport['attention']; idle: b
 }
 
 function DetailList({ report, detail }: { report: DossierReport; detail: Detail }) {
+  const { t } = useTranslation();
   if (detail === 'corrections') return <Corrections items={report.corrections} />;
   if (detail === 'created') {
     return (
@@ -241,7 +259,7 @@ function DetailList({ report, detail }: { report: DossierReport; detail: Detail 
         render={(item) => (
           <>
             <Who item={item} />
-            {item.number ? ` — n° ${item.number}` : ' — n° à compléter'}
+            {` — ${item.number ? t('dossierImports.report.numberLine', { number: item.number }) : t('dossierImports.report.numberToComplete')}`}
           </>
         )}
       />
@@ -254,7 +272,9 @@ function DetailList({ report, detail }: { report: DossierReport; detail: Detail 
         itemKey={(item, index) => `${item.batch_id}-${index}`}
         render={(item) => (
           <>
-            <Who item={item} /> : {item.message}
+            <Who item={item} />
+            {t('dossierImports.report.decisionSeparator')}
+            {item.message}
           </>
         )}
       />
@@ -275,16 +295,17 @@ function DetailList({ report, detail }: { report: DossierReport; detail: Detail 
 }
 
 function Corrections({ items }: { items: DossierReport['corrections'] }) {
+  const { t } = useTranslation();
   const [all, setAll] = useState(false);
   return (
     <>
-      <Table size="small" aria-label="Valeurs corrigées d’après les décisions officielles">
+      <Table size="small" aria-label={t('dossierImports.report.correctionsAria')}>
         <TableHead>
           <TableRow>
-            <TableCell>AMM</TableCell>
-            <TableCell>Champ</TableCell>
-            <TableCell>Avant</TableCell>
-            <TableCell>Après</TableCell>
+            <TableCell>{t('dossierImports.columns.ma')}</TableCell>
+            <TableCell>{t('dossierImports.columns.field')}</TableCell>
+            <TableCell>{t('dossierImports.columns.before')}</TableCell>
+            <TableCell>{t('dossierImports.columns.after')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -304,7 +325,9 @@ function Corrections({ items }: { items: DossierReport['corrections'] }) {
       </Table>
       {items.length > 5 && (
         <Button size="small" sx={{ mt: 0.5 }} onClick={() => setAll(!all)}>
-          {all ? 'Réduire' : `Voir tout (${items.length})`}
+          {all
+            ? t('dossierImports.cappedList.collapse')
+            : t('dossierImports.cappedList.showAll', { count: items.length })}
         </Button>
       )}
     </>
