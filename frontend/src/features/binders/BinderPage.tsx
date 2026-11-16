@@ -352,31 +352,40 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
 
   return (
     // Tout tient dans la fenêtre : barre, classeur et feuilletage, sans défilement de la page.
+    // Sauf sur une fenêtre basse (portable 1366 × 768, zoom du navigateur) : le classeur garde
+    // alors une hauteur lisible et c'est la page qui défile, au lieu de rapetisser les fiches.
     <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
         height: { xs: 'calc(100dvh - 56px - 32px)', md: 'calc(100dvh - 64px - 48px)' },
+        minHeight: { xs: 440, md: 620 },
         overflow: 'hidden',
       }}
     >
-      <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1, flexShrink: 0, minWidth: 0 }}>
+      {/* Fenêtre étroite : les commandes passent sous le titre au lieu de l'écraser. */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap={1}
+        sx={{ mb: 1, flexShrink: 0, minWidth: 0, flexWrap: 'wrap', rowGap: 1.25 }}
+      >
         <IconButton component={Link} to="/classeurs" aria-label={t('binders.page.backToShelf')}>
           <ArrowBackIcon />
         </IconButton>
-        <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
+        <Box sx={{ flex: '1 1 240px', minWidth: 0 }}>
           <Typography variant="h5" component="h1" noWrap>
             {binder.country_name} — {binder.title}
           </Typography>
-          <Stack direction="row" alignItems="center" gap={1}>
+          <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
             <LinearProgress
               variant="determinate"
               value={progress}
               color="success"
-              sx={{ width: 160, height: 6, borderRadius: 3 }}
+              sx={{ width: 160, flexShrink: 1, minWidth: 60, height: 6, borderRadius: 3 }}
               aria-label={t('binders.page.progressLabel')}
             />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" noWrap>
               {t('binders.page.stats', { checked: binder.checked, total, conformes: binder.conformes })}
             </Typography>
             {binder.stale > 0 && (
@@ -389,55 +398,63 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             )}
           </Stack>
         </Box>
-        <TextField
-          select
-          size="small"
-          label={t('binders.page.show')}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as LeafFilter)}
-          sx={{ minWidth: 190 }}
-        >
-          {(Object.keys(FILTER_LABELS) as LeafFilter[]).map((key) => (
-            <MenuItem key={key} value={key}>
-              {t(FILTER_LABELS[key])}
-            </MenuItem>
-          ))}
-        </TextField>
-        <Tooltip title={animation ? t('binders.page.animationOn') : t('binders.page.animationOff')}>
-          <IconButton
-            aria-label={t('binders.page.animation')}
-            aria-pressed={animation}
-            color={animation ? 'primary' : 'default'}
-            onClick={() => {
-              setAnimation(!animation);
-              saveAnimation(!animation);
-            }}
+        {/* Les commandes restent groupées : elles passent ensemble à la ligne, jamais une seule. */}
+        <Stack direction="row" alignItems="center" gap={1} sx={{ ml: 'auto', flexWrap: 'wrap', rowGap: 0.5 }}>
+          <TextField
+            select
+            size="small"
+            label={t('binders.page.show')}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as LeafFilter)}
+            sx={{ minWidth: 190 }}
           >
-            <AutoStoriesIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={sound ? t('binders.page.soundOn') : t('binders.page.soundOff')}>
-          <IconButton
-            aria-label={t('binders.page.sound')}
-            aria-pressed={sound}
-            color={sound ? 'primary' : 'default'}
-            onClick={() => {
-              setSound(!sound);
-              saveSound(!sound);
-              if (!sound) playPageTurn();
-            }}
-          >
-            {sound ? <VolumeUpIcon /> : <VolumeOffIcon />}
-          </IconButton>
-        </Tooltip>
-        {canEdit && (
-          <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => setAdding({})}>
-            {t('binders.page.addPage')}
-          </Button>
-        )}
-        {canDownload && (
-          <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
-        )}
+            {(Object.keys(FILTER_LABELS) as LeafFilter[]).map((key) => (
+              <MenuItem key={key} value={key}>
+                {t(FILTER_LABELS[key])}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Tooltip title={animation ? t('binders.page.animationOn') : t('binders.page.animationOff')}>
+            <IconButton
+              aria-label={t('binders.page.animation')}
+              aria-pressed={animation}
+              color={animation ? 'primary' : 'default'}
+              onClick={() => {
+                setAnimation(!animation);
+                saveAnimation(!animation);
+              }}
+            >
+              <AutoStoriesIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={sound ? t('binders.page.soundOn') : t('binders.page.soundOff')}>
+            <IconButton
+              aria-label={t('binders.page.sound')}
+              aria-pressed={sound}
+              color={sound ? 'primary' : 'default'}
+              onClick={() => {
+                setSound(!sound);
+                saveSound(!sound);
+                if (!sound) playPageTurn();
+              }}
+            >
+              {sound ? <VolumeUpIcon /> : <VolumeOffIcon />}
+            </IconButton>
+          </Tooltip>
+          {canEdit && (
+            <Button
+              variant="outlined"
+              startIcon={<NoteAddIcon />}
+              onClick={() => setAdding({})}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              {t('binders.page.addPage')}
+            </Button>
+          )}
+          {canDownload && (
+            <BinderDownload binderKey={binder.key} label={`${binder.country_name} — ${binder.title}`} />
+          )}
+        </Stack>
       </Stack>
       <AddPageDialog
         binder={binder}
@@ -662,7 +679,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
         </Box>
 
         {/* Onglets d'intercalaires sur la tranche. */}
-        <Stack sx={{ position: 'absolute', right: 0, top: 36, gap: 1.25, zIndex: 5 }}>
+        {/* Onglets : leur taille s'adapte à la hauteur du classeur (fenêtre basse, beaucoup de
+            gammes), ils ne dépassent jamais sous la couverture. */}
+        <Stack sx={{ position: 'absolute', right: 0, top: 36, bottom: 12, gap: 1.25, zIndex: 5 }}>
           {binder.sections.map((section) => {
             const target = leafIndex(`divider:${section.code}`);
             const active = currentCode === section.code;
@@ -682,7 +701,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
                   onClick={() => go(target, false)}
                   sx={{
                     width: active ? { xs: 32, sm: 42 } : { xs: 26, sm: 34 },
-                    height: 104,
+                    flex: '0 1 104px',
+                    minHeight: 44,
+                    overflow: 'hidden',
                     bgcolor: section.color,
                     color: '#fff',
                     borderRadius: '0 8px 8px 0',
@@ -697,7 +718,16 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
                 >
                   <Box
                     component="span"
-                    sx={{ writingMode: 'vertical-rl', fontWeight: 800, fontSize: 12, letterSpacing: 1 }}
+                    sx={{
+                      writingMode: 'vertical-rl',
+                      fontWeight: 800,
+                      fontSize: 12,
+                      letterSpacing: 1,
+                      maxHeight: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {section.label.toUpperCase()}
                   </Box>
@@ -711,7 +741,9 @@ function OpenBinder({ binder }: { binder: BinderDetail }) {
             onClick={() => go(last, false)}
             sx={{
               width: { xs: 26, sm: 34 },
-              height: 70,
+              flex: '0 1 70px',
+              minHeight: 44,
+              overflow: 'hidden',
               bgcolor: '#6b7280',
               color: '#fff',
               borderRadius: '0 8px 8px 0',
