@@ -261,6 +261,17 @@ export const handlers = [
     url('/me'),
     withAuth((user) => HttpResponse.json(user)),
   ),
+  http.patch(
+    url('/me'),
+    withAuth(async (user, { request }) => {
+      const body = (await request.json()) as { language?: unknown };
+      if (body.language !== 'fr' && body.language !== 'en') {
+        return HttpResponse.json({ language: ['Langue inconnue.'] }, { status: 400 });
+      }
+      user.language = body.language;
+      return HttpResponse.json(user);
+    }),
+  ),
   http.get(url('/health'), () =>
     HttpResponse.json({ status: 'ok', database: true, redis: true, version: 'mock' } satisfies Health),
   ),

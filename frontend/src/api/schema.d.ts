@@ -1767,7 +1767,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description L'utilisateur change la langue de son interface (bouton FR / EN). */
+        patch: operations["v1_me_partial_update"];
         trace?: never;
     };
     "/api/v1/notifications/": {
@@ -3953,6 +3954,12 @@ export interface components {
          * @enum {string}
          */
         KeyEnum: "digital" | "paper" | "scan" | "data";
+        /**
+         * @description * `fr` - Français
+         *     * `en` - English
+         * @enum {string}
+         */
+        LanguageEnum: "fr" | "en";
         /** @description Shape of `last_renewal` in the AMM list (documentation of the OpenAPI schema). */
         LastRenewal: {
             /** Format: uuid */
@@ -3996,6 +4003,8 @@ export interface components {
             countries?: string[];
             /** Actif */
             is_active?: boolean;
+            /** Langue */
+            language?: components["schemas"]["LanguageEnum"];
             /**
              * Créé le
              * Format: date-time
@@ -4414,6 +4423,14 @@ export interface components {
             document_date?: string;
             title?: string;
         };
+        /**
+         * @description Ce que l'utilisateur règle lui-même sur son compte : sa langue, et rien d'autre (ni son
+         *     rôle, ni ses pays).
+         */
+        PatchedMeUpdateRequest: {
+            /** Langue */
+            language?: components["schemas"]["LanguageEnum"];
+        };
         PatchedPageRenameInputRequest: {
             product_name?: string;
         };
@@ -4503,6 +4520,8 @@ export interface components {
             countries?: string[];
             /** Actif */
             is_active?: boolean;
+            /** Langue */
+            language?: components["schemas"]["LanguageEnum"];
             password?: string;
         };
         PendingRenewal: {
@@ -4937,6 +4956,8 @@ export interface components {
             countries?: string[];
             /** Actif */
             is_active?: boolean;
+            /** Langue */
+            language?: components["schemas"]["LanguageEnum"];
             /**
              * Créé le
              * Format: date-time
@@ -4960,6 +4981,8 @@ export interface components {
             countries?: string[];
             /** Actif */
             is_active?: boolean;
+            /** Langue */
+            language?: components["schemas"]["LanguageEnum"];
             password?: string;
         };
         /**
@@ -8093,6 +8116,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    v1_me_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMeUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedMeUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedMeUpdateRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

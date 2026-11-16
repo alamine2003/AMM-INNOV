@@ -38,6 +38,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (access) {
     config.headers.set('Authorization', `Bearer ${access}`);
   }
+  // Langue de l'interface : le serveur s'en servira pour ses propres textes.
+  config.headers.set('Accept-Language', i18n.language);
   return config;
 });
 

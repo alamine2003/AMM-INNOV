@@ -37,6 +37,8 @@ export interface User {
   role: Role;
   countries: string[];
   is_active?: boolean;
+  /** Langue de l'interface choisie par l'utilisateur (bouton FR / EN). */
+  language?: 'fr' | 'en';
   /** Actions sensibles permises (`/me` et connexion) : voir `useCan`. */
   actions?: UserAction[];
 }

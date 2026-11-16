@@ -36,7 +36,10 @@
     "confirmDelete": "Confirmer la suppression ?",
     "unknown": "Inconnu",
     "days": "jours",
-    "months": "mois"
+    "months": "mois",
+    "language": "Langue",
+    "languageFr": "Français",
+    "languageEn": "English"
   },
   "nav": {
     "collapse": "Réduire le menu",

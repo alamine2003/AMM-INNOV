@@ -8,7 +8,8 @@ import {
   parseISO,
   startOfDay,
 } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { enGB, fr } from 'date-fns/locale';
+import i18n from '@/lib/i18n';
 
 export const DISPLAY_FORMAT = 'dd/MM/yyyy';
 
@@ -96,10 +97,11 @@ export function formatSpan(start: string | null | undefined, end: string | null 
   return formatMonthsSpan(months);
 }
 
-/** « 2026-09 » → « sept. 2026 ». */
+/** « 2026-09 » → « sept. 2026 » (« Sep 2026 » en anglais). */
 export function formatMonth(yyyyMm: string): string {
   const d = parse(yyyyMm, 'yyyy-MM', new Date());
-  return isValid(d) ? format(d, 'MMM yyyy', { locale: fr }) : yyyyMm;
+  const locale = i18n.language === 'en' ? enGB : fr;
+  return isValid(d) ? format(d, 'MMM yyyy', { locale }) : yyyyMm;
 }
 
 export const todayIso = () => toApiDate(new Date());

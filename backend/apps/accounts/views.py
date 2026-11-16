@@ -25,6 +25,7 @@ from .serializers import (
     LoginSerializer,
     LogoutSerializer,
     MeSerializer,
+    MeUpdateSerializer,
     UserSerializer,
 )
 
@@ -157,6 +158,15 @@ class MeView(APIView):
 
     @extend_schema(responses=MeSerializer)
     def get(self, request):
+        return Response(MeSerializer(request.user).data)
+
+    @extend_schema(request=MeUpdateSerializer, responses=MeSerializer)
+    def patch(self, request):
+        """L'utilisateur change la langue de son interface (bouton FR / EN)."""
+        serializer = MeUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        request.user._change_reason = "Langue de l'interface"
+        serializer.save()
         return Response(MeSerializer(request.user).data)
 
 

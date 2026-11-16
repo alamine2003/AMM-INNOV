@@ -42,6 +42,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         HQ_REGULATORY = "HQ_REGULATORY", "Réglementaire siège"
         COUNTRY_REGULATORY = "COUNTRY_REGULATORY", "Réglementaire pays"
 
+    class Language(models.TextChoices):
+        FR = "fr", "Français"
+        EN = "en", "English"
+
     GLOBAL_ROLES = (Role.CEO_ADMIN, Role.HQ_REGULATORY)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -53,6 +57,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     countries = models.ManyToManyField(
         "catalog.Country", blank=True, related_name="users", verbose_name="pays du périmètre"
+    )
+    # Langue de l'interface, choisie par l'utilisateur (bouton FR / EN) et gardée sur son compte.
+    # `db_default` : la base garde la valeur par défaut, une version précédente du code (retour
+    # arrière) crée donc encore des comptes sans connaître cette colonne.
+    language = models.CharField(
+        "langue",
+        max_length=2,
+        choices=Language.choices,
+        default=Language.FR,
+        db_default=Language.FR,
     )
     is_active = models.BooleanField("actif", default=True)
     is_staff = models.BooleanField("accès admin", default=False)

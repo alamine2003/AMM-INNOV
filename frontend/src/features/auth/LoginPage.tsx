@@ -12,6 +12,7 @@ import { isServiceStarting, useLogin, useWakeService } from '@/api/hooks/useAuth
 import { useAuthStore } from '@/features/auth/authStore';
 import { extractErrorMessage } from '@/api/client';
 import { BrandLogo } from '@/components/BrandLogo';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 
 const schema = z.object({
   email: z.string().email(),
@@ -112,7 +113,16 @@ export default function LoginPage() {
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 3, sm: 6 } }}>
+      <Box
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: { xs: 3, sm: 6 },
+        }}
+      >
+        <LanguageSwitch sx={{ position: 'absolute', top: 16, right: 16 }} />
         <Box sx={{ width: '100%', maxWidth: 400 }}>
           <Box sx={{ display: { xs: 'block', lg: 'none' }, mb: 4 }}>
             <BrandLogo height={32} />

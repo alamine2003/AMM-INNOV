@@ -5,6 +5,30 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.1] — 2026-11-16
+
+Première étape d'AMM GH en anglais (décision du 16/11/2026 : anglais pour tous les
+utilisateurs, serveur compris, livré en plusieurs versions). Cette version pose le socle.
+
+### Ajouté
+- **Bouton FR / EN** dans la barre du haut (dans le menu du compte sur téléphone) et sur la
+  page de connexion. La langue est gardée sur le compte (`language`, français par défaut) :
+  l'utilisateur la retrouve sur tout appareil. Choisie sur la page de connexion, elle rejoint
+  le compte dès la connexion.
+- **Interface en anglais pour les 465 textes du fichier de langue** (`locales/en.json`) :
+  menus, connexion, tableau de bord, liste et fiche des AMM, renouvellements, documents,
+  alertes, produits, administration. Suivent aussi la langue : les messages de validation des
+  formulaires, les textes des tableaux et de la pagination, le calendrier, l'attribut `lang`
+  de la page. Les dates restent écrites JJ/MM/AAAA.
+- API : `PATCH /api/v1/me` (la langue, et rien d'autre) ; `language` dans `/me`, la réponse de
+  connexion et les comptes. L'interface envoie sa langue au serveur (`Accept-Language`).
+- Un test garantit que les deux fichiers de langue ont les mêmes clés et les mêmes variables.
+
+### Reste en français pour l'instant
+- Les textes écrits en dur dans les écrans (import de dossiers, classeurs, dépôts, plan
+  d'action, corbeille, erreurs…) et ceux que fabrique le serveur (notifications, questions
+  d'import, classeurs PDF, exports) : versions suivantes.
+
 ## [1.3.0] — 2026-11-15
 
 Palier : AMM GH prête à quitter Render pour le Serveur 01 Stellarix, l'interface restant sur

@@ -5,15 +5,21 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
-import { frFR } from '@mui/x-date-pickers/locales';
-import { fr } from 'date-fns/locale';
+import { enUS, frFR } from '@mui/x-date-pickers/locales';
+import { enGB, fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { isValid } from 'date-fns';
 import { addValidity, formatDate, formatSpan, parseApiDate, toApiDate } from '@/lib/dates';
 
 const MIN_DATE = new Date(1980, 0, 1);
 // Dix ans devant : la grille des années reste lisible (une fin à 5 ans y figure toujours).
 const MAX_DATE = new Date(new Date().getFullYear() + 10, 11, 31);
-const LOCALE_TEXT = frFR.components.MuiLocalizationProvider.defaultProps.localeText;
+// Textes du calendrier (« Aujourd'hui », « Effacer »…) et noms des mois selon la langue. La date
+// reste écrite JJ/MM/AAAA dans les deux langues.
+const LOCALES = {
+  fr: { text: frFR.components.MuiLocalizationProvider.defaultProps.localeText, adapter: fr },
+  en: { text: enUS.components.MuiLocalizationProvider.defaultProps.localeText, adapter: enGB },
+};
 
 export interface DateInputProps {
   /** AAAA-MM-JJ, ou null/'' quand la date n'est pas renseignée. */
@@ -57,6 +63,8 @@ export function DateInput({
   minDate = MIN_DATE,
   maxDate = MAX_DATE,
 }: DateInputProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? LOCALES.en : LOCALES.fr;
   const external = value || null;
   // Une saisie en cours (jour tapé, mois pas encore) n'est pas une date : on la garde ici sans
   // la remonter, pour que le champ ne s'efface pas sous les doigts.
@@ -69,7 +77,11 @@ export function DateInput({
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr} localeText={LOCALE_TEXT}>
+    <LocalizationProvider
+      dateAdapter={AdapterDateFns}
+      adapterLocale={locale.adapter}
+      localeText={locale.text}
+    >
       <DatePicker
         value={draft}
         onChange={(next) => {

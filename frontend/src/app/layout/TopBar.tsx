@@ -20,6 +20,7 @@ import { useAuthStore } from '@/features/auth/authStore';
 import { useLogout } from '@/api/hooks/useAuth';
 import { RealtimeIndicator } from '@/realtime/RealtimeIndicator';
 import { NotificationBell } from '@/features/notifications/NotificationBell';
+import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { ApiHealthBadge } from './ApiHealthBadge';
 import { useDrawerWidth } from './sidebarStore';
 
@@ -57,6 +58,8 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         <Typography variant="subtitle1" sx={{ flexGrow: 1, fontWeight: 600 }} noWrap>
           {t('app.tagline')}
         </Typography>
+        {/* Sur téléphone, la barre est trop étroite : le bouton de langue est dans le menu du compte. */}
+        <LanguageSwitch onPrimary sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />
         <ApiHealthBadge />
         <RealtimeIndicator />
         <NotificationBell />
@@ -87,6 +90,12 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
                   {user.countries.join(', ')}
                 </Typography>
               )}
+            </Box>
+            <Box sx={{ px: 2, pb: 1, display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('app.language')}
+              </Typography>
+              <LanguageSwitch />
             </Box>
             <Divider />
             <MenuItem
