@@ -21,8 +21,8 @@ from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.db import transaction
 from PIL import Image, UnidentifiedImageError
-from pypdf import PdfReader
-from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject, NameObject
 
 from apps.imports.models import DossierFile, DossierImport
 
@@ -90,6 +90,69 @@ def validate_relative_path(path: str, root_name: str) -> str:
     for segment in parts:
         _validate_segment(segment)
     return path
+
+
+def _is_web_link(annotation) -> bool:
+    """Lien cliquable vers une page web, sans autre action (« Scanned with CamScanner »)."""
+    if not isinstance(annotation, DictionaryObject) or annotation.get("/Subtype") != "/Link":
+        return False
+    action = annotation.get("/A")
+    if isinstance(action, IndirectObject):
+        action = action.get_object()
+    return (
+        isinstance(action, DictionaryObject)
+        and action.get("/S") == "/URI"
+        and set(action.keys()) <= {"/S", "/URI", "/Type", "/IsMap"}
+        and "/Next" not in action
+    )
+
+
+def _strip_web_links(content: bytes) -> bytes:
+    """Retire les liens web des pages ; le reste du PDF passe ensuite le contrôle complet.
+
+    Les applications de scan (CamScanner, très utilisé par les pays) ajoutent sur chaque page
+    un lien « Scanned with CamScanner ». Un lien web ne s'exécute pas, mais le contrôle
+    refusait toute action : la décision entière était rejetée. On ne retire que ces liens,
+    sans toucher aux images. Un PDF sans lien web est conservé octet pour octet.
+    """
+    try:
+        reader = PdfReader(io.BytesIO(content), strict=False)
+        if reader.is_encrypted:
+            return content
+
+        def annotations_of(page):
+            annotations = page.get("/Annots")
+            return annotations.get_object() if annotations is not None else []
+
+        if not any(
+            _is_web_link(annotation.get_object())
+            for page in reader.pages
+            for annotation in annotations_of(page)
+        ):
+            return content
+        writer = PdfWriter(clone_from=reader)
+        removed = 0
+        for page in writer.pages:
+            annotations = page.get("/Annots")
+            if annotations is None:
+                continue
+            annotations = annotations.get_object()
+            kept = ArrayObject(a for a in annotations if not _is_web_link(a.get_object()))
+            removed += len(annotations) - len(kept)
+            if kept:
+                page[NameObject("/Annots")] = kept
+            else:
+                del page["/Annots"]
+        # Les liens retirés ne sont plus référencés : on ne les réécrit pas dans le fichier.
+        writer.compress_identical_objects(remove_duplicates=False, remove_unreferenced=True)
+        output = io.BytesIO()
+        writer.write(output)
+        logger.info("PDF importé : %d lien(s) web retiré(s) avant contrôle.", removed)
+        return output.getvalue()
+    except Exception:
+        # Illisible ici : le contrôle complet tranche (et refuse le lien s'il est resté).
+        logger.warning("Retrait des liens web impossible : PDF contrôlé tel quel.", exc_info=True)
+        return content
 
 
 def _validate_pdf(content: bytes) -> None:
@@ -257,6 +320,7 @@ def _validate_content(upload, path: str, remaining: int) -> tuple[bytes, str]:
         _reject("Le type MIME déclaré ne correspond pas au contenu réel du fichier.")
     _antivirus(content, extension)
     if mime == "application/pdf":
+        content = _strip_web_links(content)
         _validate_pdf(content)
     else:
         _validate_image(content, mime)

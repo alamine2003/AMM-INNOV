@@ -9,7 +9,13 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 from pypdf import PdfWriter
-from pypdf.generic import ArrayObject, DictionaryObject, NameObject, TextStringObject
+from pypdf.generic import (
+    ArrayObject,
+    DictionaryObject,
+    NameObject,
+    NumberObject,
+    TextStringObject,
+)
 
 from apps.imports.dossier import upload as upload_service
 from apps.imports.dossier.upload import stage_dossier, validate_relative_path
@@ -457,6 +463,81 @@ def test_tolerant_reading_still_rejects_active_content():
     for active in ("javascript", "attachment", "launch", "nested"):
         with pytest.raises(ValidationError):
             _validate_pdf(pdf_bytes(active=active))
+
+
+def _pdf_with_link(action: DictionaryObject, pages: int = 2) -> bytes:
+    """Comme CamScanner : un lien « Scanned with CamScanner » en bas de chaque page."""
+    writer = PdfWriter()
+    for _ in range(pages):
+        page = writer.add_blank_page(width=200, height=200)
+        link = DictionaryObject(
+            {
+                NameObject("/Type"): NameObject("/Annot"),
+                NameObject("/Subtype"): NameObject("/Link"),
+                NameObject("/Rect"): ArrayObject([NumberObject(0)] * 4),
+                NameObject("/A"): action,
+            }
+        )
+        page[NameObject("/Annots")] = ArrayObject([writer._add_object(link)])
+    output = io.BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
+def _uri_action() -> DictionaryObject:
+    return DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Action"),
+            NameObject("/S"): NameObject("/URI"),
+            NameObject("/URI"): TextStringObject("https://v3.camscanner.com/user/download"),
+        }
+    )
+
+
+def test_camscanner_web_links_are_removed_and_the_scan_is_accepted(users):
+    content = _pdf_with_link(_uri_action())
+    with pytest.raises(ValidationError):
+        upload_service._validate_pdf(content)  # le contrôle seul refuse toujours un lien
+
+    batch = stage_dossier(
+        uploads=[uploaded(content, "decision.pdf")],
+        paths=["Dossier/decision.pdf"],
+        root_name="Dossier",
+        user=users["hq"],
+    )
+    record = batch.files.get()
+    with record.file.open("rb") as handle:
+        stored = handle.read()
+    assert b"camscanner" not in stored
+    assert record.sha256 == hashlib.sha256(stored).hexdigest()
+    upload_service._validate_pdf(stored)  # le fichier conservé passe le contrôle complet
+    from pypdf import PdfReader
+
+    assert len(PdfReader(io.BytesIO(stored)).pages) == 2
+
+
+def test_pdf_without_web_link_is_kept_byte_for_byte():
+    content = pdf_bytes(pages=2)
+    assert upload_service._strip_web_links(content) is content
+
+
+def test_links_carrying_other_actions_are_still_refused():
+    javascript = DictionaryObject(
+        {NameObject("/S"): NameObject("/JavaScript"), NameObject("/JS"): TextStringObject("1")}
+    )
+    chained = _uri_action()
+    chained[NameObject("/Next")] = javascript
+    for action in (javascript, chained):
+        content = upload_service._strip_web_links(_pdf_with_link(action))
+        with pytest.raises(ValidationError):
+            upload_service._validate_pdf(content)
+
+
+def test_web_link_removal_does_not_hide_other_active_content():
+    for active in ("javascript", "attachment", "launch"):
+        content = upload_service._strip_web_links(pdf_bytes(active=active))
+        with pytest.raises(ValidationError):
+            upload_service._validate_pdf(content)
 
 
 def test_common_documents_are_reused_without_resending_or_rereading(users):
