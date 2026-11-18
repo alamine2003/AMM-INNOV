@@ -5,6 +5,44 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.5] — 2026-11-18
+
+### Modifié
+- **Les scans sont servis par nginx : l'API n'en vérifie plus que le droit de lecture.** Jusqu'ici
+  chaque scan affiché ou téléchargé faisait le trajet stockage → Python → navigateur. L'API
+  répond maintenant sans corps et remet à nginx une adresse signée du stockage, valable deux
+  minutes ; nginx va chercher le fichier et l'envoie. Scans, pièces de dépôt, fichiers d'un
+  dossier importé et classeurs préparés sont concernés.
+  - Rien ne change pour le navigateur : même adresse, mêmes droits, mêmes en-têtes (type, nom
+    du fichier, cache, CORS, `nosniff`, `Content-Security-Policy: sandbox` des dossiers). Il ne
+    voit jamais l'adresse du stockage, et l'emplacement nginx ne peut pas être appelé de
+    l'extérieur. Un scan absent reste un 410, un stockage en panne un 503, décidés avant nginx.
+  - nginx sait envoyer un morceau de fichier (`Range`) : un long scan pourra être lu page par
+    page au lieu d'être téléchargé en entier.
+  - Le stockage est lu en HTTPS avec certificat vérifié, et les adresses sont signées en V4, la
+    seule signature que Cloudflare R2 accepte.
+  - Retour arrière sans redéployer : `DOCUMENT_ACCEL_REDIRECT=0` puis `compose.sh up -d` ; l'API
+    renvoie alors les scans elle-même, bloc par bloc, comme en 1.3.4. Le réglage est coupé par
+    défaut hors de Docker Compose (Render, développement).
+
+### Corrigé
+- **Chaque demande de scan reconstruisait la connexion au stockage.** La bibliothèque de
+  stockage garde une connexion par fil d'exécution, et le serveur donne un fil neuf à chaque
+  requête : 80 ms de processeur et 7 Mo perdus par scan, avant même de lire le fichier. Mesuré
+  sur 80 demandes simultanées par huit, sans aucun fichier envoyé : 16 secondes et 370 Mo de
+  mémoire. Avec un seul client partagé par processus : 0,9 seconde et 165 Mo.
+
+### Mesuré
+- Essai de bout en bout avec le nginx réel de l'image (1.27), l'API lancée comme en production
+  et un stockage S3 d'essai : 880 scans de 1 à 15 Mo dont 30 % abandonnés en route. Mémoire de
+  l'API : 166 Mo, plate du début à la fin (225 Mo en 1.3.4 sur le même banc ; 459 Mo en 1.3.3
+  sur l'essai de la 1.3.4, dépôts compris) ;
+  80 scans en 3,0 secondes au lieu de 4,6 à 5,5 ; nginx occupe 10 Mo et n'écrit rien sur disque.
+- Fichier reçu identique à l'octet près (nom avec espace et accent), lecture partielle exacte,
+  signature recalculée valide à partir de ce que nginx demande réellement au stockage, jeton de
+  l'utilisateur et cookies non transmis au stockage, certificat non reconnu refusé.
+- Non essayé ici, à contrôler à la mise en service : le vrai Cloudflare R2.
+
 ## [1.3.4] — 2026-11-18
 
 ### Corrigé

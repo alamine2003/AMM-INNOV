@@ -3,13 +3,18 @@ called from the owning viewsets so that URLs match the specification."""
 
 import itertools
 import logging
+import mimetypes
+import threading
 
 from asgiref.sync import sync_to_async
+from botocore.exceptions import ClientError
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.asgi import ASGIRequest
 from django.db import connection
-from django.http import FileResponse, StreamingHttpResponse
+from django.http import FileResponse, HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils.http import content_disposition_header
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -17,6 +22,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from storages.utils import clean_name
 
 from apps.accounts.permissions import (
     CountryScopedQuerysetMixin,
@@ -87,6 +93,96 @@ def open_stored_file(field_file) -> None:
         raise StorageUnavailable() from exc
 
 
+ACCEL_LOCATION = "@stockage"  # emplacement nommé de docker/nginx.conf
+_CLIENT_LOCK = threading.Lock()
+
+
+def _shared_s3_client(storage):
+    """Un seul client S3 par processus, partagé entre les fils (les clients boto3 le permettent).
+
+    django-storages garde une connexion par fil. Sous ASGI, Django donne un fil neuf à chaque
+    requête : la connexion était reconstruite à chaque scan demandé. Mesuré le 18/11/2026 :
+    80 ms de processeur et 7 Mo par requête, 16 secondes et 270 Mo pour 80 demandes simultanées
+    par huit, sans qu'un seul octet de fichier soit lu.
+    """
+    client = getattr(storage, "_amm_shared_client", None)
+    if client is None:
+        with _CLIENT_LOCK:
+            client = getattr(storage, "_amm_shared_client", None)
+            if client is None:
+                client = storage.connection.meta.client
+                storage._amm_shared_client = client
+    return client
+
+
+def _exists(field_file) -> bool:
+    """Le fichier est-il dans le stockage ? Lève l'erreur du stockage s'il ne répond pas."""
+    storage = field_file.storage
+    if not hasattr(storage, "bucket_name"):
+        return storage.exists(field_file.name)
+    key = storage._normalize_name(clean_name(field_file.name))
+    try:
+        _shared_s3_client(storage).head_object(Bucket=storage.bucket_name, Key=key)
+    except ClientError as exc:
+        if exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") == 404:
+            return False
+        raise
+    return True
+
+
+def _relayed_by_nginx(field_file, content_type, as_attachment, filename):
+    """Réponse sans corps : nginx va chercher le scan dans le stockage S3 et l'envoie (1.3.5).
+
+    L'API a vérifié le droit de lecture ; elle ne lit plus un octet du fichier. Elle remet à
+    nginx une adresse signée, valable deux minutes, que le navigateur ne voit jamais
+    (`X-Accel-Redirect` vers un emplacement nommé, docker/nginx.conf). Un contrôle d'existence
+    garde les réponses propres : 410 pour un scan absent, 503 pour un stockage en panne.
+    `None` quand nginx n'est pas devant (réglage coupé) ou que le fichier est sur disque.
+    """
+    storage = field_file.storage
+    if not settings.DOCUMENT_ACCEL_REDIRECT or not hasattr(storage, "bucket_name"):
+        return None
+    if not connection.in_atomic_block:
+        connection.close()  # comme open_stored_file : pas de connexion tenue pendant l'appel S3
+    try:
+        present = _exists(field_file)
+        url = _shared_s3_client(storage).generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": storage.bucket_name,
+                "Key": storage._normalize_name(clean_name(field_file.name)),
+            },
+            ExpiresIn=settings.DOCUMENT_ACCEL_URL_SECONDS,
+        )
+    except Exception as exc:
+        logger.warning("Stockage indisponible pour %s : %s", field_file.name, exc)
+        raise StorageUnavailable() from exc
+    if not present:
+        logger.warning("Fichier absent du stockage : %s", field_file.name)
+        raise StoredFileLost()
+    guessed = mimetypes.guess_type(filename or field_file.name)[0]
+    response = HttpResponse(content_type=content_type or guessed or "application/octet-stream")
+    response["X-Accel-Redirect"] = ACCEL_LOCATION
+    response["X-Storage-Url"] = url
+    if disposition := content_disposition_header(as_attachment, filename):
+        response["Content-Disposition"] = disposition
+    return response
+
+
+def stored_file_response(field_file, *, content_type=None, as_attachment=False, filename=""):
+    """Envoie un fichier du stockage : par nginx quand il est devant, sinon bloc par bloc.
+
+    Lève StoredFileLost (410) ou StorageUnavailable (503) avant le premier octet.
+    """
+    relayed = _relayed_by_nginx(field_file, content_type, as_attachment, filename)
+    if relayed is not None:
+        return relayed
+    open_stored_file(field_file)
+    return StoredFileResponse(
+        field_file, content_type=content_type, as_attachment=as_attachment, filename=filename
+    )
+
+
 def file_is_missing(field_file, exc=None) -> bool:
     """Le fichier n'existe plus dans le stockage par défaut (disque local ou S3/R2).
 
@@ -104,7 +200,7 @@ def file_is_missing(field_file, exc=None) -> bool:
         if http == 404 or code in {"404", "NoSuchKey", "NotFound"}:
             return True
     try:
-        return not field_file.storage.exists(field_file.name)
+        return not _exists(field_file)
     except Exception:  # noqa: BLE001 — stockage injoignable : ce n'est pas un fichier perdu
         return False
 
@@ -291,8 +387,7 @@ class DocumentViewSet(
         document = self.get_object()
         download = request.query_params.get("download", "").lower() in {"1", "true"}
         filename = document.export_filename()
-        open_stored_file(document.file)
-        response = StoredFileResponse(
+        response = stored_file_response(
             document.file,
             content_type=document.content_type,
             as_attachment=download,

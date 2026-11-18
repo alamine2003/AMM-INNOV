@@ -78,6 +78,9 @@ services:
     command: ["serve"]
     environment:
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      # Scans servis par le nginx du service frontend, toujours devant l'API ici (1.3.5).
+      # Retour arrière sans redéployer : DOCUMENT_ACCEL_REDIRECT=0 dans .env, puis up -d.
+      DOCUMENT_ACCEL_REDIRECT: ${DOCUMENT_ACCEL_REDIRECT:-1}
     expose:
       - "8000"
 

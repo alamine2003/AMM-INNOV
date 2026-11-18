@@ -24,7 +24,7 @@ from apps.amm.serializers import django_to_drf_validation_error
 from apps.catalog.models import Country
 from apps.core.exceptions import StoredFileLost
 from apps.core.tasks import enqueue
-from apps.documents.views import StoredFileResponse, file_is_missing, open_stored_file
+from apps.documents.views import file_is_missing, stored_file_response
 
 from .dossier.application import StalePreview, apply_dossier
 from .dossier.report import build_report
@@ -80,18 +80,15 @@ def serve_dossier_file(source):
     document = source.document
     if document is not None and file_is_missing(stored):
         stored, content_type = document.file, document.content_type
+    filename = source.relative_path.rsplit("/", 1)[-1]
     try:
-        open_stored_file(stored)
+        response = stored_file_response(stored, content_type=content_type, filename=filename)
     except StoredFileLost:
         if document is None or stored is document.file:
             raise
-        open_stored_file(document.file)
-        stored, content_type = document.file, document.content_type
-    response = StoredFileResponse(
-        stored,
-        content_type=content_type,
-        filename=source.relative_path.rsplit("/", 1)[-1],
-    )
+        response = stored_file_response(
+            document.file, content_type=document.content_type, filename=filename
+        )
     response["Cache-Control"] = "private, no-store"
     response["X-Content-Type-Options"] = "nosniff"
     response["Content-Security-Policy"] = "sandbox"

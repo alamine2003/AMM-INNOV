@@ -11,6 +11,8 @@ import re
 import warnings
 from pathlib import Path
 
+import pytest
+
 from apps.documents.views import StoredFileResponse
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +31,7 @@ class CountingFile(io.BytesIO):
         return super().read(size)
 
 
+@pytest.mark.django_db  # response.close() signale la fin de requête à Django
 def test_scan_blocks_are_pulled_one_at_a_time_under_asgi():
     """Le client lit deux blocs puis s'en va (page tournée) : le reste du scan n'est pas lu."""
     scan = CountingFile(b"s" * (20 * BLOCK))

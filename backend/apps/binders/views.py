@@ -22,7 +22,7 @@ from apps.amm.models import MarketingAuthorization
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
 from apps.core.tasks import enqueue
-from apps.documents.views import StoredFileResponse, open_stored_file
+from apps.documents.views import stored_file_response
 
 from . import actions, chronology
 from .layout import binder_detail, get_binder, locate, shelf
@@ -447,8 +447,7 @@ class BinderViewSet(viewsets.ViewSet):
         if export is None or not export.file:
             raise Http404("Classeur pas encore prêt.")
         name = f"Classeur_{binder.key}_decisions_{export.finished_at:%Y-%m-%d}.pdf"
-        open_stored_file(export.file)
-        response = StoredFileResponse(
+        response = stored_file_response(
             export.file, content_type="application/pdf", as_attachment=True, filename=name
         )
         response["Cache-Control"] = "private, no-store"
