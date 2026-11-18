@@ -5,6 +5,16 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+### Corrigé
+- **Scans CamScanner refusés à l'import (« PDF refusé : actions actives ou fichiers incorporés
+  détectés »).** CamScanner, très utilisé par les pays, ajoute sur chaque page un lien « Scanned
+  with CamScanner » ; le contrôle de sécurité refusait toute action, donc la décision entière
+  (constaté le 18/11/2026 sur le renouvellement de LITACOLD SINUS, Côte d'Ivoire). Les liens web
+  simples sont maintenant retirés des pages avant le contrôle ; les images ne sont pas touchées
+  et un PDF sans lien est conservé octet pour octet. Tout le reste est toujours refusé :
+  JavaScript, lancement de programme, fichiers joints, formulaires, et un lien web suivi d'une
+  autre action.
+
 ## [1.3.4] — 2026-11-18
 
 ### Corrigé
