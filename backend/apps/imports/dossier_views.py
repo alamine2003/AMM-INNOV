@@ -6,7 +6,6 @@ import logging
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
@@ -25,7 +24,7 @@ from apps.amm.serializers import django_to_drf_validation_error
 from apps.catalog.models import Country
 from apps.core.exceptions import StoredFileLost
 from apps.core.tasks import enqueue
-from apps.documents.views import file_is_missing, open_stored_file
+from apps.documents.views import StoredFileResponse, file_is_missing, open_stored_file
 
 from .dossier.application import StalePreview, apply_dossier
 from .dossier.report import build_report
@@ -88,7 +87,7 @@ def serve_dossier_file(source):
             raise
         open_stored_file(document.file)
         stored, content_type = document.file, document.content_type
-    response = FileResponse(
+    response = StoredFileResponse(
         stored,
         content_type=content_type,
         filename=source.relative_path.rsplit("/", 1)[-1],

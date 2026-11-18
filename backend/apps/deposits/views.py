@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.asgi import ASGIRequest
 from django.db import connection
 from django.db.models import Exists, OuterRef, Prefetch
-from django.http import FileResponse, Http404, StreamingHttpResponse
+from django.http import Http404, StreamingHttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -29,7 +29,7 @@ from apps.core.dates import today
 from apps.core.exceptions import StorageUnavailable
 from apps.core.trash import IdempotentDestroyMixin, move_to_trash
 from apps.documents.services.archive import aiter_blocks, iter_zip
-from apps.documents.views import open_stored_file
+from apps.documents.views import StoredFileResponse, open_stored_file
 
 from . import actions, bundle
 from .models import DepositDossier, DepositMessage, PieceType
@@ -189,7 +189,7 @@ class DepositViewSet(viewsets.ViewSet):
         if piece is None:
             raise Http404("Pièce inconnue.")
         open_stored_file(piece.file)
-        return FileResponse(
+        return StoredFileResponse(
             piece.file,
             content_type=piece.content_type or "application/octet-stream",
             as_attachment=True,
@@ -315,7 +315,7 @@ class DepositViewSet(viewsets.ViewSet):
         if event is None or not event.file:
             raise Http404("Pièce inconnue.")
         open_stored_file(event.file)
-        return FileResponse(event.file, as_attachment=True, filename=event.filename)
+        return StoredFileResponse(event.file, as_attachment=True, filename=event.filename)
 
     @extend_schema(request=DecisionInputSerializer, responses=DepositDetailSerializer)
     @action(detail=True, methods=["post"])

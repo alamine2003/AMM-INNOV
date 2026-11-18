@@ -209,6 +209,19 @@ sudo scripts/serveur/compose.sh up -d
 
 `TAG` dans `.env` choisit l'image (`latest`, ou le début d'un commit pour figer une version).
 
+### Surveiller la mémoire
+
+```bash
+sudo docker stats --no-stream | grep amm-gh
+sudo docker exec amm-gh-backend-1 cat /sys/fs/cgroup/memory.events
+```
+
+`max` compte les fois où un service a buté sur sa limite (il ralentit), `oom_kill` celles où il
+a été coupé. Les deux doivent rester à zéro. Les limites se règlent sans toucher aux fichiers :
+`sudo scripts/serveur/configurer.sh AMM_MEM_BACKEND=2g` puis `compose.sh up -d`
+(`AMM_MEM_WORKER`, `AMM_MEM_POSTGRES` de même). Le 18/11/2026, l'API à 1 Go avait buté 2 014
+fois en 19 heures : limite portée à 2 Go, cause corrigée en 1.3.4.
+
 ## 6. Tout enlever
 
 ```bash
