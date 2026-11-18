@@ -4,6 +4,7 @@ called from the owning viewsets so that URLs match the specification."""
 import itertools
 import logging
 
+from asgiref.sync import sync_to_async
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.asgi import ASGIRequest
 from django.db import connection
@@ -39,6 +40,30 @@ from .services.archive import aiter_blocks, iter_archive
 from .services.ingest import archive_document, ingest_document
 
 logger = logging.getLogger(__name__)
+
+
+class StoredFileResponse(FileResponse):
+    """Un scan envoyé bloc par bloc, sous ASGI comme sous WSGI.
+
+    Sous ASGI (uvicorn, la production), Django lit un itérateur synchrone en entier avant
+    d'envoyer le premier octet (`sync_to_async(list)`) : chaque scan affiché revenait tout entier
+    en mémoire du processus web, en blocs de 4 Ko (3 840 blocs pour un scan de 15 Mo). Cette
+    mémoire, émiettée, n'était jamais rendue au système : mesuré le 18/11/2026 sur le serveur,
+    l'API montait de 150 Mo à plus de 450 Mo par processus en 19 heures et butait sur sa limite.
+    Ici chaque bloc est lu à part, dans le fil de la requête, puis envoyé.
+    """
+
+    block_size = 256 * 1024
+
+    async def __aiter__(self):
+        if self.is_async:
+            async for block in self.streaming_content:
+                yield block
+            return
+        blocks = self.streaming_content
+        step = sync_to_async(next)
+        while (block := await step(blocks, None)) is not None:
+            yield block
 
 
 def open_stored_file(field_file) -> None:
@@ -267,7 +292,7 @@ class DocumentViewSet(
         download = request.query_params.get("download", "").lower() in {"1", "true"}
         filename = document.export_filename()
         open_stored_file(document.file)
-        response = FileResponse(
+        response = StoredFileResponse(
             document.file,
             content_type=document.content_type,
             as_attachment=download,

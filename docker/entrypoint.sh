@@ -105,6 +105,14 @@ if [ "${1:-}" = "serve" ] && [ "${AMM_ROLE:-web}" = "all" ]; then
 fi
 
 if [ "${1:-}" = "serve" ]; then
+  # Mémoire rendue au système (1.3.4). Le serveur web sert les scans et contrôle les dossiers
+  # déposés sur une vingtaine de fils : par défaut, glibc ouvre une réserve de mémoire par fil
+  # et garde les grands blocs libérés (seuil mmap qui monte tout seul jusqu'à 32 Mo). Mesuré le
+  # 18/11/2026 sur le serveur : 456 et 609 Mo par processus après 19 heures, limite de 1 Go
+  # atteinte 2 014 fois. Deux réserves au plus, et tout bloc de 128 Ko ou plus rendu dès sa
+  # libération : même charge rejouée, 251 Mo stables au lieu de 459 Mo qui montent encore.
+  export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
+  export MALLOC_MMAP_THRESHOLD_="${MALLOC_MMAP_THRESHOLD_:-131072}"
   : "${WEB_CONCURRENCY:=1}"
   : "${PORT:=8000}"
   : "${BIND_HOST:=0.0.0.0}"

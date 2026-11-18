@@ -5,6 +5,29 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.4] — 2026-11-18
+
+### Corrigé
+- **Application lente, puis indisponible, au fil de la journée : la mémoire de l'API montait
+  sans redescendre.** Mesuré le 18/11/2026 sur le serveur, 19 heures après un démarrage : 456 et
+  609 Mo pour les deux processus de l'API (150 Mo chacun au départ), limite de 1 Go atteinte
+  2 014 fois. Sur Render, où la limite était de 512 Mo pour l'API et le worker réunis, c'est la
+  cause la plus probable des chutes du 17/11.
+  - Chaque scan affiché ou téléchargé repassait tout entier par la mémoire de l'API : sous le
+    serveur ASGI, Django lit un fichier en entier avant d'en envoyer le premier octet, ici en
+    blocs de 4 Ko (3 840 blocs pour un scan de 15 Mo). Les scans, les pièces de dépôt, les
+    fichiers d'un dossier importé et les classeurs préparés sont maintenant envoyés bloc par
+    bloc (256 Ko). Un scan abandonné en route (page tournée) n'est plus lu jusqu'au bout.
+  - La mémoire libérée n'était pas rendue au système : le serveur web travaille sur une
+    vingtaine de fils et, par défaut, garde une réserve par fil. Il est maintenant lancé avec
+    deux réserves au plus et rend tout bloc de 128 Ko ou plus dès sa libération
+    (`MALLOC_ARENA_MAX`, `MALLOC_MMAP_THRESHOLD_`, réglables).
+  - Même charge rejouée avant et après (880 scans de 1 à 15 Mo dont 30 % abandonnés, 48 PDF
+    de 8 Mo déposés, un seul processus) : 459 Mo et encore en hausse avant ; 251 Mo stables
+    après. La correction seule donne 364 Mo, les réglages seuls 372 Mo : il faut les deux.
+  - Sur le serveur, la limite de l'API a été portée de 1 à 2 Go le 18/11
+    (`AMM_MEM_BACKEND=2g`), le temps de livrer cette version.
+
 ## [1.3.3] — 2026-11-16
 
 ### Corrigé

@@ -6,7 +6,7 @@ télécharger chaque classeur en PDF, tel qu'il apparaît à l'écran.
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
@@ -22,7 +22,7 @@ from apps.amm.models import MarketingAuthorization
 from apps.amm.serializers import django_to_drf_validation_error
 from apps.core.dates import today
 from apps.core.tasks import enqueue
-from apps.documents.views import open_stored_file
+from apps.documents.views import StoredFileResponse, open_stored_file
 
 from . import actions, chronology
 from .layout import binder_detail, get_binder, locate, shelf
@@ -448,7 +448,7 @@ class BinderViewSet(viewsets.ViewSet):
             raise Http404("Classeur pas encore prêt.")
         name = f"Classeur_{binder.key}_decisions_{export.finished_at:%Y-%m-%d}.pdf"
         open_stored_file(export.file)
-        response = FileResponse(
+        response = StoredFileResponse(
             export.file, content_type="application/pdf", as_attachment=True, filename=name
         )
         response["Cache-Control"] = "private, no-store"
