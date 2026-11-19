@@ -161,6 +161,64 @@ def test_unreadable_code_is_reported_and_keeps_the_number(congo, make_amm, make_
     assert period["changes"][1]["new"] == "2030-02-28"
 
 
+def test_dates_already_on_28_february_are_not_recomputed_from_the_scan_date(
+    congo, make_amm, make_scan
+):
+    """Essai du 19/11/2026 : une origine 2013 → 2017, dont le scan est daté de 2017, était
+    proposée 2017 → 2021. Sans la clause, les années connues ne bougent pas."""
+    amm = make_amm(
+        country=congo,
+        original_number="CV/12D-02F/09",
+        original_start_date=date(2013, 2, 28),
+        original_end_date=date(2017, 2, 28),
+    )
+    scan = make_scan(amm)
+    scan.document_date = date(2017, 2, 28)
+    scan.save()
+    old_model = "REPUBLIQUE DU CONGO\nDECISION N° CV/12D-02F/09\nportant visa d'homologation\n"
+    with readings({scan.pk: old_model}):
+        assert relecture.propose() == []
+
+
+def test_without_the_clause_only_the_day_moves_to_28_february(congo, make_amm, make_scan):
+    amm = make_amm(
+        country=congo,
+        original_number="CV/12D-04F/09",
+        original_start_date=date(2014, 12, 30),
+        original_end_date=date(2018, 12, 30),
+    )
+    scan = make_scan(amm)
+    old_model = "REPUBLIQUE DU CONGO\nDECISION N° CV/12D-04F/09\nportant visa d'homologation\n"
+    with readings({scan.pk: old_model}):
+        proposals = relecture.propose()
+
+    assert proposals[0]["periods"][0]["changes"] == [
+        {"field": "start_date", "old": "2014-12-30", "new": "2014-02-28"},
+        {"field": "end_date", "old": "2018-12-30", "new": "2018-02-28"},
+    ]
+
+
+def test_pages_follow_the_binder_order_and_can_be_limited(congo, ranges, make_amm, make_scan):
+    """Le classeur range par gamme puis par nom : la relecture suit ses numéros de page."""
+    from apps.catalog.models import Product
+
+    names = {"GENERALE": "ZINC GH", "CARDIO": "AMLODIPINE GH"}
+    for code, name in names.items():
+        product = Product.objects.create(name=name, range=ranges[code])
+        make_amm(
+            country=congo,
+            product_obj=product,
+            original_start_date=date(2022, 6, 23),
+            original_end_date=date(2026, 6, 23),
+        )
+    with readings({}):
+        proposals = relecture.propose()
+        only_second = relecture.propose(pages=(2, 2))
+
+    assert [(p["page"], p["product"]) for p in proposals] == [(1, "ZINC GH"), (2, "AMLODIPINE GH")]
+    assert [p["page"] for p in only_second] == [2]
+
+
 def test_other_countries_are_never_read(make_amm, make_scan):
     scan = make_scan(make_amm(country="SN"))
     with readings({scan.pk: ORIGINE}) as extract:
@@ -174,7 +232,8 @@ def test_command_writes_a_report_then_applies_it(page, tmp_path):
     out = io.StringIO()
     with readings({scan.pk: RENOUVELLEMENT}):
         call_command("relire_congo", rapport=str(report), stdout=out)
-    assert "1 fiches à corriger" in out.getvalue()
+    assert "page   1." in out.getvalue()
+    assert "1 pages à corriger" in out.getvalue()
     assert "n° 22-0781 → RVC-PSM-GM/09.03.3 B/N°9 JMPHS12" in out.getvalue()
     assert json.loads(report.read_text(encoding="utf-8"))[0]["amm"] == str(amm.pk)
     renewal.refresh_from_db()

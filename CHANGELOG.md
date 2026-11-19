@@ -5,6 +5,29 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.7] — 2026-11-19
+
+### Corrigé
+Trois défauts de la relecture du Congo (1.3.6), vus à son premier essai sur le serveur le
+19/11/2026. L'essai ne faisait que lire : aucune fiche n'a été modifiée.
+
+- **Le Code restait « illisible » sur les décisions de 2022.** Ces PDF portent déjà un texte,
+  posé par le scanner, et l'application s'en contentait sans relire l'image. Or ce texte
+  déforme justement la ligne surlignée (« Code RVC -PS,tÂ - GfA / 09.03.3 B/N" 1 JMPH512 »)
+  ou l'omet. Les premières pages d'un PDF qui portent du surligneur sont maintenant lues sur
+  l'image, et notre lecture passe avant celle du scanner, qui ne fait que la compléter.
+- **Des dates recalculées à tort sur les anciens modèles.** Sans la clause « date butoir », la
+  relecture partait de la date du scan : une origine déjà juste (28/02/2013 → 28/02/2017)
+  était proposée 2017 → 2021. Sans la clause, les années connues ne bougent plus : seul le jour
+  passe au 28 février.
+- **La relecture ne suivait pas l'ordre du classeur** (tri par nom au lieu de gamme puis nom) :
+  elle suit maintenant ses pages et affiche leurs numéros. `--pages 1-20` remplace `--limite`.
+- **Fautes de lecture reprises dans l'écriture du Code** : « N? 4 », « N®° 1 » et « N°L » pour
+  « N°4 » et « N°1 », « 02.245 » pour « 02.24.5 », « GM Y27.06.2 » pour « GM/27.06.2 » ; les
+  écritures « 02.24.5 - B/N°1 » et « 27.06.2.B/N°1 » donnent la même forme « … B/N°1 ». Deux
+  numéros qui ne diffèrent que par la ponctuation ne sont plus comptés comme différents.
+- Chaque ligne du rapport dit d'où vient le texte (« lu sur l'image » ou « texte du PDF »).
+
 ## [1.3.6] — 2026-11-19
 
 ### Corrigé

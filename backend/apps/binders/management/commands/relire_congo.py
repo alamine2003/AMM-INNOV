@@ -15,6 +15,7 @@ READINGS = {
     "sans-scan": "sans scan, dates seulement",
 }
 FIELDS = {"number": "n°", "start_date": "début", "end_date": "fin"}
+SOURCES = {"ocr": ", lu sur l'image", "pdf_text": ", texte du PDF"}
 
 
 class Command(BaseCommand):
@@ -28,9 +29,11 @@ class Command(BaseCommand):
         parser.add_argument("--rapport", default="/tmp/relecture-congo.json")
         parser.add_argument("--appliquer", action="store_true")
         parser.add_argument("--avec-verifiees", action="store_true")
-        parser.add_argument("--limite", type=int, default=None)
+        parser.add_argument(
+            "--pages", default="", help="pages du classeur à relire, par exemple 1-20 ou 113"
+        )
 
-    def handle(self, *args, rapport, appliquer, avec_verifiees, limite, **options):
+    def handle(self, *args, rapport, appliquer, avec_verifiees, pages, **options):
         path = Path(rapport)
         if appliquer:
             if not path.exists():
@@ -47,20 +50,30 @@ class Command(BaseCommand):
                 self.stdout.write(f"  ERREUR {error}")
             return
 
-        def progress(index, product, periods):
-            self.stdout.write(f"{index:3d}. {product}")
+        def progress(index, product, verified, periods):
+            mark = " [vérifiée]" if verified else ""
+            self.stdout.write(f"page {index:3d}. {product}{mark}")
             for period in periods:
                 where = "origine" if period["slot"] == "original" else "renouvellement"
+                source = SOURCES.get(period["source"], "")
                 changes = " ; ".join(
                     f"{FIELDS[c['field']]} {c['old'] or '—'} → {c['new']}"
                     for c in period["changes"]
                 )
                 self.stdout.write(
-                    f"       {where} ({READINGS[period['reading']]}) : {changes or 'inchangé'}"
+                    f"          {where} ({READINGS[period['reading']]}{source}) : "
+                    f"{changes or 'inchangé'}"
                 )
             self.stdout.flush()
 
-        proposals = congo.propose(limit=limite, progress=progress)
+        span = None
+        if pages:
+            first, _, last = pages.partition("-")
+            try:
+                span = (int(first), int(last or first))
+            except ValueError as exc:
+                raise CommandError("--pages attend « 1-20 » ou « 113 »") from exc
+        proposals = congo.propose(pages=span, progress=progress)
         path.write_text(json.dumps(proposals, ensure_ascii=False, indent=1), encoding="utf-8")
         verified = sum(1 for p in proposals if p["verified"])
         unreadable = sum(
@@ -70,6 +83,6 @@ class Command(BaseCommand):
             if period["reading"] in ("code-illisible", "illisible")
         )
         self.stdout.write(
-            f"{len(proposals)} fiches à corriger, dont {verified} déjà vérifiées (laissées par "
+            f"{len(proposals)} pages à corriger, dont {verified} déjà vérifiées (laissées par "
             f"défaut) ; {unreadable} décisions à relever sur le papier. Rapport : {path}"
         )
