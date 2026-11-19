@@ -5,6 +5,48 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.6] — 2026-11-19
+
+### Corrigé
+- **Congo : le numéro d'AMM et les dates lus sur les décisions étaient faux.** Règles données
+  par l'archiviste, classeur papier en main (19/11/2026), et relevées sur ses pages vérifiées :
+  - **Le numéro d'AMM est le « Code » de l'article 2** (« Les références de l'autorisation de
+    mise sur le marché sont : Code : VC-PSM-GM /27.06.2 B/N°7 JMPHS16 », « RVC-… » pour un
+    renouvellement), jamais le numéro de la décision imprimé en tête (« DECISION N° 26-0466 »),
+    que l'application prenait jusqu'ici. Le code de l'AMM d'origine qu'un renouvellement
+    rappelle à son article 3 (« dont le code produit est … ») n'est pas pris pour le sien : il
+    sert à retrouver l'origine. Code illisible : le numéro reste vide, à relever sur le papier,
+    plutôt qu'un faux numéro.
+  - **Toute période va d'un 28 février à un 28 février, quatre ans plus tard.** La date de fin
+    est le 28 février de l'année écrite après « sera renouvelée en » (« date butoir du
+    28 février ») ; la date de début, le 28 février quatre ans plus tôt, quelle que soit la
+    date de signature, qui reste la date de la décision. L'application faisait courir la
+    période de la date de signature (03/08/2026 → 03/08/2030 au lieu de 28/02/2026 →
+    28/02/2030).
+- **Une ligne surlignée n'était pas lue.** Sur le papier, le Code est passé au surligneur ; la
+  lecture automatique sépare l'encre du papier par un seuil, et une mention imprimée en rouge
+  sous un aplat orange disparaissait. Une page qui porte du surligneur est maintenant lue une
+  seconde fois sans sa couleur, et les lignes que seule cette lecture a vues sont ajoutées à
+  leur place. Mesuré sur deux décisions réelles : ligne du Code absente avant, lue après ; une
+  page sans surligneur n'est pas relue (aucun temps perdu).
+
+### Ajouté
+- **Relecture des décisions du Congo déjà rangées** (`manage.py relire_congo`), en deux temps
+  pour qu'un humain valide avant toute écriture :
+  1. sans option, chaque décision est relue avec ces règles et la commande écrit, fiche par
+     fiche et dans l'ordre du classeur, ce qui changerait (numéro, début, fin) ; rien n'est
+     modifié ;
+  2. `--appliquer` écrit les propositions du rapport. Une page déjà vérifiée sur le classeur
+     papier n'est pas touchée (`--avec-verifiees` pour l'inclure), une valeur corrigée à la
+     main entre-temps est laissée, et chaque écriture garde son motif dans l'historique.
+  Une période sans scan ne reçoit que la règle des dates. Un numéro saisi avec d'autres espaces
+  (« VC-PSM-GM /12.09.1 B/Nº3 ») n'est pas compté comme une différence.
+
+### À savoir
+- La lecture d'un Code peut encore se tromper d'une lettre sur un scan de mauvaise qualité
+  (« IMPHS16 » pour « JMPHS16 » sur une capture basse résolution) : la liste avant / après se
+  relit avant d'appliquer, et la vérification page par page reste la règle.
+
 ## [1.3.5] — 2026-11-18
 
 ### Modifié
