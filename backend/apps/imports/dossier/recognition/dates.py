@@ -218,3 +218,26 @@ def _validity_period(plain: str) -> tuple[str | None, str | None]:
     return start, _vote(ends)
 
 
+# --- Congo : toute période va d'un 28 février à un 28 février, quatre ans plus tard -----------
+#
+# « La présente autorisation … sera renouvelée en 2030 avant la date butoir du 28 février. En
+# cas contraire, elle devient caduque … le 1er avril 2030. » La date de fin est ce 28 février ;
+# la date de début, le 28 février quatre ans plus tôt, quelle que soit la date de signature
+# (règle de Mohamed, 19/11/2026 : « tous les AMM c'est le 28 février, sans exception »).
+CONGO_VALIDITY_YEARS = 4
+_CONGO_DEADLINE = re.compile(
+    r"renouvelee?\s+en\s+((?:19|20)\d\d)\b[\s\S]{0,80}?date\s+butoir"
+    r"|date\s+butoir[\s\S]{0,260}?\bavril\s+((?:19|20)\d\d)\b"
+)
+
+
+def congo_period(plain: str, decision_date: str | None = None) -> tuple[str, str] | None:
+    """(début, fin) d'une décision du Congo, ou None si rien ne permet de la dater."""
+    deadline = _CONGO_DEADLINE.search(plain)
+    if deadline:
+        end_year = int(deadline[1] or deadline[2])
+    elif decision_date:
+        end_year = int(decision_date[:4]) + CONGO_VALIDITY_YEARS
+    else:
+        return None
+    return f"{end_year - CONGO_VALIDITY_YEARS}-02-28", f"{end_year}-02-28"

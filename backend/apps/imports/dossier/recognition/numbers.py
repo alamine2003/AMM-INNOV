@@ -111,3 +111,60 @@ def _authorization_number(
     return "", []
 
 
+# --- Congo : le numéro d'AMM est le « Code » de l'article 2 (règle de Mohamed, 19/11/2026) ----
+#
+# « DECISION N° 26-0466 /MSP/DGSSSa/DPM-26 PORTANT HOMOLOGATION DE : … » : numéro de l'acte.
+# « Article 2 : Les références de l'autorisation de mise sur le marché sont :
+#   Code : VC-PSM-GM /27.06.2 B/N°7 JMPHS16 » : numéro d'AMM (« RVC-… » pour un renouvellement).
+# « Article 3 : Les dispositions de la décision N° 18.716/MSP/DGMPL/DPM-18 du 20 MARS 2018, dont
+#   le code produit est VC-PSM-GM/03.01.4 B/N°1 LOPOEHS8 … » : AMM d'origine, rappelée.
+_CONGO_CODE_VALUE = r"((?:r\s?)?vc\s?[-–—_]\s?psm[^\n]{3,60})"
+_CONGO_CODE = re.compile(
+    rf"(?:^|\n)[^\S\n]*(?:code[^\S\n]*)?[:;.]?[^\S\n]*\n?[^\S\n]*{_CONGO_CODE_VALUE}"
+)
+_CONGO_LABELED_CODE = re.compile(
+    r"references\s+d[^\n]{0,80}?mise\s+sur\s+le\s+marche\s+sont\s*:?\s*"
+    r"code[^\S\n]*[:;.]?[^\S\n]*\n?[^\S\n]*([^\n]{4,70})"
+)
+_CONGO_CITED = re.compile(rf"code\s+produit\s+est\s*:?\s*{_CONGO_CODE_VALUE}")
+# Modèle de la Direction de la pharmacie et du médicament de Brazzaville.
+_CONGO_MODEL = re.compile(r"date\s+butoir|/\s?dpm\s?-\s?\d\d\b|code\s+produit\s+est")
+
+
+def _clean_congo_code(value: str) -> str:
+    """« RVC -PSM- GM / 09.03.3 B/N° 9 JMPHS12 » → « RVC-PSM-GM/09.03.3 B/N°9 JMPHS12 »."""
+    value = re.split(r"\s*[,;]|\s+non\s+contraires", value.strip(), maxsplit=1, flags=re.I)[0]
+    value = re.sub(r"\s*([/_–—-])\s*", lambda match: "/" if match[1] == "/" else "-", value)
+    value = re.sub(r"\bN\s*[°º'’*o]?\s*(?=\d)", "N°", value, flags=re.I)
+    value = re.sub(r"\s{2,}", " ", value).strip(" .:").upper()
+    # Suffixe « …HS16 » : chiffres lus comme des lettres (« JMPHSI6 »).
+    tail = re.search(r"HS([0-9ILO|]{1,2})$", value)
+    if tail:
+        digits = tail[1].translate(str.maketrans({"I": "1", "L": "1", "|": "1", "O": "0"}))
+        value = value[: tail.start(1)] + digits
+    return value[:100]
+
+
+def congo_model(plain: str) -> bool:
+    return bool(_CONGO_MODEL.search(plain))
+
+
+def congo_code(plain: str, text: str) -> str:
+    """Code de l'article 2 d'une décision du Congo, ou vide s'il est illisible."""
+    labeled = _CONGO_LABELED_CODE.search(plain)
+    # Une référence porte des chiffres et des séparateurs : pas la ligne « Titulaire » qui suit
+    # un Code illisible.
+    if labeled and re.search(r"\d", labeled[1]) and re.search(r"[/-]", labeled[1]):
+        return _clean_congo_code(text[labeled.start(1) : labeled.end(1)])
+    for match in _CONGO_CODE.finditer(plain):
+        # Pas le code de l'AMM d'origine rappelé à l'article 3.
+        if "code produit" in plain[max(match.start(1) - 40, 0) : match.start(1)]:
+            continue
+        return _clean_congo_code(text[match.start(1) : match.end(1)])
+    return ""
+
+
+def congo_cited_code(plain: str, text: str) -> str:
+    """Code de l'AMM d'origine rappelé par un renouvellement (« dont le code produit est … »)."""
+    match = _CONGO_CITED.search(plain)
+    return _clean_congo_code(text[match.start(1) : match.end(1)]) if match else ""

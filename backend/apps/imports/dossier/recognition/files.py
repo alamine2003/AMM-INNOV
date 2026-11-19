@@ -14,10 +14,11 @@ from .dates import (
     _label_value,
     _labeled_date,
     _validity_period,
+    congo_period,
     parse_date,
 )
 from .holder import _granted_holder, _product_line
-from .numbers import _authorization_number
+from .numbers import _authorization_number, congo_cited_code, congo_code, congo_model
 from .sections import decision_sections, specialty_groups
 from .tables import table_rows
 from .text import fold, normalize
@@ -192,9 +193,23 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
             plain[:3000],
         )
     )
+    # Congo : le numéro d'AMM est le « Code » de l'article 2, jamais le numéro de la décision.
+    # Code illisible sur ce modèle : pas de numéro plutôt qu'un faux (à relever sur le papier).
+    congo = congo_model(plain) or any(
+        getattr(country, "iso2", "") == "CG" for country in matched_countries
+    )
+    code = congo_code(plain, text) if congo else ""
+    if code:
+        labeled_number = code
+    elif congo_model(plain):
+        decision_is_amm = False
     number, number_variants = _authorization_number(
         plain, text, labeled_number.upper()[:100], decision_is_amm
     )
+    if code:
+        number, number_variants = code, []
+    elif congo_model(plain):
+        number, number_variants = "", ([number] if number else [])
     holder = (
         _label_value(
             plain,
@@ -327,6 +342,12 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
         # Mali : « … cinq (5) ans pour compter de la date de signature de la présente décision ».
         start_date = decision_date
 
+    if congo:
+        # Congo : du 28 février au 28 février, quatre ans plus tard (date butoir de l'article 8).
+        period_dates = congo_period(plain, decision_date or start_date)
+        if period_dates:
+            start_date, end_date = period_dates
+
     # The nearest renewal directory is stable across files and retains multiple periods.
     renewal_parts = [
         normalize(part)
@@ -373,6 +394,18 @@ def recognize_file(upload, countries, products, root_name: str = "") -> dict:
             cited_original = {
                 "number": cited.group(1).strip().upper(),
                 "start_date": parse_date(cited.group(2)),
+            }
+        cited_code = congo_cited_code(plain, text) if congo else ""
+        if cited_code:
+            # « Les dispositions de la décision N° 18.716/… du 20 MARS 2018, dont le code produit
+            # est VC-PSM-GM/03.01.4 B/N°1 LOPOEHS8 … » : l'origine, datée au 28 février elle aussi.
+            origin = re.search(
+                rf"dispositions\s+de\s+la\s+decision[^\n]{{0,60}}?\bdu\s+({DATE_PATTERN})", plain
+            )
+            origin_date = parse_date(origin.group(1)) if origin else None
+            cited_original = {
+                "number": cited_code,
+                "start_date": f"{origin_date[:4]}-02-28" if origin_date else None,
             }
     period = "original"
     uncertain_period = False

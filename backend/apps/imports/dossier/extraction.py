@@ -1,12 +1,13 @@
 """Local document extraction. Uploaded content never leaves the application host."""
 
+import difflib
 import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 from pypdf import PdfReader
 
 MAX_PAGES = 30
@@ -28,12 +29,7 @@ OCR_MAX_PAGES = int(os.environ.get("DOSSIER_OCR_MAX_PAGES", "6"))
 COMMON_MARK = "/Documents communs/"
 
 
-def _ocr_image(path: Path, workspace: Path, page: int) -> str:
-    with Image.open(path) as image:
-        if image.width * image.height > MAX_PIXELS:
-            raise ValueError("Image trop grande pour l'OCR (20 mégapixels maximum).")
-        image.verify()
-    target = workspace / f"ocr-{page}"
+def _tesseract(path: Path, target: Path) -> str:
     subprocess.run(
         ["tesseract", str(path), str(target), "-l", "fra+eng", "--psm", "3"],
         check=True,
@@ -44,6 +40,74 @@ def _ocr_image(path: Path, workspace: Path, page: int) -> str:
     )
     with target.with_suffix(".txt").open(encoding="utf-8", errors="replace") as output:
         return output.read(MAX_TEXT + 1)
+
+
+# Part de la page couverte de surligneur à partir de laquelle on la relit sans la couleur.
+HIGHLIGHT_SHARE = 0.001
+
+
+def _highlighted(image) -> bool:
+    """La page porte-t-elle du surligneur (aplat de couleur vive) ?
+
+    La page est réduite par moyenne : un trait d'écriture en couleur se dilue dans le blanc,
+    un aplat de surligneur reste saturé.
+    """
+    small = image.convert("RGB").resize(
+        (max(image.width // 8, 1), max(image.height // 8, 1)), Image.BOX
+    )
+    saturation, value = small.convert("HSV").split()[1:]
+    marked = sum(
+        1 for s, v in zip(saturation.getdata(), value.getdata(), strict=True) if s > 80 and v > 140
+    )
+    return marked >= HIGHLIGHT_SHARE * small.width * small.height
+
+
+def _merge_readings(base: str, extra: str) -> str:
+    """Ajoute à `base` les lignes que seule la seconde lecture a vues, à leur place."""
+
+    def key(line: str) -> str:
+        return "".join(character for character in line.lower() if character.isalnum())
+
+    known = [key(line) for line in base.splitlines()]
+    merged = base.splitlines()
+    position = 0
+    for line in extra.splitlines():
+        wanted = key(line)
+        if len(wanted) < 4:
+            continue
+        scores = [difflib.SequenceMatcher(None, wanted, other).ratio() for other in known]
+        best = max(scores, default=0.0)
+        if best >= 0.6:
+            position = scores.index(best) + 1
+            continue
+        merged.insert(position, line)
+        known.insert(position, wanted)
+        position += 1
+    return "\n".join(merged) + ("\n" if base.endswith("\n") else "")
+
+
+def _ocr_image(path: Path, workspace: Path, page: int) -> str:
+    """Texte d'une page. Une ligne surlignée est relue sans sa couleur (1.3.6).
+
+    Tesseract sépare l'encre du papier par un seuil : sous un aplat de surligneur orange ou
+    jaune, une mention imprimée en rouge passe du côté du papier et disparaît. C'est le cas du
+    numéro d'AMM des décisions du Congo (« Code : VC-PSM-GM/… », surligné sur le papier). Le
+    canal vert rend l'aplat presque blanc et garde l'encre sombre : la page surlignée est lue
+    une seconde fois sur ce canal, et les lignes que seule cette lecture a vues sont ajoutées.
+    """
+    with Image.open(path) as image:
+        if image.width * image.height > MAX_PIXELS:
+            raise ValueError("Image trop grande pour l'OCR (20 mégapixels maximum).")
+        image.verify()
+    text = _tesseract(path, workspace / f"ocr-{page}")
+    with Image.open(path) as image:
+        if image.mode in ("1", "L", "LA"):
+            return text
+        if not _highlighted(image):
+            return text
+        plain = workspace / f"ocr-{page}-sans-couleur.png"
+        ImageOps.autocontrast(image.convert("RGB").split()[1]).save(plain)
+    return _merge_readings(text, _tesseract(plain, workspace / f"ocr-{page}-sans-couleur"))
 
 
 def needs_retry(extraction: dict | None) -> bool:
