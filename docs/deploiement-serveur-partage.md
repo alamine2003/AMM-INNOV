@@ -209,6 +209,22 @@ sudo scripts/serveur/compose.sh up -d
 
 `TAG` dans `.env` choisit l'image (`latest`, ou le début d'un commit pour figer une version).
 
+### Scans servis par nginx (1.3.5)
+
+L'API vérifie le droit de lecture, puis le nginx d'AMM GH va chercher le scan dans le stockage
+et l'envoie : le fichier ne passe plus par Python. Après une mise à jour, ouvrir un scan dans
+l'application suffit à le contrôler. Si les scans ne s'ouvrent plus (« stockage indisponible »),
+revenir à l'envoi par l'API, sans changer de version :
+
+```bash
+sudo scripts/serveur/configurer.sh DOCUMENT_ACCEL_REDIRECT=0
+sudo scripts/serveur/compose.sh up -d
+sudo scripts/serveur/compose.sh logs --since 10m frontend | grep -i error | tail -5
+```
+
+La dernière commande dit pourquoi nginx n'a pas pu lire le stockage (nom introuvable, certificat,
+adresse refusée).
+
 ### Surveiller la mémoire
 
 ```bash

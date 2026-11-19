@@ -29,7 +29,7 @@ from apps.core.dates import today
 from apps.core.exceptions import StorageUnavailable
 from apps.core.trash import IdempotentDestroyMixin, move_to_trash
 from apps.documents.services.archive import aiter_blocks, iter_zip
-from apps.documents.views import StoredFileResponse, open_stored_file
+from apps.documents.views import stored_file_response
 
 from . import actions, bundle
 from .models import DepositDossier, DepositMessage, PieceType
@@ -188,8 +188,7 @@ class DepositViewSet(viewsets.ViewSet):
         piece = dossier.pieces.filter(pk=piece_id).first()
         if piece is None:
             raise Http404("Pièce inconnue.")
-        open_stored_file(piece.file)
-        return StoredFileResponse(
+        return stored_file_response(
             piece.file,
             content_type=piece.content_type or "application/octet-stream",
             as_attachment=True,
@@ -314,8 +313,7 @@ class DepositViewSet(viewsets.ViewSet):
         event = dossier.events.filter(pk=event_id).first()
         if event is None or not event.file:
             raise Http404("Pièce inconnue.")
-        open_stored_file(event.file)
-        return StoredFileResponse(event.file, as_attachment=True, filename=event.filename)
+        return stored_file_response(event.file, as_attachment=True, filename=event.filename)
 
     @extend_schema(request=DecisionInputSerializer, responses=DepositDetailSerializer)
     @action(detail=True, methods=["post"])

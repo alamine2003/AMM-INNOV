@@ -508,6 +508,9 @@ if DOCUMENT_STORAGE == "s3":
             "client_config": _BotoConfig(
                 request_checksum_calculation="when_required",
                 response_checksum_validation="when_required",
+                # Adresses signées remises à nginx (1.3.5) : signature V4, la seule que
+                # Cloudflare R2 accepte. Sans cela, boto3 signe encore certaines adresses en V2.
+                signature_version="s3v4",
                 s3={"addressing_style": env("S3_ADDRESSING_STYLE", "path")},
                 # défauts boto : 60 s de connexion et de lecture, relances « legacy » (s10b)
                 connect_timeout=float(env("S3_CONNECT_TIMEOUT", "3")),
@@ -532,6 +535,12 @@ if DOCUMENT_STORAGE == "s3":
         },
     }
 DOCUMENT_MAX_MB = int(env("DOCUMENT_MAX_MB", "25"))
+# Scans servis par nginx (1.3.5) : l'API vérifie le droit de lecture puis remet à nginx une
+# adresse signée du stockage S3, valable DOCUMENT_ACCEL_URL_SECONDS ; le fichier ne passe plus
+# par Python. À n'activer que derrière le nginx de l'image frontend (docker/nginx.conf, activé
+# dans docker-compose.prod.yml) : sans lui, le navigateur recevrait une réponse vide.
+DOCUMENT_ACCEL_REDIRECT = env_bool("DOCUMENT_ACCEL_REDIRECT", False)
+DOCUMENT_ACCEL_URL_SECONDS = int(env("DOCUMENT_ACCEL_URL_SECONDS", "120"))
 
 # Synchronisation horaire avec le classement AMM GHPL (Nextcloud, lecture seule : PROPFIND et
 # GET). Identifiant et mot de passe d'application saisis dans Render (jamais dans le dépôt).
