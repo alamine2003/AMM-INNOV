@@ -26,6 +26,14 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
     défaut hors de Docker Compose (Render, développement).
 
 ### Corrigé
+- **Scans CamScanner refusés à l'import (« PDF refusé : actions actives ou fichiers incorporés
+  détectés »).** CamScanner, très utilisé par les pays, ajoute sur chaque page un lien « Scanned
+  with CamScanner » ; le contrôle de sécurité refusait toute action, donc la décision entière
+  (constaté le 18/11/2026 sur le renouvellement de LITACOLD SINUS, Côte d'Ivoire). Les liens web
+  simples sont maintenant retirés des pages avant le contrôle ; les images ne sont pas touchées
+  et un PDF sans lien est conservé octet pour octet. Tout le reste est toujours refusé :
+  JavaScript, lancement de programme, fichiers joints, formulaires, et un lien web suivi d'une
+  autre action.
 - **Chaque demande de scan reconstruisait la connexion au stockage.** La bibliothèque de
   stockage garde une connexion par fil d'exécution, et le serveur donne un fil neuf à chaque
   requête : 80 ms de processeur et 7 Mo perdus par scan, avant même de lire le fichier. Mesuré
