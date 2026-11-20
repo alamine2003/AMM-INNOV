@@ -138,7 +138,10 @@ def _clean_congo_code(value: str) -> str:
     « N®° 1 », « N°L » pour « N°1 », « 02.245 » pour « 02.24.5 », « GM Y27.06.2 » pour
     « GM/27.06.2 », et la référence écrite « 02.24.5 - B/N°1 » ou « 27.06.2.B/N°1 ».
     """
-    value = re.split(r"\s*[,;]|\s+non\s+contraires", value.strip(), maxsplit=1, flags=re.I)[0]
+    # « 24,02.1 » : un point lu comme une virgule ne termine pas la référence (essai du
+    # 20/11/2026 : le Code s'arrêtait à « RVC-PSM-GM/24 »).
+    value = re.sub(r"(?<=\d)\s?,\s?(?=\d)", ".", value.strip())
+    value = re.split(r"\s*[,;]|\s+non\s+contraires", value, maxsplit=1, flags=re.I)[0]
     value = re.sub(r"(?i)(GM)\s*[Y|]\s*(?=\d\d\.)", r"\1/", value)
     value = re.sub(r"\s*([/_–—-])\s*", lambda match: "/" if match[1] == "/" else "-", value)
     value = re.sub(r"(?i)\bN\s*[°º'’*o?®]{0,3}\s*(?=\d)", "N°", value)
@@ -151,7 +154,50 @@ def _clean_congo_code(value: str) -> str:
     if tail:
         digits = tail[1].translate(str.maketrans({"I": "1", "L": "1", "|": "1", "O": "0"}))
         value = value[: tail.start(1)] + digits
-    return value[:100]
+    return _congo_canonical(value)[:100]
+
+
+# Sigles des signataires relevés sur les décisions (… JMPHS16, LOPHS10, LOPOEHS8, AAE HS 8).
+_CONGO_SIGNATORIES = ("JMP", "LOP", "LOPOE", "AAE")
+_CONGO_SHAPE = re.compile(
+    r"^(?P<prefix>[^/]{4,16})/(?P<reference>\d{1,2}\.\d{2}\.\d) B/N°(?P<rank>\d{1,2})"
+    r"\s?(?P<initials>[A-Z0-9\]\[|]{2,6}?)(?P<gap>\s?)HS(?P<gap2>\s?)(?P<year>\d{1,2})$"
+)
+_CONGO_COMPLETE = re.compile(
+    r"^R?VC-PSM-GM/\d{1,2}\.\d{2}\.\d B/N°\d{1,2} [A-Z]{2,6} ?HS ?\d{1,2}$"
+)
+
+
+def _congo_canonical(value: str) -> str:
+    """Remet les parties fixes d'un Code dont la référence a été lue en entier.
+
+    Quand « /27.06.2 B/N°7 … HS16 » est lu, ce qui précède ne peut être que « VC-PSM-GM » ou
+    « RVC-PSM-GM » : « VORSM-ÈM », « VE-PSA-GM » et « RVC-PSM-6M » (essai du 20/11/2026) sont
+    redressés. Le sigle du signataire est rapproché des sigles connus quand une seule lettre
+    en diffère (« TMPHS12 » pour « JMPHS12 »). Les chiffres, eux, ne sont jamais devinés.
+    """
+    match = _CONGO_SHAPE.match(value)
+    if not match:
+        return value
+    letters = re.sub(r"[^A-Z0-9]", "", match["prefix"])
+    prefix = "RVC-PSM-GM" if letters.startswith("R") or len(letters) >= 8 else "VC-PSM-GM"
+    initials = match["initials"]
+    if initials not in _CONGO_SIGNATORIES:
+        near = [
+            known
+            for known in _CONGO_SIGNATORIES
+            if len(known) == len(initials)
+            and sum(a != b for a, b in zip(known, initials, strict=True)) == 1
+        ]
+        if len(near) == 1:
+            initials = near[0]
+    suffix = f"{initials}{match['gap']}HS{match['gap2']}{match['year']}"
+    return f"{prefix}/{match['reference']} B/N°{match['rank']} {suffix}"
+
+
+def congo_code_complete(value: str) -> bool:
+    """Vrai pour un Code entier : préfixe, référence, rang et sigle (« … B/N°7 JMPHS16 »)."""
+    return bool(_CONGO_COMPLETE.match(_clean_congo_code(value or "")))
 
 
 def congo_model(plain: str) -> bool:

@@ -5,6 +5,36 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.8] — 2026-11-20
+
+### Corrigé
+Relecture du Congo : ce que l'essai du 20/11/2026 sur les pages 1 à 20 du classeur a montré.
+L'essai ne faisait que lire : aucune fiche n'a été modifiée.
+
+- **Un Code coupé après « …/24 » ou « …/3 ».** Un point lu comme une virgule (« 24,02.1 »)
+  terminait la référence : « RVC-PSM-GM/24.02.1 B/N°4 LOPHS10 » devenait « RVC-PSM-GM/24 ».
+  Une virgule entre deux chiffres est maintenant lue comme un point.
+- **Les parties fixes du Code déformées par la lecture.** Quand la référence est lue en entier
+  (« /3.03.1 B/N°3 … HS8 »), ce qui la précède ne peut être que « VC-PSM-GM » ou
+  « RVC-PSM-GM » : « VORSM-ÈM », « VE-PSA-GM » et « RVC-PSM-6M » sont redressés. Le sigle du
+  signataire est rapproché des sigles connus quand une seule lettre en diffère (« TMPHS12 »
+  pour « JMPHS12 »). Les chiffres, eux, ne sont jamais devinés.
+- **Un Code lu en partie n'est plus proposé.** Il est affiché (« CODE LU EN PARTIE ») pour
+  être relevé sur le papier, et le numéro saisi reste.
+
+### Modifié
+- **Une lecture qui contredit la saisie attend le papier.** La relecture marque « À VOIR SUR
+  LE PAPIER » une période quand le Code lu diffère d'un Code entier déjà saisi (la saisie
+  prime sur l'OCR), quand il diffère de peu du numéro saisi (un chiffre mal lu d'un côté ou de
+  l'autre), ou quand la décision scannée couvre d'autres années, au début comme à la fin, que
+  la période enregistrée (origine 2014 → 2018 dont le scan est la décision 2018 → 2022 : le
+  scan est peut-être celui d'une autre période). Ces périodes ne sont pas écrites par
+  `--appliquer`, sauf avec `--avec-douteuses`.
+- **La date butoir fait foi.** Une seule année fausse est une faute de saisie (fin 2025 saisie
+  pour 2024) : elle est corrigée d'après la décision, sans attendre. Un jour qui passe au
+  28 février dans la même année reste aussi une correction sûre.
+- `--appliquer --pages 14-20` n'écrit que ces pages du rapport.
+
 ## [1.3.7] — 2026-11-19
 
 ### Corrigé
