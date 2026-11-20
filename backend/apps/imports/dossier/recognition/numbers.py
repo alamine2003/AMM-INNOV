@@ -132,10 +132,19 @@ _CONGO_MODEL = re.compile(r"date\s+butoir|/\s?dpm\s?-\s?\d\d\b|code\s+produit\s+
 
 
 def _clean_congo_code(value: str) -> str:
-    """« RVC -PSM- GM / 09.03.3 B/N° 9 JMPHS12 » → « RVC-PSM-GM/09.03.3 B/N°9 JMPHS12 »."""
+    """« RVC -PSM- GM / 09.03.3 B/N° 9 JMPHS12 » → « RVC-PSM-GM/09.03.3 B/N°9 JMPHS12 ».
+
+    Les fautes de lecture constatées sur le serveur le 19/11/2026 sont reprises : « N? 4 »,
+    « N®° 1 », « N°L » pour « N°1 », « 02.245 » pour « 02.24.5 », « GM Y27.06.2 » pour
+    « GM/27.06.2 », et la référence écrite « 02.24.5 - B/N°1 » ou « 27.06.2.B/N°1 ».
+    """
     value = re.split(r"\s*[,;]|\s+non\s+contraires", value.strip(), maxsplit=1, flags=re.I)[0]
+    value = re.sub(r"(?i)(GM)\s*[Y|]\s*(?=\d\d\.)", r"\1/", value)
     value = re.sub(r"\s*([/_–—-])\s*", lambda match: "/" if match[1] == "/" else "-", value)
-    value = re.sub(r"\bN\s*[°º'’*o]?\s*(?=\d)", "N°", value, flags=re.I)
+    value = re.sub(r"(?i)\bN\s*[°º'’*o?®]{0,3}\s*(?=\d)", "N°", value)
+    value = re.sub(r"(?i)\bN[°º'’?®]{1,3}\s*[LI|](?![A-Z0-9])", "N°1", value)
+    value = re.sub(r"\b(\d\d)\.(\d\d)(\d)\b", r"\1.\2.\3", value)
+    value = re.sub(r"(?i)(\d\d\.\d\d\.\d)\s*[-.]?\s*B\s*/", r"\1 B/", value)
     value = re.sub(r"\s{2,}", " ", value).strip(" .:").upper()
     # Suffixe « …HS16 » : chiffres lus comme des lettres (« JMPHSI6 »).
     tail = re.search(r"HS([0-9ILO|]{1,2})$", value)

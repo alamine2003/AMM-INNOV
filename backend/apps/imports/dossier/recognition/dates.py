@@ -231,13 +231,17 @@ _CONGO_DEADLINE = re.compile(
 )
 
 
+def congo_deadline_year(plain: str) -> int | None:
+    """Année de la « date butoir » imprimée sur la décision, ou None si la clause manque."""
+    deadline = _CONGO_DEADLINE.search(plain)
+    return int(deadline[1] or deadline[2]) if deadline else None
+
+
 def congo_period(plain: str, decision_date: str | None = None) -> tuple[str, str] | None:
     """(début, fin) d'une décision du Congo, ou None si rien ne permet de la dater."""
-    deadline = _CONGO_DEADLINE.search(plain)
-    if deadline:
-        end_year = int(deadline[1] or deadline[2])
-    elif decision_date:
+    end_year = congo_deadline_year(plain)
+    if end_year is None:
+        if not decision_date:
+            return None
         end_year = int(decision_date[:4]) + CONGO_VALIDITY_YEARS
-    else:
-        return None
     return f"{end_year - CONGO_VALIDITY_YEARS}-02-28", f"{end_year}-02-28"

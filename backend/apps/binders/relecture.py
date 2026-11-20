@@ -15,19 +15,26 @@ Deux temps, pour qu'un humain valide avant toute écriture :
 """
 
 import logging
+import re
 from datetime import date
 
 from django.db import transaction
 
 from apps.amm.models import MarketingAuthorization, Renewal
 from apps.amm.services.sequence import resequence
+from apps.catalog.models import Country
 from apps.documents.models import Document
 from apps.imports.dossier.application import _reconcile_after_commit, _save_with_actor
 from apps.imports.dossier.extraction import extract_file
-from apps.imports.dossier.recognition.dates import congo_period
+from apps.imports.dossier.recognition.dates import (
+    CONGO_VALIDITY_YEARS,
+    congo_deadline_year,
+    congo_period,
+)
 from apps.imports.dossier.recognition.numbers import congo_code, congo_model
 from apps.imports.dossier.recognition.text import fold
 
+from .layout import Binder, binder_amms
 from .models import BinderCheck
 
 logger = logging.getLogger(__name__)
@@ -45,10 +52,10 @@ FIELDS = {
 
 
 def _same_number(left: str, right: str) -> bool:
-    """« VC-PSM-GM /12.09.1 B/Nº3 » et « VC-PSM-GM/12.09.1 B/N°3 » sont le même numéro."""
+    """« VC-PSM-GM /12.09.1 B/Nº3 » et « VC-PSM-GM/12.09.1.B/N°3 » sont le même numéro."""
 
     def squash(value: str) -> str:
-        return "".join((value or "").upper().replace("º", "°").split())
+        return re.sub(r"[^A-Z0-9]", "", (value or "").upper())  # « º » compte pour une lettre
 
     return squash(left) == squash(right)
 
@@ -57,34 +64,49 @@ def _iso(value):
     return value.isoformat() if value else None
 
 
-def _read(document) -> tuple[str, str, str]:
-    """(numéro lu, état de la lecture, texte replié) pour la décision scannée d'une période."""
+def _february(value) -> str | None:
+    """28 février de l'année d'une date connue."""
+    return f"{value.year}-02-28" if value else None
+
+
+def _read(document) -> tuple[str, str, str, str]:
+    """(numéro lu, état de la lecture, texte replié, source du texte) d'une décision scannée."""
     extraction = extract_file(document)
     text = extraction.get("text") or ""
     plain = fold(text)
+    source = extraction.get("source") or ""
     code = congo_code(plain, text)
     if code:
-        return code, "code", plain
+        return code, "code", plain, source
     if extraction.get("errors") or not text.strip():
-        return "", "illisible", plain
-    return "", "code-illisible" if congo_model(plain) else "ancien-modele", plain
+        return "", "illisible", plain, source
+    return "", "code-illisible" if congo_model(plain) else "ancien-modele", plain, source
 
 
 def _period_proposal(target, slot: str, document) -> dict | None:
     names = FIELDS[slot]
     current = {field: getattr(target, attr) for field, attr in names.items()}
-    number, reading, plain = _read(document) if document is not None else ("", "sans-scan", "")
-    # La clause « sera renouvelée en 2030 … date butoir » donne la période ; à défaut, l'année de
-    # la décision ; sans scan, celle de la date de début déjà connue.
-    dated = (document.document_date if document is not None else None) or current["start_date"]
-    period = congo_period(plain, _iso(dated))
+    number, reading, plain, source = (
+        _read(document) if document is not None else ("", "sans-scan", "", "")
+    )
+    end_year = congo_deadline_year(plain)
+    if end_year is not None:
+        # « sera renouvelée en 2030 … date butoir du 28 février » : la décision fait foi.
+        period = (f"{end_year - CONGO_VALIDITY_YEARS}-02-28", f"{end_year}-02-28")
+    elif current["start_date"] or current["end_date"]:
+        # Clause absente (ancien modèle, scan illisible, pas de scan) : les années connues sont
+        # gardées, seul le jour passe au 28 février. Recalculer ici a donné des dates fausses
+        # (essai du 19/11/2026 : une origine 2013 → 2017 proposée 2017 → 2021).
+        period = (_february(current["start_date"]), _february(current["end_date"]))
+    else:
+        period = congo_period("", _iso(document.document_date) if document is not None else None)
+        period = period or (None, None)
     changes = []
     if number and not _same_number(number, current["number"]):
         changes.append({"field": "number", "old": current["number"], "new": number})
-    if period:
-        for field, new in zip(("start_date", "end_date"), period, strict=True):
-            if _iso(current[field]) != new:
-                changes.append({"field": field, "old": _iso(current[field]), "new": new})
+    for field, new in zip(("start_date", "end_date"), period, strict=True):
+        if new and _iso(current[field]) != new:
+            changes.append({"field": field, "old": _iso(current[field]), "new": new})
     if not changes and reading not in ("code-illisible", "illisible"):
         return None
     return {
@@ -93,33 +115,39 @@ def _period_proposal(target, slot: str, document) -> dict | None:
         "document": str(document.pk) if document is not None else None,
         "decision_date": _iso(document.document_date) if document is not None else None,
         "reading": reading,
+        "source": source,
         "changes": changes,
     }
 
 
-def propose(*, limit: int | None = None, progress=None) -> list[dict]:
-    """Ce que la relecture changerait, fiche par fiche, dans l'ordre du classeur. N'écrit rien."""
-    amms = (
-        MarketingAuthorization.objects.filter(country__iso2=COUNTRY)
-        .select_related("product")
-        .order_by("product__name")
-    )
+def propose(*, pages: tuple[int, int] | None = None, progress=None) -> list[dict]:
+    """Ce que la relecture changerait, page par page, dans l'ordre du classeur. N'écrit rien.
+
+    `pages` : (première, dernière) page du classeur à relire, bornes comprises.
+    """
+    country = Country.objects.filter(iso2=COUNTRY).first()
+    if country is None:
+        return []
+    amms = binder_amms(Binder(country=country))
     verified = set(
-        BinderCheck.objects.filter(amm__country__iso2=COUNTRY)
+        BinderCheck.objects.filter(amm__country=country)
         .exclude(result=BinderCheck.Result.ABSENT)
         .values_list("amm_id", flat=True)
     )
+    first, last = pages or (1, len(amms))
     proposals = []
-    for index, amm in enumerate(amms[:limit] if limit else amms, 1):
-        decisions = list(
-            Document.objects.current()
-            .filter(amm=amm, kind=Document.Kind.AMM)
-            .order_by("-document_date", "-uploaded_at")
+    for index, amm in enumerate(amms, 1):
+        if not first <= index <= last:
+            continue
+        decisions = sorted(
+            (d for d in amm.current_documents if d.kind == Document.Kind.AMM),
+            key=lambda d: (d.document_date, d.uploaded_at),
+            reverse=True,
         )
         periods = []
         targets = [("original", amm, None)] + [
             ("renewal", renewal, renewal.pk)
-            for renewal in Renewal.objects.filter(amm=amm).order_by("sequence")
+            for renewal in sorted(amm.renewals.all(), key=lambda r: r.sequence)
         ]
         for slot, target, renewal_id in targets:
             document = next((d for d in decisions if d.renewal_id == renewal_id), None)
@@ -133,6 +161,7 @@ def propose(*, limit: int | None = None, progress=None) -> list[dict]:
                     "document": str(document.pk) if document is not None else None,
                     "decision_date": None,
                     "reading": "illisible",
+                    "source": "",
                     "changes": [],
                 }
             if found:
@@ -148,7 +177,7 @@ def propose(*, limit: int | None = None, progress=None) -> list[dict]:
                 }
             )
         if progress:
-            progress(index, amm.product.name, periods)
+            progress(index, amm.product.name, amm.pk in verified, periods)
     return proposals
 
 

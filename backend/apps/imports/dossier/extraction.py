@@ -62,6 +62,24 @@ def _highlighted(image) -> bool:
     return marked >= HIGHLIGHT_SHARE * small.width * small.height
 
 
+def _pdf_page_highlighted(source: Path, index: int, workspace: Path) -> bool:
+    """La page d'un PDF porte-t-elle du surligneur ? Rendu réduit : un quart de seconde."""
+    prefix = workspace / f"apercu-{index + 1}"
+    try:
+        subprocess.run(
+            ["pdftoppm", "-f", str(index + 1), "-l", str(index + 1), "-singlefile",
+             "-scale-to", "800", "-png", str(source), str(prefix)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=OCR_TIMEOUT,
+        )  # fmt: skip
+        with Image.open(prefix.with_suffix(".png")) as image:
+            return image.mode not in ("1", "L", "LA") and _highlighted(image)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+
+
 def _merge_readings(base: str, extra: str) -> str:
     """Ajoute à `base` les lignes que seule la seconde lecture a vues, à leur place."""
 
@@ -222,6 +240,19 @@ def extract_file(upload) -> dict:
                     "sont lues (décision) ; le document entier est rangé."
                 )
                 sparse_pages = sparse_pages[:OCR_MAX_PAGES]
+            # PDF « cherchable » : le scanner y a posé son propre texte, qui ne contient pas les
+            # lignes surlignées. Ses premières pages qui portent du surligneur sont lues aussi,
+            # et ce qu'elles ajoutent est fusionné au texte du PDF (1.3.7).
+            marked_pages = (
+                [
+                    index
+                    for index in range(min(len(texts), OCR_MAX_PAGES))
+                    if index not in sparse_pages and _pdf_page_highlighted(source, index, workspace)
+                ]
+                if is_pdf and shutil.which("pdftoppm") and shutil.which("tesseract")
+                else []
+            )
+            sparse_pages = sorted({*sparse_pages, *marked_pages})
             if sparse_pages:
                 required = ["tesseract"] + (["pdftoppm"] if is_pdf else [])
                 missing = [binary for binary in required if not shutil.which(binary)]
@@ -254,7 +285,14 @@ def extract_file(upload) -> dict:
                                 )
                                 image_path = prefix.with_suffix(".png")
                             ocr_text = _ocr_image(image_path, workspace, index)
-                            if len(ocr_text.strip()) > len(texts[index].strip()):
+                            if index in marked_pages:
+                                # Notre lecture d'abord : le texte posé par le scanner déforme
+                                # la ligne surlignée (« RVC -PS,tÂ - GfA / 09.03.3 B/N" 1
+                                # JMPH512 », serveur, 19/11/2026) ; il ne complète que ce que
+                                # l'image n'a pas donné.
+                                texts[index] = _merge_readings(ocr_text, texts[index])
+                                used_ocr = True
+                            elif len(ocr_text.strip()) > len(texts[index].strip()):
                                 texts[index] = ocr_text
                                 used_ocr = True
                         except subprocess.TimeoutExpired:

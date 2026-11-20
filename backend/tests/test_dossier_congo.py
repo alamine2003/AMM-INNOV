@@ -172,9 +172,15 @@ def test_other_countries_are_untouched(batch):  # noqa: F811
     [
         ("Code : VC-PSM-GM /27.06.2 B/N°7 JMPHS16", "VC-PSM-GM/27.06.2 B/N°7 JMPHS16"),
         ("Code: RVC -PSM- GM / 09.03.3 B/N° 9 JMPHS12", "RVC-PSM-GM/09.03.3 B/N°9 JMPHS12"),
-        ("Code\n    VC-PSM-GM/27.06.2.B/N°1 JMPHS15", "VC-PSM-GM/27.06.2.B/N°1 JMPHS15"),
+        ("Code\n    VC-PSM-GM/27.06.2.B/N°1 JMPHS15", "VC-PSM-GM/27.06.2 B/N°1 JMPHS15"),
         ("code : rvc-psm-gm/24.02.1 b/nº6 lophsI0", "RVC-PSM-GM/24.02.1 B/N°6 LOPHS10"),
         ("dont le\ncode produit est VC-PSM-GM/03.01.4 B/N°1 LOPOEHS8, non", ""),
+        # Fautes de lecture relevées sur le serveur le 19/11/2026.
+        ("Code: RVC -PSM- GM / 09.033 B/N? 1 JMPHSI2", "RVC-PSM-GM/09.03.3 B/N°1 JMPHS12"),
+        ("Code: RVC -PSM- GM / 09.03.3 B/N®° 1 JMPHS12", "RVC-PSM-GM/09.03.3 B/N°1 JMPHS12"),
+        ("Code : RVC-PSM-GM/02.245-B/N? 4 AAE HS 8", "RVC-PSM-GM/02.24.5 B/N°4 AAE HS 8"),
+        ("Code : RVC-PSM-GM/02.24.5 - B/N°L AAE HS 8", "RVC-PSM-GM/02.24.5 B/N°1 AAE HS 8"),
+        ("Code : VC-PSM-GM Y27.06.2 B/N°4 JMPHS15", "VC-PSM-GM/27.06.2 B/N°4 JMPHS15"),
     ],
 )
 def test_code_line_readings(printed, expected):
@@ -225,6 +231,25 @@ def test_lines_seen_only_by_the_second_reading_are_added_in_place():
     assert len(merged) == len(base.splitlines()) + 1  # rien d'autre n'est doublé
 
 
+def test_on_a_highlighted_page_our_reading_comes_before_the_scanner_one():
+    """PDF « cherchable » : le texte posé par le scanner déforme la ligne surlignée (relevé sur
+    le serveur le 19/11/2026). Notre lecture passe d'abord, la sienne ne fait que compléter."""
+    scanner = (
+        "Article 2 :\nLes références du renouvellement de cette qutorisotion sont :\n"
+        'Code RVC -PS,tÂ - GfA / 09.03.3 B/N" 1 JMPH512\nTitulaire :\n'
+        "Mention que seul le scanner a lue\n"
+    )
+    ours = (
+        "Article 2 :\nLes références du renouvellement de cette autorisation sont :\n"
+        "Code: RVC -PSM- GM / 09.03.3 B/N° 1 JMPHS12\nTitulaire :\n"
+    )
+    merged = extraction._merge_readings(ours, scanner)
+
+    assert congo_code(fold(merged), merged) == "RVC-PSM-GM/09.03.3 B/N°1 JMPHS12"
+    assert "GfA" not in merged  # la ligne déformée ne double pas la bonne
+    assert "Mention que seul le scanner a lue" in merged
+
+
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 
@@ -248,3 +273,50 @@ def test_a_highlighted_line_is_read(tmp_path):
     assert "JMPHS12" not in simple
     assert "JMPHS12" in complete
     assert "Titulaire" in complete
+
+
+@pytest.mark.skipif(
+    not shutil.which("tesseract")
+    or not shutil.which("pdftoppm")
+    or not shutil.os.path.exists(FONT),
+    reason="tesseract, pdftoppm ou la police d'essai absents de cette machine",
+)
+def test_a_searchable_pdf_with_a_highlighted_line_is_read_on_the_image(tmp_path):
+    """Le PDF porte déjà un texte (celui du scanner, faux sur la ligne surlignée) : la page
+    surlignée est quand même lue sur l'image, et le Code en sort juste."""
+    from django.core.files import File
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+
+    image, draw = page(highlight=True, size=(1240, 1754))
+    font = ImageFont.truetype(FONT, 30)
+    draw.text(
+        (60, 100), "Les references du renouvellement de cette autorisation", fill="black", font=font
+    )
+    draw.text((70, 190), "Code: RVC-PSM-GM/09.03.3 B/N 1 JMPHS12", fill=(215, 45, 70), font=font)
+    draw.text(
+        (60, 300), "sera renouvelee en 2026 a la date butoir du 28 fevrier", fill="black", font=font
+    )
+    picture = tmp_path / "page.png"
+    image.save(picture)
+    pdf = tmp_path / "cherchable.pdf"
+    sheet = canvas.Canvas(str(pdf), pagesize=(595, 842))
+    sheet.drawImage(ImageReader(str(picture)), 0, 0, width=595, height=842)
+    layer = sheet.beginText(30, 760)
+    layer.setTextRenderMode(3)  # texte invisible, comme celui d'un scanner
+    for line in (
+        "Les references du renouvellement de cette qutorisotion de mise sur le marche sont",
+        'Code RVC -PS,tA - GfA / 09.03.3 B/N" 1 JMPH512',
+        "sera renouvelee en 2026 a la date butoir du 28 fevrier",
+    ):
+        layer.textLine(line)
+    sheet.drawText(layer)
+    sheet.save()
+
+    with pdf.open("rb") as handle:
+        upload = SimpleNamespace(content_type="application/pdf", file=File(handle))
+        result = extraction.extract_file(upload)
+
+    text = result["text"]
+    assert result["errors"] == []
+    assert congo_code(fold(text), text) == "RVC-PSM-GM/09.03.3 B/N°1 JMPHS12"
