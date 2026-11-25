@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 from apps.imports.dossier import extraction
 from apps.imports.dossier.recognition import recognize_file
 from apps.imports.dossier.recognition.dates import congo_period
-from apps.imports.dossier.recognition.numbers import congo_code
+from apps.imports.dossier.recognition.numbers import congo_code, congo_code_complete
 from apps.imports.dossier.recognition.text import fold
 
 from .test_dossier_recognition import batch, staged  # noqa: F401 — fixture
@@ -181,11 +181,59 @@ def test_other_countries_are_untouched(batch):  # noqa: F811
         ("Code : RVC-PSM-GM/02.245-B/N? 4 AAE HS 8", "RVC-PSM-GM/02.24.5 B/N°4 AAE HS 8"),
         ("Code : RVC-PSM-GM/02.24.5 - B/N°L AAE HS 8", "RVC-PSM-GM/02.24.5 B/N°1 AAE HS 8"),
         ("Code : VC-PSM-GM Y27.06.2 B/N°4 JMPHS15", "VC-PSM-GM/27.06.2 B/N°4 JMPHS15"),
+        # Essai du 20/11/2026 : un point lu comme une virgule coupait le Code à « …/24 ».
+        ("Code : RVC-PSM-GM/24,02.1 B/N°4 LOPHS10", "RVC-PSM-GM/24.02.1 B/N°4 LOPHS10"),
+        ("Code : VC-PSM-GM /3, 03.1 B/N°1 LOPOEHS8", "VC-PSM-GM/3.03.1 B/N°1 LOPOEHS8"),
+        ("Code : RVC-PSM-GM/09.03.3 B/N°10 TMPHS12", "RVC-PSM-GM/09.03.3 B/N°10 JMPHS12"),
+        ("Code : RVC-PSM-GM/09.03.3 B/N°10JMPHS12", "RVC-PSM-GM/09.03.3 B/N°10 JMPHS12"),
+        ("Code : VC-PSM-GM/27.06.2 B/N°7 IMPHS16", "VC-PSM-GM/27.06.2 B/N°7 JMPHS16"),
     ],
 )
 def test_code_line_readings(printed, expected):
     text = f"Article 2 :\n{printed}\nTitulaire :\n"
     assert congo_code(fold(text), text) == expected
+
+
+@pytest.mark.parametrize(
+    ("printed", "expected"),
+    [
+        ("VORSM-ÈM/3.03.1 B/N°3 LOPOEHS8", "VC-PSM-GM/3.03.1 B/N°3 LOPOEHS8"),
+        ("VE-PSA-GM/3,03.1 B/N°2 LOPOEHS8", "VC-PSM-GM/3.03.1 B/N°2 LOPOEHS8"),
+        ("RVC-PSM-6M/29.03.2 B/N°3 JMPHS12", "RVC-PSM-GM/29.03.2 B/N°3 JMPHS12"),
+    ],
+)
+def test_fixed_parts_of_a_fully_read_code_are_restored(printed, expected):
+    """Essai du 20/11/2026 : la référence est lue en entier, le préfixe est déformé."""
+    text = (
+        "Article 2 : Les références de l'autorisation de mise sur le marché sont :\n"
+        f"Code : {printed}\nTitulaire :\n"
+    )
+    assert congo_code(fold(text), text) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "complete"),
+    [
+        ("VC-PSM-GM/27.06.2 B/N°7 JMPHS16", True),
+        ("VC-PSM-GM /12.09.1 B/Nº3 JMPHS12", True),  # saisi à la main, autre ponctuation
+        ("VC-PSM-GM/27.06.2.B/N°1 JMPHS15", True),
+        ("RVC-PSM-GM/02.24.5 B/N°6 AAE HS 8", True),
+        ("RVC-PSM-GM/24", False),
+        ("VC-PSM-GM/N°9 JMPHS16", False),
+        ("VCPSMGM/0807023/N°2JMPHS16", False),
+        ("26-0466", False),
+        ("CV/12D-02G/09", False),
+        ("", False),
+    ],
+)
+def test_a_complete_code_has_its_four_parts(value, complete):
+    assert congo_code_complete(value) is complete
+
+
+def test_an_unknown_signatory_is_kept_as_read():
+    """Un sigle à plus d'une lettre des sigles connus n'est pas rapproché d'eux."""
+    text = "Article 2 :\nCode : VC-PSM-GM/27.06.2 B/N°7 XYPHS16\nTitulaire :\n"
+    assert congo_code(fold(text), text) == "VC-PSM-GM/27.06.2 B/N°7 XYPHS16"
 
 
 def test_period_without_the_clause_uses_the_decision_year():

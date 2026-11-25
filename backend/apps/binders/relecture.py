@@ -12,11 +12,17 @@ Deux temps, pour qu'un humain valide avant toute écriture :
 2. `apply()` écrit les propositions qu'on lui remet, une fiche par transaction, et laisse de
    côté toute valeur qui a changé entre-temps. Une page vérifiée sur le classeur papier n'est
    jamais touchée sans demande explicite.
+
+Une lecture n'est pas une certitude (1.3.8, essai du 20/11/2026 sur les pages 1 à 20) : une
+période dont la proposition contredit ce qui est déjà saisi porte un `doubt`. Elle est
+affichée pour être vue sur le papier et n'est jamais écrite sans demande explicite. Un Code
+lu en partie seulement est montré, jamais proposé.
 """
 
 import logging
 import re
 from datetime import date
+from difflib import SequenceMatcher
 
 from django.db import transaction
 
@@ -31,7 +37,11 @@ from apps.imports.dossier.recognition.dates import (
     congo_deadline_year,
     congo_period,
 )
-from apps.imports.dossier.recognition.numbers import congo_code, congo_model
+from apps.imports.dossier.recognition.numbers import (
+    congo_code,
+    congo_code_complete,
+    congo_model,
+)
 from apps.imports.dossier.recognition.text import fold
 
 from .layout import Binder, binder_amms
@@ -51,13 +61,31 @@ FIELDS = {
 }
 
 
+def _squash(value: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", (value or "").upper())  # « º » compte pour une lettre
+
+
 def _same_number(left: str, right: str) -> bool:
     """« VC-PSM-GM /12.09.1 B/Nº3 » et « VC-PSM-GM/12.09.1.B/N°3 » sont le même numéro."""
+    return _squash(left) == _squash(right)
 
-    def squash(value: str) -> str:
-        return re.sub(r"[^A-Z0-9]", "", (value or "").upper())  # « º » compte pour une lettre
 
-    return squash(left) == squash(right)
+def _completes(read: str, typed: str) -> bool:
+    """Le numéro saisi est le Code lu, à des caractères manquants près (« VC-PSM-GM/N°9 … »)."""
+    remaining = iter(_squash(read))
+    return all(character in remaining for character in _squash(typed))
+
+
+def _number_doubt(read: str, typed: str) -> str:
+    """Pourquoi ne pas écrire le Code lu à la place du numéro saisi, ou vide."""
+    if not typed or _completes(read, typed):
+        return ""
+    if congo_code_complete(typed):
+        # Un Code entier déjà saisi vient d'une personne ou du registre : il prime sur l'OCR.
+        return f"le Code lu « {read} » diffère du Code déjà saisi"
+    if SequenceMatcher(None, _squash(read), _squash(typed)).ratio() >= 0.8:
+        return f"le Code lu « {read} » diffère de peu du numéro saisi"
+    return ""
 
 
 def _iso(value):
@@ -102,12 +130,32 @@ def _period_proposal(target, slot: str, document) -> dict | None:
         period = congo_period("", _iso(document.document_date) if document is not None else None)
         period = period or (None, None)
     changes = []
+    doubts = []
     if number and not _same_number(number, current["number"]):
-        changes.append({"field": "number", "old": current["number"], "new": number})
+        if not congo_code_complete(number):
+            reading = "code-partiel"  # montré, jamais écrit
+        else:
+            doubt = _number_doubt(number, current["number"])
+            if doubt:
+                doubts.append(doubt)
+            changes.append({"field": "number", "old": current["number"], "new": number})
     for field, new in zip(("start_date", "end_date"), period, strict=True):
         if new and _iso(current[field]) != new:
             changes.append({"field": field, "old": _iso(current[field]), "new": new})
-    if not changes and reading not in ("code-illisible", "illisible"):
+    if end_year is not None:
+        known = [current["start_date"], current["end_date"]]
+        moved = [
+            value.year != int(new[:4]) for value, new in zip(known, period, strict=True) if value
+        ]
+        if moved and all(moved):
+            # Une seule année fausse est une faute de saisie : la date butoir fait foi (page 5,
+            # fin 2025 saisie pour 2024). Les deux années décalées, c'est une autre période :
+            # la décision scannée n'est peut-être pas celle-ci (origine 2014 → 2018, scan de
+            # la décision de 2018).
+            doubts.append(
+                f"la décision couvre {period[0][:4]} → {period[1][:4]}, pas les années enregistrées"
+            )
+    if not changes and reading not in ("code-illisible", "illisible", "code-partiel"):
         return None
     return {
         "slot": slot,
@@ -115,7 +163,9 @@ def _period_proposal(target, slot: str, document) -> dict | None:
         "document": str(document.pk) if document is not None else None,
         "decision_date": _iso(document.document_date) if document is not None else None,
         "reading": reading,
+        "read": number,
         "source": source,
+        "doubt": " ; ".join(doubts) if changes else "",
         "changes": changes,
     }
 
@@ -161,7 +211,9 @@ def propose(*, pages: tuple[int, int] | None = None, progress=None) -> list[dict
                     "document": str(document.pk) if document is not None else None,
                     "decision_date": None,
                     "reading": "illisible",
+                    "read": "",
                     "source": "",
+                    "doubt": "",
                     "changes": [],
                 }
             if found:
@@ -181,9 +233,23 @@ def propose(*, pages: tuple[int, int] | None = None, progress=None) -> list[dict
     return proposals
 
 
-def apply(proposals: list[dict], *, user=None, include_verified: bool = False) -> dict:
-    """Écrit les propositions. Une valeur qui a changé depuis la relecture est laissée."""
-    report = {"amms": 0, "fields": 0, "skipped_verified": 0, "stale": 0, "errors": []}
+def apply(
+    proposals: list[dict],
+    *,
+    user=None,
+    include_verified: bool = False,
+    include_doubtful: bool = False,
+) -> dict:
+    """Écrit les propositions. Une valeur qui a changé depuis la relecture est laissée, une
+    période douteuse aussi (sauf demande explicite)."""
+    report = {
+        "amms": 0,
+        "fields": 0,
+        "skipped_verified": 0,
+        "skipped_doubtful": 0,
+        "stale": 0,
+        "errors": [],
+    }
     for proposal in proposals:
         if proposal["verified"] and not include_verified:
             report["skipped_verified"] += 1
@@ -193,6 +259,9 @@ def apply(proposals: list[dict], *, user=None, include_verified: bool = False) -
                 amm = MarketingAuthorization.objects.select_for_update().get(pk=proposal["amm"])
                 written = 0
                 for period in proposal["periods"]:
+                    if period.get("doubt") and not include_doubtful:
+                        report["skipped_doubtful"] += 1
+                        continue
                     if period["slot"] == "renewal":
                         target = Renewal.objects.select_for_update().get(pk=period["renewal"])
                     else:
