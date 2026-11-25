@@ -188,9 +188,9 @@ docker compose -f docker-compose.prod.yml up -d
 docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
 ```
 
-Déploiement depuis GitHub : workflow **Deploy** (`.github/workflows/deploy.yml`, déclenchement
-manuel, tag d'image en paramètre). Secrets requis : `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`
-(et `DEPLOY_PORT` si différent de 22). Il exécute `docker compose pull && up -d` dans `/opt/amm-innov`.
+Livraison depuis GitHub : workflow **Livraison** (`.github/workflows/livraison.yml`), lancé par
+l'étiquette `vX.Y.Z` : vérification, images de la version, approbation, puis installation par
+l'agent du serveur (`scripts/serveur/livrer.sh`). Voir `docs/livraison-continue.md`.
 
 ### Première mise en service : éviter le déluge d'alertes
 
@@ -238,7 +238,7 @@ s'affiche dans l'application. Règles, cycle de publication et commandes :
 ├── docker-compose.prod.yml  # production
 ├── Makefile
 ├── .env.example
-├── .github/workflows/       # ci.yml, deploy.yml
+├── .github/workflows/       # ci.yml, livraison.yml
 ├── prd.md                   # cahier des charges
 ├── architecture.md          # architecture détaillée
 └── architecture-essentiels.md
