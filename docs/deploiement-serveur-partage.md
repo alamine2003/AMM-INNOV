@@ -200,6 +200,10 @@ le réveille, et le workflow « Base Render ».
 
 ## 5. Mettre à jour
 
+Depuis la 1.3.9, une version s'installe toute seule une fois approuvée sur GitHub
+(`docs/livraison-continue.md`) : poser l'étiquette, approuver dans Actions > Livraison, le
+serveur sauvegarde, installe et contrôle. À la main, si l'agent n'est pas installé :
+
 ```bash
 cd /home/deploy/amm-gh
 sudo git fetch --tags && sudo git checkout vX.Y.Z
@@ -207,7 +211,7 @@ sudo scripts/serveur/compose.sh pull
 sudo scripts/serveur/compose.sh up -d
 ```
 
-`TAG` dans `.env` choisit l'image (`latest`, ou le début d'un commit pour figer une version).
+`TAG` dans `.env` choisit l'image : `latest`, le début d'un commit, ou depuis la 1.3.9 le numéro de version (`1.3.9`), que l'agent de livraison écrit lui-même.
 
 ### Scans servis par nginx (1.3.5)
 

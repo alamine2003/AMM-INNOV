@@ -5,6 +5,38 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.3.9] — 2026-11-25
+
+### Ajouté
+Livraison continue : de l'étiquette à la production, avec l'approbation de Mohamed et sans
+commande sur le serveur (`docs/livraison-continue.md`).
+
+- **Workflow « Livraison »** (`.github/workflows/livraison.yml`), lancé par l'étiquette `vX.Y.Z` :
+  1. *Vérifier* : l'étiquette, `backend/VERSION` et le CHANGELOG concordent, le commit est sur
+     `main`, sa CI est verte et ses images existent ; la composition du serveur et ses scripts se
+     lisent.
+  2. *Images* : les images testées par la CI reçoivent le numéro de version (rien n'est
+     reconstruit), rapport des vulnérabilités critiques et élevées (Trivy, sans blocage pour
+     l'instant), version publiée dans les Releases GitHub avec ses notes.
+  3. *Production* : attend l'approbation (environnement `production`), puis demande l'installation
+     au serveur et affiche son résultat réel, au vert ou au rouge.
+- **Agent de livraison du serveur** (`scripts/serveur/livrer.sh`, minuteur systemd posé par
+  `scripts/serveur/installer_livraison.sh`). Le serveur n'étant joignable que par le VPN, c'est lui
+  qui vient chercher chaque minute la version approuvée. Avant d'installer, il vérifie que la
+  demande vient du workflow, que l'étiquette est sur `main` et pointe sur le commit annoncé,
+  qu'aucun fichier n'a été modifié à la main, et attend la fin d'une commande d'administration en
+  cours (`relire_congo` …). Puis : sauvegarde chiffrée et vérifiée de la base (rien n'est installé
+  si elle échoue), étiquette et images de la version (`TAG=X.Y.Z`, plus `latest`), démarrage,
+  contrôle de santé de l'API avec le numéro attendu, et retour automatique à la version d'avant
+  si elle démarre mal.
+- Le jeton GitHub du serveur (droit « Deployments » sur ce seul dépôt) est rangé par
+  `configurer.sh GITHUB_DEPLOY_TOKEN` dans `.env.livraison`, lu par l'agent seul : jamais dans
+  `.env`, que lisent les conteneurs.
+
+### Retiré
+- L'ancien workflow « Deploy » (SSH vers `/opt/amm-innov`) : jamais utilisé, il ne pouvait pas
+  joindre un serveur derrière le VPN.
+
 ## [1.3.8] — 2026-11-20
 
 ### Corrigé

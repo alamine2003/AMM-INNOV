@@ -1,0 +1,278 @@
+name: Livraison
+
+# Chaîne de livraison d'AMM GH (1.3.9), de l'étiquette à la production :
+#
+#   1. Vérifier   l'étiquette vX.Y.Z, backend/VERSION et le CHANGELOG concordent, le commit est
+#                 sur main, sa CI est verte et ses images existent ; la composition du serveur
+#                 et ses scripts se lisent.
+#   2. Images     les images testées de ce commit reçoivent le numéro de version (rien n'est
+#                 reconstruit) ; rapport des vulnérabilités ; version publiée sur GitHub.
+#   3. Production attend l'APPROBATION de Mohamed (environnement « production », Settings >
+#                 Environments), puis demande l'installation au serveur et attend son résultat.
+#
+# Le serveur n'est joignable que par le VPN : GitHub n'y entre pas. Son agent
+# (scripts/serveur/livrer.sh, minuteur systemd) vient chercher chaque minute la version approuvée,
+# sauvegarde la base, installe, contrôle la santé de l'API et revient à la version d'avant si elle
+# démarre mal. Il répond ici : ce workflow passe au vert ou au rouge selon le résultat réel.
+#
+# Réinstaller une version déjà publiée (retour en arrière volontaire) : Actions > Livraison >
+# Run workflow, avec l'étiquette voulue.
+# Guide : docs/livraison-continue.md
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Étiquette à installer, par exemple v1.3.8"
+        required: true
+
+concurrency:
+  group: livraison-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Passe par une variable d'environnement, jamais collée dans un script : la saisie du
+  # formulaire n'est pas du code.
+  REF: ${{ inputs.version || github.ref_name }}
+  IMAGES: ghcr.io/${{ github.repository_owner }}/amm-innov
+
+jobs:
+  verifier:
+    name: "1. Vérifier la version"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.REF }}
+          fetch-depth: 0
+
+      - name: Étiquette, VERSION, CHANGELOG et main concordent
+        id: version
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$*"; exit 1; }
+          [[ "$REF" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]] || fail "« $REF » n'est pas une étiquette vX.Y.Z"
+          version=${BASH_REMATCH[1]}
+          sha=$(git rev-parse --verify "refs/tags/${REF}^{commit}") || fail "étiquette $REF introuvable"
+          [ "$(cat backend/VERSION)" = "$version" ] \
+            || fail "backend/VERSION dit $(cat backend/VERSION), l'étiquette dit $version"
+          grep -q "^## \[${version}\]" CHANGELOG.md || fail "CHANGELOG.md n'a pas de section [${version}]"
+          python3 scripts/release.py --check
+          git merge-base --is-ancestor "$sha" origin/main \
+            || fail "$REF n'est pas sur main : on ne livre que ce qui a été fusionné"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "AMM GH **$version** (commit \`${sha:0:7}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      # La CI a tourné sur ce commit au moment de la fusion (tests et images) : on attend qu'elle
+      # ait fini si l'étiquette a été posée tout de suite, et on exige qu'elle soit verte.
+      - name: CI du commit verte, images construites
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.version.outputs.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 70); do
+            gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs?per_page=100" > checks.json
+            verdict=$(python3 - <<'PY'
+          import json
+          required = [
+              "Backend (ruff + pytest)",
+              "Frontend (lint + typecheck + vitest + build)",
+              "Build & push images (GHCR) (backend",
+              "Build & push images (GHCR) (frontend",
+          ]
+          runs = json.load(open("checks.json"))["check_runs"]
+          for name in required:
+              found = sorted((r for r in runs if r["name"].startswith(name)), key=lambda r: r["id"])
+              if not found:
+                  print(f"attente:{name} n'a pas encore commencé")
+                  break
+              last = found[-1]
+              if last["status"] != "completed":
+                  print(f"attente:{name} en cours")
+                  break
+              if last["conclusion"] != "success":
+                  print(f"echec:{name} : {last['conclusion']}")
+                  break
+          else:
+              print("ok")
+          PY
+            )
+            case "$verdict" in
+              ok) echo "CI verte et images prêtes."; exit 0 ;;
+              echec:*) echo "::error::CI du commit en échec (${verdict#echec:})"; exit 1 ;;
+            esac
+            echo "${verdict#attente:} (essai ${attempt})"
+            sleep 30
+          done
+          echo "::error::la CI de ce commit n'a pas fini en 35 minutes, ou n'a pas tourné (commit jamais poussé sur main ?)"
+          exit 1
+
+      - name: La composition du serveur et ses scripts se lisent
+        run: |
+          set -euo pipefail
+          # Valeurs d'essai tirées au hasard pour les variables obligatoires : seule la forme
+          # des fichiers est contrôlée ici.
+          for key in DOMAIN GRAFANA_ADMIN_PASSWORD POSTGRES_PASSWORD; do
+            echo "${key}=essai-$(openssl rand -hex 6)"
+          done > .env
+          docker compose -f docker-compose.prod.yml -f docker-compose.partage.yml config -q
+          for script in scripts/serveur/*.sh; do bash -n "$script"; done
+
+  images:
+    name: "2. Images de la version"
+    needs: verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # publication de la version sur GitHub
+      packages: write   # numéro de version posé sur les images
+    env:
+      VERSION: ${{ needs.verifier.outputs.version }}
+      SHA: ${{ needs.verifier.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.verifier.outputs.sha }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Les octets livrés sont ceux que la CI a testés : on ajoute un nom, on ne reconstruit pas.
+      - name: "Numéro de version sur les images testées"
+        run: |
+          set -euo pipefail
+          for name in backend frontend; do
+            docker buildx imagetools create \
+              -t "${IMAGES}-${name}:${VERSION}" "${IMAGES}-${name}:sha-${SHA}"
+            echo "- \`${IMAGES}-${name}:${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      # Rapport seulement pour l'instant : une faille critique s'affiche ici, elle ne bloque pas.
+      - name: "Vulnérabilités critiques et élevées (rapport)"
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          for name in backend frontend; do
+            {
+              echo "### ${name}"
+              echo '```'
+              docker run --rm aquasec/trivy:0.58.1 image --quiet --no-progress \
+                --severity CRITICAL,HIGH --ignore-unfixed --format table \
+                "${IMAGES}-${name}:${VERSION}" 2>&1 | tail -n 60
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Version publiée sur GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "Version v${VERSION} déjà publiée."
+            exit 0
+          fi
+          awk -v head="## [${VERSION}]" '
+            index($0, head) == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          gh release create "v${VERSION}" --verify-tag --title "AMM GH ${VERSION}" --notes-file notes.md
+
+  production:
+    name: "3. Installer sur le serveur (après approbation)"
+    needs: [verifier, images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment:
+      name: production
+      url: https://amm.102-203-86-8.sslip.io
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      VERSION: ${{ needs.verifier.outputs.version }}
+      SHA: ${{ needs.verifier.outputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+      TARGET: serveur-stellarix
+    steps:
+      - name: Demander l'installation au serveur
+        id: ask
+        run: |
+          set -euo pipefail
+          python3 -c 'import json, os
+          print(json.dumps({
+              "ref": "v" + os.environ["VERSION"],
+              "environment": os.environ["TARGET"],
+              "description": "AMM GH " + os.environ["VERSION"],
+              "auto_merge": False,
+              "required_contexts": [],
+              "production_environment": True,
+              "payload": {"sha": os.environ["SHA"], "version": os.environ["VERSION"]},
+          }))' > deployment.json
+          id=$(gh api -X POST "repos/${GITHUB_REPOSITORY}/deployments" --input deployment.json --jq .id)
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/deployments/${id}/statuses" \
+            -f state=queued -f description="En attente du serveur" >/dev/null
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "Demande d'installation n° ${id} transmise : le serveur la prend dans la minute."
+
+      - name: Attendre le résultat du serveur
+        env:
+          ID: ${{ steps.ask.outputs.id }}
+        run: |
+          set -euo pipefail
+          last=""
+          for attempt in $(seq 1 180); do   # 45 minutes (sauvegarde vérifiée comprise)
+            read -r state description < <(gh api \
+              "repos/${GITHUB_REPOSITORY}/deployments/${ID}/statuses?per_page=1" \
+              --jq '.[0] | "\(.state) \(.description)"')
+            if [ "$state $description" != "$last" ]; then
+              echo "$(date -u +%H:%M:%S) ${state} : ${description}"
+              last="$state $description"
+            fi
+            case "$state" in
+              success)
+                echo "AMM GH **${VERSION}** est en service : ${description}" >> "$GITHUB_STEP_SUMMARY"
+                exit 0 ;;
+              failure | error)
+                echo "::error::${description}"
+                echo "**Échec** : ${description}" >> "$GITHUB_STEP_SUMMARY"
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/deployments/${ID}/statuses" -f state=error \
+            -f description="Pas de réponse du serveur en 45 minutes : demande abandonnée" >/dev/null
+          echo "::error::le serveur n'a pas répondu : agent arrêté ? (sudo systemctl status amm-gh-livraison.timer)"
+          exit 1
+
+      # Run annulé pendant l'attente : la demande ne doit pas partir plus tard toute seule.
+      - name: Retirer la demande si la livraison est annulée
+        if: cancelled() && steps.ask.outputs.id != ''
+        env:
+          ID: ${{ steps.ask.outputs.id }}
+        run: |
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${ID}/statuses?per_page=1" --jq '.[0].state')
+          if [ "$state" = queued ]; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/deployments/${ID}/statuses" \
+              -f state=error -f description="Livraison annulée sur GitHub" >/dev/null
+          fi

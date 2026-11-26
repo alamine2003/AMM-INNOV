@@ -3,13 +3,15 @@
 #
 #   sudo scripts/serveur/configurer.sh BACKUP_PASSPHRASE        # secret : saisie masquée
 #   sudo scripts/serveur/configurer.sh S3_SECRET_KEY            # secret : saisie masquée
+#   sudo scripts/serveur/configurer.sh GITHUB_DEPLOY_TOKEN      # jeton de l'agent de livraison
 #   sudo scripts/serveur/configurer.sh DOCUMENT_STORAGE=s3 S3_REGION=auto   # valeurs ordinaires
 #
 # Un secret (clé dont le nom contient KEY, SECRET, PASSWORD, PASSPHRASE ou TOKEN) n'est jamais
 # accepté sur la ligne de commande : il est demandé au clavier, deux fois, sans être affiché,
 # et ne reste donc pas dans l'historique du terminal.
-# BACKUP_PASSPHRASE va dans .env.sauvegarde, lu par le seul service de sauvegarde ; le reste
-# va dans .env. Une clé déjà présente est remplacée (le fichier d'avant est gardé en .avant).
+# BACKUP_PASSPHRASE va dans .env.sauvegarde, lu par le seul service de sauvegarde ;
+# GITHUB_DEPLOY_TOKEN dans .env.livraison, lu par le seul agent de livraison (livrer.sh) ; le
+# reste va dans .env. Une clé déjà présente est remplacée (le fichier d'avant est gardé en .avant).
 # Les services ne relisent ces fichiers qu'à leur recréation : scripts/serveur/compose.sh up -d
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -23,6 +25,7 @@ is_secret() { [[ "$1" =~ (KEY|SECRET|PASSWORD|PASSPHRASE|TOKEN) ]]; }
 write() { # write CLE VALEUR
   local key=$1 value=$2 file=.env tmp
   [ "$key" = BACKUP_PASSPHRASE ] && file=.env.sauvegarde
+  [ "$key" = GITHUB_DEPLOY_TOKEN ] && file=.env.livraison
   [ -n "$value" ] || die "valeur vide pour ${key} : rien n'est écrit"
   case "$value" in
     *$'\n'* | *"'"*) die "${key} : la valeur ne doit contenir ni apostrophe ni retour à la ligne" ;;
