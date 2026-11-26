@@ -23,7 +23,9 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---------- Stage 2 : nginx ----------
-FROM nginx:1.27-alpine AS runtime
+# Branche stable de nginx (1.27 n'était plus suivie : une dizaine de failles élevées des paquets
+# Alpine signalées par la Livraison 1.3.9).
+FROM nginx:1.30-alpine AS runtime
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY docker/nginx.conf /etc/nginx/conf.d/amm.conf

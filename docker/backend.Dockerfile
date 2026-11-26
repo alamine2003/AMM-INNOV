@@ -35,7 +35,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # libpq5 : client PostgreSQL pour psycopg ; curl : healthcheck ; tzdata : fuseau Dakar ;
 # qpdf : assemblage des classeurs avec décisions officielles (apps/binders/export.py)
+# apt-get upgrade : correctifs de sécurité Debian parus depuis l'image de base (palier 1.4.0 :
+# libzstd1 signalé par le contrôle de la Livraison).
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends libpq5 curl tzdata poppler-utils qpdf \
         tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/* \

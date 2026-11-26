@@ -5,6 +5,34 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.4.0] — 2026-11-26
+
+Palier : clôture du cycle 1.3 et chaîne de livraison opérationnelle (`docs/palier-1.4.0.md`).
+
+### Corrigé
+- **Première livraison par la chaîne (1.3.9, 26/11/2026) : images refusées par GHCR.** Lancé par
+  systemd, Docker lisait la connexion `ghcr.io` de `root`, périmée ; GHCR refuse un jeton
+  invalide même pour une image publique. L'agent a maintenant ses propres réglages Docker, vides
+  (`livraisons/docker`) : les images d'AMM GH se téléchargent sans connexion, et celle de `root`
+  n'est pas touchée.
+- **L'agent changeait le code avant d'avoir les images.** Il les télécharge maintenant d'abord :
+  si elles ne viennent pas, rien n'a changé sur le serveur (« Images X.Y.Z inaccessibles : rien
+  n'a été changé »), au lieu d'un retour en arrière inutile.
+- **Le retour à la version d'avant retéléchargeait ses images** (refusé lui aussi le 26/11) : il
+  reprend celles déjà présentes sur le serveur.
+
+### Sécurité
+- **Interface sur `nginx:1.30-alpine`** (branche stable) au lieu de `nginx:1.27-alpine`, qui n'était
+  plus suivie : 3 failles critiques et 67 élevées corrigeables dans ses paquets Alpine, aucune
+  avec la nouvelle base. `docker/nginx.conf` vérifiée sur nginx 1.30.8.
+- **Image backend : correctifs Debian appliqués à la construction** (`apt-get upgrade`), dont
+  `libzstd1` (faille élevée).
+- **Livraison : une faille critique corrigeable bloque une nouvelle version** (contrôle Trivy des
+  images testées, avant de leur donner le numéro de version). Les failles élevées restent listées
+  dans le résumé sans bloquer ; un retour volontaire à une version déjà publiée n'est jamais
+  bloqué. La recherche de secrets, qui signalait un exemple de clé dans la documentation d'une
+  bibliothèque, n'est plus faite.
+
 ## [1.3.9] — 2026-11-25
 
 ### Ajouté

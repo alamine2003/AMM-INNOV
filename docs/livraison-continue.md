@@ -9,14 +9,15 @@ et prépare, Mohamed approuve, le serveur installe lui-même et dit si c'est ré
  git tag vX.Y.Z ──► Livraison (livraison.yml)
                      1. Vérifier    étiquette = backend/VERSION = CHANGELOG, commit sur main,
                                     CI verte, images construites, composition lisible
-                     2. Images      images testées nommées X.Y.Z, rapport de vulnérabilités,
-                                    version publiée sur GitHub (Releases)
+                     2. Images      contrôle de sécurité (faille critique corrigeable =
+                                    arrêt), images testées nommées X.Y.Z, version publiée
+                                    sur GitHub (Releases)
                      3. Production  ⏸ approbation de Mohamed
                                     └─► demande d'installation « serveur-stellarix »
                                                     │
  serveur (VPN) ◄── agent livrer.sh, chaque minute ──┘
-                     contrôles → sauvegarde vérifiée → checkout vX.Y.Z → TAG=X.Y.Z
-                     → pull → up -d → santé de l'API = X.Y.Z ?
+                     contrôles → sauvegarde vérifiée → images X.Y.Z (sinon rien ne change)
+                     → checkout vX.Y.Z → TAG=X.Y.Z → up -d → santé de l'API = X.Y.Z ?
                          oui : « en service »          → Livraison au vert
                          non : retour à la version d'avant → Livraison au rouge
 ```
@@ -41,6 +42,13 @@ ce dépôt. Il ne peut ni pousser du code ni lire les secrets.
   alors reportée et repart seule à la fin de la commande. GitHub affiche « En attente ».
 - La sauvegarde chiffrée et vérifiée de la base réussit (`sauvegarder.sh`, la même que la nuit,
   copiée hors de la machine comme elle). Sinon rien n'est installé.
+- Les images de la version se téléchargent. Sinon rien n'est installé non plus : le code et
+  `.env` ne changent qu'une fois les images sur le serveur.
+
+L'agent a ses propres réglages Docker, vides (`livraisons/docker`) : les images d'AMM GH sont
+publiques et se téléchargent sans connexion. Lancé par systemd, Docker lirait sinon la connexion
+`ghcr.io` de `root`, posée pour une autre application ; périmée, GHCR la refuse même pour une
+image publique (première livraison de la 1.3.9, 26/11/2026).
 
 ## Le moment du redémarrage
 
@@ -52,7 +60,8 @@ travail, ou quand personne n'utilise l'application. Une demande approuvée n'exp
 ## Retour en arrière
 
 - **Automatique** : si l'API ne répond pas « ok » avec le bon numéro dans les 3 minutes, l'agent
-  remet l'étiquette et les images d'avant. Le code revient ; la base, non : si la nouvelle
+  remet l'étiquette et les images d'avant, déjà présentes sur le serveur (rien n'est
+  retéléchargé). Le code revient ; la base, non : si la nouvelle
   version a déjà transformé la base (migrations), restaurer la sauvegarde faite juste avant
   (`scripts/serveur/restaurer_base.sh`, section 4 de `deploiement-serveur-partage.md`).
 - **Volontaire** : Actions > Livraison > Run workflow, étiquette `v1.3.9` par exemple. Même

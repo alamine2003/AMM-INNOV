@@ -5,8 +5,9 @@ name: Livraison
 #   1. Vérifier   l'étiquette vX.Y.Z, backend/VERSION et le CHANGELOG concordent, le commit est
 #                 sur main, sa CI est verte et ses images existent ; la composition du serveur
 #                 et ses scripts se lisent.
-#   2. Images     les images testées de ce commit reçoivent le numéro de version (rien n'est
-#                 reconstruit) ; rapport des vulnérabilités ; version publiée sur GitHub.
+#   2. Images     contrôle de sécurité des images testées (une faille critique corrigeable
+#                 bloque), puis elles reçoivent le numéro de version (rien n'est reconstruit) ;
+#                 version publiée sur GitHub.
 #   3. Production attend l'APPROBATION de Mohamed (environnement « production », Settings >
 #                 Environments), puis demande l'installation au serveur et attend son résultat.
 #
@@ -156,6 +157,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Contrôle de sécurité des images testées, avant de leur donner le numéro de version :
+      # pour une nouvelle version (étiquette), une faille CRITIQUE qui a un correctif bloque la
+      # livraison ; les failles élevées sont listées dans le résumé sans bloquer. Un retour
+      # volontaire à une version déjà publiée (Run workflow) n'est jamais bloqué : on revient à
+      # ce qui tournait. Seules les failles des paquets sont cherchées (la recherche de secrets
+      # signalait un exemple de clé dans la documentation d'une bibliothèque).
+      - name: "Sécurité : aucune faille critique corrigeable"
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trivy"
+          trivy() {
+            docker run --rm -v "$RUNNER_TEMP/trivy:/root/.cache/trivy" aquasec/trivy:0.58.1 \
+              image --quiet --no-progress --scanners vuln --ignore-unfixed --format table "$@"
+          }
+          blocked=""
+          for name in backend frontend; do
+            image="${IMAGES}-${name}:sha-${SHA}"
+            {
+              echo "### ${name} : failles critiques et élevées corrigeables"
+              echo '```'
+              trivy --severity CRITICAL,HIGH "$image" 2>&1 | tail -n 60 || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            trivy --severity CRITICAL --exit-code 1 "$image" >/dev/null 2>&1 || blocked="${blocked} ${name}"
+          done
+          if [ -n "$blocked" ]; then
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              echo "::error::faille critique corrigeable dans :${blocked}. Mettre à jour l'image de base ou les paquets (détail dans le résumé)."
+              exit 1
+            fi
+            echo "::warning::faille critique corrigeable dans :${blocked} (retour volontaire : non bloquant)"
+          fi
+
       # Les octets livrés sont ceux que la CI a testés : on ajoute un nom, on ne reconstruit pas.
       - name: "Numéro de version sur les images testées"
         run: |
@@ -164,22 +198,6 @@ jobs:
             docker buildx imagetools create \
               -t "${IMAGES}-${name}:${VERSION}" "${IMAGES}-${name}:sha-${SHA}"
             echo "- \`${IMAGES}-${name}:${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
-          done
-
-      # Rapport seulement pour l'instant : une faille critique s'affiche ici, elle ne bloque pas.
-      - name: "Vulnérabilités critiques et élevées (rapport)"
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          for name in backend frontend; do
-            {
-              echo "### ${name}"
-              echo '```'
-              docker run --rm aquasec/trivy:0.58.1 image --quiet --no-progress \
-                --severity CRITICAL,HIGH --ignore-unfixed --format table \
-                "${IMAGES}-${name}:${VERSION}" 2>&1 | tail -n 60
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
           done
 
       - name: Version publiée sur GitHub
@@ -241,7 +259,7 @@ jobs:
         run: |
           set -euo pipefail
           last=""
-          for attempt in $(seq 1 180); do   # 45 minutes (sauvegarde vérifiée comprise)
+          for _ in $(seq 1 180); do   # 45 minutes (sauvegarde vérifiée comprise)
             read -r state description < <(gh api \
               "repos/${GITHUB_REPOSITORY}/deployments/${ID}/statuses?per_page=1" \
               --jq '.[0] | "\(.state) \(.description)"')
