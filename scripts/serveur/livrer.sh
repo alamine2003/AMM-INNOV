@@ -15,11 +15,13 @@
 #      un redémarrage l'interromprait. Elle repart seule à la minute où la commande se termine.
 #   5. Sauvegarde chiffrée et vérifiée de la base (scripts/serveur/sauvegarder.sh). Si elle
 #      échoue, rien n'est installé.
-#   6. Installation : git checkout de l'étiquette, TAG=X.Y.Z dans .env (images de la version,
-#      pas « latest »), pull des images d'AMM GH, up -d.
+#   6. Installation : les images de la version sont téléchargées d'abord (si GHCR refuse, rien
+#      n'a changé) ; puis git checkout de l'étiquette, TAG=X.Y.Z dans .env (images de la
+#      version, pas « latest »), up -d.
 #   7. Contrôle : l'API doit répondre « ok », base et Redis en marche, avec le numéro attendu.
-#   8. Sinon, retour à la version d'avant (code et images ; la base n'est pas restaurée : la
-#      sauvegarde de l'étape 5 est là pour ça, scripts/serveur/restaurer_base.sh).
+#   8. Sinon, retour à la version d'avant, avec ses images déjà sur le serveur (rien n'est
+#      retéléchargé ; la base n'est pas restaurée : la sauvegarde de l'étape 5 est là pour ça,
+#      scripts/serveur/restaurer_base.sh).
 #   9. Le résultat est renvoyé à GitHub : le workflow passe au vert ou au rouge.
 #
 # À la main (même effet qu'un passage du minuteur) :  sudo scripts/serveur/livrer.sh
@@ -45,6 +47,13 @@ bot=${LIVRAISON_AUTEUR:-github-actions[bot]}
 cd "$dir"
 mkdir -p livraisons
 chmod 700 livraisons
+
+# Réglages Docker propres à l'agent, vides : les images d'AMM GH sont publiques et se
+# téléchargent sans connexion. Sous systemd, Docker lirait sinon /root/.docker/config.json, dont
+# la connexion à ghcr.io (posée pour une autre application) est refusée par GHCR, qui rejette un
+# jeton invalide même pour une image publique (livraison de la 1.3.9, 26/11/2026).
+export DOCKER_CONFIG=${LIVRAISON_DOCKER_CONFIG:-$dir/livraisons/docker}
+mkdir -p "$DOCKER_CONFIG"
 journal=livraisons/journal.log
 
 log() { echo "[livraison] $(date '+%F %T') $*" | tee -a "$journal" >&2; }
@@ -178,16 +187,22 @@ sys.exit(0 if ok and h.get("version") == sys.argv[2] else 1)' "$answer" "$1" 2>/
   return 1
 }
 
-install() { # install ÉTIQUETTE TAG
-  git checkout --quiet "$1" && set_tag "$2" \
-    && "$compose" pull --quiet backend worker beat frontend >> "$journal" 2>&1 \
-    && "$compose" up -d >> "$journal" 2>&1
+switch() { # switch ÉTIQUETTE TAG : code et images de cette version, démarrés
+  git checkout --quiet "$1" && set_tag "$2" && "$compose" up -d >> "$journal" 2>&1
 }
+
+# Images d'abord : si elles ne viennent pas, rien n'a encore changé sur le serveur.
+status in_progress "Téléchargement des images ${version}"
+if ! TAG="$version" "$compose" pull --quiet backend worker beat frontend >> "$journal" 2>&1; then
+  log "ÉCHEC ${ref} : images ${version} inaccessibles, rien n'a été changé"
+  status failure "Images ${version} inaccessibles sur GHCR : rien n'a été changé (journal : livraisons/journal.log)"
+  exit 1
+fi
 
 status in_progress "Installation de ${version}"
 reason=""
-if ! install "$ref" "$version"; then
-  reason="installation interrompue (git, images ou démarrage)"
+if ! switch "$ref" "$version"; then
+  reason="installation interrompue (git ou démarrage)"
 elif ! healthy "$version"; then
   reason="l'API ne répond pas ${version} en bonne santé (${health_seen:0:60})"
 fi
@@ -201,7 +216,7 @@ fi
 
 # --- 6. Retour à la version d'avant ------------------------------------------------------------
 log "ÉCHEC ${ref} : ${reason} ; retour à ${previous_version}"
-if install "$previous_ref" "$previous_tag" && healthy "$previous_version"; then
+if switch "$previous_ref" "$previous_tag" && healthy "$previous_version"; then
   back="retour à ${previous_version} réussi"
 else
   back="RETOUR À ${previous_version} ÉCHOUÉ : intervenir sur le serveur"

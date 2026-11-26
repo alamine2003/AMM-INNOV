@@ -69,7 +69,9 @@ if args[0] == "top":
 elif args[:3] == ["exec", "-T", "backup"]:
     code = 1 if state.get("backup_fails") else 0
 elif args[0] == "pull":
-    code = 1 if tag() in state.get("pull_fails", []) else 0
+    wanted = os.environ.get("TAG") or tag()
+    state.setdefault("pulled", []).append([wanted, os.environ.get("DOCKER_CONFIG", "")])
+    code = 1 if wanted in state.get("pull_fails", []) else 0
 elif args[:2] == ["up", "-d"]:
     state["running"] = tag()
 elif args[:3] == ["exec", "-T", "frontend"]:
@@ -227,7 +229,14 @@ def test_an_approved_version_is_saved_installed_and_checked(server):
     assert backup < pull < calls.index("up -d")
     assert server.posted[-1][0] == "success"
     assert "1.1.0 en service" in server.posted[-1][1]
-    assert [state for state, _ in server.posted] == ["in_progress", "in_progress", "success"]
+    assert [state for state, _ in server.posted] == [
+        "in_progress",
+        "in_progress",
+        "in_progress",
+        "success",
+    ]
+    # Les images de la version sont téléchargées avant que le code ne change.
+    assert server.docker["pulled"][0][0] == "1.1.0"
     # Le reste de .env est gardé, ses droits aussi.
     assert "DJANGO_SECRET_KEY='x'" in (server.dir / ".env").read_text()
     assert oct((server.dir / ".env").stat().st_mode & 0o777) == "0o600"
@@ -271,14 +280,44 @@ def test_a_version_that_starts_badly_is_rolled_back(server):
     assert git(server.dir, "describe", "--tags", "--exact-match", "HEAD") == "v1.0.0"
 
 
-def test_images_that_cannot_be_pulled_are_rolled_back(server):
+def test_images_that_cannot_be_pulled_change_nothing(server):
+    """Livraison de la 1.3.9 (26/11/2026) : GHCR refusait les images, l'agent avait déjà
+    changé le code et tentait un retour en arrière qui retéléchargeait, lui aussi refusé."""
     server.approve("1.1.0")
     server.docker["pull_fails"] = ["1.1.0"]
 
+    result = server.run()
+
+    assert result.returncode == 1
+    assert server.installed == ("1.0.0", "1.0.0")
+    assert not any(call.startswith("up") for call in server.compose_calls)
+    assert git(server.dir, "describe", "--tags", "--exact-match", "HEAD") == "v1.0.0"
+    state, description = server.posted[-1]
+    assert state == "failure"
+    assert "Images 1.1.0 inaccessibles" in description
+    assert "rien n'a été changé" in description
+
+
+def test_docker_settings_of_the_agent_are_its_own_and_empty(server):
+    """Les images sont publiques : une connexion ghcr.io périmée de root ne doit pas servir."""
+    server.approve("1.1.0")
+
     server.run()
 
+    _, docker_config = server.docker["pulled"][0]
+    assert docker_config == str(server.dir / "livraisons" / "docker")
+    assert list(Path(docker_config).iterdir()) == []
+
+
+def test_rolling_back_does_not_download_again(server):
+    server.approve("1.1.0")
+    server.docker["broken"] = ["1.1.0"]
+
+    server.run()
+
+    assert [tag for tag, _ in server.docker["pulled"]] == ["1.1.0"]
     assert server.installed == ("1.0.0", "1.0.0")
-    assert "installation interrompue" in server.posted[-1][1]
+    assert "retour à 1.0.0 réussi" in server.posted[-1][1]
 
 
 def test_a_running_admin_command_postpones_the_installation(server):
