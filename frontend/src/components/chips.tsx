@@ -1,6 +1,14 @@
 import { Chip, type ChipProps } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { AlertStatus, AmmStatus, DossierState, Severity, Urgency, WorkflowStatus } from '@/api/types';
+import type {
+  AlertStatus,
+  AmmStatus,
+  DossierState,
+  OriginApplication,
+  Severity,
+  Urgency,
+  WorkflowStatus,
+} from '@/api/types';
 import {
   ALERT_STATUS_COLORS,
   DOSSIER_COLORS,
@@ -20,8 +28,34 @@ function colored(color: string, base: Base = {}): ChipProps {
   };
 }
 
-export function StatusChip({ value, ...rest }: Base & { value: AmmStatus }) {
+/** Demande d'AMM d'origine en cours (bleu) ou close sans AMM (gris) : 1.4.1. */
+const ORIGIN_COLORS: Record<string, string> = {
+  EN_PREPARATION: '#1565c0',
+  DEPOSE: '#1565c0',
+  EN_INSTRUCTION: '#1565c0',
+  REJETE: '#757575',
+  ABANDONNE: '#757575',
+};
+
+/**
+ * Statut de l'AMM ; tant qu'une demande d'origine est suivie (`origin`), c'est elle qui
+ * s'affiche, au lieu d'« Échéance inconnue ».
+ */
+export function StatusChip({
+  value,
+  origin,
+  ...rest
+}: Base & { value: AmmStatus; origin?: OriginApplication | null }) {
   const { t } = useTranslation();
+  if (origin) {
+    return (
+      <Chip
+        label={t(`originApplication.${origin}`)}
+        data-testid={`origin-chip-${origin}`}
+        {...colored(ORIGIN_COLORS[origin] ?? '#757575', rest)}
+      />
+    );
+  }
   return (
     <Chip
       label={t(`status.${value}`)}

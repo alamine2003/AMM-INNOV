@@ -30,6 +30,7 @@ const amm = {
   country_name: 'Sénégal',
   authority: 'ARP',
   original_number: 'AMM/SN/2021/0152',
+  origin_application: '' as const,
   status: 'A_RENOUVELER' as const,
   urgency: 'DEPOT_URGENT',
   effective_end_date: '2027-02-01',
@@ -40,9 +41,11 @@ const amm = {
 function dossier(overrides: Partial<DepositDetail> = {}): DepositDetail {
   return {
     id: 'dep-1',
+    kind: 'RENOUVELLEMENT',
     stage: 'MONTAGE',
     stage_label: 'Montage du dossier',
     amm,
+    filing_date: null,
     renewal: {
       id: 'ren-1',
       sequence: 2,
@@ -80,7 +83,7 @@ function dossier(overrides: Partial<DepositDetail> = {}): DepositDetail {
     missing: ['RCP', 'Échantillons (n° de lot, date de fabrication, date de péremption)'],
     attestation: null,
     downloads: [],
-    can: { manage: true, deposit: true, follow: false, decide: false },
+    can: { manage: true, cancel: true, deposit: true, follow: false, decide: false },
     ...overrides,
   };
 }
@@ -182,7 +185,7 @@ describe('Dépôts AMM', () => {
       stage_label: 'Envoyé au pays',
       sent_at: '2026-09-28T11:00:00Z',
       sent_by: 'Siège',
-      can: { manage: false, deposit: true, follow: false, decide: false },
+      can: { manage: false, cancel: false, deposit: true, follow: false, decide: false },
     };
     let deposit: FormData | null = null;
     let message: unknown = null;
@@ -194,8 +197,9 @@ describe('Dépôts AMM', () => {
           ...sentToCountry,
           stage: 'DEPOSE',
           renewal: { ...sentToCountry.renewal, workflow_status: 'DEPOSE', filing_date: '2026-09-27' },
+          filing_date: '2026-09-27',
           attestation: { id: 'doc-1', document_date: '2026-09-27', filename: 'SN_ATTESTATION.pdf' },
-          can: { manage: false, deposit: true, follow: true, decide: true },
+          can: { manage: false, cancel: false, deposit: true, follow: true, decide: true },
         });
       }),
       http.post(`${api}/dep-1/messages`, async ({ request }) => {
@@ -237,5 +241,105 @@ describe('Dépôts AMM', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Envoyer le message' }));
     await waitFor(() => expect(message).toEqual({ body: 'Déposé ce matin.' }));
     expect(await within(screen.getByTestId('messages')).findByText('Déposé ce matin.')).toBeInTheDocument();
+  });
+
+  it('le siège ouvre la demande d’AMM d’un produit pas encore enregistré dans le pays', async () => {
+    loginAs('u-hq');
+    const origin = dossier({
+      id: 'dep-2',
+      kind: 'ORIGINE',
+      renewal: null,
+      amm: {
+        ...amm,
+        id: 'amm-2',
+        product_name: 'PARACETAMOL 1 G CP B/8',
+        original_number: '',
+        origin_application: 'EN_PREPARATION',
+        status: 'INDETERMINE',
+        effective_end_date: null,
+        ideal_filing_date: null,
+        agency_filing_deadline: null,
+      },
+    });
+    let opened: unknown = null;
+    server.use(
+      http.get(api, () => HttpResponse.json([])),
+      http.get(`${api}/suggestions`, () => HttpResponse.json([])),
+      http.post(api, async ({ request }) => {
+        opened = await request.json();
+        return HttpResponse.json(origin, { status: 201 });
+      }),
+      http.get(`${api}/dep-2`, () => HttpResponse.json(origin)),
+    );
+    renderApp('/depots');
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Nouvelle demande d’AMM/ }, { timeout: 5000 }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Produit'), 'PARACETAMOL');
+    await userEvent.click(await screen.findByRole('option', { name: /PARACETAMOL 1 G/ }));
+    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: 'Pays' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Sénégal' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Ouvrir le dossier' }));
+    await waitFor(() => expect(opened).toMatchObject({ kind: 'ORIGINE', country: 'SN', holder: '' }));
+    expect(await screen.findByText(/Pas encore d’AMM/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByText(/Sénégal · demande d’AMM d’origine/)).toBeInTheDocument();
+    expect(screen.getAllByTestId('origin-chip-EN_PREPARATION').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Abandonner cette demande' })).toBeInTheDocument();
+  });
+
+  it('la décision d’une demande d’origine donne le n° de l’AMM', async () => {
+    loginAs('u-hq');
+    const filed = dossier({
+      kind: 'ORIGINE',
+      renewal: null,
+      stage: 'DEPOSE',
+      filing_date: '2026-09-27',
+      amm: { ...amm, original_number: '', origin_application: 'DEPOSE', status: 'INDETERMINE' },
+      can: { manage: true, cancel: true, deposit: true, follow: true, decide: true },
+    });
+    server.use(http.get(`${api}/dep-1`, () => HttpResponse.json(filed)));
+    renderApp('/depots/dep-1');
+    const section = await screen.findByTestId('section-decision', {}, { timeout: 5000 });
+    expect(within(section).getByLabelText('N° de l’AMM')).toBeInTheDocument();
+    expect(within(section).getByRole('button', { name: 'Enregistrer l’AMM obtenue' })).toBeInTheDocument();
+  });
+
+  it('le siège annule un dossier ouvert par erreur', async () => {
+    loginAs('u-hq');
+    let cancelled: unknown = null;
+    server.use(
+      http.get(`${api}/dep-1`, () => HttpResponse.json(dossier())),
+      http.post(`${api}/dep-1/cancel`, async ({ request }) => {
+        cancelled = await request.json();
+        return new HttpResponse(null, { status: 204 });
+      }),
+      http.get(api, () => HttpResponse.json([])),
+      http.get(`${api}/suggestions`, () => HttpResponse.json([])),
+    );
+    renderApp('/depots/dep-1');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Annuler le dossier' }, { timeout: 5000 }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(/corbeille/);
+    await userEvent.type(within(dialog).getByLabelText(/Pourquoi/), 'Mauvais produit');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Annuler le dossier' }));
+    await waitFor(() => expect(cancelled).toEqual({ reason: 'Mauvais produit' }));
+    expect(await screen.findByText(/Dossier annulé/)).toBeInTheDocument();
+  });
+
+  it('le pays ne voit pas le bouton d’annulation', async () => {
+    loginAs('u-sn');
+    server.use(
+      http.get(`${api}/dep-1`, () =>
+        HttpResponse.json(
+          dossier({ can: { manage: false, cancel: false, deposit: false, follow: false, decide: false } }),
+        ),
+      ),
+    );
+    renderApp('/depots/dep-1');
+    expect(await screen.findByTestId('section-pieces', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Annuler le dossier' })).not.toBeInTheDocument();
   });
 });

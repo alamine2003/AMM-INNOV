@@ -22,13 +22,13 @@ from django.db import models
 
 
 def piece_upload_to(instance, filename: str) -> str:
-    amm = instance.dossier.renewal.amm
+    amm = instance.dossier.amm
     folder = f"depots/{amm.country.iso2}/{amm.pk}/{instance.dossier_id}"
     return f"{folder}/{uuid.uuid4().hex[:8]}_{filename}"
 
 
 def event_upload_to(instance, filename: str) -> str:
-    amm = instance.dossier.renewal.amm
+    amm = instance.dossier.amm
     return (
         f"depots/{amm.country.iso2}/{amm.pk}/{instance.dossier_id}/suivi/"
         f"{uuid.uuid4().hex[:8]}_{filename}"
@@ -70,22 +70,53 @@ class PieceType(models.Model):
 
 
 class DepositDossier(models.Model):
+    """Dossier de dépôt d'un renouvellement, ou de la demande d'une AMM d'origine (1.4.1).
+
+    Renouvellement : l'avancement est celui du renouvellement lié (sa machine d'états).
+    Demande d'origine : pas de renouvellement ; le dossier porte son avancement
+    (`origin_status`), recopié sur la fiche AMM (`origin_application`), qui n'a ni n° ni dates
+    tant que la décision n'est pas obtenue.
+    """
+
+    class Kind(models.TextChoices):
+        RENOUVELLEMENT = "RENOUVELLEMENT", "Renouvellement"
+        ORIGINE = "ORIGINE", "AMM d'origine"
+
     class Stage(models.TextChoices):
         MONTAGE = "MONTAGE", "Montage du dossier"
         ENVOYE = "ENVOYE", "Envoyé au pays"
         DEPOSE = "DEPOSE", "Déposé à l'agence"
         COMMISSION = "COMMISSION", "En commission"
-        OBTENU = "OBTENU", "Renouvellement obtenu"
+        OBTENU = "OBTENU", "Obtenu"
         REJETE = "REJETE", "Rejeté"
         ABANDONNE = "ABANDONNE", "Abandonné"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(
+        "nature", max_length=16, choices=Kind.choices, default=Kind.RENOUVELLEMENT
+    )
+    amm = models.ForeignKey(
+        "amm.MarketingAuthorization",
+        on_delete=models.CASCADE,
+        related_name="deposits",
+        verbose_name="AMM",
+    )
     renewal = models.OneToOneField(
         "amm.Renewal",
         on_delete=models.CASCADE,
         related_name="deposit",
         verbose_name="renouvellement",
+        null=True,
+        blank=True,
     )
+    # Avancement d'une demande d'origine (valeurs de `Renewal.WorkflowStatus`) ; vide pour un
+    # renouvellement, qui suit le sien. La fiche AMM reprend celui de sa dernière demande.
+    origin_status = models.CharField("avancement de la demande", max_length=16, blank=True)
+    # Ce que l'annulation du dossier doit défaire : le renouvellement (ou, pour une demande
+    # d'origine, la fiche AMM) a-t-il été créé à l'ouverture du dossier ? Sinon, à quel état
+    # le remettre.
+    created_target = models.BooleanField("créé avec le dossier", default=False)
+    status_before = models.CharField("état avant le dossier", max_length=16, blank=True)
     samples_required = models.BooleanField("échantillons demandés", default=True)
     sent_at = models.DateTimeField("envoyé au pays le", null=True, blank=True)
     sent_by = models.ForeignKey(
@@ -128,13 +159,28 @@ class DepositDossier(models.Model):
         ordering = ["-updated_at"]
 
     def __str__(self) -> str:
+        if self.kind == self.Kind.ORIGINE:
+            return f"Demande d'AMM {self.amm}"
         return f"Dépôt {self.renewal}"
+
+    @property
+    def is_origin(self) -> bool:
+        return self.kind == self.Kind.ORIGINE
+
+    @property
+    def status(self) -> str:
+        """Avancement, dans les valeurs de `Renewal.WorkflowStatus`."""
+        from apps.amm.models import Renewal
+
+        if self.renewal_id:
+            return self.renewal.workflow_status
+        return self.origin_status or Renewal.WorkflowStatus.EN_PREPARATION
 
     @property
     def stage(self) -> str:
         from apps.amm.models import Renewal
 
-        status = self.renewal.workflow_status
+        status = self.status
         if status in (Renewal.WorkflowStatus.OBTENU, Renewal.WorkflowStatus.REJETE):
             return status
         if status == Renewal.WorkflowStatus.ABANDONNE:

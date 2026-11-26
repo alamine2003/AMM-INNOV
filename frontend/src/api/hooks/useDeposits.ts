@@ -41,13 +41,42 @@ export function useDeposit(id: string | undefined) {
   });
 }
 
+/** Demande d'une AMM d'origine : produit pas encore enregistré dans ce pays (1.4.1). */
+export interface OriginRequest {
+  product: string;
+  country: string;
+  holder?: string;
+}
+
 export function useOpenDeposit() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (amm: string) => (await api.post<DepositDetail>('/deposits', { amm })).data,
+    mutationFn: async (target: string | OriginRequest) =>
+      (
+        await api.post<DepositDetail>(
+          '/deposits',
+          typeof target === 'string' ? { amm: target } : { kind: 'ORIGINE', ...target },
+        )
+      ).data,
     onSuccess: (dossier) => {
       client.setQueryData(depositKeys.detail(dossier.id), dossier);
       void client.invalidateQueries({ queryKey: depositKeys.all });
+      void client.invalidateQueries({ queryKey: ['amms'] });
+    },
+  });
+}
+
+/** Annuler le dossier : il part à la corbeille, avec ce que son ouverture avait créé. */
+function useCancelDeposit(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (reason: string) => {
+      await api.post(`/deposits/${id}/cancel`, { reason });
+    },
+    onSuccess: () => {
+      client.removeQueries({ queryKey: depositKeys.detail(id) });
+      void client.invalidateQueries({ queryKey: depositKeys.list });
+      void client.invalidateQueries({ queryKey: depositKeys.suggestions });
       void client.invalidateQueries({ queryKey: ['amms'] });
     },
   });
@@ -125,6 +154,7 @@ export function useDepositActions(id: string) {
       }) => post(`${base}/decision`, form(p)),
     ),
     abandon: useDepositAction(id, (reason: string) => post(`${base}/abandon`, { reason })),
+    cancel: useCancelDeposit(id),
     message: useDepositAction(id, (body: string) => post(`${base}/messages`, { body })),
   };
 }

@@ -84,6 +84,7 @@ function page(overrides: Partial<BinderPage> = {}): BinderPage {
     pending_renewal: null,
     status: 'VALIDE',
     status_label: 'Valide',
+    origin_application: '',
     dossier_state: 'COMPLET',
     scan: null,
     decision_count: 0,

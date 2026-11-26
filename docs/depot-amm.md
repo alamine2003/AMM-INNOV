@@ -136,12 +136,44 @@ aussi « Monter le dossier de dépôt », ou le lien vers le dossier existant.
   au pays ;
 - une pièce retirée alors qu'elle est déjà jointe à des dossiers est seulement désactivée.
 
+### Demande d'une AMM d'origine (1.4.1)
+
+Pour un produit **pas encore enregistré dans le pays**, le siège ouvre le dossier depuis
+« Nouvelle demande d'AMM » (produit, pays, titulaire facultatif). Mêmes étapes que pour un
+renouvellement : montage, envoi au pays, dépôt avec l'attestation, commission, décision.
+
+- **La fiche AMM est créée sans n° ni dates** et porte l'avancement de la demande (« Demande
+  d'AMM en préparation », « déposée », « en instruction »), affiché à la place d'« Échéance
+  inconnue ». Une fiche sans origine déjà présente (demande rejetée ou abandonnée, fiche vide)
+  est reprise ; un produit qui a déjà une AMM dans ce pays est refusé (renouvellement).
+- **Ce n'est pas un manque** : la fiche n'apparaît ni dans « Origine non identifiée » ni dans
+  « Décision d'origine sans scan » du plan d'action.
+- **Classeur** : la page peut être pointée **conforme** en attendant la décision. La
+  chronologie montre « Demande d'AMM d'origine » avec sa date de dépôt ; seul le récépissé est
+  attendu une fois la demande déposée.
+- **Décision obtenue** : la fiche reçoit son n° et sa date de début (fin = début + durée du
+  pays), le scan est rangé comme décision d'origine, et l'AMM devient une AMM comme les autres
+  (statut, échéance, rappels, renouvellements). **Rejetée ou abandonnée** : la fiche reste
+  marquée comme telle, sans AMM.
+
+### Annuler un dossier (1.4.1)
+
+« Annuler le dossier » (siège, dossier ouvert) défait un dossier ouvert par erreur, **comme s'il
+n'avait jamais existé** : le dossier, ses pièces, ses échantillons, ses messages, son journal et
+l'attestation de dépôt partent à la **corbeille** (un administrateur peut les restaurer), avec ce
+que son ouverture avait créé : le renouvellement planifié, ou la fiche AMM d'une demande
+d'origine. Ce qui existait avant reprend son état d'avant le dossier (un renouvellement déjà
+planifié redevient « planifié »). Le pays est prévenu.
+
+À ne pas confondre avec **« Abandonner »**, qui clôt le dossier en gardant un renouvellement (ou
+une demande) « abandonné » dans l'historique : on renonce, mais on garde la trace.
+
 ### Droits
 
 | Action | Siège, CEO | Réglementaire pays |
 | --- | --- | --- |
 | Voir les dossiers | tous | ceux de ses pays |
-| Ouvrir, monter, envoyer, abandonner | oui | non |
+| Ouvrir, monter, envoyer, abandonner, annuler | oui | non |
 | Télécharger le dossier | toujours | une fois envoyé |
 | Dépôt, commission, décision, messages | oui | oui |
 
@@ -149,7 +181,7 @@ aussi « Monter le dossier de dépôt », ou le lien vers le dossier existant.
 
 | Méthode | Chemin | Rôle |
 | --- | --- | --- |
-| GET, POST | `/api/v1/deposits` | dossiers visibles ; POST `{amm}` ouvre le dossier (siège) |
+| GET, POST | `/api/v1/deposits` | dossiers visibles ; POST `{amm}` ouvre le dossier d'un renouvellement, `{kind: "ORIGINE", product, country, holder}` celui d'une demande d'AMM d'origine (siège) |
 | GET | `/api/v1/deposits/suggestions` | AMM à préparer |
 | GET | `/api/v1/deposits/{id}` | dossier complet (pièces, échantillons, suivi, messages, journal, droits) |
 | POST, DELETE | `/api/v1/deposits/{id}/pieces[/{piece}]` | joindre (multipart `file`, `piece_type` ou `label`) / retirer une pièce |
@@ -161,6 +193,7 @@ aussi « Monter le dossier de dépôt », ou le lien vers le dossier existant.
 | POST | `/api/v1/deposits/{id}/events` | `kind` (COMMISSION, NOTIFICATION, COMPLEMENT, AUTRE), `date`, `note`, `file` |
 | POST | `/api/v1/deposits/{id}/decision` | `result` (OBTENU, REJETE), `decision_date`, `number`, `start_date`, `file` |
 | POST | `/api/v1/deposits/{id}/abandon` | `{reason}` (siège) |
+| POST | `/api/v1/deposits/{id}/cancel` | `{reason}` facultatif (siège) : annule le dossier ouvert, réponse 204 |
 | POST | `/api/v1/deposits/{id}/messages` | `{body}` |
 | CRUD | `/api/v1/deposit-pieces` | pièces demandées (écriture : siège) |
 

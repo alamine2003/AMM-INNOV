@@ -947,7 +947,8 @@
         "progress": "Progress",
         "ammExpiry": "MA expiry",
         "lastActivity": "Last activity"
-      }
+      },
+      "newOrigin": "New MA application"
     },
     "detail": {
       "maExpiryLabel": "MA expiry date: ",
@@ -965,7 +966,17 @@
       "abandonTitle": "Withdraw this renewal?",
       "abandonText": "The dossier is closed and the country is notified. The MA will expire on its expiry date.",
       "abandonReason": "Why?",
-      "abandonConfirm": "Withdraw"
+      "abandonConfirm": "Withdraw",
+      "cancelButton": "Cancel the dossier",
+      "cancelTitle": "Cancel this dossier?",
+      "cancelText": "As if it had never been opened: the dossier, its documents, samples, messages and filing receipt go to the trash (an administrator can restore them), together with what opening it created (the planned renewal, or the MA record of the application). The country is notified. To keep a record of a renewal you give up, use “Withdraw” instead.",
+      "cancelReason": "Why? (optional)",
+      "cancelConfirm": "Cancel the dossier",
+      "cancelled": "Dossier cancelled: it is in the trash.",
+      "abandonOrigin": "Withdraw this application",
+      "abandonOriginTitle": "Withdraw this MA application?",
+      "abandonOriginText": "The dossier is closed and the country is notified. The MA record stays marked “application withdrawn”.",
+      "noMaYet": "No MA yet: the decision will give it its number and dates."
     },
     "link": {
       "followed": "Submission dossier · renewal no. {{n}}",
@@ -1054,7 +1065,12 @@
       "scan": "Decision scan",
       "reason": "Reason",
       "saveGranted": "Save the granted renewal",
-      "saveRejected": "Save the rejection"
+      "saveRejected": "Save the rejection",
+      "grantedOrigin": "MA granted: no. {{number}}",
+      "rejectedOrigin": "MA application rejected.",
+      "withdrawnOrigin": "MA application withdrawn.",
+      "ammNumber": "MA number",
+      "saveGrantedOrigin": "Save the granted MA"
     },
     "pieceTypes": {
       "editTitle": "Edit document",
@@ -1081,6 +1097,17 @@
       "country": "Country",
       "renewalDossier": "Renewal dossier — {{country}}",
       "ownPiece": "Document specific to {{country}}"
+    },
+    "originApplication": "original MA application",
+    "origin": {
+      "title": "New original MA application",
+      "text": "For a product not yet registered in this country. The MA record is created without number or dates: it gets them with the decision. Until then it is not reported as incomplete, and its binder page can be checked as compliant.",
+      "product": "Product",
+      "country": "Country",
+      "holder": "Holder (optional)",
+      "productHint": "Type the product name. If it does not exist yet, create it in the catalogue first.",
+      "open": "Open the dossier",
+      "link": "MA application dossier"
     }
   },
   "dossierImports": {
@@ -1665,5 +1692,12 @@
     "month_other": "{{count}} months",
     "daysShort": "{{count}} d",
     "span": "{{years}} and {{months}}"
+  },
+  "originApplication": {
+    "EN_PREPARATION": "MA application in preparation",
+    "DEPOSE": "MA application filed",
+    "EN_INSTRUCTION": "MA application under review",
+    "REJETE": "MA application rejected",
+    "ABANDONNE": "MA application withdrawn"
   }
 }

@@ -68,7 +68,7 @@ export default function AmmDetailPage() {
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
             <Chip size="small" label={`${data.country_name} (${data.country_iso2})`} />
             <Chip size="small" label={data.range_code} variant="outlined" />
-            <StatusChip value={data.status} />
+            <StatusChip value={data.status} origin={data.origin_application} />
             {/* AMM expirée : l'urgence « Expirée » redirait le statut. */}
             {data.urgency !== 'EXPIRE' && <UrgencyChip value={data.urgency} />}
             <DossierChip value={data.dossier_state} />
@@ -81,7 +81,7 @@ export default function AmmDetailPage() {
         }
         actions={
           <>
-            <DepositLink ammId={data.id} status={data.status} />
+            <DepositLink ammId={data.id} status={data.status} originDepositId={data.origin_deposit_id} />
             <BinderLink ammId={data.id} />
           </>
         }

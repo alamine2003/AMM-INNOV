@@ -250,6 +250,9 @@ class PageSerializer(serializers.Serializer):
     pending_renewal = PendingRenewalSerializer(allow_null=True)
     status = serializers.ChoiceField(choices=MarketingAuthorization.Status.choices)
     status_label = serializers.CharField()
+    origin_application = serializers.CharField(
+        help_text="Demande d'AMM d'origine en cours, rejetée ou abandonnée ; vide sinon"
+    )
     dossier_state = serializers.ChoiceField(choices=MarketingAuthorization.DossierState.choices)
     scan = ScanSerializer(allow_null=True)
     decision_count = serializers.IntegerField()

@@ -67,10 +67,14 @@ def gap_condition(gap: str) -> Q:
     """Condition (Q) d'un manque sur les AMM ; ValueError si le manque est inconnu."""
     today = reference_today()
     renewals = Renewal.objects.filter(amm=OuterRef("pk"))
+    # Une demande d'origine suivie dans « Dépôts AMM » (en cours, rejetée ou abandonnée) n'a ni
+    # n° ni décision : ce n'est pas un manque (1.4.1).
     if gap == "no_original":
-        return Q(original_number="") | Q(original_start_date__isnull=True)
+        return (Q(original_number="") | Q(original_start_date__isnull=True)) & Q(
+            origin_application=""
+        )
     if gap == "original_scan":
-        return ~Exists(_scan(amm=OuterRef("pk"), renewal__isnull=True))
+        return ~Exists(_scan(amm=OuterRef("pk"), renewal__isnull=True)) & Q(origin_application="")
     if gap == "missing_renewal":
         return Q(original_end_date__lt=today) & ~Exists(renewals.filter(workflow_status__in=LIVE))
     if gap == "renewal_scan":

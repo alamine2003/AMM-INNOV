@@ -424,6 +424,8 @@ export function buildDb(): MockDb {
       original_start_date: seed.original_start_date,
       original_end_date: null,
       original_end_date_manual: false,
+      origin_application: '',
+      origin_filing_date: null,
       status: 'INDETERMINE',
       urgency: 'A_PLANIFIER',
       effective_end_date: null,

@@ -18,6 +18,8 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
   const [form, setForm] = useState({ number: '', start_date: '', decision_date: todayIso(), note: '' });
   const [file, setFile] = useState<File | null>(null);
   const decided = dossier.stage === 'OBTENU' || dossier.stage === 'REJETE';
+  // Demande d'AMM d'origine (1.4.1) : la décision donne le n° et les dates de l'AMM elle-même.
+  const origin = dossier.renewal === null;
   const valid = form.decision_date && (result === 'REJETE' || (form.number.trim() && form.start_date));
   return (
     <Section
@@ -25,14 +27,18 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
       title={t('deposits.decision.title')}
       subtitle={
         dossier.stage === 'OBTENU'
-          ? t('deposits.decision.granted', {
-              number: dossier.renewal.number,
-              date: formatDate(dossier.renewal.decision_date),
-            })
+          ? dossier.renewal
+            ? t('deposits.decision.granted', {
+                number: dossier.renewal.number,
+                date: formatDate(dossier.renewal.decision_date),
+              })
+            : t('deposits.decision.grantedOrigin', { number: dossier.amm.original_number })
           : dossier.stage === 'REJETE'
-            ? t('deposits.decision.rejected', { date: formatDate(dossier.renewal.decision_date) })
+            ? dossier.renewal
+              ? t('deposits.decision.rejected', { date: formatDate(dossier.renewal.decision_date) })
+              : t('deposits.decision.rejectedOrigin')
             : dossier.stage === 'ABANDONNE'
-              ? t('deposits.decision.withdrawn')
+              ? t(origin ? 'deposits.decision.withdrawnOrigin' : 'deposits.decision.withdrawn')
               : t('deposits.decision.pending')
       }
       state={decided ? 'done' : dossier.can.decide ? 'active' : 'todo'}
@@ -58,7 +64,7 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
               <>
                 <TextField
                   size="small"
-                  label={t('deposits.decision.renewalNumber')}
+                  label={t(origin ? 'deposits.decision.ammNumber' : 'deposits.decision.renewalNumber')}
                   value={form.number}
                   onChange={(e) => setForm({ ...form, number: e.target.value })}
                 />
@@ -115,7 +121,9 @@ export function DecisionSection({ dossier, actions }: { dossier: DepositDetail; 
                 )
               }
             >
-              {result === 'OBTENU' ? t('deposits.decision.saveGranted') : t('deposits.decision.saveRejected')}
+              {result === 'OBTENU'
+                ? t(origin ? 'deposits.decision.saveGrantedOrigin' : 'deposits.decision.saveGranted')
+                : t('deposits.decision.saveRejected')}
             </Button>
           </Box>
         </Stack>

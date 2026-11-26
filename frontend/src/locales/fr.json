@@ -947,7 +947,8 @@
         "progress": "Avancement",
         "ammExpiry": "Échéance AMM",
         "lastActivity": "Dernière activité"
-      }
+      },
+      "newOrigin": "Nouvelle demande d’AMM"
     },
     "detail": {
       "maExpiryLabel": "Échéance de l’AMM : ",
@@ -965,7 +966,17 @@
       "abandonTitle": "Abandonner ce renouvellement ?",
       "abandonText": "Le dossier est clos et le pays est prévenu. L’AMM expirera à son échéance.",
       "abandonReason": "Pourquoi ?",
-      "abandonConfirm": "Abandonner"
+      "abandonConfirm": "Abandonner",
+      "cancelButton": "Annuler le dossier",
+      "cancelTitle": "Annuler ce dossier ?",
+      "cancelText": "Comme s’il n’avait jamais été ouvert : le dossier, ses pièces, ses échantillons, ses messages et l’attestation de dépôt partent à la corbeille (un administrateur peut les restaurer), avec ce que son ouverture avait créé (le renouvellement planifié, ou la fiche AMM de la demande). Le pays est prévenu. Pour garder une trace d’un renouvellement auquel on renonce, utilisez plutôt « Abandonner ».",
+      "cancelReason": "Pourquoi ? (facultatif)",
+      "cancelConfirm": "Annuler le dossier",
+      "cancelled": "Dossier annulé : il est dans la corbeille.",
+      "abandonOrigin": "Abandonner cette demande",
+      "abandonOriginTitle": "Abandonner cette demande d’AMM ?",
+      "abandonOriginText": "Le dossier est clos et le pays est prévenu. La fiche AMM reste marquée « demande abandonnée ».",
+      "noMaYet": "Pas encore d’AMM : la décision lui donnera son n° et ses dates."
     },
     "link": {
       "followed": "Dossier de dépôt · renouvellement n°{{n}}",
@@ -1054,7 +1065,12 @@
       "scan": "Scan de la décision",
       "reason": "Motif",
       "saveGranted": "Enregistrer le renouvellement obtenu",
-      "saveRejected": "Enregistrer le rejet"
+      "saveRejected": "Enregistrer le rejet",
+      "grantedOrigin": "AMM obtenue : n° {{number}}",
+      "rejectedOrigin": "Demande d’AMM rejetée.",
+      "withdrawnOrigin": "Demande d’AMM abandonnée.",
+      "ammNumber": "N° de l’AMM",
+      "saveGrantedOrigin": "Enregistrer l’AMM obtenue"
     },
     "pieceTypes": {
       "editTitle": "Modifier la pièce",
@@ -1081,6 +1097,17 @@
       "country": "Pays",
       "renewalDossier": "Dossier de renouvellement — {{country}}",
       "ownPiece": "Pièce propre à {{country}}"
+    },
+    "originApplication": "demande d’AMM d’origine",
+    "origin": {
+      "title": "Nouvelle demande d’AMM d’origine",
+      "text": "Pour un produit pas encore enregistré dans ce pays. La fiche AMM est créée sans n° ni dates : elle les reçoit avec la décision. En attendant, elle n’est pas signalée comme incomplète et sa page de classeur peut être pointée conforme.",
+      "product": "Produit",
+      "country": "Pays",
+      "holder": "Titulaire (facultatif)",
+      "productHint": "Tapez le nom du produit. S’il n’existe pas encore, créez-le d’abord dans le catalogue.",
+      "open": "Ouvrir le dossier",
+      "link": "Dossier de la demande d’AMM"
     }
   },
   "dossierImports": {
@@ -1665,5 +1692,12 @@
     "month_other": "{{count}} mois",
     "daysShort": "{{count}} j",
     "span": "{{years}} et {{months}}"
+  },
+  "originApplication": {
+    "EN_PREPARATION": "Demande d’AMM en préparation",
+    "DEPOSE": "Demande d’AMM déposée",
+    "EN_INSTRUCTION": "Demande d’AMM en instruction",
+    "REJETE": "Demande d’AMM rejetée",
+    "ABANDONNE": "Demande d’AMM abandonnée"
   }
 }

@@ -11,5 +11,5 @@ class PieceTypeAdmin(admin.ModelAdmin):
 
 @admin.register(DepositDossier)
 class DepositDossierAdmin(admin.ModelAdmin):
-    list_display = ("renewal", "sent_at", "deposited_at", "updated_at")
-    raw_id_fields = ("renewal", "attestation")
+    list_display = ("amm", "kind", "renewal", "sent_at", "deposited_at", "updated_at")
+    raw_id_fields = ("amm", "renewal", "attestation")

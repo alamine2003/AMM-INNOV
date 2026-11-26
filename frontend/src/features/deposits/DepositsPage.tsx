@@ -29,10 +29,12 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import { Link, useNavigate } from 'react-router';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { extractErrorMessage } from '@/api/client';
@@ -46,7 +48,15 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { StatusChip } from '@/components/chips';
 import { filingDateText } from '@/components/FilingDates';
 import { formatDate, formatDateTime, todayIso } from '@/lib/dates';
+import { NewOriginDialog } from './NewOriginDialog';
 import { CLOSED_STAGES, PROCEDURE, STAGE_COLORS, STAGE_STEP, isClosed } from './stages';
+
+/** « renouvellement n°2 », ou « demande d'AMM d'origine » (1.4.1). */
+export function dossierNature(dossier: DepositSummary, t: TFunction) {
+  return dossier.renewal
+    ? t('deposits.renewalNo', { n: dossier.renewal.sequence })
+    : t('deposits.originApplication');
+}
 
 /** `key` : clé de texte `deposits.list.kpis.<key>.label` / `.hint`. */
 const KPIS: { stages: DepositStage[]; key: string }[] = [
@@ -128,7 +138,7 @@ function DossierRow({ dossier }: { dossier: DepositSummary }) {
   const navigate = useNavigate();
   const amm = dossier.amm;
   const late =
-    !dossier.renewal.filing_date && !!amm.agency_filing_deadline && amm.agency_filing_deadline < todayIso();
+    !dossier.filing_date && !!amm.agency_filing_deadline && amm.agency_filing_deadline < todayIso();
   return (
     <TableRow
       hover
@@ -144,7 +154,7 @@ function DossierRow({ dossier }: { dossier: DepositSummary }) {
               {amm.product_name}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {amm.country_name} · {t('deposits.renewalNo', { n: dossier.renewal.sequence })}
+              {amm.country_name} · {dossierNature(dossier, t)}
             </Typography>
           </Box>
         </Stack>
@@ -172,9 +182,9 @@ function DossierRow({ dossier }: { dossier: DepositSummary }) {
               value={dossier.pieces_required ? (100 * dossier.pieces_done) / dossier.pieces_required : 100}
             />
           </Box>
-        ) : dossier.renewal.filing_date ? (
+        ) : dossier.filing_date ? (
           <Typography variant="body2">
-            {t('deposits.list.submittedOn', { date: formatDate(dossier.renewal.filing_date) })}
+            {t('deposits.list.submittedOn', { date: formatDate(dossier.filing_date) })}
           </Typography>
         ) : (
           <Typography variant="body2">
@@ -185,7 +195,7 @@ function DossierRow({ dossier }: { dossier: DepositSummary }) {
       <TableCell>
         <Stack gap={0.5} alignItems="flex-start">
           <Typography variant="body2">{formatDate(amm.effective_end_date)}</Typography>
-          <StatusChip value={amm.status} />
+          <StatusChip value={amm.status} origin={amm.origin_application} />
         </Stack>
       </TableCell>
       <TableCell>
@@ -302,6 +312,7 @@ export default function DepositsPage() {
   const [tab, setTab] = useState<'open' | 'closed'>('open');
   const [country, setCountry] = useState('');
   const [help, setHelp] = useState(false);
+  const [newOrigin, setNewOrigin] = useState(false);
 
   const countries = useMemo(() => {
     const seen = new Map<string, string>();
@@ -325,6 +336,11 @@ export default function DepositsPage() {
               {t('deposits.list.procedureButton')}
             </Button>
             {hq && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setNewOrigin(true)}>
+                {t('deposits.list.newOrigin')}
+              </Button>
+            )}
+            {hq && (
               <Button
                 component={Link}
                 to="/depots/pieces"
@@ -337,6 +353,7 @@ export default function DepositsPage() {
           </>
         }
       />
+      {hq && <NewOriginDialog open={newOrigin} onClose={() => setNewOrigin(false)} />}
       <Collapse in={help}>
         <Procedure />
       </Collapse>
