@@ -1,8 +1,10 @@
+from datetime import date
+
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.amm.models import MarketingAuthorization, Renewal
-from apps.catalog.models import Country
+from apps.catalog.models import Country, Product
 
 from .actions import missing_for_send, piece_types_for
 from .models import (
@@ -155,6 +157,7 @@ class DepositAmmSerializer(serializers.ModelSerializer):
             "country_name",
             "authority",
             "original_number",
+            "origin_application",
             "status",
             "urgency",
             "effective_end_date",
@@ -175,10 +178,13 @@ class DepositRenewalSerializer(serializers.ModelSerializer):
 
 
 class DepositSummarySerializer(serializers.ModelSerializer):
+    kind = serializers.ChoiceField(choices=DepositDossier.Kind.choices, read_only=True)
     stage = serializers.ChoiceField(choices=DepositDossier.Stage.choices, read_only=True)
     stage_label = serializers.SerializerMethodField()
-    amm = DepositAmmSerializer(source="renewal.amm", read_only=True)
-    renewal = DepositRenewalSerializer(read_only=True)
+    amm = DepositAmmSerializer(read_only=True)
+    # Vide pour une demande d'AMM d'origine (1.4.1).
+    renewal = DepositRenewalSerializer(read_only=True, allow_null=True)
+    filing_date = serializers.SerializerMethodField()
     pieces_done = serializers.SerializerMethodField()
     pieces_required = serializers.SerializerMethodField()
     samples_count = serializers.SerializerMethodField()
@@ -191,10 +197,12 @@ class DepositSummarySerializer(serializers.ModelSerializer):
         model = DepositDossier
         fields = [
             "id",
+            "kind",
             "stage",
             "stage_label",
             "amm",
             "renewal",
+            "filing_date",
             "pieces_done",
             "pieces_required",
             "samples_required",
@@ -211,13 +219,19 @@ class DepositSummarySerializer(serializers.ModelSerializer):
 
     def _types(self, obj):
         cache = self.context.setdefault("piece_types", {})
-        country = obj.renewal.amm.country
+        country = obj.amm.country
         if country.pk not in cache:
             cache[country.pk] = piece_types_for(country)
         return cache[country.pk]
 
     def get_stage_label(self, obj) -> str:
+        if obj.stage == DepositDossier.Stage.OBTENU:
+            return "AMM obtenue" if obj.is_origin else "Renouvellement obtenu"
         return DepositDossier.Stage(obj.stage).label
+
+    def get_filing_date(self, obj) -> date | None:
+        """Date de dépôt à l'agence : celle du renouvellement, ou de la demande d'origine."""
+        return obj.renewal.filing_date if obj.renewal_id else obj.amm.origin_filing_date
 
     def get_pieces_required(self, obj) -> int:
         return sum(1 for piece_type in self._types(obj) if piece_type.required)
@@ -262,6 +276,7 @@ class DownloadSerializer(serializers.Serializer):
 
 class DepositPermissionsSerializer(serializers.Serializer):
     manage = serializers.BooleanField(help_text="Siège : monter, envoyer, abandonner")
+    cancel = serializers.BooleanField(help_text="Siège : annuler le dossier ouvert (corbeille)")
     deposit = serializers.BooleanField(help_text="Enregistrer le dépôt et l'attestation")
     follow = serializers.BooleanField(help_text="Noter commissions et notifications")
     decide = serializers.BooleanField(help_text="Enregistrer la décision")
@@ -346,11 +361,12 @@ class DepositDetailSerializer(DepositSummarySerializer):
     @extend_schema_field(DepositPermissionsSerializer)
     def get_can(self, obj):
         user = self.context["request"].user
-        status = obj.renewal.workflow_status
+        status = obj.status
         closed = status in Renewal.TERMINAL_STATUSES
         pending = status in Renewal.PENDING_STATUSES
         return {
             "manage": user.is_global and not closed,
+            "cancel": user.is_global and not closed,
             "deposit": not closed and (bool(obj.sent_at) or user.is_global),
             "follow": pending,
             "decide": pending,
@@ -368,7 +384,27 @@ class SuggestionSerializer(DepositAmmSerializer):
 
 
 class OpenDossierSerializer(serializers.Serializer):
-    amm = serializers.UUIDField()
+    """Renouvellement : l'AMM. Demande d'AMM d'origine (1.4.1) : le produit et le pays."""
+
+    kind = serializers.ChoiceField(
+        choices=DepositDossier.Kind.choices, default=DepositDossier.Kind.RENOUVELLEMENT
+    )
+    amm = serializers.UUIDField(required=False)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
+    country = serializers.SlugRelatedField(
+        slug_field="iso2", queryset=Country.objects.all(), required=False
+    )
+    holder = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+    def validate(self, attrs):
+        if attrs["kind"] == DepositDossier.Kind.ORIGINE:
+            if not attrs.get("product") or not attrs.get("country"):
+                raise serializers.ValidationError(
+                    "Choisissez le produit et le pays de la demande d'AMM."
+                )
+        elif not attrs.get("amm"):
+            raise serializers.ValidationError({"amm": "Choisissez l'AMM à renouveler."})
+        return attrs
 
 
 class PieceUploadSerializer(serializers.Serializer):
@@ -421,6 +457,10 @@ class DecisionInputSerializer(serializers.Serializer):
 
 class AbandonSerializer(serializers.Serializer):
     reason = serializers.CharField()
+
+
+class CancelSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=250)
 
 
 class MessageInputSerializer(serializers.Serializer):

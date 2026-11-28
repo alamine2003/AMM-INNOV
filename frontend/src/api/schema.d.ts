@@ -1017,6 +1017,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/deposits/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Annule le dossier comme s'il n'avait jamais été ouvert : tout part à la corbeille. */
+        post: operations["v1_deposits_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/deposits/{id}/decision/": {
         parameters: {
             query?: never;
@@ -2532,6 +2549,13 @@ export interface components {
             original_end_date?: string | null;
             /** Date de fin saisie manuellement */
             original_end_date_manual?: boolean;
+            /** Demande d'origine */
+            readonly origin_application: components["schemas"]["OriginApplicationEnum"];
+            /**
+             * Dépôt de la demande d'origine
+             * Format: date
+             */
+            readonly origin_filing_date: string | null;
             /** Statut */
             readonly status: components["schemas"]["AmmStatusEnum"];
             /** Urgence */
@@ -2573,6 +2597,8 @@ export interface components {
             readonly updated_at: string;
             readonly renewals: components["schemas"]["Renewal"][];
             readonly pending_renewal_id: string | null;
+            /** @description Dossier de dépôt de la demande d'origine, le plus récent (1.4.1). */
+            readonly origin_deposit_id: string | null;
         };
         AmmDetailRequest: {
             /**
@@ -2642,6 +2668,13 @@ export interface components {
             original_end_date?: string | null;
             /** Date de fin saisie manuellement */
             original_end_date_manual?: boolean;
+            /** Demande d'origine */
+            readonly origin_application: components["schemas"]["OriginApplicationEnum"];
+            /**
+             * Dépôt de la demande d'origine
+             * Format: date
+             */
+            readonly origin_filing_date: string | null;
             /** Statut */
             readonly status: components["schemas"]["AmmStatusEnum"];
             /** Urgence */
@@ -2885,6 +2918,9 @@ export interface components {
             last_checked_by: string | null;
             readers: string[];
         };
+        CancelRequest: {
+            reason?: string;
+        };
         ChangeSinceCheck: {
             slot: components["schemas"]["SlotEnum"];
             field: components["schemas"]["FieldEnum"];
@@ -3089,6 +3125,8 @@ export interface components {
             authority: string;
             /** N° AMM d'origine */
             readonly original_number: string;
+            /** Demande d'origine */
+            readonly origin_application: components["schemas"]["OriginApplicationEnum"];
             /** Statut */
             readonly status: components["schemas"]["AmmStatusEnum"];
             /** Urgence */
@@ -3112,10 +3150,16 @@ export interface components {
         DepositDetail: {
             /** Format: uuid */
             readonly id: string;
+            readonly kind: components["schemas"]["DepositKindEnum"];
             readonly stage: components["schemas"]["DepositStageEnum"];
             readonly stage_label: string;
             readonly amm: components["schemas"]["DepositAmm"];
-            readonly renewal: components["schemas"]["DepositRenewal"];
+            readonly renewal: components["schemas"]["DepositRenewal"] | null;
+            /**
+             * Format: date
+             * @description Date de dépôt à l'agence : celle du renouvellement, ou de la demande d'origine.
+             */
+            readonly filing_date: string | null;
             readonly pieces_done: number;
             readonly pieces_required: number;
             /** Échantillons demandés */
@@ -3180,6 +3224,12 @@ export interface components {
             /** Format: binary */
             file: string;
         };
+        /**
+         * @description * `RENOUVELLEMENT` - Renouvellement
+         *     * `ORIGINE` - AMM d'origine
+         * @enum {string}
+         */
+        DepositKindEnum: "RENOUVELLEMENT" | "ORIGINE";
         DepositMessage: {
             /** Format: uuid */
             readonly id: string;
@@ -3194,6 +3244,8 @@ export interface components {
         DepositPermissions: {
             /** @description Siège : monter, envoyer, abandonner */
             manage: boolean;
+            /** @description Siège : annuler le dossier ouvert (corbeille) */
+            cancel: boolean;
             /** @description Enregistrer le dépôt et l'attestation */
             deposit: boolean;
             /** @description Noter commissions et notifications */
@@ -3266,7 +3318,7 @@ export interface components {
          *     * `ENVOYE` - Envoyé au pays
          *     * `DEPOSE` - Déposé à l'agence
          *     * `COMMISSION` - En commission
-         *     * `OBTENU` - Renouvellement obtenu
+         *     * `OBTENU` - Obtenu
          *     * `REJETE` - Rejeté
          *     * `ABANDONNE` - Abandonné
          * @enum {string}
@@ -3275,10 +3327,16 @@ export interface components {
         DepositSummary: {
             /** Format: uuid */
             readonly id: string;
+            readonly kind: components["schemas"]["DepositKindEnum"];
             readonly stage: components["schemas"]["DepositStageEnum"];
             readonly stage_label: string;
             readonly amm: components["schemas"]["DepositAmm"];
-            readonly renewal: components["schemas"]["DepositRenewal"];
+            readonly renewal: components["schemas"]["DepositRenewal"] | null;
+            /**
+             * Format: date
+             * @description Date de dépôt à l'agence : celle du renouvellement, ou de la demande d'origine.
+             */
+            readonly filing_date: string | null;
             readonly pieces_done: number;
             readonly pieces_required: number;
             /** Échantillons demandés */
@@ -4061,10 +4119,27 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        /** @description Renouvellement : l'AMM. Demande d'AMM d'origine (1.4.1) : le produit et le pays. */
         OpenDossierRequest: {
+            /** @default RENOUVELLEMENT */
+            kind: components["schemas"]["DepositKindEnum"];
             /** Format: uuid */
-            amm: string;
+            amm?: string;
+            /** Format: uuid */
+            product?: string;
+            /** Code ISO */
+            country?: string;
+            holder?: string;
         };
+        /**
+         * @description * `EN_PREPARATION` - Demande d'origine en préparation
+         *     * `DEPOSE` - Demande d'origine déposée
+         *     * `EN_INSTRUCTION` - Demande d'origine en instruction
+         *     * `REJETE` - Demande d'origine rejetée
+         *     * `ABANDONNE` - Demande d'origine abandonnée
+         * @enum {string}
+         */
+        OriginApplicationEnum: "EN_PREPARATION" | "DEPOSE" | "EN_INSTRUCTION" | "REJETE" | "ABANDONNE";
         Page: {
             /** Format: uuid */
             amm_id: string;
@@ -4078,6 +4153,8 @@ export interface components {
             pending_renewal: components["schemas"]["PendingRenewal"] | null;
             status: components["schemas"]["AmmStatusEnum"];
             status_label: string;
+            /** @description Demande d'AMM d'origine en cours, rejetée ou abandonnée ; vide sinon */
+            origin_application: string;
             dossier_state: components["schemas"]["DossierStateEnum"];
             scan: components["schemas"]["Scan"] | null;
             decision_count: number;
@@ -4867,6 +4944,8 @@ export interface components {
             authority: string;
             /** N° AMM d'origine */
             readonly original_number: string;
+            /** Demande d'origine */
+            readonly origin_application: components["schemas"]["OriginApplicationEnum"];
             /** Statut */
             readonly status: components["schemas"]["AmmStatusEnum"];
             /** Urgence */
@@ -6850,7 +6929,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["OpenDossierRequest"];
                 "multipart/form-data": components["schemas"]["OpenDossierRequest"];
@@ -6929,6 +7008,32 @@ export interface operations {
         responses: {
             /** @description Dossier */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_deposits_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+                "multipart/form-data": components["schemas"]["CancelRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

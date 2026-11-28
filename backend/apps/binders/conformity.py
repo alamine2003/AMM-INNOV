@@ -8,8 +8,14 @@
    « Corriger »), renseignés, et inchangés depuis.
 
 « Le dossier est conforme » quand les 4 sont justes ; pas encore vérifié tant que le papier
-n'a pas été constaté. Le résultat est recalculé à chaque lecture : un scan ajouté plus tard, ou
-une fiche modifiée après le constat, le met à jour.
+n'a pas été constaté.
+
+Demande d'AMM d'origine suivie dans « Dépôts AMM » (1.4.1) : il n'y a pas encore de décision,
+donc ni scan ni n° à exiger. Les niveaux 3 et 4 sont justes (la demande en tient lieu) ; le
+dossier est conforme dès que son papier est constaté.
+
+Le résultat est recalculé à chaque lecture : un scan ajouté plus tard, ou une fiche modifiée
+après le constat, le met à jour.
 
 Chaque niveau est une classe `Criterion` (principe ouvert/fermé) : ajouter un niveau, c'est
 ajouter une classe à `CRITERIA`, sans toucher au calcul du résultat ni aux compteurs.
@@ -64,6 +70,17 @@ class Dossier:
         return bool(self.renewal) or bool(self.amm.original_number or self.amm.original_start_date)
 
     @property
+    def application(self) -> str:
+        """Demande d'origine en cours, rejetée ou abandonnée ; vide pour une AMM délivrée."""
+        return "" if self.renewal else getattr(self.amm, "origin_application", "")
+
+    @property
+    def application_detail(self) -> str:
+        detail = self.amm.get_origin_application_display()
+        filed = getattr(self.amm, "origin_filing_date", None)
+        return f"{detail} le {filed:%d/%m/%Y}" if filed and self.application == "DEPOSE" else detail
+
+    @property
     def decision(self) -> str:
         return f"renouvellement {self.renewal.sequence}" if self.renewal else "AMM d'origine"
 
@@ -110,6 +127,8 @@ class ScanCriterion(Criterion):
     key, label = "scan", "Version scannée"
 
     def evaluate(self, dossier):
+        if dossier.application:
+            return True, f"pas encore de décision : {dossier.application_detail.lower()}"
         if not dossier.known:
             return False, "aucune décision enregistrée sur la fiche"
         if dossier.current_scan is not None:
@@ -129,6 +148,8 @@ class DataCriterion(Criterion):
             return None, "pas de papier pour le vérifier"
         if dossier.changed:
             return False, "la fiche a changé depuis la vérification : à revérifier"
+        if dossier.application:
+            return True, dossier.application_detail
         number, start = dossier.number, dossier.start
         if not number or not start:
             missing = " et ".join(

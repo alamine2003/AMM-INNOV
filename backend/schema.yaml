@@ -2533,7 +2533,6 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/OpenDossierRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2613,6 +2612,35 @@ paths:
       responses:
         '200':
           description: Dossier
+  /api/v1/deposits/{id}/cancel/:
+    post:
+      operationId: v1_deposits_cancel_create
+      description: 'Annule le dossier comme s''il n''avait jamais été ouvert : tout
+        part à la corbeille.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/deposits/{id}/decision/:
     post:
       operationId: v1_deposits_decision_create
@@ -5782,6 +5810,17 @@ components:
         original_end_date_manual:
           type: boolean
           title: Date de fin saisie manuellement
+        origin_application:
+          allOf:
+          - $ref: '#/components/schemas/OriginApplicationEnum'
+          readOnly: true
+          title: Demande d'origine
+        origin_filing_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Dépôt de la demande d'origine
         status:
           allOf:
           - $ref: '#/components/schemas/AmmStatusEnum'
@@ -5860,6 +5899,11 @@ components:
           type: string
           nullable: true
           readOnly: true
+        origin_deposit_id:
+          type: string
+          nullable: true
+          description: Dossier de dépôt de la demande d'origine, le plus récent (1.4.1).
+          readOnly: true
       required:
       - agency_filing_deadline
       - country
@@ -5874,6 +5918,9 @@ components:
       - ideal_filing_date
       - last_renewal
       - open_review_points
+      - origin_application
+      - origin_deposit_id
+      - origin_filing_date
       - owner_email
       - pending_renewal_id
       - product
@@ -5977,6 +6024,17 @@ components:
         original_end_date_manual:
           type: boolean
           title: Date de fin saisie manuellement
+        origin_application:
+          allOf:
+          - $ref: '#/components/schemas/OriginApplicationEnum'
+          readOnly: true
+          title: Demande d'origine
+        origin_filing_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          title: Dépôt de la demande d'origine
         status:
           allOf:
           - $ref: '#/components/schemas/AmmStatusEnum'
@@ -6060,6 +6118,8 @@ components:
       - ideal_filing_date
       - last_renewal
       - open_review_points
+      - origin_application
+      - origin_filing_date
       - owner_email
       - product
       - product_name
@@ -6548,6 +6608,12 @@ components:
       - to_print
       - to_scan
       - total
+    CancelRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 250
     ChangeSinceCheck:
       type: object
       properties:
@@ -7020,6 +7086,11 @@ components:
           type: string
           readOnly: true
           title: N° AMM d'origine
+        origin_application:
+          allOf:
+          - $ref: '#/components/schemas/OriginApplicationEnum'
+          readOnly: true
+          title: Demande d'origine
         status:
           allOf:
           - $ref: '#/components/schemas/AmmStatusEnum'
@@ -7056,6 +7127,7 @@ components:
       - effective_end_date
       - id
       - ideal_filing_date
+      - origin_application
       - original_number
       - product_name
       - range_code
@@ -7067,6 +7139,10 @@ components:
         id:
           type: string
           format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DepositKindEnum'
           readOnly: true
         stage:
           allOf:
@@ -7082,6 +7158,14 @@ components:
         renewal:
           allOf:
           - $ref: '#/components/schemas/DepositRenewal'
+          readOnly: true
+          nullable: true
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+          description: 'Date de dépôt à l''agence : celle du renouvellement, ou de
+            la demande d''origine.'
           readOnly: true
         pieces_done:
           type: integer
@@ -7188,7 +7272,9 @@ components:
       - downloads
       - events
       - events_count
+      - filing_date
       - id
+      - kind
       - last_message_at
       - messages
       - messages_count
@@ -7278,6 +7364,14 @@ components:
       required:
       - file
       - filing_date
+    DepositKindEnum:
+      enum:
+      - RENOUVELLEMENT
+      - ORIGINE
+      type: string
+      description: |-
+        * `RENOUVELLEMENT` - Renouvellement
+        * `ORIGINE` - AMM d'origine
     DepositMessage:
       type: object
       properties:
@@ -7316,6 +7410,9 @@ components:
         manage:
           type: boolean
           description: 'Siège : monter, envoyer, abandonner'
+        cancel:
+          type: boolean
+          description: 'Siège : annuler le dossier ouvert (corbeille)'
         deposit:
           type: boolean
           description: Enregistrer le dépôt et l'attestation
@@ -7326,6 +7423,7 @@ components:
           type: boolean
           description: Enregistrer la décision
       required:
+      - cancel
       - decide
       - deposit
       - follow
@@ -7467,7 +7565,7 @@ components:
         * `ENVOYE` - Envoyé au pays
         * `DEPOSE` - Déposé à l'agence
         * `COMMISSION` - En commission
-        * `OBTENU` - Renouvellement obtenu
+        * `OBTENU` - Obtenu
         * `REJETE` - Rejeté
         * `ABANDONNE` - Abandonné
     DepositSummary:
@@ -7476,6 +7574,10 @@ components:
         id:
           type: string
           format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DepositKindEnum'
           readOnly: true
         stage:
           allOf:
@@ -7491,6 +7593,14 @@ components:
         renewal:
           allOf:
           - $ref: '#/components/schemas/DepositRenewal'
+          readOnly: true
+          nullable: true
+        filing_date:
+          type: string
+          format: date
+          nullable: true
+          description: 'Date de dépôt à l''agence : celle du renouvellement, ou de
+            la demande d''origine.'
           readOnly: true
         pieces_done:
           type: integer
@@ -7539,7 +7649,9 @@ components:
       - amm
       - deposited_at
       - events_count
+      - filing_date
       - id
+      - kind
       - last_message_at
       - messages_count
       - pieces_done
@@ -9333,12 +9445,40 @@ components:
       - null
     OpenDossierRequest:
       type: object
+      description: 'Renouvellement : l''AMM. Demande d''AMM d''origine (1.4.1) : le
+        produit et le pays.'
       properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DepositKindEnum'
+          default: RENOUVELLEMENT
         amm:
           type: string
           format: uuid
-      required:
-      - amm
+        product:
+          type: string
+          format: uuid
+        country:
+          type: string
+          minLength: 1
+          title: Code ISO
+        holder:
+          type: string
+          maxLength: 255
+    OriginApplicationEnum:
+      enum:
+      - EN_PREPARATION
+      - DEPOSE
+      - EN_INSTRUCTION
+      - REJETE
+      - ABANDONNE
+      type: string
+      description: |-
+        * `EN_PREPARATION` - Demande d'origine en préparation
+        * `DEPOSE` - Demande d'origine déposée
+        * `EN_INSTRUCTION` - Demande d'origine en instruction
+        * `REJETE` - Demande d'origine rejetée
+        * `ABANDONNE` - Demande d'origine abandonnée
     Page:
       type: object
       properties:
@@ -9369,6 +9509,10 @@ components:
           $ref: '#/components/schemas/AmmStatusEnum'
         status_label:
           type: string
+        origin_application:
+          type: string
+          description: Demande d'AMM d'origine en cours, rejetée ou abandonnée ; vide
+            sinon
         dossier_state:
           $ref: '#/components/schemas/DossierStateEnum'
         scan:
@@ -9414,6 +9558,7 @@ components:
       - decision_count
       - discrepancies
       - dossier_state
+      - origin_application
       - original
       - page
       - pending_renewal
@@ -10883,6 +11028,11 @@ components:
           type: string
           readOnly: true
           title: N° AMM d'origine
+        origin_application:
+          allOf:
+          - $ref: '#/components/schemas/OriginApplicationEnum'
+          readOnly: true
+          title: Demande d'origine
         status:
           allOf:
           - $ref: '#/components/schemas/AmmStatusEnum'
@@ -10925,6 +11075,7 @@ components:
       - effective_end_date
       - id
       - ideal_filing_date
+      - origin_application
       - original_number
       - product_name
       - range_code

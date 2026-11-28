@@ -167,7 +167,7 @@ export default function AmmListPage() {
       field: 'status',
       headerName: t('amm.columns.status'),
       width: 150,
-      renderCell: (p) => <StatusChip value={p.row.status} />,
+      renderCell: (p) => <StatusChip value={p.row.status} origin={p.row.origin_application} />,
     },
     {
       field: 'urgency',

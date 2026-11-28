@@ -80,7 +80,7 @@ export function AmmDetailTab({ amm, editable }: { amm: Amm; editable: boolean })
     <form onSubmit={handleSubmit(submit)} noValidate data-testid="amm-detail-form">
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {info(t('ammPages.detail.holder'), amm.holder || '—')}
-        {info(t('amm.fields.status'), <StatusChip value={amm.status} />)}
+        {info(t('amm.fields.status'), <StatusChip value={amm.status} origin={amm.origin_application} />)}
         {info(t('amm.fields.urgency'), t(`urgency.${amm.urgency}`))}
         {info(t('amm.fields.effectiveEnd'), formatDate(amm.effective_end_date))}
         {info(

@@ -5,6 +5,24 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), ver
 
 ## [Non publié]
 
+## [1.4.1] — 2026-11-26
+
+### Ajouté
+- **Dépôt d'une AMM d'origine** (« Dépôts AMM », bouton « Nouvelle demande d'AMM », siège) :
+  pour un produit pas encore enregistré dans un pays, le dossier suit les mêmes étapes qu'un
+  renouvellement (montage, envoi au pays, dépôt et attestation, commission, décision). La fiche
+  AMM est créée sans n° ni dates et affiche l'avancement de la demande au lieu d'« Échéance
+  inconnue » ; elle n'est pas comptée comme une origine manquante. À la décision obtenue, elle
+  reçoit son n°, ses dates et le scan, et devient une AMM comme les autres.
+- **Classeur : la page d'une demande d'origine en cours peut être « conforme »** dès que son
+  papier est constaté (pas de décision à scanner ni de n° à relever tant qu'elle n'est pas
+  obtenue). Sa chronologie montre la demande et sa date de dépôt.
+- **Annuler un dossier de dépôt** (siège, dossier ouvert) : comme s'il n'avait jamais été ouvert.
+  Le dossier, ses pièces, son attestation et ce que son ouverture avait créé (le renouvellement
+  planifié, ou la fiche d'une demande d'origine) partent à la corbeille ; un renouvellement qui
+  existait déjà reprend son état d'avant. Le pays est prévenu. « Abandonner » reste là pour
+  renoncer en gardant la trace.
+
 ## [1.4.0] — 2026-11-26
 
 Palier : clôture du cycle 1.3 et chaîne de livraison opérationnelle (`docs/palier-1.4.0.md`).

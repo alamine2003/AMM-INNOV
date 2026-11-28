@@ -32,6 +32,10 @@ du dossier de renouvellement : il ne change ni la date de fin, ni le statut de l
 
 Précisions :
 
+- une **demande d'AMM d'origine** suivie dans « Dépôts AMM » (1.4.1) n'a pas encore de date de
+  fin : son statut reste « Échéance inconnue » en base, mais l'application affiche
+  l'avancement de la demande à la place (« Demande d'AMM déposée »…), et ce n'est pas compté
+  comme une donnée manquante ;
 - le jour de la date de fin, l'AMM est encore valide (« À renouveler ») ; le lendemain, elle est
   **Expirée**, automatiquement ;
 - une AMM expirée n'est jamais « À renouveler » ;

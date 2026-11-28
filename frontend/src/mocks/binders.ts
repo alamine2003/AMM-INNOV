@@ -47,6 +47,7 @@ function pageOf(index: number, amm: (typeof db.amms)[number]): BinderPage {
     pending_renewal: null,
     status: amm.status,
     status_label: amm.status,
+    origin_application: '',
     dossier_state: amm.dossier_state,
     scan: null,
     decision_count: 0,

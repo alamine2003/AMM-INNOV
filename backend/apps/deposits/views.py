@@ -35,6 +35,7 @@ from . import actions, bundle
 from .models import DepositDossier, DepositMessage, PieceType
 from .serializers import (
     AbandonSerializer,
+    CancelSerializer,
     DecisionInputSerializer,
     DepositDetailSerializer,
     DepositInputSerializer,
@@ -88,10 +89,10 @@ class DepositViewSet(viewsets.ViewSet):
 
     @extend_schema(responses=DepositSummarySerializer(many=True))
     def list(self, request):
-        queryset = self._queryset().select_related("renewal__amm__product__range")
+        queryset = self._queryset().select_related("amm__product__range")
         country = request.query_params.get("country")
         if country:
-            queryset = queryset.filter(renewal__amm__country__iso2=country.upper())
+            queryset = queryset.filter(amm__country__iso2=country.upper())
         return Response(
             DepositSummarySerializer(queryset, many=True, context={"request": request}).data
         )
@@ -104,9 +105,17 @@ class DepositViewSet(viewsets.ViewSet):
     def create(self, request):
         data = OpenDossierSerializer(data=request.data)
         data.is_valid(raise_exception=True)
+        values = data.validated_data
+        if values["kind"] == DepositDossier.Kind.ORIGINE:
+            dossier = _run(
+                lambda: actions.open_origin(
+                    values["product"], values["country"], request.user, values.get("holder", "")
+                )
+            )
+            return self._detail(dossier.pk, status.HTTP_201_CREATED)
         try:
             amm = MarketingAuthorization.objects.select_related("country", "product").get(
-                pk=data.validated_data["amm"]
+                pk=values["amm"]
             )
         except MarketingAuthorization.DoesNotExist:
             raise Http404("AMM inconnue.")
@@ -118,7 +127,7 @@ class DepositViewSet(viewsets.ViewSet):
     def suggestions(self, request):
         """AMM à renouveler dans l'année (ou expirées depuis moins d'un an), sans dossier."""
         in_progress = DepositDossier.objects.filter(
-            renewal__amm=OuterRef("pk"), renewal__workflow_status__in=Renewal.OPEN_STATUSES
+            amm=OuterRef("pk"), renewal__workflow_status__in=Renewal.OPEN_STATUSES
         )
         pending = Renewal.objects.filter(
             amm=OuterRef("pk"), workflow_status__in=Renewal.PENDING_STATUSES
@@ -344,6 +353,16 @@ class DepositViewSet(viewsets.ViewSet):
         data.is_valid(raise_exception=True)
         _run(lambda: actions.abandon(dossier, request.user, data.validated_data["reason"]))
         return self._detail(pk)
+
+    @extend_schema(request=CancelSerializer, responses={204: None})
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        """Annule le dossier comme s'il n'avait jamais été ouvert : tout part à la corbeille."""
+        dossier = self._get(pk)
+        data = CancelSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        _run(lambda: actions.cancel(dossier, request.user, data.validated_data.get("reason", "")))
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(request=MessageInputSerializer, responses={201: DepositDetailSerializer})
     @action(detail=True, methods=["post"])

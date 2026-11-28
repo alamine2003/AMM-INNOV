@@ -661,6 +661,8 @@ export const handlers = [
         original_start_date: (body.original_start_date as string) ?? null,
         original_end_date: (body.original_end_date as string) ?? null,
         original_end_date_manual: !!body.original_end_date_manual,
+        origin_application: '',
+        origin_filing_date: null,
         status: 'INDETERMINE',
         urgency: 'A_PLANIFIER',
         effective_end_date: null,

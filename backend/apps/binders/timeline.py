@@ -92,8 +92,25 @@ def chronology(amm, renewals, documents, ignored=frozenset()) -> list[dict]:
             "issues": issues,
         }
 
-    periods = [entry("origin", "AMM d'origine")]
+    periods = []
     pending = []
+    application = getattr(amm, "origin_application", "")
+    if application:
+        # Demande d'origine suivie dans « Dépôts AMM » (1.4.1) : pas encore d'AMM, donc ni n° ni
+        # dates ni décision à réclamer. Seul le récépissé est attendu, une fois déposée.
+        label = amm.get_origin_application_display()
+        in_progress = application in ("EN_PREPARATION", "DEPOSE", "EN_INSTRUCTION")
+        origin = entry("pending" if in_progress else "closed", "Demande d'AMM d'origine")
+        if application == "EN_PREPARATION":
+            origin["issues"] = []
+        origin.update(
+            workflow_status=application,
+            workflow_label=label,
+            filing_date=amm.origin_filing_date,
+        )
+        (pending if in_progress else periods).append(origin)
+    else:
+        periods.append(entry("origin", "AMM d'origine"))
     for renewal in sorted(renewals, key=lambda r: r.sequence):
         if renewal.workflow_status == "OBTENU":
             periods.append(entry("renewal", f"Renouvellement {renewal.sequence}", renewal))

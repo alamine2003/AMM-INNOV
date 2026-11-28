@@ -18,7 +18,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from .actions import piece_types_for
+from .actions import nature, piece_types_for
 from .models import DepositDossier
 
 
@@ -28,7 +28,7 @@ def _safe(text: str) -> str:
 
 def _checklist(dossier: DepositDossier):
     pieces = list(dossier.pieces.select_related("piece_type"))
-    types = piece_types_for(dossier.renewal.amm.country)
+    types = piece_types_for(dossier.amm.country)
     rows = [
         (
             piece_type.label,
@@ -43,7 +43,7 @@ def _checklist(dossier: DepositDossier):
 
 
 def bordereau(dossier: DepositDossier) -> bytes:
-    amm = dossier.renewal.amm
+    amm = dossier.amm
     styles = getSampleStyleSheet()
     buffer = io.BytesIO()
     document = SimpleDocTemplate(
@@ -53,17 +53,22 @@ def bordereau(dossier: DepositDossier) -> bytes:
         rightMargin=18 * mm,
         topMargin=16 * mm,
         bottomMargin=16 * mm,
-        title=f"Dossier de renouvellement {amm.product.name}",
+        title=f"Dossier de {nature(dossier)} {amm.product.name}",
     )
     rows, others = _checklist(dossier)
-    story = [
-        Paragraph("Dossier de renouvellement d'AMM", styles["Title"]),
-        Paragraph(f"<b>{amm.product.name}</b> — {amm.country.name}", styles["Heading2"]),
-        Paragraph(
+    if dossier.is_origin:
+        heading = "Dossier de demande d'AMM"
+        reference = "Demande d'AMM d'origine (produit pas encore enregistré dans ce pays)"
+    else:
+        heading = "Dossier de renouvellement d'AMM"
+        reference = (
             f"AMM n° {amm.original_number or '—'} · renouvellement n°{dossier.renewal.sequence}"
-            + (f" · échéance {amm.effective_end_date:%d/%m/%Y}" if amm.effective_end_date else ""),
-            styles["Normal"],
-        ),
+            + (f" · échéance {amm.effective_end_date:%d/%m/%Y}" if amm.effective_end_date else "")
+        )
+    story = [
+        Paragraph(heading, styles["Title"]),
+        Paragraph(f"<b>{amm.product.name}</b> — {amm.country.name}", styles["Heading2"]),
+        Paragraph(reference, styles["Normal"]),
         Spacer(1, 6 * mm),
         Paragraph("Pièces du dossier", styles["Heading3"]),
     ]
@@ -169,5 +174,5 @@ def _unique(name: str, used: set[str]) -> str:
 
 
 def zip_name(dossier: DepositDossier) -> str:
-    amm = dossier.renewal.amm
+    amm = dossier.amm
     return f"Depot_{amm.country.iso2}_{_safe(amm.product.name).replace(' ', '_')}.zip"

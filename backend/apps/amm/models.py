@@ -29,6 +29,26 @@ class MarketingAuthorization(models.Model):
         COMPLET = "COMPLET", "Dossier complet"
         INCOMPLET = "INCOMPLET", "Dossier incomplet"
 
+    class OriginApplication(models.TextChoices):
+        """Demande de l'AMM d'origine suivie dans « Dépôts AMM » (1.4.1).
+
+        Vide : l'AMM d'origine est délivrée (ou sa demande n'a pas été suivie dans
+        l'application). Tant qu'une demande est en cours, la fiche n'a ni n° ni dates : ce n'est
+        pas une donnée manquante, et elle n'est pas signalée comme telle.
+        """
+
+        EN_PREPARATION = "EN_PREPARATION", "Demande d'origine en préparation"
+        DEPOSE = "DEPOSE", "Demande d'origine déposée"
+        EN_INSTRUCTION = "EN_INSTRUCTION", "Demande d'origine en instruction"
+        REJETE = "REJETE", "Demande d'origine rejetée"
+        ABANDONNE = "ABANDONNE", "Demande d'origine abandonnée"
+
+    ORIGIN_IN_PROGRESS = (
+        OriginApplication.EN_PREPARATION,
+        OriginApplication.DEPOSE,
+        OriginApplication.EN_INSTRUCTION,
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(
         "catalog.Product", on_delete=models.PROTECT, related_name="amms", verbose_name="produit"
@@ -41,6 +61,14 @@ class MarketingAuthorization(models.Model):
     original_start_date = models.DateField("date de début d'origine", null=True, blank=True)
     original_end_date = models.DateField("date de fin d'origine", null=True, blank=True)
     original_end_date_manual = models.BooleanField("date de fin saisie manuellement", default=False)
+    origin_application = models.CharField(
+        "demande d'origine",
+        max_length=16,
+        choices=OriginApplication.choices,
+        blank=True,
+        default="",
+    )
+    origin_filing_date = models.DateField("dépôt de la demande d'origine", null=True, blank=True)
     status = models.CharField(
         "statut", max_length=16, choices=Status.choices, default=Status.INDETERMINE, db_index=True
     )
@@ -127,6 +155,10 @@ class MarketingAuthorization(models.Model):
                 | {"original_end_date", "original_end_date_manual"}
             )
         super().save(*args, **kwargs)
+
+    @property
+    def origin_in_progress(self) -> bool:
+        return self.origin_application in self.ORIGIN_IN_PROGRESS
 
 
 class Renewal(models.Model):

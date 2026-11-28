@@ -22,7 +22,8 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
+import { useSnackbar } from 'notistack';
 import { useTranslation } from 'react-i18next';
 import { useDeposit, useDepositActions } from '@/api/hooks/useDeposits';
 import type { DepositDetail } from '@/api/types';
@@ -32,7 +33,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { ErrorBlock, LoadingBlock } from '@/components/QueryState';
 import { StatusChip } from '@/components/chips';
 import { formatDate, formatDateTime } from '@/lib/dates';
-import { StageChip } from './DepositsPage';
+import { StageChip, dossierNature } from './DepositsPage';
 import {
   DecisionSection,
   DepositSection,
@@ -153,7 +154,7 @@ function Journal({ dossier }: { dossier: DepositDetail }) {
   );
 }
 
-function AbandonButton({ actions }: { actions: Actions }) {
+function AbandonButton({ actions, origin }: { actions: Actions; origin: boolean }) {
   const fail = useFail();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -161,13 +162,15 @@ function AbandonButton({ actions }: { actions: Actions }) {
   return (
     <>
       <Button color="error" size="small" onClick={() => setOpen(true)}>
-        {t('deposits.detail.abandonButton')}
+        {t(origin ? 'deposits.detail.abandonOrigin' : 'deposits.detail.abandonButton')}
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('deposits.detail.abandonTitle')}</DialogTitle>
+        <DialogTitle>
+          {t(origin ? 'deposits.detail.abandonOriginTitle' : 'deposits.detail.abandonTitle')}
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            {t('deposits.detail.abandonText')}
+            {t(origin ? 'deposits.detail.abandonOriginText' : 'deposits.detail.abandonText')}
           </Typography>
           <TextField
             autoFocus
@@ -187,6 +190,58 @@ function AbandonButton({ actions }: { actions: Actions }) {
             onClick={() => actions.abandon.mutate(reason, { onSuccess: () => setOpen(false), onError: fail })}
           >
             {t('deposits.detail.abandonConfirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
+/** Annuler le dossier ouvert par erreur : tout part à la corbeille (1.4.1). */
+function CancelButton({ actions }: { actions: Actions }) {
+  const fail = useFail();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  return (
+    <>
+      <Button color="inherit" size="small" onClick={() => setOpen(true)}>
+        {t('deposits.detail.cancelButton')}
+      </Button>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('deposits.detail.cancelTitle')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {t('deposits.detail.cancelText')}
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            label={t('deposits.detail.cancelReason')}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>{t('app.cancel')}</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={actions.cancel.isPending}
+            onClick={() =>
+              actions.cancel.mutate(reason.trim(), {
+                onSuccess: () => {
+                  enqueueSnackbar(t('deposits.detail.cancelled'), { variant: 'success' });
+                  navigate('/depots');
+                },
+                onError: fail,
+              })
+            }
+          >
+            {t('deposits.detail.cancelConfirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -220,7 +275,7 @@ export default function DepositDetailPage() {
         }
         subtitle={
           <>
-            {amm.country_name} · {t('deposits.renewalNo', { n: dossier.renewal.sequence })}
+            {amm.country_name} · {dossierNature(dossier, t)}
             {amm.original_number ? t('deposits.ammNo', { number: amm.original_number }) : ''} ·{' '}
             <MuiLink component={Link} to={`/amms/${amm.id}`}>
               {t('deposits.detail.maRecord')}
@@ -231,18 +286,31 @@ export default function DepositDetailPage() {
       />
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} gap={{ xs: 1, md: 4 }} alignItems={{ md: 'center' }}>
-          <Stack direction="row" gap={1} alignItems="center">
-            <Typography variant="body2">
-              {t('deposits.detail.maExpiryLabel')}
-              <strong>{formatDate(amm.effective_end_date)}</strong>
-            </Typography>
-            <StatusChip value={amm.status} />
-          </Stack>
-          <FilingDates ideal={amm.ideal_filing_date} agency={amm.agency_filing_deadline} />
-          {dossier.renewal.filing_date && (
+          {dossier.renewal ? (
+            <>
+              <Stack direction="row" gap={1} alignItems="center">
+                <Typography variant="body2">
+                  {t('deposits.detail.maExpiryLabel')}
+                  <strong>{formatDate(amm.effective_end_date)}</strong>
+                </Typography>
+                <StatusChip value={amm.status} origin={amm.origin_application} />
+              </Stack>
+              <FilingDates ideal={amm.ideal_filing_date} agency={amm.agency_filing_deadline} />
+            </>
+          ) : (
+            <Stack direction="row" gap={1} alignItems="center">
+              <StatusChip value={amm.status} origin={amm.origin_application} />
+              <Typography variant="body2" color="text.secondary">
+                {amm.original_number
+                  ? t('deposits.ammNo', { number: amm.original_number })
+                  : t('deposits.detail.noMaYet')}
+              </Typography>
+            </Stack>
+          )}
+          {dossier.filing_date && (
             <Typography variant="body2">
               {t('deposits.detail.submittedOnLabel')}
-              <strong>{formatDate(dossier.renewal.filing_date)}</strong>
+              <strong>{formatDate(dossier.filing_date)}</strong>
             </Typography>
           )}
         </Stack>
@@ -272,10 +340,11 @@ export default function DepositDetailPage() {
           <DepositSection dossier={dossier} actions={actions} />
           <FollowSection dossier={dossier} actions={actions} />
           <DecisionSection dossier={dossier} actions={actions} />
-          {dossier.can.manage && (
-            <Box sx={{ textAlign: 'right' }}>
-              <AbandonButton actions={actions} />
-            </Box>
+          {(dossier.can.manage || dossier.can.cancel) && (
+            <Stack direction="row" justifyContent="flex-end" gap={1}>
+              {dossier.can.cancel && <CancelButton actions={actions} />}
+              {dossier.can.manage && <AbandonButton actions={actions} origin={!dossier.renewal} />}
+            </Stack>
           )}
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>

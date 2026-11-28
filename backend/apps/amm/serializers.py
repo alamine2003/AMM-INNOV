@@ -169,6 +169,8 @@ class AmmListSerializer(serializers.ModelSerializer):
             "original_start_date",
             "original_end_date",
             "original_end_date_manual",
+            "origin_application",
+            "origin_filing_date",
             "status",
             "urgency",
             "effective_end_date",
@@ -186,8 +188,11 @@ class AmmListSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         # `dossier_state` se déduit du scan de la décision en vigueur : il ne se déclare plus.
+        # La demande d'origine suit son dossier de dépôt (1.4.1) : elle ne se saisit pas ici.
         read_only_fields = [
             "id",
+            "origin_application",
+            "origin_filing_date",
             "status",
             "urgency",
             "effective_end_date",
@@ -258,9 +263,26 @@ class AmmListSerializer(serializers.ModelSerializer):
 class AmmDetailSerializer(AmmListSerializer):
     renewals = RenewalSerializer(many=True, read_only=True)
     pending_renewal_id = serializers.SerializerMethodField()
+    origin_deposit_id = serializers.SerializerMethodField()
 
     class Meta(AmmListSerializer.Meta):
-        fields = AmmListSerializer.Meta.fields + ["renewals", "pending_renewal_id"]
+        fields = AmmListSerializer.Meta.fields + [
+            "renewals",
+            "pending_renewal_id",
+            "origin_deposit_id",
+        ]
+
+    def get_origin_deposit_id(self, obj) -> str | None:
+        """Dossier de dépôt de la demande d'origine, le plus récent (1.4.1)."""
+        from apps.deposits.models import DepositDossier
+
+        dossier = (
+            DepositDossier.objects.filter(amm=obj, kind=DepositDossier.Kind.ORIGINE)
+            .order_by("-created_at")
+            .values_list("pk", flat=True)
+            .first()
+        )
+        return str(dossier) if dossier else None
 
     def get_pending_renewal_id(self, obj) -> str | None:
         pending = [r for r in obj.renewals.all() if r.is_pending]

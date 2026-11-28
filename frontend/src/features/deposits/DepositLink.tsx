@@ -14,7 +14,16 @@ const OPEN = ['PLANIFIE', 'EN_PREPARATION', 'DEPOSE', 'EN_INSTRUCTION'];
  * Depuis la fiche AMM : le dossier de dépôt du renouvellement en cours, ou (siège) le bouton
  * pour le monter quand l'AMM est à renouveler.
  */
-export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatus }) {
+export function DepositLink({
+  ammId,
+  status,
+  originDepositId,
+}: {
+  ammId: string;
+  status: AmmStatus;
+  /** Dossier de la demande d'AMM d'origine (1.4.1), le plus récent. */
+  originDepositId?: string | null;
+}) {
   const renewals = useRenewals(ammId);
   const open = useOpenDeposit();
   const navigate = useNavigate();
@@ -23,6 +32,19 @@ export function DepositLink({ ammId, status }: { ammId: string; status: AmmStatu
   const user = useAuthStore((s) => s.user);
   const hq = isHqOrAdmin(user);
   if (!renewals.data) return null;
+  if (originDepositId && renewals.data.length === 0) {
+    return (
+      <Button
+        component={Link}
+        to={`/depots/${originDepositId}`}
+        variant="outlined"
+        size="small"
+        startIcon={<AssignmentTurnedInIcon />}
+      >
+        {t('deposits.origin.link')}
+      </Button>
+    );
+  }
   const followed =
     renewals.data.find((r) => r.deposit_id && OPEN.includes(r.workflow_status)) ??
     renewals.data.find((r) => r.deposit_id);

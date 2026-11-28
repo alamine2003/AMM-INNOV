@@ -20,7 +20,7 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
   const [date, setDate] = useState(todayIso());
   const [file, setFile] = useState<File | null>(null);
   const deposited =
-    !!dossier.renewal.filing_date && ['DEPOSE', 'COMMISSION', 'OBTENU', 'REJETE'].includes(dossier.stage);
+    !!dossier.filing_date && ['DEPOSE', 'COMMISSION', 'OBTENU', 'REJETE'].includes(dossier.stage);
   const authority = dossier.amm.authority || t('deposits.defaultAuthority');
   const openAttestation = () => {
     if (!dossier.attestation) return;
@@ -35,7 +35,7 @@ export function DepositSection({ dossier, actions }: { dossier: DepositDetail; a
       title={t('deposits.submit.title')}
       subtitle={
         deposited
-          ? t('deposits.submit.done', { authority, date: formatDate(dossier.renewal.filing_date) })
+          ? t('deposits.submit.done', { authority, date: formatDate(dossier.filing_date) })
           : t('deposits.submit.pending', { authority })
       }
       state={deposited ? 'done' : dossier.sent_at ? 'active' : 'todo'}

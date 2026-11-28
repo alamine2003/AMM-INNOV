@@ -403,6 +403,8 @@ SPECTACULAR_SETTINGS = {
         "AmmStatusEnum": "apps.amm.models.MarketingAuthorization.Status",
         "UrgencyEnum": "apps.amm.models.MarketingAuthorization.Urgency",
         "DossierStateEnum": "apps.amm.models.MarketingAuthorization.DossierState",
+        "OriginApplicationEnum": "apps.amm.models.MarketingAuthorization.OriginApplication",
+        "DepositKindEnum": "apps.deposits.models.DepositDossier.Kind",
         "WorkflowStatusEnum": "apps.amm.models.Renewal.WorkflowStatus",
         "AlertStatusEnum": "apps.alerts.models.Alert.Status",
         "AlertResolutionEnum": "apps.alerts.models.Alert.Resolution",

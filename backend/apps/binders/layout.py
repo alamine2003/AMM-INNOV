@@ -404,7 +404,13 @@ def page_payload(amm, trace: dict | None = None) -> dict:
             else None
         ),
         "status": amm.status,
-        "status_label": amm.get_status_display(),
+        # Demande d'origine (1.4.1) : « Demande d'origine déposée » plutôt qu'« Échéance inconnue ».
+        "status_label": (
+            amm.get_origin_application_display()
+            if amm.origin_application
+            else amm.get_status_display()
+        ),
+        "origin_application": amm.origin_application,
         "dossier_state": amm.dossier_state,
         "scan": (
             {

@@ -99,6 +99,11 @@ export type Urgency = 'OK' | 'A_PLANIFIER' | 'DEPOT_URGENT' | 'CRITIQUE' | 'EXPI
 export type DossierState = 'COMPLET' | 'INCOMPLET';
 export type WorkflowStatus =
   'PLANIFIE' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'OBTENU' | 'REJETE' | 'ABANDONNE';
+/**
+ * Demande de l'AMM d'origine suivie dans « Dépôts AMM » (1.4.1) ; vide : AMM délivrée. Tant
+ * qu'elle est en cours, la fiche n'a ni n° ni dates, sans que ce soit un manque.
+ */
+export type OriginApplication = '' | 'EN_PREPARATION' | 'DEPOSE' | 'EN_INSTRUCTION' | 'REJETE' | 'ABANDONNE';
 
 export interface LastRenewal {
   id: string;
@@ -122,6 +127,10 @@ export interface Amm {
   original_start_date: string | null;
   original_end_date: string | null;
   original_end_date_manual: boolean;
+  origin_application: OriginApplication;
+  origin_filing_date: string | null;
+  /** Fiche détaillée : dossier de dépôt de la demande d'origine, le plus récent. */
+  origin_deposit_id?: string | null;
   status: AmmStatus;
   urgency: Urgency;
   effective_end_date: string | null;
@@ -790,6 +799,8 @@ export interface BinderPage {
   pending_renewal: { workflow_status: string; workflow_label: string; filing_date: string | null } | null;
   status: AmmStatus;
   status_label: string;
+  /** Demande d'AMM d'origine en cours, rejetée ou abandonnée ; vide sinon. */
+  origin_application: string;
   dossier_state: DossierState;
   scan: {
     document_id: string;
@@ -972,6 +983,7 @@ export interface DepositAmm {
   country_name: string;
   authority: string;
   original_number: string;
+  origin_application: OriginApplication;
   status: AmmStatus;
   urgency: string;
   effective_end_date: string | null;
@@ -979,11 +991,16 @@ export interface DepositAmm {
   agency_filing_deadline: string | null;
 }
 
+/** Dossier d'un renouvellement, ou de la demande d'une AMM d'origine (1.4.1). */
+export type DepositKind = 'RENOUVELLEMENT' | 'ORIGINE';
+
 export interface DepositSummary {
   id: string;
+  kind: DepositKind;
   stage: DepositStage;
   stage_label: string;
   amm: DepositAmm;
+  /** Vide pour une demande d'AMM d'origine. */
   renewal: {
     id: string;
     sequence: number;
@@ -991,7 +1008,9 @@ export interface DepositSummary {
     filing_date: string | null;
     decision_date: string | null;
     number: string;
-  };
+  } | null;
+  /** Dépôt à l'agence : celui du renouvellement, ou de la demande d'origine. */
+  filing_date: string | null;
   pieces_done: number;
   pieces_required: number;
   samples_required: boolean;
@@ -1017,7 +1036,7 @@ export interface DepositDetail extends DepositSummary {
   missing: string[];
   attestation: { id: string; document_date: string; filename: string } | null;
   downloads: { user: string | null; at: string }[];
-  can: { manage: boolean; deposit: boolean; follow: boolean; decide: boolean };
+  can: { manage: boolean; cancel: boolean; deposit: boolean; follow: boolean; decide: boolean };
 }
 
 /** AMM à renouveler dans l'année sans dossier de dépôt en cours. */
